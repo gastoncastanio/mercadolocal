@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
+import PortonPrivado from './components/PortonPrivado'
 
 // Páginas
 import Landing from './pages/Landing'
@@ -91,8 +92,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <PortonPrivado>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </PortonPrivado>
   )
 }
