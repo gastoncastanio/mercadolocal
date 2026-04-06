@@ -1,0 +1,195 @@
+╔═════════════════════════════════════════════════════════════════════════════╗
+║                  🚀 LOGOAI - CÓMO EMPEZAR (VERSIÓN SIMPLE)                   ║
+╚═════════════════════════════════════════════════════════════════════════════╝
+
+Si el link http://localhost:5173 no te abre, sigue estos pasos exactos:
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 1: USAR SCRIPT AUTOMATIZADO (Recomendado)
+
+1. Abre Terminal y ve a la carpeta del proyecto:
+
+   cd /Users/user/Desktop/logoai
+
+2. Ejecuta el script:
+
+   bash start.sh
+
+3. Elige opción 5 para instalar TODO
+
+4. Espera a que termine
+
+5. En 2 terminales diferentes, ejecuta:
+
+   Terminal 1: cd backend && node src/server.js
+   Terminal 2: cd frontend && npx vite
+
+6. Abre en navegador: http://localhost:5173
+
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 2: INSTALAR NODE MANUALMENTE
+
+1. Descarga Node.js desde: https://nodejs.org/
+   (Elige la versión LTS - Long Term Support)
+
+2. Instala y reinicia tu terminal
+
+3. Verifica que Node está instalado:
+
+   node --version
+   npm --version
+
+4. Luego continúa desde el Paso 3 de abajo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO A PASO MANUAL:
+
+1. Abre 2 ventanas de Terminal (Terminal 1 y Terminal 2)
+
+2. EN TERMINAL 1 - Instalar y ejecutar BACKEND:
+
+   cd /Users/user/Desktop/logoai/backend
+   npm install
+   npm run dev
+
+   Deberías ver: "🚀 Servidor LogoAI escuchando en http://localhost:3001"
+
+   ⚠️ IMPORTANTE: Edita el archivo .env primero con:
+   - Tu MongoDB URI
+   - Tu OpenAI API Key
+
+3. EN TERMINAL 2 - Instalar y ejecutar FRONTEND:
+
+   cd /Users/user/Desktop/logoai/frontend
+   npm install
+   npm run dev
+
+   Deberías ver: "Local: http://localhost:5173"
+
+4. Abre en tu navegador:
+
+   http://localhost:5173
+
+═══════════════════════════════════════════════════════════════════════════════
+
+❌ ERRORES COMUNES Y SOLUCIONES:
+
+Error: "npm: command not found"
+   → Node.js NO está instalado
+   → Solución: Descarga e instala desde https://nodejs.org/
+
+Error: "Cannot find module"
+   → Las dependencias no están instaladas
+   → Solución: Ejecuta "npm install" en la carpeta correspondiente
+
+Error: "Port 3001 already in use"
+   → Otro programa usa el puerto
+   → Solución: Cambia PORT en backend/.env a 3002, 3003, etc.
+
+Error: "OPENAI_API_KEY not found"
+   → No configuraste las variables de entorno
+   → Solución: Edita backend/.env y agrega tu clave
+
+Error: "MongoDB connection failed"
+   → MongoDB no está configurado
+   → Solución:
+     a) Si usas MongoDB local: instala MongoDB
+     b) Si usas Atlas: verifica tu conexión string
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔧 CHECKLIST ANTES DE EMPEZAR:
+
+□ Node.js v18+ instalado (verifica: node --version)
+□ npm instalado (verifica: npm --version)
+□ Carpeta logoai creada con todos los archivos
+□ Archivo backend/.env creado con:
+  - MONGODB_URI correcta
+  - OPENAI_API_KEY correcta
+  - PORT=3001
+□ 2 ventanas de Terminal abiertas
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⏱️ TIEMPOS ESPERADOS:
+
+npm install (backend):     ~2-3 minutos
+npm install (frontend):    ~3-4 minutos
+npm run dev (backend):     10-15 segundos
+npm run dev (frontend):    20-30 segundos
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ CUANDO FUNCIONA CORRECTAMENTE:
+
+Terminal Backend mostrará:
+  ✓ "MongoDB conectado exitosamente"
+  ✓ "🚀 Servidor LogoAI escuchando en http://localhost:3001"
+
+Terminal Frontend mostrará:
+  ✓ "VITE v5.0.0  ready in XXX ms"
+  ✓ "➜  Local:   http://localhost:5173"
+  ✓ "➜  press h to show help"
+
+Navegador:
+  ✓ Puedes ver la página de inicio de LogoAI
+  ✓ El botón "Crear Logo Ahora" funciona
+  ✓ Puedes navegar sin errores
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🆘 SI NADA FUNCIONA:
+
+1. Verifica que Node.js está instalado:
+
+   node -v
+   npm -v
+
+2. Elimina las carpetas node_modules y reinstala:
+
+   cd backend && rm -rf node_modules && npm install
+   cd ../frontend && rm -rf node_modules && npm install
+
+3. Abre DevTools (F12) y busca errores en la consola
+
+4. Verifica que AMBOS servidores están corriendo:
+   - Backend: http://localhost:3001/api/health
+   - Frontend: http://localhost:5173 (en navegador)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📚 ARCHIVOS IMPORTANTES:
+
+backend/.env          → Tus credenciales (MongoDB, OpenAI)
+backend/src/server.js → Inicia el servidor
+frontend/src/main.tsx → Inicia la app React
+README.md             → Documentación completa
+QUICKSTART.md         → Guía rápida
+
+═══════════════════════════════════════════════════════════════════════════════
+
+💡 TIPS:
+
+- Mantén AMBAS terminales abiertas mientras usas la app
+- Si cierras una, la app dejará de funcionar
+- Puedes ver logs de errores en las terminales
+- Usa Ctrl+C para detener cualquier servidor
+- Los cambios en código se actualizan automáticamente (Hot Reload)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+¿Aún tienes problemas?
+
+Verififica:
+1. ¿Node.js está instalado?
+2. ¿Tienes archivos .env configurados?
+3. ¿Los puertos 3001 y 5173 están disponibles?
+4. ¿Tienes conexión a Internet?
+5. ¿Los servidores están corriendo SIN errores?
+
+═══════════════════════════════════════════════════════════════════════════════
+
+¡Listo! Sigue los pasos y tu app LogoAI estará funcionando 🎨✨
