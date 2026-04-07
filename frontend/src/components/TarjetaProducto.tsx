@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Producto, Tienda } from '../types'
+import CalculadoraCuotas from './CalculadoraCuotas'
 
 interface Props {
   producto: Producto
@@ -50,6 +51,9 @@ export default function TarjetaProducto({ producto }: Props) {
               En stock
             </span>
           )}
+        </div>
+        <div className="mt-1">
+          <CalculadoraCuotas precio={producto.precio} compacto />
         </div>
 
         {producto.categorias && producto.categorias.length > 0 && (

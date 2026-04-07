@@ -155,6 +155,50 @@ export default function CatalogoProductos() {
           </div>
         )}
 
+        {/* Chips de filtros rápidos */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button
+            onClick={() => setOrdenar(ordenar === 'ventas' ? '' : 'ventas')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              ordenar === 'ventas' ? 'bg-orange-500 text-white border border-orange-500' : 'bg-white text-gray-600 border border-gray-300 hover:bg-orange-50'
+            }`}
+          >
+            &#x1F525; M&aacute;s vendidos
+          </button>
+          <button
+            onClick={() => setOrdenar(ordenar === 'precio_asc' ? '' : 'precio_asc')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              ordenar === 'precio_asc' ? 'bg-green-600 text-white border border-green-600' : 'bg-white text-gray-600 border border-gray-300 hover:bg-green-50'
+            }`}
+          >
+            &#x1F4B0; Menor precio
+          </button>
+          <button
+            onClick={() => setOrdenar(ordenar === 'precio_desc' ? '' : 'precio_desc')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              ordenar === 'precio_desc' ? 'bg-blue-600 text-white border border-blue-600' : 'bg-white text-gray-600 border border-gray-300 hover:bg-blue-50'
+            }`}
+          >
+            &#x1F4B5; Mayor precio
+          </button>
+          <button
+            onClick={() => { setPrecioMax(precioMax === '50000' ? '' : '50000'); setTimeout(cargarProductos, 0) }}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              precioMax === '50000' ? 'bg-emerald-600 text-white border border-emerald-600' : 'bg-white text-gray-600 border border-gray-300 hover:bg-emerald-50'
+            }`}
+          >
+            &#x1F4B3; 3 cuotas sin inter&eacute;s
+          </button>
+          <button
+            onClick={() => setOrdenar(ordenar === 'calificacion' ? '' : 'calificacion')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              ordenar === 'calificacion' ? 'bg-yellow-500 text-white border border-yellow-500' : 'bg-white text-gray-600 border border-gray-300 hover:bg-yellow-50'
+            }`}
+          >
+            &#x2B50; Mejor calificados
+          </button>
+        </div>
+
         {/* Categorías */}
         <div className="flex flex-wrap gap-2 mb-8">
           <button

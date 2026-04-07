@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
+import MarqueeBanner from './components/MarqueeBanner'
 import PortonPrivado from './components/PortonPrivado'
 
 // Páginas
@@ -21,6 +22,7 @@ import PagoFallido from './pages/PagoFallido'
 import PagoPendiente from './pages/PagoPendiente'
 import Terminos from './pages/Terminos'
 import Privacidad from './pages/Privacidad'
+import Devoluciones from './pages/Devoluciones'
 import Chat from './pages/Chat'
 import MisDisputas from './pages/MisDisputas'
 import DisputasAdmin from './pages/DisputasAdmin'
@@ -45,7 +47,7 @@ function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: s
 }
 
 function ConNavbar({ children }: { children: React.ReactNode }) {
-  return <><Navbar />{children}</>
+  return <><MarqueeBanner /><Navbar />{children}</>
 }
 
 function AppContent() {
@@ -93,6 +95,7 @@ function AppContent() {
         {/* Públicas legales */}
         <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
         <Route path="/privacidad" element={<ConNavbar><Privacidad /></ConNavbar>} />
+        <Route path="/devoluciones" element={<ConNavbar><Devoluciones /></ConNavbar>} />
         <Route path="/recuperar-password" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
 
         {/* Fallback */}

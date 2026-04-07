@@ -4,6 +4,8 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
+import BannersRotativos from '../components/BannersRotativos'
+import EspaciosPublicitarios from '../components/EspaciosPublicitarios'
 
 const CATEGORIAS = [
   { nombre: 'Tecnolog\u00eda', icon: '\u{1F4F1}', slug: 'tecnologia' },
@@ -40,6 +42,12 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Banners rotativos */}
+      <BannersRotativos />
+
+      {/* Espacios publicitarios */}
+      <EspaciosPublicitarios />
+
       {/* Hero banner */}
       <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
         <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12 md:py-16">
@@ -222,12 +230,29 @@ export default function Landing() {
       )}
 
       <footer className="bg-gray-900 text-gray-400 py-10 mt-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-lg font-bold text-white mb-2">&#x1F6D2; MercadoLocal</p>
-          <p className="text-sm">El marketplace de tu ciudad</p>
-          <div className="mt-4 flex justify-center gap-6 text-xs">
-            <Link to="/terminos" className="hover:text-white">T&eacute;rminos</Link>
-            <Link to="/privacidad" className="hover:text-white">Privacidad</Link>
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <p className="text-lg font-bold text-white mb-2">&#x1F6D2; MercadoLocal</p>
+            <p className="text-sm">El marketplace de tu ciudad</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-4 sm:gap-6 text-xs">
+              <Link to="/terminos" className="hover:text-white">T&eacute;rminos y Condiciones</Link>
+              <Link to="/privacidad" className="hover:text-white">Pol&iacute;tica de Privacidad</Link>
+              <Link to="/devoluciones" className="hover:text-white">Pol&iacute;tica de Devoluciones</Link>
+              <a href="mailto:soporte@mercadolocal.com.ar" className="hover:text-white">Contacto</a>
+            </div>
+          </div>
+          <div className="mt-6 pt-6 border-t border-gray-800 text-[11px] leading-relaxed text-gray-500 max-w-4xl mx-auto text-center">
+            <p className="mb-2">
+              <strong className="text-gray-300">MercadoLocal</strong> es una plataforma intermediaria que facilita la conexi&oacute;n entre compradores y vendedores independientes.
+              No somos propietarios, fabricantes, importadores ni distribuidores de los productos publicados.
+              La responsabilidad por la veracidad, calidad, legalidad y entrega de los productos corresponde &uacute;nica y exclusivamente a cada vendedor.
+            </p>
+            <p className="mb-2">
+              Los pagos son procesados por <strong className="text-gray-300">Mercado Pago</strong> bajo sus propios t&eacute;rminos y condiciones.
+              Las operaciones se rigen por la Ley 24.240 de Defensa del Consumidor, la Ley 25.326 de Protecci&oacute;n de Datos Personales
+              y la Ley 26.388 de Delitos Inform&aacute;ticos de la Rep&uacute;blica Argentina.
+            </p>
+            <p>&copy; {new Date().getFullYear()} MercadoLocal. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>

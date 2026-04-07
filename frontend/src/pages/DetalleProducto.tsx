@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import Resenas from '../components/Resenas'
 import BotonCompartir from '../components/BotonCompartir'
 import TarjetaProducto from '../components/TarjetaProducto'
+import CalculadoraCuotas from '../components/CalculadoraCuotas'
 
 export default function DetalleProducto() {
   const { id } = useParams()
@@ -194,6 +195,10 @@ export default function DetalleProducto() {
                       <span className="font-semibold text-yellow-700">{producto.calificacion.toFixed(1)}</span>
                     </div>
                   )}
+                </div>
+
+                <div className="mb-6">
+                  <CalculadoraCuotas precio={producto.precio} />
                 </div>
 
                 <p className="text-gray-600 mb-6 leading-relaxed">
