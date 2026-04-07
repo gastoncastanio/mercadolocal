@@ -15,10 +15,41 @@ export default function DetalleProducto() {
   const [agregando, setAgregando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [imagenActual, setImagenActual] = useState(0)
+  const [esFavorito, setEsFavorito] = useState(false)
+  const [togglingFav, setTogglingFav] = useState(false)
 
   useEffect(() => {
     cargarProducto()
-  }, [id])
+    if (estaLogueado) chequearFavorito()
+  }, [id, estaLogueado])
+
+  async function chequearFavorito() {
+    try {
+      const res = await api.get('/favoritos/ids')
+      setEsFavorito(res.data.includes(id))
+    } catch {}
+  }
+
+  async function toggleFavorito() {
+    if (!estaLogueado) {
+      navigate('/login')
+      return
+    }
+    setTogglingFav(true)
+    try {
+      if (esFavorito) {
+        await api.delete(`/favoritos/${id}`)
+        setEsFavorito(false)
+      } else {
+        await api.post(`/favoritos/${id}`)
+        setEsFavorito(true)
+      }
+    } catch (err: any) {
+      console.error('Error favorito:', err)
+    } finally {
+      setTogglingFav(false)
+    }
+  }
 
   async function cargarProducto() {
     try {
@@ -93,9 +124,20 @@ export default function DetalleProducto() {
             {/* Info */}
             <div className="p-8 flex flex-col justify-between">
               <div>
-                <div className="flex items-start justify-between mb-2">
-                  <h1 className="text-3xl font-bold text-gray-800">{producto.nombre}</h1>
-                  <BotonCompartir producto={producto} />
+                <div className="flex items-start justify-between mb-2 gap-2">
+                  <h1 className="text-3xl font-bold text-gray-800 flex-1">{producto.nombre}</h1>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={toggleFavorito}
+                      disabled={togglingFav}
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                      aria-label={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                      title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                    >
+                      <span className="text-2xl">{esFavorito ? '\u2764\uFE0F' : '\u2661'}</span>
+                    </button>
+                    <BotonCompartir producto={producto} />
+                  </div>
                 </div>
 
                 {tienda && typeof tienda === 'object' && (

@@ -27,6 +27,10 @@ import DisputasAdmin from './pages/DisputasAdmin'
 import DashboardVendedor from './pages/DashboardVendedor'
 import RecuperarPassword from './pages/RecuperarPassword'
 import AdminCMS from './pages/AdminCMS'
+import Favoritos from './pages/Favoritos'
+import Notificaciones from './pages/Notificaciones'
+import MasVendidos from './pages/MasVendidos'
+import CentralVendedor from './pages/CentralVendedor'
 
 // Ruta protegida
 function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
@@ -53,6 +57,7 @@ function AppContent() {
         <Route path="/login" element={<ConNavbar><Login /></ConNavbar>} />
         <Route path="/catalogo" element={<ConNavbar><CatalogoProductos /></ConNavbar>} />
         <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
+        <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
 
         {/* Requieren login */}
         <Route path="/carrito" element={<ConNavbar><RutaPrivada><Carrito /></RutaPrivada></ConNavbar>} />
@@ -61,6 +66,8 @@ function AppContent() {
         <Route path="/pago-exitoso" element={<ConNavbar><RutaPrivada><PagoExitoso /></RutaPrivada></ConNavbar>} />
         <Route path="/pago-fallido" element={<ConNavbar><RutaPrivada><PagoFallido /></RutaPrivada></ConNavbar>} />
         <Route path="/pago-pendiente" element={<ConNavbar><RutaPrivada><PagoPendiente /></RutaPrivada></ConNavbar>} />
+        <Route path="/favoritos" element={<ConNavbar><RutaPrivada><Favoritos /></RutaPrivada></ConNavbar>} />
+        <Route path="/notificaciones" element={<ConNavbar><RutaPrivada><Notificaciones /></RutaPrivada></ConNavbar>} />
 
         {/* Solo vendedores */}
         <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><MiTienda /></RutaPrivada></ConNavbar>} />
@@ -74,9 +81,12 @@ function AppContent() {
 
         {/* Dashboard vendedor */}
         <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><DashboardVendedor /></RutaPrivada></ConNavbar>} />
+        <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CentralVendedor /></RutaPrivada></ConNavbar>} />
 
         {/* Solo admin - SIN navbar, tiene su propia sidebar */}
         <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
+        <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
+        <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
         {/* Públicas legales */}
         <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />

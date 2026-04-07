@@ -22,6 +22,8 @@ import resenasRouter from './routes/resenas.js'
 import disputasRouter from './routes/disputas.js'
 import mensajesRouter from './routes/mensajes.js'
 import configRouter from './routes/config.js'
+import favoritosRouter from './routes/favoritos.js'
+import notificacionesRouter from './routes/notificaciones.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -116,6 +118,8 @@ app.use('/api/resenas', resenasRouter)
 app.use('/api/disputas', disputasRouter)
 app.use('/api/mensajes', mensajesRouter)
 app.use('/api/config', configRouter)
+app.use('/api/favoritos', favoritosRouter)
+app.use('/api/notificaciones', notificacionesRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {
