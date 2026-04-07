@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -23,6 +23,22 @@ export default function Landing() {
   const { estaLogueado } = useAuth()
   const [destacados, setDestacados] = useState<Producto[]>([])
   const [masVendidos, setMasVendidos] = useState<Producto[]>([])
+  const heroRef = useRef<HTMLElement | null>(null)
+  const [heroVisible, setHeroVisible] = useState(false)
+
+  useEffect(() => {
+    if (!heroRef.current) return
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) setHeroVisible(true)
+        })
+      },
+      { threshold: 0.2 }
+    )
+    observer.observe(heroRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     cargar()
@@ -52,29 +68,64 @@ export default function Landing() {
       {/* Espacios publicitarios */}
       <EspaciosPublicitarios />
 
-      {/* Hero banner */}
-      <section className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12 md:py-16">
+      {/* Separador elegante */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-8 sm:mt-10">
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+      </div>
+
+      {/* Hero banner con animación de entrada desde el costado */}
+      <section
+        ref={heroRef}
+        className="relative mt-10 sm:mt-14 md:mt-16 mx-3 sm:mx-4 md:mx-6 rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white"
+        style={{
+          clipPath: 'polygon(0 8%, 100% 0, 100% 100%, 0 92%)'
+        }}
+      >
+        {/* Decoración animada de fondo */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-all duration-[1400ms] ease-out"
+          style={{
+            background: 'radial-gradient(circle at 80% 30%, rgba(255,255,255,0.18), transparent 60%), radial-gradient(circle at 20% 80%, rgba(250,204,21,0.15), transparent 55%)',
+            transform: heroVisible ? 'scale(1)' : 'scale(1.2)',
+            opacity: heroVisible ? 1 : 0
+          }}
+        />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-16 md:py-20 relative">
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-            <div className="text-center md:text-left">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
+            {/* Texto sale desde la izquierda */}
+            <div
+              className="text-center md:text-left transition-all duration-1000 ease-out"
+              style={{
+                transform: heroVisible ? 'translateX(0)' : 'translateX(-80px)',
+                opacity: heroVisible ? 1 : 0
+              }}
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-lg">
                 El marketplace de <span className="text-yellow-300">tu ciudad</span>
               </h1>
               <p className="text-base sm:text-lg text-blue-100 mb-6">
                 Compr&aacute; y vend&eacute; productos locales con pago protegido. Todas las tiendas, un solo lugar.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start">
-                <Link to="/catalogo" className="px-6 py-3 bg-white text-blue-700 rounded-lg font-bold hover:shadow-xl transition-all">
+                <Link to="/catalogo" className="px-6 py-3 bg-white text-blue-700 rounded-lg font-bold hover:shadow-xl hover:scale-105 transition-all">
                   Explorar cat&aacute;logo
                 </Link>
                 {!estaLogueado && (
-                  <Link to="/registro?rol=vendedor" className="px-6 py-3 bg-blue-500/30 border-2 border-white text-white rounded-lg font-bold hover:bg-blue-500/50 transition-all">
+                  <Link to="/registro?rol=vendedor" className="px-6 py-3 bg-blue-500/30 border-2 border-white text-white rounded-lg font-bold hover:bg-blue-500/50 hover:scale-105 transition-all">
                     Vender ahora
                   </Link>
                 )}
               </div>
             </div>
-            <div className="hidden md:flex justify-center text-9xl opacity-90">
+            {/* Carrito sale desde la derecha */}
+            <div
+              className="hidden md:flex justify-center text-9xl opacity-90 transition-all duration-1000 ease-out delay-200"
+              style={{
+                transform: heroVisible ? 'translateX(0) rotate(0deg)' : 'translateX(120px) rotate(-15deg)',
+                opacity: heroVisible ? 0.9 : 0
+              }}
+            >
               &#x1F6D2;
             </div>
           </div>
