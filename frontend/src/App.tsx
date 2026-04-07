@@ -31,6 +31,7 @@ import Favoritos from './pages/Favoritos'
 import Notificaciones from './pages/Notificaciones'
 import MasVendidos from './pages/MasVendidos'
 import CentralVendedor from './pages/CentralVendedor'
+import TiendaPublica from './pages/TiendaPublica'
 
 // Ruta protegida
 function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
@@ -57,6 +58,7 @@ function AppContent() {
         <Route path="/login" element={<ConNavbar><Login /></ConNavbar>} />
         <Route path="/catalogo" element={<ConNavbar><CatalogoProductos /></ConNavbar>} />
         <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
+        <Route path="/tienda/:id" element={<ConNavbar><TiendaPublica /></ConNavbar>} />
         <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
 
         {/* Requieren login */}

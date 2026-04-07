@@ -54,31 +54,31 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Top yellow bar - estilo Mercado Libre */}
-      <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
+      {/* Top bar - gradiente azul/púrpura estilo MercadoLocal */}
+      <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
+          <div className="flex items-center gap-2 sm:gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 shrink-0">
               <span className="text-2xl">&#x1F6D2;</span>
-              <span className="hidden sm:block text-xl font-bold text-blue-900">
+              <span className="hidden sm:block text-xl font-bold text-white">
                 MercadoLocal
               </span>
             </Link>
 
             {/* Buscador */}
-            <form onSubmit={buscar} className="flex-1 max-w-3xl">
+            <form onSubmit={buscar} className="flex-1 max-w-3xl min-w-0">
               <div className="relative">
                 <input
                   type="text"
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  placeholder="Buscar productos, marcas y m&aacute;s..."
-                  className="w-full px-4 py-2.5 pr-12 rounded-md border-0 text-gray-800 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
+                  placeholder="Buscar productos..."
+                  className="w-full px-3 sm:px-4 py-2.5 pr-11 rounded-lg border-0 text-gray-800 text-sm sm:text-base focus:ring-2 focus:ring-purple-300 outline-none shadow-sm"
                 />
                 <button
                   type="submit"
-                  className="absolute right-0 top-0 bottom-0 px-4 text-gray-500 hover:text-blue-600 border-l border-gray-200"
+                  className="absolute right-0 top-0 bottom-0 px-3 sm:px-4 text-gray-500 hover:text-blue-600 border-l border-gray-200"
                   aria-label="Buscar"
                 >
                   &#x1F50D;
@@ -90,11 +90,11 @@ export default function Navbar() {
       </div>
 
       {/* Secondary nav bar - blanco */}
-      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-[68px] z-40">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between h-12 text-sm">
+      <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-[64px] sm:top-[68px] z-40">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          <div className="flex items-center justify-between h-12 text-sm gap-2">
             {/* Izquierda - navegación */}
-            <div className="flex items-center gap-5 overflow-x-auto">
+            <div className="flex items-center gap-3 sm:gap-5 overflow-x-auto scrollbar-hide min-w-0 flex-1">
               <Link to="/catalogo" className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
                 Cat&aacute;logo
               </Link>
@@ -113,12 +113,12 @@ export default function Navbar() {
             </div>
 
             {/* Derecha - usuario + menús */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               {estaLogueado ? (
                 <>
-                  {/* Vender / Central Vendedor */}
+                  {/* Vender / Central Vendedor (oculto en mobile, accesible desde menú usuario) */}
                   {esVendedor && (
-                    <div ref={refVendedor} className="relative">
+                    <div ref={refVendedor} className="relative hidden md:block">
                       <button
                         onClick={() => { setMenuVendedor(!menuVendedor); setMenuUsuario(false); setMenuCompras(false) }}
                         className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap"
@@ -203,8 +203,8 @@ export default function Navbar() {
                     </div>
                   )}
 
-                  {/* Mis compras dropdown */}
-                  <div ref={refCompras} className="relative">
+                  {/* Mis compras dropdown (oculto en mobile, accesible desde menú usuario) */}
+                  <div ref={refCompras} className="relative hidden md:block">
                     <button
                       onClick={() => { setMenuCompras(!menuCompras); setMenuUsuario(false); setMenuVendedor(false) }}
                       className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap"
@@ -270,7 +270,7 @@ export default function Navbar() {
                       </span>
                     </button>
                     {menuUsuario && (
-                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
+                      <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden">
                         <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
                           <p className="font-semibold text-gray-800 truncate">{usuario?.nombre}</p>
                           <p className="text-xs text-gray-500 truncate">{usuario?.email}</p>
@@ -291,10 +291,28 @@ export default function Navbar() {
                               <span className="ml-2 text-xs bg-red-500 text-white px-1.5 rounded-full">{notifsNoLeidas}</span>
                             )}
                           </Link>
+                          <Link to="/carrito" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 md:hidden">
+                            &#x1F6D2; Carrito
+                          </Link>
+                          <Link to="/mis-disputas" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 md:hidden">
+                            &#x26A0;&#xFE0F; Mis reclamos
+                          </Link>
                           {esVendedor && (
-                            <Link to="/central-vendedor" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                              &#x1F6D2; Central de vendedores
-                            </Link>
+                            <>
+                              <div className="border-t my-1"></div>
+                              <Link to="/publicar" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-blue-600 font-semibold hover:bg-blue-50 md:hidden">
+                                &#x1F4E6; Vender producto
+                              </Link>
+                              <Link to="/mi-tienda" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 md:hidden">
+                                &#x1F3EA; Mi tienda
+                              </Link>
+                              <Link to="/pedidos-vendedor" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 md:hidden">
+                                &#x1F4B0; Mis ventas
+                              </Link>
+                              <Link to="/central-vendedor" onClick={() => setMenuUsuario(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                &#x1F4CA; Central de vendedores
+                              </Link>
+                            </>
                           )}
                           {esAdmin && (
                             <>

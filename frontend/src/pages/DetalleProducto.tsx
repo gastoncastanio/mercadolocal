@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { Producto, Tienda } from '../types'
 import { useAuth } from '../context/AuthContext'
 import Resenas from '../components/Resenas'
 import BotonCompartir from '../components/BotonCompartir'
+import TarjetaProducto from '../components/TarjetaProducto'
 
 export default function DetalleProducto() {
   const { id } = useParams()
@@ -17,11 +18,25 @@ export default function DetalleProducto() {
   const [imagenActual, setImagenActual] = useState(0)
   const [esFavorito, setEsFavorito] = useState(false)
   const [togglingFav, setTogglingFav] = useState(false)
+  const [productosTienda, setProductosTienda] = useState<Producto[]>([])
 
   useEffect(() => {
     cargarProducto()
     if (estaLogueado) chequearFavorito()
   }, [id, estaLogueado])
+
+  useEffect(() => {
+    if (producto && typeof producto.tiendaId === 'object') {
+      cargarProductosTienda((producto.tiendaId as Tienda)._id)
+    }
+  }, [producto])
+
+  async function cargarProductosTienda(tiendaId: string) {
+    try {
+      const res = await api.get(`/productos?tiendaId=${tiendaId}&limite=8`)
+      setProductosTienda(res.data.filter((p: Producto) => p._id !== id))
+    } catch {}
+  }
 
   async function chequearFavorito() {
     try {
@@ -90,7 +105,7 @@ export default function DetalleProducto() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <button onClick={() => navigate(-1)} className="text-blue-600 hover:underline mb-6 inline-block">
           &larr; Volver al cat&aacute;logo
         </button>
@@ -122,10 +137,10 @@ export default function DetalleProducto() {
             </div>
 
             {/* Info */}
-            <div className="p-8 flex flex-col justify-between">
+            <div className="p-5 sm:p-8 flex flex-col justify-between">
               <div>
                 <div className="flex items-start justify-between mb-2 gap-2">
-                  <h1 className="text-3xl font-bold text-gray-800 flex-1">{producto.nombre}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex-1">{producto.nombre}</h1>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={toggleFavorito}
@@ -141,9 +156,32 @@ export default function DetalleProducto() {
                 </div>
 
                 {tienda && typeof tienda === 'object' && (
-                  <p className="text-gray-500 mb-4">
-                    &#x1F3EA; {tienda.nombre} &middot; &#x1F4CD; {tienda.ciudad}
-                  </p>
+                  <Link
+                    to={`/tienda/${tienda._id}`}
+                    className="flex items-center gap-3 p-3 mb-4 bg-gray-50 hover:bg-blue-50 rounded-xl border border-gray-100 transition-colors group"
+                  >
+                    {tienda.logo ? (
+                      <img src={tienda.logo} alt={tienda.nombre} className="w-12 h-12 rounded-xl object-cover border border-gray-200 shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-2xl shrink-0">
+                        &#x1F3EA;
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 truncate group-hover:text-blue-600">{tienda.nombre}</p>
+                      <p className="text-xs text-gray-500">&#x1F4CD; {tienda.ciudad}</p>
+                      {(tienda.calificacion ?? 0) > 0 && (
+                        <div className="flex items-center gap-1 text-xs mt-0.5">
+                          <span className="text-yellow-500">&#x2B50;</span>
+                          <span className="font-medium text-gray-700">{(tienda.calificacion ?? 0).toFixed(1)}</span>
+                          {(tienda.totalVentas ?? 0) > 0 && (
+                            <span className="text-gray-400">&middot; {tienda.totalVentas} ventas</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-blue-600 text-sm font-medium shrink-0 hidden sm:block">Ver tienda &rarr;</span>
+                  </Link>
                 )}
 
                 <div className="flex items-center gap-3 mb-6">
@@ -211,6 +249,25 @@ export default function DetalleProducto() {
             </div>
           </div>
         </div>
+
+        {/* Más productos del mismo vendedor */}
+        {productosTienda.length > 0 && tienda && typeof tienda === 'object' && (
+          <div className="mt-8 bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+                M&aacute;s productos de {tienda.nombre}
+              </h2>
+              <Link to={`/tienda/${tienda._id}`} className="text-blue-600 hover:underline text-xs sm:text-sm font-medium shrink-0">
+                Ver todos &rarr;
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+              {productosTienda.slice(0, 4).map(p => (
+                <TarjetaProducto key={p._id} producto={p} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Resenas */}
         <div className="mt-8">
