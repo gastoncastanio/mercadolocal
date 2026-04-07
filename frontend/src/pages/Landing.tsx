@@ -6,6 +6,7 @@ import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import BannersRotativos from '../components/BannersRotativos'
 import EspaciosPublicitarios from '../components/EspaciosPublicitarios'
+import CarritoFlotante3D from '../components/CarritoFlotante3D'
 
 const CATEGORIAS = [
   { nombre: 'Tecnolog\u00eda', icon: '\u{1F4F1}', slug: 'tecnologia' },
@@ -41,7 +42,10 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative overflow-hidden">
+      {/* Carrito 3D de fondo que rota con el scroll */}
+      <CarritoFlotante3D />
+
       {/* Banners rotativos */}
       <BannersRotativos />
 
