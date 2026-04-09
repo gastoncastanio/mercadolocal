@@ -40,6 +40,14 @@ const usuarioSchema = new mongoose.Schema({
   activo: {
     type: Boolean,
     default: true
+  },
+  resetToken: {
+    type: String,
+    default: null
+  },
+  resetTokenExpira: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

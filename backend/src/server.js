@@ -24,6 +24,7 @@ import mensajesRouter from './routes/mensajes.js'
 import configRouter from './routes/config.js'
 import favoritosRouter from './routes/favoritos.js'
 import notificacionesRouter from './routes/notificaciones.js'
+import enviosRouter from './routes/envios.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -120,6 +121,7 @@ app.use('/api/mensajes', mensajesRouter)
 app.use('/api/config', configRouter)
 app.use('/api/favoritos', favoritosRouter)
 app.use('/api/notificaciones', notificacionesRouter)
+app.use('/api/envios', enviosRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

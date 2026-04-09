@@ -34,6 +34,10 @@ const tiendaSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  codigoPostal: {
+    type: String,
+    default: ''
+  },
   calificacion: {
     type: Number,
     default: 0,

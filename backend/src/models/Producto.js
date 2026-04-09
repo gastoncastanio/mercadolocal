@@ -47,6 +47,43 @@ const productoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  peso: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  alto: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  ancho: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  largo: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  envioGratis: {
+    type: Boolean,
+    default: false
+  },
+  condicion: {
+    type: String,
+    enum: ['nuevo', 'usado', 'reacondicionado'],
+    default: 'nuevo'
+  },
+  garantia: {
+    type: String,
+    default: ''
+  },
+  caracteristicas: {
+    type: [{ clave: String, valor: String }],
+    default: []
+  },
   activo: {
     type: Boolean,
     default: true

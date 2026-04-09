@@ -71,12 +71,18 @@ export default function Login() {
             disabled={cargando}
             className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
           >
-            {cargando ? 'Ingresando...' : 'Iniciar Sesión'}
+            {cargando ? 'Ingresando...' : 'Iniciar Sesi\u00f3n'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          ¿No tienes cuenta?{' '}
+        <div className="text-center mt-4">
+          <Link to="/recuperar" className="text-sm text-blue-600 hover:underline">
+            &iquest;Olvidaste tu contrase&ntilde;a?
+          </Link>
+        </div>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          &iquest;No ten&eacute;s cuenta?{' '}
           <Link to="/registro" className="text-blue-600 font-medium hover:underline">
             Registrarse
           </Link>

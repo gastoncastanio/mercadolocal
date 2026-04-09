@@ -23,6 +23,7 @@ import PagoPendiente from './pages/PagoPendiente'
 import Terminos from './pages/Terminos'
 import Privacidad from './pages/Privacidad'
 import Devoluciones from './pages/Devoluciones'
+import RecuperarContraseña from './pages/RecuperarContraseña'
 import Chat from './pages/Chat'
 import MisDisputas from './pages/MisDisputas'
 import DisputasAdmin from './pages/DisputasAdmin'
@@ -96,6 +97,7 @@ function AppContent() {
         <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
         <Route path="/privacidad" element={<ConNavbar><Privacidad /></ConNavbar>} />
         <Route path="/devoluciones" element={<ConNavbar><Devoluciones /></ConNavbar>} />
+        <Route path="/recuperar" element={<RecuperarContraseña />} />
         <Route path="/recuperar-password" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
 
         {/* Fallback */}

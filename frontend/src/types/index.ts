@@ -41,6 +41,14 @@ export interface Producto {
   calificacion: number
   totalVentas: number
   activo: boolean
+  peso?: number
+  alto?: number
+  ancho?: number
+  largo?: number
+  envioGratis?: boolean
+  condicion?: 'nuevo' | 'usado' | 'reacondicionado'
+  garantia?: string
+  caracteristicas?: { clave: string; valor: string }[]
   createdAt?: string
 }
 

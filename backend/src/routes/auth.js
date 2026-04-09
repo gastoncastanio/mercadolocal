@@ -1,6 +1,8 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import { registrarUsuario, loginUsuario, obtenerPerfil, actualizarPerfil } from '../services/usuarioService.js'
 import { verificarToken } from '../middleware/auth.js'
+import Usuario from '../models/Usuario.js'
 
 const router = Router()
 
@@ -131,6 +133,82 @@ router.put('/perfil', verificarToken, async (req, res) => {
     res.json({ usuario })
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/auth/recuperar - Solicitar recuperaci\u00f3n de contrase\u00f1a
+router.post('/recuperar', async (req, res) => {
+  try {
+    let { email } = req.body
+    if (!email) return res.status(400).json({ error: 'Email requerido' })
+    email = sanitizar(email).toLowerCase()
+
+    const usuario = await Usuario.findOne({ email })
+    if (!usuario) {
+      // No revelar si el email existe (seguridad)
+      return res.json({ mensaje: 'Si el email est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.' })
+    }
+
+    // Generar token de 6 d\u00edgitos (m\u00e1s simple para el usuario)
+    const token = crypto.randomInt(100000, 999999).toString()
+    usuario.resetToken = crypto.createHash('sha256').update(token).digest('hex')
+    usuario.resetTokenExpira = new Date(Date.now() + 30 * 60 * 1000) // 30 min
+    await usuario.save()
+
+    console.log(`\u{1F511} Token de recuperaci\u00f3n para ${email}: ${token}`)
+
+    // En producci\u00f3n aqu\u00ed se enviar\u00eda el email.
+    // Por ahora el token se loguea en la consola de Render.
+    // Cuando integres un servicio de email (SendGrid, Resend, etc),
+    // simplemente enviar el token por email aqu\u00ed.
+
+    res.json({
+      mensaje: 'Si el email est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.',
+      // En dev, devolvemos el token para testing.
+      // Remover en producci\u00f3n cuando se integre email.
+      ...(process.env.NODE_ENV !== 'production' && { _devToken: token })
+    })
+  } catch (error) {
+    console.error('Error en recuperaci\u00f3n:', error.message)
+    res.status(500).json({ error: 'Error al procesar la solicitud' })
+  }
+})
+
+// POST /api/auth/reset - Restablecer contrase\u00f1a con token
+router.post('/reset', async (req, res) => {
+  try {
+    const { email, token, nuevaContraseña } = req.body
+
+    if (!email || !token || !nuevaContraseña) {
+      return res.status(400).json({ error: 'Email, c\u00f3digo y nueva contrase\u00f1a son obligatorios' })
+    }
+
+    if (nuevaContraseña.length < 6) {
+      return res.status(400).json({ error: 'La contrase\u00f1a debe tener al menos 6 caracteres' })
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex')
+    const usuario = await Usuario.findOne({
+      email: sanitizar(email).toLowerCase(),
+      resetToken: tokenHash,
+      resetTokenExpira: { $gt: new Date() }
+    })
+
+    if (!usuario) {
+      return res.status(400).json({ error: 'C\u00f3digo inv\u00e1lido o expirado. Solicit\u00e1 uno nuevo.' })
+    }
+
+    usuario.contrase\u00f1a = nuevaContraseña
+    usuario.resetToken = null
+    usuario.resetTokenExpira = null
+    await usuario.save()
+
+    console.log(`\u2705 Contrase\u00f1a restablecida para ${email}`)
+
+    res.json({ mensaje: 'Contrase\u00f1a actualizada con \u00e9xito. Ya pod\u00e9s iniciar sesi\u00f3n.' })
+  } catch (error) {
+    console.error('Error en reset:', error.message)
+    res.status(500).json({ error: 'Error al restablecer la contrase\u00f1a' })
   }
 })
 
