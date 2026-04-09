@@ -2,6 +2,7 @@ import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
 import { generarToken } from '../middleware/auth.js'
+import { enviarBienvenida } from './emailService.js'
 
 // Registrar nuevo usuario
 export async function registrarUsuario(datos) {
@@ -53,6 +54,13 @@ export async function registrarUsuario(datos) {
     }).save()
   } catch (e) {
     console.error('Error creando notificaci\u00f3n de bienvenida:', e.message)
+  }
+
+  // Email de bienvenida
+  try {
+    await enviarBienvenida(email, nombre, rol || 'comprador')
+  } catch (e) {
+    console.error('Error enviando email de bienvenida:', e.message)
   }
 
   // Si es vendedor, crear tienda

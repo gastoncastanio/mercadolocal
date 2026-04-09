@@ -5,6 +5,7 @@ import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
 import Notificacion from '../models/Notificacion.js'
 import { calcularTotal } from './carritoService.js'
+import { enviarConfirmacionCompra, enviarNotificacionVenta } from './emailService.js'
 
 const PORCENTAJE_COMISION = 10 // 10%
 
@@ -82,6 +83,12 @@ export async function crearOrden(usuarioId, datosEntrega) {
       mensaje: `Tu orden por $${total.toLocaleString('es-AR')} fue registrada. Te avisaremos cuando el vendedor la procese.`,
       enlace: '/mis-ordenes'
     }).save()
+
+    // Email de confirmaci\u00f3n al comprador
+    const comprador = await Usuario.findById(usuarioId)
+    if (comprador) {
+      await enviarConfirmacionCompra(comprador.email, comprador.nombre, orden)
+    }
   } catch (e) {
     console.error('Error notificaci\u00f3n compra:', e.message)
   }
@@ -91,9 +98,8 @@ export async function crearOrden(usuarioId, datosEntrega) {
     for (const tiendaId of tiendaIds) {
       const tienda = await Tienda.findById(tiendaId)
       if (tienda) {
-        const totalTienda = items
-          .filter(i => i.tiendaId.toString() === tiendaId)
-          .reduce((sum, i) => sum + i.subtotal, 0)
+        const itemsTienda = items.filter(i => i.tiendaId.toString() === tiendaId)
+        const totalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
         await new Notificacion({
           usuarioId: tienda.usuarioId,
           tipo: 'venta',
@@ -101,6 +107,12 @@ export async function crearOrden(usuarioId, datosEntrega) {
           mensaje: `Recibiste una venta por $${totalTienda.toLocaleString('es-AR')}. Revis\u00e1 tus pedidos.`,
           enlace: '/pedidos-vendedor'
         }).save()
+
+        // Email al vendedor
+        const vendedor = await Usuario.findById(tienda.usuarioId)
+        if (vendedor) {
+          await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+        }
       }
     }
   } catch (e) {

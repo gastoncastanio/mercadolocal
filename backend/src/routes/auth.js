@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { registrarUsuario, loginUsuario, obtenerPerfil, actualizarPerfil } from '../services/usuarioService.js'
 import { verificarToken } from '../middleware/auth.js'
 import Usuario from '../models/Usuario.js'
+import { enviarCodigoRecuperacion } from '../services/emailService.js'
 
 const router = Router()
 
@@ -157,16 +158,14 @@ router.post('/recuperar', async (req, res) => {
 
     console.log(`\u{1F511} Token de recuperaci\u00f3n para ${email}: ${token}`)
 
-    // En producci\u00f3n aqu\u00ed se enviar\u00eda el email.
-    // Por ahora el token se loguea en la consola de Render.
-    // Cuando integres un servicio de email (SendGrid, Resend, etc),
-    // simplemente enviar el token por email aqu\u00ed.
+    // Enviar email con el c\u00f3digo (si Resend est\u00e1 configurado)
+    const emailResult = await enviarCodigoRecuperacion(email, usuario.nombre, token)
 
     res.json({
       mensaje: 'Si el email est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.',
-      // En dev, devolvemos el token para testing.
-      // Remover en producci\u00f3n cuando se integre email.
-      ...(process.env.NODE_ENV !== 'production' && { _devToken: token })
+      emailEnviado: emailResult.enviado,
+      // En dev sin Resend, devolvemos el token para testing
+      ...(!emailResult.enviado && { _devToken: token })
     })
   } catch (error) {
     console.error('Error en recuperaci\u00f3n:', error.message)
