@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { verificarToken, soloVendedor } from '../middleware/auth.js'
 import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
+import Destacado from '../models/Destacado.js'
 
 const router = Router()
 
@@ -19,7 +20,30 @@ router.get('/', async (req, res) => {
       limite: req.query.limite
     }
 
-    const productos = await listarProductos(filtros)
+    let productos = await listarProductos(filtros)
+
+    // Insertar productos destacados al inicio del listado
+    try {
+      const ahora = new Date()
+      const destacados = await Destacado.find({
+        activo: true,
+        estado: 'activo',
+        fechaFin: { $gt: ahora },
+        fechaInicio: { $lte: ahora },
+        ubicacion: 'catalogo'
+      }).select('productoId')
+
+      const idsDestacados = new Set(destacados.map(d => d.productoId.toString()))
+
+      if (idsDestacados.size > 0) {
+        const prodsDestacados = productos.filter(p => idsDestacados.has(p._id.toString()))
+        const prodsNormales = productos.filter(p => !idsDestacados.has(p._id.toString()))
+        // Marcar como destacado para el frontend
+        prodsDestacados.forEach(p => { p._doc.esDestacado = true })
+        productos = [...prodsDestacados, ...prodsNormales]
+      }
+    } catch {}
+
     res.json(productos)
   } catch (error) {
     res.status(500).json({ error: error.message })

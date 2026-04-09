@@ -26,15 +26,23 @@ interface ConfigItem {
   categoria: string; descripcion: string
 }
 
-type Seccion = 'inicio' | 'usuarios' | 'vendedores' | 'productos' | 'ordenes' | 'config'
+interface AdStats {
+  promocionesActivas: number; promocionesTotales: number
+  ingresosTotales: number; ingresosMes: number
+  totalImpresiones: number; totalClicks: number; ctr: string
+  porPlan: { basico: number; premium: number; elite: number }
+}
+
+type Seccion = 'inicio' | 'usuarios' | 'vendedores' | 'productos' | 'ordenes' | 'publicidad' | 'config'
 
 const SECCIONES: { id: Seccion; nombre: string; icono: string }[] = [
-  { id: 'inicio', nombre: 'Inicio', icono: '🏠' },
-  { id: 'usuarios', nombre: 'Usuarios', icono: '👥' },
-  { id: 'vendedores', nombre: 'Vendedores', icono: '🏪' },
-  { id: 'productos', nombre: 'Productos', icono: '🛒' },
-  { id: 'ordenes', nombre: 'Órdenes', icono: '📦' },
-  { id: 'config', nombre: 'Configuración', icono: '⚙️' },
+  { id: 'inicio', nombre: 'Inicio', icono: '\u{1F3E0}' },
+  { id: 'usuarios', nombre: 'Usuarios', icono: '\u{1F465}' },
+  { id: 'vendedores', nombre: 'Vendedores', icono: '\u{1F3EA}' },
+  { id: 'productos', nombre: 'Productos', icono: '\u{1F6D2}' },
+  { id: 'ordenes', nombre: '\u00d3rdenes', icono: '\u{1F4E6}' },
+  { id: 'publicidad', nombre: 'Publicidad', icono: '\u{1F4E2}' },
+  { id: 'config', nombre: 'Configuraci\u00f3n', icono: '\u2699\uFE0F' },
 ]
 
 export default function DashboardAdmin() {
@@ -108,6 +116,7 @@ export default function DashboardAdmin() {
         {seccion === 'vendedores' && <SeccionVendedores />}
         {seccion === 'productos' && <SeccionProductos />}
         {seccion === 'ordenes' && <SeccionOrdenes />}
+        {seccion === 'publicidad' && <SeccionPublicidad />}
         {seccion === 'config' && <SeccionConfig />}
       </main>
     </div>
@@ -490,6 +499,99 @@ const ICONOS_CAT: Record<string, string> = {
   'Contacto': '📞', 'SEO': '🔍', 'Mensajes': '💬', 'Funcionalidades': '⚡',
 }
 
+function SeccionPublicidad() {
+  const [stats, setStats] = useState<AdStats | null>(null)
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    api.get('/destacados/admin/stats')
+      .then(r => setStats(r.data))
+      .catch(console.error)
+      .finally(() => setCargando(false))
+  }, [])
+
+  if (cargando) return <div className="text-center py-20"><div className="animate-spin text-3xl mb-3">&#x1F4E2;</div><p className="text-gray-400 text-sm">Cargando...</p></div>
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">Ingresos totales</p>
+          <p className="text-2xl font-bold text-green-600">${(stats?.ingresosTotales || 0).toLocaleString('es-AR')}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">Ingresos (30 d&iacute;as)</p>
+          <p className="text-2xl font-bold text-blue-600">${(stats?.ingresosMes || 0).toLocaleString('es-AR')}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">Promos activas</p>
+          <p className="text-2xl font-bold text-purple-600">{stats?.promocionesActivas || 0}</p>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <p className="text-xs text-gray-500 mb-1">Promos totales</p>
+          <p className="text-2xl font-bold text-gray-700">{stats?.promocionesTotales || 0}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-4">M&eacute;tricas de rendimiento</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Impresiones totales</span>
+              <span className="font-bold text-gray-800">{(stats?.totalImpresiones || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Clicks totales</span>
+              <span className="font-bold text-gray-800">{(stats?.totalClicks || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">CTR promedio</span>
+              <span className="font-bold text-blue-600">{stats?.ctr || '0%'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h3 className="font-bold text-gray-800 mb-4">Distribuci&oacute;n por plan</h3>
+          <div className="space-y-3">
+            {['basico', 'premium', 'elite'].map(plan => {
+              const count = stats?.porPlan?.[plan as keyof typeof stats.porPlan] || 0
+              const total = stats?.promocionesTotales || 1
+              const pct = Math.round((count / total) * 100) || 0
+              const colors: Record<string, string> = { basico: 'bg-green-500', premium: 'bg-blue-500', elite: 'bg-purple-500' }
+              const labels: Record<string, string> = { basico: '\u{1F4CC} B\u00e1sico', premium: '\u2B50 Premium', elite: '\u{1F451} Elite' }
+              return (
+                <div key={plan}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">{labels[plan]}</span>
+                    <span className="font-bold text-gray-800">{count} ({pct}%)</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className={`${colors[plan]} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-5 text-white">
+        <h3 className="font-bold text-lg mb-2">&#x1F4B0; Resumen financiero</h3>
+        <p className="text-white/80 text-sm">
+          Los ingresos por publicidad se generan cuando los vendedores promocionan sus productos.
+          El costo se descuenta autom&aacute;ticamente de su saldo de ventas acumulado.
+          Este ingreso es <strong>100% ganancia neta</strong> para la plataforma (sin costo operativo).
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ===================== CONFIG =====================
 function SeccionConfig() {
   const [configs, setConfigs] = useState<ConfigItem[]>([])
   const [categoriaActiva, setCategoriaActiva] = useState('General')

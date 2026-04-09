@@ -222,7 +222,7 @@ export default function Navbar() {
                                 <p className="text-xs text-gray-500">Tu nivel como vendedor</p>
                               </div>
                             </Link>
-                            <Link to="/central-vendedor" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
+                            <Link to="/promover" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
                               <span className="text-xl">&#x1F4E2;</span>
                               <div>
                                 <p className="font-semibold text-gray-800">Publicidad</p>

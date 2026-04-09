@@ -24,6 +24,7 @@ import Terminos from './pages/Terminos'
 import Privacidad from './pages/Privacidad'
 import Devoluciones from './pages/Devoluciones'
 import RecuperarContraseña from './pages/RecuperarContraseña'
+import PromoverProducto from './pages/PromoverProducto'
 import Chat from './pages/Chat'
 import MisDisputas from './pages/MisDisputas'
 import DisputasAdmin from './pages/DisputasAdmin'
@@ -87,6 +88,7 @@ function AppContent() {
         {/* Dashboard vendedor */}
         <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><DashboardVendedor /></RutaPrivada></ConNavbar>} />
         <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CentralVendedor /></RutaPrivada></ConNavbar>} />
+        <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
 
         {/* Solo admin - SIN navbar, tiene su propia sidebar */}
         <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />

@@ -51,7 +51,8 @@ export default function CentralVendedor() {
     { to: '/chat', icon: '\u2753', titulo: 'Preguntas', desc: 'Mensajes de clientes' },
     { to: '/mi-tienda', icon: '\u{1F3EA}', titulo: 'Mi p\u00e1gina', desc: 'Perfil de la tienda' },
     { to: '/dashboard-vendedor', icon: '\u{1F4C8}', titulo: 'M\u00e9tricas', desc: 'Estad\u00edsticas avanzadas' },
-    { to: '/mis-disputas', icon: '\u26A0\uFE0F', titulo: 'Reclamos', desc: 'Gesti\u00f3n de disputas' }
+    { to: '/mis-disputas', icon: '\u26A0\uFE0F', titulo: 'Reclamos', desc: 'Gesti\u00f3n de disputas' },
+    { to: '/promover', icon: '\u{1F4E2}', titulo: 'Publicidad', desc: 'Promocionar productos' }
   ]
 
   if (!tienda) {
