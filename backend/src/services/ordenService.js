@@ -2,6 +2,8 @@ import Orden from '../models/Orden.js'
 import Carrito from '../models/Carrito.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
+import Usuario from '../models/Usuario.js'
+import Notificacion from '../models/Notificacion.js'
 import { calcularTotal } from './carritoService.js'
 
 const PORCENTAJE_COMISION = 10 // 10%
@@ -69,7 +71,57 @@ export async function crearOrden(usuarioId, datosEntrega) {
   carrito.items = []
   await carrito.save()
 
-  console.log(`✅ Nueva orden creada: $${total} (comisión: $${comision})`)
+  console.log(`\u2705 Nueva orden creada: $${total} (comisi\u00f3n: $${comision})`)
+
+  // Notificar al comprador
+  try {
+    await new Notificacion({
+      usuarioId,
+      tipo: 'compra',
+      titulo: 'Orden confirmada',
+      mensaje: `Tu orden por $${total.toLocaleString('es-AR')} fue registrada. Te avisaremos cuando el vendedor la procese.`,
+      enlace: '/mis-ordenes'
+    }).save()
+  } catch (e) {
+    console.error('Error notificaci\u00f3n compra:', e.message)
+  }
+
+  // Notificar a cada vendedor involucrado
+  try {
+    for (const tiendaId of tiendaIds) {
+      const tienda = await Tienda.findById(tiendaId)
+      if (tienda) {
+        const totalTienda = items
+          .filter(i => i.tiendaId.toString() === tiendaId)
+          .reduce((sum, i) => sum + i.subtotal, 0)
+        await new Notificacion({
+          usuarioId: tienda.usuarioId,
+          tipo: 'venta',
+          titulo: 'Nueva venta recibida',
+          mensaje: `Recibiste una venta por $${totalTienda.toLocaleString('es-AR')}. Revis\u00e1 tus pedidos.`,
+          enlace: '/pedidos-vendedor'
+        }).save()
+      }
+    }
+  } catch (e) {
+    console.error('Error notificaci\u00f3n venta:', e.message)
+  }
+
+  // Notificar a admins
+  try {
+    const admins = await Usuario.find({ rol: 'admin' }).select('_id')
+    for (const admin of admins) {
+      await new Notificacion({
+        usuarioId: admin._id,
+        tipo: 'pago',
+        titulo: 'Nueva orden en la plataforma',
+        mensaje: `Orden por $${total.toLocaleString('es-AR')} (comisi\u00f3n: $${comision.toLocaleString('es-AR')})`,
+        enlace: '/admin'
+      }).save()
+    }
+  } catch (e) {
+    console.error('Error notificaci\u00f3n admin:', e.message)
+  }
 
   return orden
 }
@@ -105,6 +157,27 @@ export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId) {
 
   orden.estado = nuevoEstado
   await orden.save()
+
+  // Notificar al comprador del cambio de estado
+  const mensajesEstado = {
+    pagada: 'Tu pago fue confirmado. El vendedor preparar\u00e1 tu pedido.',
+    enviada: '\u00a1Tu pedido fue enviado! Revis\u00e1 los datos de seguimiento.',
+    completada: 'Tu pedido fue completado. \u00a1Gracias por tu compra!',
+    cancelada: 'Tu pedido fue cancelado. Si ten\u00e9s dudas, contact\u00e1 soporte.'
+  }
+  try {
+    if (mensajesEstado[nuevoEstado]) {
+      await new Notificacion({
+        usuarioId: orden.compradorId,
+        tipo: 'compra',
+        titulo: `Pedido ${nuevoEstado}`,
+        mensaje: mensajesEstado[nuevoEstado],
+        enlace: '/mis-ordenes'
+      }).save()
+    }
+  } catch (e) {
+    console.error('Error notificaci\u00f3n estado:', e.message)
+  }
 
   return orden
 }

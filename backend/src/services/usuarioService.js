@@ -1,5 +1,6 @@
 import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
+import Notificacion from '../models/Notificacion.js'
 import { generarToken } from '../middleware/auth.js'
 
 // Registrar nuevo usuario
@@ -23,6 +24,36 @@ export async function registrarUsuario(datos) {
   })
 
   await usuario.save()
+
+  // Notificar a todos los admins del nuevo registro
+  try {
+    const admins = await Usuario.find({ rol: 'admin' }).select('_id')
+    const rolLabel = (rol || 'comprador') === 'vendedor' ? 'vendedor' : 'comprador'
+    for (const admin of admins) {
+      await new Notificacion({
+        usuarioId: admin._id,
+        tipo: 'sistema',
+        titulo: `Nuevo ${rolLabel} registrado`,
+        mensaje: `${nombre} (${email}) se registr\u00f3 como ${rolLabel}`,
+        enlace: '/admin'
+      }).save()
+    }
+  } catch (e) {
+    console.error('Error creando notificaci\u00f3n de registro:', e.message)
+  }
+
+  // Notificaci\u00f3n de bienvenida al usuario
+  try {
+    await new Notificacion({
+      usuarioId: usuario._id,
+      tipo: 'sistema',
+      titulo: '\u00a1Bienvenido a MercadoLocal!',
+      mensaje: 'Tu cuenta fue creada con \u00e9xito. Explor\u00e1 el cat\u00e1logo y comenz\u00e1 a comprar.',
+      enlace: '/catalogo'
+    }).save()
+  } catch (e) {
+    console.error('Error creando notificaci\u00f3n de bienvenida:', e.message)
+  }
 
   // Si es vendedor, crear tienda
   let tienda = null
