@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setCargando(false)
     }
-  }, [token])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function cargarPerfil() {
     try {
