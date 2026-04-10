@@ -66,26 +66,35 @@ app.use(hpp())
 
 // ===== SEGURIDAD NIVEL 3: Rate Limiting =====
 
-// General: máximo 100 peticiones por IP cada 15 minutos
+// General: máximo 200 peticiones por IP cada 15 minutos
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   message: { error: 'Demasiadas peticiones. Intentá de nuevo en 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false
 })
 app.use('/api/', limiter)
 
-// Login/Registro: máximo 10 intentos cada 15 minutos (anti fuerza bruta)
-const authLimiter = rateLimit({
+// Login: máximo 20 intentos cada 15 minutos por IP (anti fuerza bruta)
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   message: { error: 'Demasiados intentos de login. Esperá 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false
 })
-app.use('/api/auth/login', authLimiter)
-app.use('/api/auth/registro', authLimiter)
+app.use('/api/auth/login', loginLimiter)
+
+// Registro: máximo 5 registros cada 15 minutos por IP
+const registroLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiados registros. Esperá 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use('/api/auth/registro', registroLimiter)
 
 // Upload: máximo 30 subidas cada 15 minutos
 const uploadLimiter = rateLimit({
