@@ -46,27 +46,10 @@ export async function crearOrden(usuarioId, datosEntrega) {
 
   await orden.save()
 
-  // Actualizar stock de productos
-  for (const item of carrito.items) {
-    await Producto.findByIdAndUpdate(item.productoId, {
-      $inc: { stock: -item.cantidad, totalVentas: item.cantidad }
-    })
-  }
+  // Stock y stats de tienda se actualizan cuando el pago se aprueba (webhook)
+  // NO descontar stock aquí porque el pago aún no se realizó
 
-  // Actualizar estadísticas de tiendas
   const tiendaIds = [...new Set(items.map(i => i.tiendaId.toString()))]
-  for (const tiendaId of tiendaIds) {
-    const totalTienda = items
-      .filter(i => i.tiendaId.toString() === tiendaId)
-      .reduce((sum, i) => sum + i.subtotal, 0)
-
-    await Tienda.findByIdAndUpdate(tiendaId, {
-      $inc: {
-        totalVentas: 1,
-        ganancias: totalTienda - (totalTienda * PORCENTAJE_COMISION / 100)
-      }
-    })
-  }
 
   // Vaciar carrito
   carrito.items = []

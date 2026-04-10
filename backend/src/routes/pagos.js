@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import { crearPreferencia } from '../services/mercadoPagoService.js'
 import Orden from '../models/Orden.js'
+import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
@@ -73,6 +74,13 @@ router.post('/webhook', async (req, res) => {
         } else {
           console.log(`💰 Pago estándar aprobado: orden ${ordenId} | Total: $${orden.total}`)
           console.log(`   ⚠️ Vendedor sin MP vinculado - pago manual pendiente`)
+        }
+
+        // Descontar stock (solo cuando el pago se confirma)
+        for (const item of orden.items) {
+          await Producto.findByIdAndUpdate(item.productoId, {
+            $inc: { stock: -item.cantidad, totalVentas: item.cantidad }
+          })
         }
 
         // Actualizar stats de la tienda
