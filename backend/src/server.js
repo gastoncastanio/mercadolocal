@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit'
 import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
 import { connectDB } from './config/database.js'
+import { limpiarOrdenesPendientes } from './services/ordenService.js'
 
 // Rutas del Marketplace
 import authRouter from './routes/auth.js'
@@ -34,16 +35,34 @@ const PORT = process.env.PORT || 3001
 
 // ===== SEGURIDAD NIVEL 1: Headers y Protección Base =====
 
-// Helmet: 15+ headers de seguridad automáticos
-// - Previene clickjacking (X-Frame-Options)
-// - Previene MIME sniffing (X-Content-Type-Options)
-// - Previene XSS reflejado (X-XSS-Protection)
-// - Oculta que usamos Express (X-Powered-By)
-app.use(helmet())
+// Helmet: headers de seguridad con CSP y HSTS
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://*.mercadopago.com"],
+      connectSrc: ["'self'", "https://api.mercadopago.com", "https://api.mercadolibre.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      frameSrc: ["'self'", "https://*.mercadopago.com"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"]
+    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}))
 
 // CORS: solo permitir peticiones desde nuestro frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : ['http://localhost:5173'],
+  origin: process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map(url => url.trim()).filter(Boolean)
+    : ['http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -104,6 +123,34 @@ const uploadLimiter = rateLimit({
 })
 app.use('/api/upload', uploadLimiter)
 
+// Recuperación de contraseña: máximo 5 intentos cada 15 minutos (anti brute-force)
+const recuperarLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiados intentos de recuperación. Esperá 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use('/api/auth/recuperar', recuperarLimiter)
+
+// Reset de contraseña: máximo 10 intentos cada 15 minutos (anti brute-force del código)
+const resetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Demasiados intentos. Esperá 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use('/api/auth/reset', resetLimiter)
+
+// Webhook de MP: máximo 100 por minuto (protección contra flood)
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: 'Rate limit exceeded'
+})
+app.use('/api/pagos/webhook', webhookLimiter)
+
 // ===== MIDDLEWARE =====
 
 // Limitar tamaño del body (previene ataques de payload gigante)
@@ -111,8 +158,24 @@ app.use(express.json({ limit: '2mb' }))
 app.use(express.urlencoded({ extended: true, limit: '2mb' }))
 
 // Conectar a la base de datos
-connectDB().then(() => {
+connectDB().then(async () => {
   inicializarConfig().catch(err => console.warn('Config init:', err.message))
+
+  // Limpiar órdenes pendientes expiradas al iniciar y cada 30 minutos
+  try {
+    const canceladas = await limpiarOrdenesPendientes()
+    if (canceladas > 0) console.log(`🧹 ${canceladas} órdenes pendientes expiradas al iniciar`)
+  } catch (err) {
+    console.warn('Error limpiando órdenes pendientes:', err.message)
+  }
+  setInterval(async () => {
+    try {
+      const canceladas = await limpiarOrdenesPendientes()
+      if (canceladas > 0) console.log(`🧹 ${canceladas} órdenes pendientes expiradas (limpieza periódica)`)
+    } catch (err) {
+      console.warn('Error en limpieza periódica:', err.message)
+    }
+  }, 30 * 60 * 1000)
 }).catch((err) => {
   console.error('Error conectando a MongoDB:', err)
 })

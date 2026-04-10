@@ -147,7 +147,7 @@ export async function refrescarTokenVendedor(tienda) {
         client_id: MP_APP_ID,
         client_secret: MP_CLIENT_SECRET,
         grant_type: 'refresh_token',
-        refresh_token: tienda.mpRefreshToken
+        refresh_token: tienda.getMpRefreshToken()
       })
     })
 

@@ -5,6 +5,20 @@ import { verificarToken } from '../middleware/auth.js'
 
 const router = Router()
 
+// Magic bytes para validar tipos reales de imagen
+const IMAGE_SIGNATURES = {
+  'ffd8ff': 'image/jpeg',       // JPEG
+  '89504e47': 'image/png',      // PNG
+  '47494638': 'image/gif',      // GIF
+  '52494646': 'image/webp',     // WebP (RIFF header)
+  '424d': 'image/bmp'           // BMP
+}
+
+function validarMagicBytes(buffer) {
+  const hex = buffer.slice(0, 4).toString('hex')
+  return Object.keys(IMAGE_SIGNATURES).some(sig => hex.startsWith(sig))
+}
+
 // Configurar Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -19,11 +33,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 // Máximo 5MB
   },
   fileFilter: (req, file, cb) => {
-    // Solo permitir imágenes
-    if (file.mimetype.startsWith('image/')) {
+    // Validar MIME type
+    const mimeValidos = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']
+    if (mimeValidos.includes(file.mimetype)) {
       cb(null, true)
     } else {
-      cb(new Error('Solo se permiten imágenes'), false)
+      cb(new Error('Solo se permiten imágenes (JPG, PNG, GIF, WebP)'), false)
     }
   }
 })
@@ -33,6 +48,11 @@ router.post('/imagen', verificarToken, upload.single('imagen'), async (req, res)
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No se envió ninguna imagen' })
+    }
+
+    // Validar magic bytes (contenido real del archivo)
+    if (!validarMagicBytes(req.file.buffer)) {
+      return res.status(400).json({ error: 'El archivo no es una imagen válida' })
     }
 
     // Subir a Cloudinary desde buffer

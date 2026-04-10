@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { encriptar, desencriptar, estaEncriptado } from '../utils/crypto.js'
 
 const tiendaSchema = new mongoose.Schema({
   usuarioId: {
@@ -80,6 +81,26 @@ const tiendaSchema = new mongoose.Schema({
 }, {
   timestamps: true
 })
+
+// Encriptar tokens de MP antes de guardar
+tiendaSchema.pre('save', function (next) {
+  if (this.isModified('mpAccessToken') && this.mpAccessToken && !estaEncriptado(this.mpAccessToken)) {
+    this.mpAccessToken = encriptar(this.mpAccessToken)
+  }
+  if (this.isModified('mpRefreshToken') && this.mpRefreshToken && !estaEncriptado(this.mpRefreshToken)) {
+    this.mpRefreshToken = encriptar(this.mpRefreshToken)
+  }
+  next()
+})
+
+// Método para obtener el access token desencriptado
+tiendaSchema.methods.getMpAccessToken = function () {
+  return desencriptar(this.mpAccessToken)
+}
+
+tiendaSchema.methods.getMpRefreshToken = function () {
+  return desencriptar(this.mpRefreshToken)
+}
 
 const Tienda = mongoose.model('Tienda', tiendaSchema)
 

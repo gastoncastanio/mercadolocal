@@ -151,6 +151,22 @@ export async function todasLasOrdenes() {
     .sort({ createdAt: -1 })
 }
 
+// Cancelar órdenes pendientes que tienen más de 2 horas sin pagar
+export async function limpiarOrdenesPendientes() {
+  const hace2hs = new Date(Date.now() - 2 * 60 * 60 * 1000)
+  const resultado = await Orden.updateMany(
+    {
+      estado: 'pendiente',
+      createdAt: { $lt: hace2hs },
+      mpPaymentId: { $in: ['', null] }
+    },
+    {
+      $set: { estado: 'cancelada', mpStatus: 'expired' }
+    }
+  )
+  return resultado.modifiedCount
+}
+
 // Estadísticas de admin - SOLO ordenes con pago confirmado
 export async function estadisticasAdmin() {
   const ordenesPagadas = await Orden.find({

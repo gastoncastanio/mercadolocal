@@ -39,7 +39,7 @@ export async function crearPreferencia(orden, compradorEmail) {
     const tienda = await Tienda.findById(tiendaIds[0])
     if (tienda && tienda.mpVinculado && tienda.mpAccessToken) {
       usarSplit = true
-      vendedorAccessToken = tienda.mpAccessToken
+      vendedorAccessToken = tienda.getMpAccessToken()
     }
   }
 

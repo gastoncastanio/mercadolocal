@@ -15,7 +15,6 @@ if (result.error) {
   console.error('❌ Error cargando .env:', result.error.message)
 } else {
   console.log('✅ Variables de entorno cargadas correctamente')
-  console.log('🔑 OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'CONFIGURADA ✅' : 'VACÍA ❌')
 }
 
 export default result

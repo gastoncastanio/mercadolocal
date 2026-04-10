@@ -7,13 +7,20 @@ import { enviarCodigoRecuperacion } from '../services/emailService.js'
 
 const router = Router()
 
-// Sanitizar strings: remover HTML y caracteres peligrosos
+// Sanitizar strings: remover vectores de XSS conocidos
 function sanitizar(str) {
   if (typeof str !== 'string') return str
   return str
-    .replace(/[<>]/g, '') // Remover tags HTML
-    .replace(/javascript:/gi, '') // Remover javascript:
-    .replace(/on\w+=/gi, '') // Remover event handlers
+    .replace(/<[^>]*>/g, '')          // Remover tags HTML completos
+    .replace(/javascript\s*:/gi, '')   // Remover javascript: (con espacios)
+    .replace(/data\s*:/gi, '')         // Remover data: URIs
+    .replace(/vbscript\s*:/gi, '')     // Remover vbscript:
+    .replace(/on\w+\s*=/gi, '')        // Remover event handlers (onclick=, etc)
+    .replace(/expression\s*\(/gi, '')  // Remover CSS expression()
+    .replace(/url\s*\(/gi, '')         // Remover CSS url()
+    .replace(/&#/g, '')                // Remover HTML entities numéricas
+    .replace(/\\x[0-9a-fA-F]{2}/g, '') // Remover hex escapes
+    .replace(/\\u[0-9a-fA-F]{4}/g, '') // Remover unicode escapes
     .trim()
 }
 
