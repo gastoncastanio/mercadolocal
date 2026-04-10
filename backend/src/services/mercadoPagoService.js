@@ -43,8 +43,10 @@ export async function crearPreferencia(orden, compradorEmail) {
     }
   }
 
-  const backendUrl = process.env.BACKEND_URL || 'http://localhost:3001'
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3001').trim().replace(/\/+$/, '')
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const webhookUrl = `${backendUrl}/api/pagos/webhook`
 
   const preferenceBody = {
     items,
@@ -58,8 +60,14 @@ export async function crearPreferencia(orden, compradorEmail) {
       pending: `${frontendUrl}/pago-pendiente`
     },
     auto_return: 'approved',
-    notification_url: `${backendUrl}/api/pagos/webhook`,
     statement_descriptor: 'MERCADOLOCAL'
+  }
+
+  // Solo agregar notification_url si es una URL HTTPS válida (MP la requiere HTTPS)
+  if (webhookUrl.startsWith('https://')) {
+    preferenceBody.notification_url = webhookUrl
+  } else {
+    console.warn('⚠️ notification_url no es HTTPS, se omite:', webhookUrl)
   }
 
   let result
