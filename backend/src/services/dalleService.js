@@ -25,9 +25,7 @@ function generarSVGDemo(color, numero) {
 // URLs de logos de demostración (SVGs embebidos)
 const LOGOS_DEMO = Array.from({ length: 12 }, (_, i) => generarSVGDemo('#3B82F6', i))
 
-console.log('🔑 Verificando Google Gemini API Key...')
-console.log('🔑 GEMINI_API_KEY existe:', !!process.env.GEMINI_API_KEY)
-console.log('🔑 Primeros caracteres:', process.env.GEMINI_API_KEY?.substring(0, 10) + '...')
+console.log('🔑 Gemini API Key:', process.env.GEMINI_API_KEY ? 'configurada' : 'no configurada')
 
 let gemini = null
 

@@ -92,8 +92,12 @@ const productoSchema = new mongoose.Schema({
   timestamps: true
 })
 
-// Índice de texto para búsqueda
+// Índices para búsqueda y performance
 productoSchema.index({ nombre: 'text', descripcion: 'text', categorias: 'text' })
+productoSchema.index({ tiendaId: 1, activo: 1 })
+productoSchema.index({ activo: 1, totalVentas: -1 })
+productoSchema.index({ activo: 1, calificacion: -1 })
+productoSchema.index({ activo: 1, precio: 1 })
 
 const Producto = mongoose.model('Producto', productoSchema)
 

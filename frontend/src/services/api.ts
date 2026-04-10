@@ -3,34 +3,28 @@ import { Proyecto, Logo, GeneracionRequest } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
-console.log('🔌 API_URL configurada:', API_URL)
-
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000, // 15 segundos máximo por request
 })
 
-// Interceptor para debug
-api.interceptors.request.use(
-  (config) => {
-    console.log('📤 Request enviado a:', config.baseURL + config.url)
-    return config
-  },
-  (error) => {
-    console.error('❌ Error en request:', error)
-    return Promise.reject(error)
-  }
-)
-
+// Interceptor: manejar 401 (token expirado/inválido)
 api.interceptors.response.use(
-  (response) => {
-    console.log('📥 Response recibido:', response.status)
-    return response
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ Error en response:', error.message)
+    if (error.response?.status === 401) {
+      // Token inválido o expirado - limpiar sesión
+      localStorage.removeItem('token')
+      delete api.defaults.headers.common['Authorization']
+      // Redirigir a login solo si no estamos ya en login/registro
+      const path = window.location.pathname
+      if (path !== '/login' && path !== '/registro' && path !== '/recuperar') {
+        window.location.href = '/login'
+      }
+    }
     return Promise.reject(error)
   }
 )
@@ -51,10 +45,8 @@ export const proyectosAPI = {
 
 // Logos
 export const logosAPI = {
-  generarLogos: (request: GeneracionRequest) => {
-    console.log('🎨 Generando logos con request:', request)
-    return api.post<Logo[]>('/logos/generar', request)
-  },
+  generarLogos: (request: GeneracionRequest) =>
+    api.post<Logo[]>('/logos/generar', request),
   obtener: (id: string) =>
     api.get<Logo>(`/logos/${id}`),
   marcarFavorito: (id: string, favorito: boolean) =>

@@ -178,16 +178,17 @@ router.post('/recuperar', async (req, res) => {
     usuario.resetTokenExpira = new Date(Date.now() + 30 * 60 * 1000) // 30 min
     await usuario.save()
 
-    console.log(`\u{1F511} Token de recuperaci\u00f3n para ${email}: ${token}`)
-
-    // Enviar email con el c\u00f3digo (si Resend est\u00e1 configurado)
+    // Enviar email con el código (si Resend está configurado)
     const emailResult = await enviarCodigoRecuperacion(email, usuario.nombre, token)
 
+    // En dev, loguear token solo si no hay servicio de email
+    if (!emailResult.enviado && process.env.NODE_ENV !== 'production') {
+      console.log(`🔑 [DEV] Token de recuperación: ${token}`)
+    }
+
     res.json({
-      mensaje: 'Si el email est\u00e1 registrado, recibir\u00e1s instrucciones para restablecer tu contrase\u00f1a.',
-      emailEnviado: emailResult.enviado,
-      // En dev sin Resend, devolvemos el token para testing
-      ...(!emailResult.enviado && { _devToken: token })
+      mensaje: 'Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.',
+      emailEnviado: emailResult.enviado
     })
   } catch (error) {
     console.error('Error en recuperaci\u00f3n:', error.message)

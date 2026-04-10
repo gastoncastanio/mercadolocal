@@ -22,8 +22,9 @@ router.get('/auth-url', verificarToken, async (req, res) => {
     }
 
     const redirectUri = `${BACKEND_URL}/api/mp/callback`
-    // state lleva el ID de tienda para identificar al vendedor en el callback
-    const state = tienda._id.toString()
+    // state lleva tiendaId + hash para verificar en callback
+    const statePayload = `${tienda._id}_${req.usuario.id}`
+    const state = Buffer.from(statePayload).toString('base64url')
 
     const authUrl = `https://auth.mercadopago.com.ar/authorization?client_id=${MP_APP_ID}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`
 
@@ -41,6 +42,16 @@ router.get('/callback', async (req, res) => {
 
     if (!code || !state) {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=parametros_invalidos`)
+    }
+
+    // Decodificar state y extraer tiendaId + usuarioId
+    let tiendaId, usuarioId
+    try {
+      const decoded = Buffer.from(state, 'base64url').toString()
+      ;[tiendaId, usuarioId] = decoded.split('_')
+      if (!tiendaId || !usuarioId) throw new Error('State inválido')
+    } catch {
+      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=state_invalido`)
     }
 
     // Intercambiar code por access_token
@@ -63,9 +74,9 @@ router.get('/callback', async (req, res) => {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=token_invalido`)
     }
 
-    // Guardar tokens en la tienda
-    const tienda = await Tienda.findById(state)
-    if (!tienda) {
+    // Verificar que la tienda existe y pertenece al usuario
+    const tienda = await Tienda.findById(tiendaId)
+    if (!tienda || tienda.usuarioId.toString() !== usuarioId) {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=tienda_no_encontrada`)
     }
 

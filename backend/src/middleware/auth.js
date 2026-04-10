@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'marketplace_secreto_super_seguro_2024'
+if (!process.env.JWT_SECRET) {
+  console.error('⛔ JWT_SECRET no configurado. El servidor no puede arrancar de forma segura.')
+  process.exit(1)
+}
+const JWT_SECRET = process.env.JWT_SECRET
 
 // Middleware para verificar JWT
 export function verificarToken(req, res, next) {

@@ -7,8 +7,8 @@ import Usuario from '../models/Usuario.js'
 
 const router = Router()
 
-// POST /api/admin/seed - Hacer admin a un usuario por email
-router.post('/seed', async (req, res) => {
+// POST /api/admin/seed - Hacer admin a un usuario por email (protegido)
+router.post('/seed', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { email } = req.body
     if (!email) return res.status(400).json({ error: 'Email requerido' })

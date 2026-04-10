@@ -27,7 +27,7 @@ export async function crearOrden(usuarioId, datosEntrega) {
   }))
 
   const total = calcularTotal(carrito)
-  const comision = Math.round(total * PORCENTAJE_COMISION) / 100
+  const comision = Math.round(total * PORCENTAJE_COMISION / 100 * 100) / 100
   const gananciaVendedor = total - comision
 
   const orden = new Orden({

@@ -98,6 +98,10 @@ const ordenSchema = new mongoose.Schema({
   timestamps: true
 })
 
+ordenSchema.index({ compradorId: 1, createdAt: -1 })
+ordenSchema.index({ 'items.tiendaId': 1, createdAt: -1 })
+ordenSchema.index({ estado: 1 })
+
 const Orden = mongoose.model('Orden', ordenSchema)
 
 export default Orden

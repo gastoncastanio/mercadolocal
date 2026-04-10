@@ -72,28 +72,28 @@ export default function Devoluciones() {
               {[
                 {
                   n: 1,
-                  titulo: 'Abr&iacute;s el reclamo',
-                  desc: 'Desde "Mis pedidos" seleccion&aacute;s la compra y hac&eacute;s click en "Abrir reclamo". Explic&aacute;s el motivo y adjunt&aacute;s fotos si es necesario.'
+                  titulo: 'Abrís el reclamo',
+                  desc: 'Desde "Mis pedidos" seleccionás la compra y hacés click en "Abrir reclamo". Explicás el motivo y adjuntás fotos si es necesario.'
                 },
                 {
                   n: 2,
-                  titulo: 'Coordin&aacute;s con el vendedor',
-                  desc: 'Mediante el chat de la plataforma coordin&aacute;s con el vendedor la devoluci&oacute;n del producto. El costo de env&iacute;o de devoluci&oacute;n corre por cuenta del responsable seg&uacute;n el motivo.'
+                  titulo: 'Coordinás con el vendedor',
+                  desc: 'Mediante el chat de la plataforma coordinás con el vendedor la devolución del producto. El costo de envío de devolución corre por cuenta del responsable según el motivo.'
                 },
                 {
                   n: 3,
-                  titulo: 'Envi&aacute;s el producto',
-                  desc: 'Envi&aacute;s el producto de vuelta al vendedor en las mismas condiciones en que lo recibiste (embalaje original, accesorios, etc.).'
+                  titulo: 'Enviás el producto',
+                  desc: 'Enviás el producto de vuelta al vendedor en las mismas condiciones en que lo recibiste (embalaje original, accesorios, etc.).'
                 },
                 {
                   n: 4,
                   titulo: 'El vendedor verifica y confirma',
-                  desc: 'Cuando el vendedor recibe el producto, lo revisa y nos informa a MercadoLocal que est&aacute; en las mismas condiciones en que lo entreg&oacute;.'
+                  desc: 'Cuando el vendedor recibe el producto, lo revisa y nos informa a MercadoLocal que está en las mismas condiciones en que lo entregó.'
                 },
                 {
                   n: 5,
-                  titulo: 'Recib&iacute;s el reembolso',
-                  desc: 'Desde el momento en que el vendedor confirma el estado del producto, MercadoLocal procesa la devoluci&oacute;n del 100% del monto pagado en un plazo m&aacute;ximo de 48 horas.'
+                  titulo: 'Recibís el reembolso',
+                  desc: 'Desde el momento en que el vendedor confirma el estado del producto, MercadoLocal procesa la devolución del 100% del monto pagado en un plazo máximo de 48 horas.'
                 }
               ].map(p => (
                 <div key={p.n} className="flex gap-3 sm:gap-4 items-start">
@@ -101,8 +101,8 @@ export default function Devoluciones() {
                     {p.n}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800" dangerouslySetInnerHTML={{ __html: p.titulo }} />
-                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5" dangerouslySetInnerHTML={{ __html: p.desc }} />
+                    <h3 className="font-semibold text-gray-800">{p.titulo}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5">{p.desc}</p>
                   </div>
                 </div>
               ))}

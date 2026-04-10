@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setCargando(false)
     }
-  }, [])
+  }, [token])
 
   async function cargarPerfil() {
     try {

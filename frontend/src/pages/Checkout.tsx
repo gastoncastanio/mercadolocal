@@ -47,8 +47,14 @@ export default function Checkout() {
       // 2. Crear preferencia de Mercado Pago
       const resPago = await api.post('/pagos/crear-preferencia', { ordenId: orden._id })
 
-      // 3. Redirigir a Mercado Pago
-      window.location.href = resPago.data.initPoint
+      // 3. Redirigir a Mercado Pago (validar origen)
+      const mpUrl = resPago.data.initPoint
+      if (mpUrl && (mpUrl.startsWith('https://www.mercadopago.com') || mpUrl.startsWith('https://sandbox.mercadopago.com'))) {
+        window.location.href = mpUrl
+      } else {
+        setError('URL de pago inválida. Intentá de nuevo.')
+        setProcesando(false)
+      }
 
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al procesar el pago')

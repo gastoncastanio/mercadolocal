@@ -22,7 +22,11 @@ router.post('/', verificarToken, async (req, res) => {
     if (!productoId) {
       return res.status(400).json({ error: 'productoId es obligatorio' })
     }
-    const carrito = await agregarAlCarrito(req.usuario.id, productoId, cantidad || 1)
+    const cant = parseInt(cantidad) || 1
+    if (cant < 1 || cant > 99) {
+      return res.status(400).json({ error: 'Cantidad debe ser entre 1 y 99' })
+    }
+    const carrito = await agregarAlCarrito(req.usuario.id, productoId, cant)
     const total = calcularTotal(carrito)
     res.json({ carrito, total })
   } catch (error) {
@@ -34,7 +38,11 @@ router.post('/', verificarToken, async (req, res) => {
 router.put('/:itemId', verificarToken, async (req, res) => {
   try {
     const { cantidad } = req.body
-    const carrito = await actualizarCantidad(req.usuario.id, req.params.itemId, cantidad)
+    const cant = parseInt(cantidad)
+    if (!cant || cant < 1 || cant > 99) {
+      return res.status(400).json({ error: 'Cantidad debe ser entre 1 y 99' })
+    }
+    const carrito = await actualizarCantidad(req.usuario.id, req.params.itemId, cant)
     const total = calcularTotal(carrito)
     res.json({ carrito, total })
   } catch (error) {
