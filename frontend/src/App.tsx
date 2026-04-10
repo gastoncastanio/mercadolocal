@@ -36,6 +36,9 @@ import Notificaciones from './pages/Notificaciones'
 import MasVendidos from './pages/MasVendidos'
 import CentralVendedor from './pages/CentralVendedor'
 import TiendaPublica from './pages/TiendaPublica'
+import Ayuda from './pages/Ayuda'
+import CarritosAbandonados from './pages/CarritosAbandonados'
+import ChatbotSoporte from './components/ChatbotSoporte'
 
 // Ruta protegida
 function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
@@ -79,6 +82,7 @@ function AppContent() {
         <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><MiTienda /></RutaPrivada></ConNavbar>} />
         <Route path="/publicar" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PublicarProducto /></RutaPrivada></ConNavbar>} />
         <Route path="/pedidos-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PedidosVendedor /></RutaPrivada></ConNavbar>} />
+        <Route path="/carritos-abandonados" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CarritosAbandonados /></RutaPrivada></ConNavbar>} />
 
         {/* Mensajes y disputas */}
         <Route path="/chat" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
@@ -94,6 +98,9 @@ function AppContent() {
         <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
         <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
         <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
+
+        {/* Ayuda */}
+        <Route path="/ayuda" element={<ConNavbar><Ayuda /></ConNavbar>} />
 
         {/* Públicas legales */}
         <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
@@ -114,6 +121,7 @@ export default function App() {
     <PortonPrivado>
       <AuthProvider>
         <AppContent />
+        <ChatbotSoporte />
       </AuthProvider>
     </PortonPrivado>
   )

@@ -87,7 +87,7 @@ export default function PedidosVendedor() {
                     </div>
 
                     <div className="flex gap-2">
-                      {orden.estado === 'pendiente' && (
+                      {orden.estado === 'pagada' && (
                         <button onClick={() => cambiarEstado(orden._id, 'enviada')}
                           className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg font-medium hover:bg-purple-700">
                           Marcar Enviado

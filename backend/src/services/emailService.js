@@ -189,6 +189,55 @@ export async function enviarNotificacionVenta(email, nombreVendedor, total, cant
   })
 }
 
+/**
+ * Recordatorio de compra abandonada.
+ */
+export async function enviarRecordatorioCompra(email, nombre, orden) {
+  const itemsHtml = orden.items.map(i =>
+    `<tr>
+      <td style="padding: 8px; border-bottom: 1px solid #f3f4f6;">${i.nombre}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: center;">${i.cantidad}</td>
+      <td style="padding: 8px; border-bottom: 1px solid #f3f4f6; text-align: right;">$${i.subtotal.toLocaleString('es-AR')}</td>
+    </tr>`
+  ).join('')
+
+  const html = templateBase(`
+    <h1>Tu compra te espera</h1>
+    <p>Hola <strong>${nombre}</strong>,</p>
+    <p>Notamos que dejaste una compra sin completar. Tus productos siguen disponibles:</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
+      <thead>
+        <tr style="background: #f9fafb;">
+          <th style="padding: 8px; text-align: left;">Producto</th>
+          <th style="padding: 8px; text-align: center;">Cant.</th>
+          <th style="padding: 8px; text-align: right;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2" style="padding: 12px 8px; font-weight: 700;">Total</td>
+          <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 18px; color: #2563eb;">$${orden.total.toLocaleString('es-AR')}</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${process.env.FRONTEND_URL || 'https://mercadolocal-nu.vercel.app'}/mis-ordenes" class="btn">
+        Completar mi compra
+      </a>
+    </div>
+    <p style="font-size: 13px; color: #6b7280;">
+      Si ya no querés estos productos, no hace falta que hagas nada. La orden se cancelará automáticamente.
+    </p>
+  `)
+
+  return enviarEmail({
+    to: email,
+    subject: `${nombre}, tu compra te espera en MercadoLocal`,
+    html
+  })
+}
+
 // ==================== CORE ====================
 
 /**

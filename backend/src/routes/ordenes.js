@@ -1,7 +1,10 @@
 import { Router } from 'express'
 import { verificarToken, soloVendedor } from '../middleware/auth.js'
-import { crearOrden, ordenesDelComprador, ordenesDelVendedor, actualizarEstadoOrden } from '../services/ordenService.js'
+import { crearOrden, ordenesDelComprador, ordenesDelVendedor, ordenesPendientesPago, actualizarEstadoOrden } from '../services/ordenService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
+import { enviarRecordatorioCompra } from '../services/emailService.js'
+import Usuario from '../models/Usuario.js'
+import Orden from '../models/Orden.js'
 
 const router = Router()
 
@@ -55,6 +58,56 @@ router.put('/:ordenId/estado', verificarToken, soloVendedor, async (req, res) =>
     res.json(orden)
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/ordenes/abandonadas - Órdenes pendientes de pago (carritos abandonados)
+router.get('/abandonadas', verificarToken, soloVendedor, async (req, res) => {
+  try {
+    const tienda = await obtenerMiTienda(req.usuario.id)
+    if (!tienda) {
+      return res.status(400).json({ error: 'No tienes una tienda' })
+    }
+    const ordenes = await ordenesPendientesPago(tienda._id)
+    res.json(ordenes)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/ordenes/recordatorio/:ordenId - Enviar email recordatorio al comprador
+router.post('/recordatorio/:ordenId', verificarToken, soloVendedor, async (req, res) => {
+  try {
+    const tienda = await obtenerMiTienda(req.usuario.id)
+    if (!tienda) {
+      return res.status(400).json({ error: 'No tienes una tienda' })
+    }
+
+    const orden = await Orden.findById(req.params.ordenId)
+    if (!orden) {
+      return res.status(404).json({ error: 'Orden no encontrada' })
+    }
+
+    if (orden.estado !== 'pendiente') {
+      return res.status(400).json({ error: 'Esta orden ya fue pagada' })
+    }
+
+    const tienePermiso = orden.items.some(
+      item => item.tiendaId.toString() === tienda._id.toString()
+    )
+    if (!tienePermiso) {
+      return res.status(403).json({ error: 'No autorizado' })
+    }
+
+    const comprador = await Usuario.findById(orden.compradorId)
+    if (!comprador) {
+      return res.status(404).json({ error: 'Comprador no encontrado' })
+    }
+
+    await enviarRecordatorioCompra(comprador.email, comprador.nombre, orden)
+    res.json({ mensaje: 'Recordatorio enviado' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 

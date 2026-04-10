@@ -3,16 +3,25 @@ import api from '../services/api'
 import { Orden } from '../types'
 
 const estadoColores: Record<string, string> = {
-  pendiente: 'bg-yellow-100 text-yellow-700',
+  pendiente: 'bg-orange-100 text-orange-700',
   pagada: 'bg-blue-100 text-blue-700',
   enviada: 'bg-purple-100 text-purple-700',
   completada: 'bg-green-100 text-green-700',
   cancelada: 'bg-red-100 text-red-700',
 }
 
+const estadoTexto: Record<string, string> = {
+  pendiente: 'Pendiente de pago',
+  pagada: 'Pagada',
+  enviada: 'Enviada',
+  completada: 'Completada',
+  cancelada: 'Cancelada',
+}
+
 export default function MisOrdenes() {
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [cargando, setCargando] = useState(true)
+  const [pagando, setPagando] = useState<string | null>(null)
 
   useEffect(() => {
     async function cargar() {
@@ -28,29 +37,54 @@ export default function MisOrdenes() {
     cargar()
   }, [])
 
+  async function reintentarPago(ordenId: string) {
+    setPagando(ordenId)
+    try {
+      const resPago = await api.post('/pagos/crear-preferencia', { ordenId })
+      const mpUrl = resPago.data.initPoint
+      if (mpUrl && mpUrl.startsWith('https://') && mpUrl.includes('mercadopago.com')) {
+        window.location.href = mpUrl
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Error al crear pago')
+      setPagando(null)
+    }
+  }
+
+  async function confirmarRecepcion(ordenId: string) {
+    if (!confirm('Confirmas que recibiste el producto en buenas condiciones? Una vez confirmado se libera el pago al vendedor.')) return
+    try {
+      await api.post(`/pagos/confirmar-recepcion/${ordenId}`)
+      const res = await api.get('/ordenes')
+      setOrdenes(res.data)
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Error al confirmar')
+    }
+  }
+
   if (cargando) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">📦 Mis Pedidos</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-8">Mis Pedidos</h1>
 
         {ordenes.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
             <p className="text-5xl mb-4">📦</p>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No tienes pedidos todavía</h3>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No tienes pedidos todavia</h3>
           </div>
         ) : (
           <div className="space-y-4">
             {ordenes.map(orden => (
-              <div key={orden._id} className="bg-white rounded-xl shadow-sm p-6">
+              <div key={orden._id} className={`bg-white rounded-xl shadow-sm p-6 ${orden.estado === 'pendiente' ? 'border-l-4 border-orange-400' : ''}`}>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="text-sm text-gray-400">Pedido #{orden._id.slice(-8)}</p>
                     <p className="text-sm text-gray-500">{new Date(orden.createdAt!).toLocaleDateString()}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${estadoColores[orden.estado]}`}>
-                    {orden.estado.charAt(0).toUpperCase() + orden.estado.slice(1)}
+                    {estadoTexto[orden.estado] || orden.estado}
                   </span>
                 </div>
 
@@ -64,9 +98,38 @@ export default function MisOrdenes() {
                 </div>
 
                 <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">📍 {orden.direccionEntrega}</span>
-                  <span className="text-xl font-bold text-blue-600">${orden.total.toLocaleString()}</span>
+                  <span className="text-sm text-gray-500">{orden.direccionEntrega}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl font-bold text-blue-600">${orden.total.toLocaleString()}</span>
+
+                    {/* Boton pagar para ordenes pendientes */}
+                    {orden.estado === 'pendiente' && (
+                      <button
+                        onClick={() => reintentarPago(orden._id)}
+                        disabled={pagando === orden._id}
+                        className="px-4 py-2 bg-[#009ee3] text-white text-sm rounded-lg font-semibold hover:bg-[#0087c9] disabled:opacity-50"
+                      >
+                        {pagando === orden._id ? 'Redirigiendo...' : 'Pagar ahora'}
+                      </button>
+                    )}
+
+                    {/* Boton confirmar recepcion para ordenes enviadas */}
+                    {orden.estado === 'enviada' && (
+                      <button
+                        onClick={() => confirmarRecepcion(orden._id)}
+                        className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg font-semibold hover:bg-green-700"
+                      >
+                        Confirmar recepcion
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {orden.estado === 'pendiente' && (
+                  <p className="text-xs text-orange-600 mt-2">
+                    Esta orden esta pendiente de pago. Completa el pago para que el vendedor prepare tu pedido.
+                  </p>
+                )}
               </div>
             ))}
           </div>

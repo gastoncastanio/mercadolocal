@@ -1,11 +1,8 @@
 import Orden from '../models/Orden.js'
 import Carrito from '../models/Carrito.js'
-import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
-import Usuario from '../models/Usuario.js'
 import Notificacion from '../models/Notificacion.js'
 import { calcularTotal } from './carritoService.js'
-import { enviarConfirmacionCompra, enviarNotificacionVenta } from './emailService.js'
 
 const PORCENTAJE_COMISION = 10 // 10%
 
@@ -55,67 +52,20 @@ export async function crearOrden(usuarioId, datosEntrega) {
   carrito.items = []
   await carrito.save()
 
-  console.log(`\u2705 Nueva orden creada: $${total} (comisi\u00f3n: $${comision})`)
+  console.log(`\u2705 Orden creada (pendiente de pago): $${total}`)
 
-  // Notificar al comprador
+  // Solo notificar al comprador que debe completar el pago
+  // NO notificar al vendedor ni al admin hasta que el pago sea aprobado
   try {
     await new Notificacion({
       usuarioId,
       tipo: 'compra',
-      titulo: 'Orden confirmada',
-      mensaje: `Tu orden por $${total.toLocaleString('es-AR')} fue registrada. Te avisaremos cuando el vendedor la procese.`,
+      titulo: 'Orden creada - Completá el pago',
+      mensaje: `Tu orden por $${total.toLocaleString('es-AR')} fue creada. Completá el pago para confirmarla.`,
       enlace: '/mis-ordenes'
     }).save()
-
-    // Email de confirmaci\u00f3n al comprador
-    const comprador = await Usuario.findById(usuarioId)
-    if (comprador) {
-      await enviarConfirmacionCompra(comprador.email, comprador.nombre, orden)
-    }
   } catch (e) {
-    console.error('Error notificaci\u00f3n compra:', e.message)
-  }
-
-  // Notificar a cada vendedor involucrado
-  try {
-    for (const tiendaId of tiendaIds) {
-      const tienda = await Tienda.findById(tiendaId)
-      if (tienda) {
-        const itemsTienda = items.filter(i => i.tiendaId.toString() === tiendaId)
-        const totalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-        await new Notificacion({
-          usuarioId: tienda.usuarioId,
-          tipo: 'venta',
-          titulo: 'Nueva venta recibida',
-          mensaje: `Recibiste una venta por $${totalTienda.toLocaleString('es-AR')}. Revis\u00e1 tus pedidos.`,
-          enlace: '/pedidos-vendedor'
-        }).save()
-
-        // Email al vendedor
-        const vendedor = await Usuario.findById(tienda.usuarioId)
-        if (vendedor) {
-          await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Error notificaci\u00f3n venta:', e.message)
-  }
-
-  // Notificar a admins
-  try {
-    const admins = await Usuario.find({ rol: 'admin' }).select('_id')
-    for (const admin of admins) {
-      await new Notificacion({
-        usuarioId: admin._id,
-        tipo: 'pago',
-        titulo: 'Nueva orden en la plataforma',
-        mensaje: `Orden por $${total.toLocaleString('es-AR')} (comisi\u00f3n: $${comision.toLocaleString('es-AR')})`,
-        enlace: '/admin'
-      }).save()
-    }
-  } catch (e) {
-    console.error('Error notificaci\u00f3n admin:', e.message)
+    console.error('Error notificación compra:', e.message)
   }
 
   return orden
@@ -126,10 +76,27 @@ export async function ordenesDelComprador(usuarioId) {
   return await Orden.find({ compradorId: usuarioId }).sort({ createdAt: -1 })
 }
 
-// Obtener órdenes para un vendedor (por tienda)
+// Obtener órdenes PAGADAS para un vendedor (por tienda)
+// Solo muestra órdenes con pago confirmado - no muestra pendientes de pago
 export async function ordenesDelVendedor(tiendaId) {
-  return await Orden.find({ 'items.tiendaId': tiendaId })
+  return await Orden.find({
+    'items.tiendaId': tiendaId,
+    estado: { $in: ['pagada', 'enviada', 'completada'] }
+  })
     .populate('compradorId', 'nombre email telefono')
+    .sort({ createdAt: -1 })
+}
+
+// Obtener órdenes pendientes de pago (para tracking de carritos abandonados)
+export async function ordenesPendientesPago(tiendaId) {
+  const hace48hs = new Date(Date.now() - 48 * 60 * 60 * 1000)
+  return await Orden.find({
+    'items.tiendaId': tiendaId,
+    estado: 'pendiente',
+    mpStatus: { $in: ['', 'pending', 'in_process'] },
+    createdAt: { $gte: hace48hs }
+  })
+    .populate('compradorId', 'nombre email')
     .sort({ createdAt: -1 })
 }
 
@@ -184,20 +151,23 @@ export async function todasLasOrdenes() {
     .sort({ createdAt: -1 })
 }
 
-// Estadísticas de admin
+// Estadísticas de admin - SOLO ordenes con pago confirmado
 export async function estadisticasAdmin() {
-  const totalOrdenes = await Orden.countDocuments()
-  const ordenes = await Orden.find()
+  const ordenesPagadas = await Orden.find({
+    estado: { $in: ['pagada', 'enviada', 'completada'] }
+  })
+  const ordenesPendientes = await Orden.countDocuments({ estado: 'pendiente' })
 
-  const totalVentas = ordenes.reduce((sum, o) => sum + o.total, 0)
-  const totalComisiones = ordenes.reduce((sum, o) => sum + o.comision, 0)
-  const ordenesCompletadas = ordenes.filter(o => o.estado === 'completada').length
+  const totalVentas = ordenesPagadas.reduce((sum, o) => sum + o.total, 0)
+  const totalComisiones = ordenesPagadas.reduce((sum, o) => sum + o.comision, 0)
+  const ordenesCompletadas = ordenesPagadas.filter(o => o.estado === 'completada').length
 
   return {
-    totalOrdenes,
+    totalOrdenes: ordenesPagadas.length,
     totalVentas,
     totalComisiones,
     ordenesCompletadas,
-    ordenesPendientes: totalOrdenes - ordenesCompletadas
+    ordenesPendientes,
+    ordenesPagadasEnProceso: ordenesPagadas.filter(o => o.estado === 'pagada' || o.estado === 'enviada').length
   }
 }

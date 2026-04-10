@@ -52,18 +52,20 @@ export default function DashboardVendedor() {
     )
   }
 
-  const ordenesPendientes = ordenes.filter(
-    (o) => o.estado === 'pendiente' || o.estado === 'pagada'
-  ).length
+  // Solo contar órdenes con pago confirmado
+  const ordenesPorEnviar = ordenes.filter(o => o.estado === 'pagada').length
 
-  const productosActivos = stats.totalVentas // fallback, ideally from a separate endpoint
+  // Calcular ventas reales desde las órdenes pagadas (no desde stats que podrían estar desactualizados)
+  const ventasReales = ordenes.reduce((sum, o) => sum + o.total, 0)
+  const comisionesReales = ordenes.reduce((sum, o) => sum + o.comision, 0)
+  const gananciasReales = ventasReales - comisionesReales
 
   const cards = [
-    { titulo: 'Total Ventas', valor: `$${(stats.totalVentas || 0).toLocaleString()}`, icono: '💰', color: 'from-green-400 to-green-600' },
-    { titulo: 'Ganancias Netas', valor: `$${(stats.ganancias || 0).toLocaleString()}`, icono: '📈', color: 'from-blue-400 to-blue-600' },
-    { titulo: 'Productos Activos', valor: productosActivos.toString(), icono: '📦', color: 'from-purple-400 to-purple-600' },
-    { titulo: 'Calificacion Promedio', valor: (stats.calificacion || 0).toFixed(1), icono: '⭐', color: 'from-yellow-400 to-orange-500' },
-    { titulo: 'Ordenes Pendientes', valor: ordenesPendientes.toString(), icono: '🕐', color: 'from-red-400 to-pink-500' },
+    { titulo: 'Ventas Confirmadas', valor: `$${ventasReales.toLocaleString()}`, icono: '💰', color: 'from-green-400 to-green-600' },
+    { titulo: 'Ganancias Netas', valor: `$${gananciasReales.toLocaleString()}`, icono: '📈', color: 'from-blue-400 to-blue-600' },
+    { titulo: 'Ventas Totales', valor: ordenes.length.toString(), icono: '📦', color: 'from-purple-400 to-purple-600' },
+    { titulo: 'Por Enviar', valor: ordenesPorEnviar.toString(), icono: '🕐', color: ordenesPorEnviar > 0 ? 'from-red-400 to-pink-500' : 'from-gray-300 to-gray-400' },
+    { titulo: 'Calificación', valor: (stats.calificacion || 0).toFixed(1), icono: '⭐', color: 'from-yellow-400 to-orange-500' },
   ]
 
   // Simple last 7 days sales chart
@@ -76,6 +78,7 @@ export default function DashboardVendedor() {
 
   const ventasPorDia = ultimos7Dias.map((dia) => {
     const diaStr = dia.toISOString().split('T')[0]
+    // Solo contar ventas con pago confirmado (el endpoint ya filtra solo pagadas)
     const ventasDelDia = ordenes.filter((o) => {
       if (!o.createdAt) return false
       return o.createdAt.split('T')[0] === diaStr

@@ -5,6 +5,8 @@ import Orden from '../models/Orden.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
+import Notificacion from '../models/Notificacion.js'
+import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 
 const router = Router()
@@ -34,8 +36,14 @@ router.post('/crear-preferencia', verificarToken, async (req, res) => {
 
     res.json(preferencia)
   } catch (error) {
-    console.error('Error creando preferencia MP:', error)
-    res.status(500).json({ error: 'Error al crear pago' })
+    console.error('Error creando preferencia MP:', error?.message || error)
+    if (error?.cause) console.error('Causa:', error.cause)
+
+    // Devolver mensaje útil al frontend
+    const mensaje = error?.message?.includes('token')
+      ? 'Error de configuración de Mercado Pago. Contacta al administrador.'
+      : error?.message || 'Error al crear pago'
+    res.status(500).json({ error: mensaje })
   }
 })
 
@@ -97,6 +105,56 @@ router.post('/webhook', async (req, res) => {
         }
 
         await orden.save()
+
+        // AHORA sí notificar al vendedor, comprador y admin (pago confirmado = dinero real)
+        try {
+          // Notificar al comprador
+          const comprador = await Usuario.findById(orden.compradorId)
+          if (comprador) {
+            await new Notificacion({
+              usuarioId: comprador._id,
+              tipo: 'compra',
+              titulo: 'Pago confirmado',
+              mensaje: `Tu pago de $${orden.total.toLocaleString('es-AR')} fue aprobado. El vendedor preparará tu pedido.`,
+              enlace: '/mis-ordenes'
+            }).save()
+            await enviarConfirmacionCompra(comprador.email, comprador.nombre, orden)
+          }
+
+          // Notificar a cada vendedor
+          for (const tiendaId of tiendaIds) {
+            const tienda = await Tienda.findById(tiendaId)
+            if (tienda) {
+              const itemsTienda = orden.items.filter(i => i.tiendaId.toString() === tiendaId)
+              const totalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
+              await new Notificacion({
+                usuarioId: tienda.usuarioId,
+                tipo: 'venta',
+                titulo: 'Nueva venta confirmada',
+                mensaje: `Venta confirmada por $${totalTienda.toLocaleString('es-AR')}. El pago fue aprobado. Prepará el envío.`,
+                enlace: '/pedidos-vendedor'
+              }).save()
+              const vendedor = await Usuario.findById(tienda.usuarioId)
+              if (vendedor) {
+                await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+              }
+            }
+          }
+
+          // Notificar a admins
+          const admins = await Usuario.find({ rol: 'admin' }).select('_id')
+          for (const admin of admins) {
+            await new Notificacion({
+              usuarioId: admin._id,
+              tipo: 'pago',
+              titulo: 'Pago confirmado en la plataforma',
+              mensaje: `Pago aprobado: $${orden.total.toLocaleString('es-AR')} (comisión: $${orden.comision.toLocaleString('es-AR')})`,
+              enlace: '/admin'
+            }).save()
+          }
+        } catch (notifErr) {
+          console.error('Error enviando notificaciones post-pago:', notifErr.message)
+        }
 
       } else if (pago.status === 'rejected') {
         orden.mpStatus = 'rejected'

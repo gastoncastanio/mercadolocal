@@ -49,7 +49,7 @@ export default function Checkout() {
 
       // 3. Redirigir a Mercado Pago (validar origen)
       const mpUrl = resPago.data.initPoint
-      if (mpUrl && (mpUrl.startsWith('https://www.mercadopago.com') || mpUrl.startsWith('https://sandbox.mercadopago.com'))) {
+      if (mpUrl && mpUrl.startsWith('https://') && mpUrl.includes('mercadopago.com')) {
         window.location.href = mpUrl
       } else {
         setError('URL de pago inválida. Intentá de nuevo.')

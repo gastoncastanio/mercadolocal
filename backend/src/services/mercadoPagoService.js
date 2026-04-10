@@ -3,9 +3,13 @@ import Tienda from '../models/Tienda.js'
 
 const PORCENTAJE_COMISION = 10
 
+if (!process.env.MP_ACCESS_TOKEN) {
+  console.warn('⚠️ MP_ACCESS_TOKEN no configurado - los pagos no funcionarán')
+}
+
 // Cliente principal del marketplace (tu cuenta)
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN
+  accessToken: process.env.MP_ACCESS_TOKEN || ''
 })
 
 // Crear preferencia de pago con Split Payment (Marketplace)
@@ -60,26 +64,36 @@ export async function crearPreferencia(orden, compradorEmail) {
 
   let result
 
-  if (usarSplit) {
-    // Split Payment: marketplace_fee solo se usa con el token del vendedor
-    preferenceBody.marketplace_fee = marketplaceFee
-    const vendedorClient = new MercadoPagoConfig({
-      accessToken: vendedorAccessToken
-    })
-    const vendedorPreference = new Preference(vendedorClient)
-    result = await vendedorPreference.create({ body: preferenceBody })
-
-    console.log(`💰 Preferencia Split creada: orden ${orden._id} | Fee marketplace: $${marketplaceFee}`)
-  } else {
-    // Sin split: todo va a tu cuenta (flujo anterior)
-    result = await preference.create({ body: preferenceBody })
-
-    console.log(`💰 Preferencia estándar creada: orden ${orden._id} (vendedor sin MP vinculado)`)
+  try {
+    if (usarSplit) {
+      preferenceBody.marketplace_fee = marketplaceFee
+      const vendedorClient = new MercadoPagoConfig({
+        accessToken: vendedorAccessToken
+      })
+      const vendedorPreference = new Preference(vendedorClient)
+      result = await vendedorPreference.create({ body: preferenceBody })
+      console.log(`💰 Preferencia Split creada: orden ${orden._id} | Fee marketplace: $${marketplaceFee}`)
+    } else {
+      result = await preference.create({ body: preferenceBody })
+      console.log(`💰 Preferencia estándar creada: orden ${orden._id} (vendedor sin MP vinculado)`)
+    }
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia:', mpError?.message || mpError)
+    console.error('❌ Detalles:', JSON.stringify(mpError?.cause || mpError, null, 2))
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
   }
+
+  // En producción usar init_point, en test usar sandbox_init_point
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  console.log(`🔗 URL de pago generada: ${initPoint?.substring(0, 60)}...`)
 
   return {
     preferenceId: result.id,
-    initPoint: result.init_point,
+    initPoint,
     sandboxInitPoint: result.sandbox_init_point,
     usaSplit: usarSplit,
     marketplaceFee
