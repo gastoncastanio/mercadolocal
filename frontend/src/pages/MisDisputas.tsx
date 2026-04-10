@@ -61,7 +61,7 @@ export default function MisDisputas() {
   async function abrirFormulario() {
     setMostrarForm(true)
     try {
-      const res = await api.get('/ordenes/mis-ordenes')
+      const res = await api.get('/ordenes')
       setOrdenes(res.data)
     } catch (error) {
       console.error('Error cargando ordenes:', error)

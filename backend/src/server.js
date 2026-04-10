@@ -151,6 +151,16 @@ const webhookLimiter = rateLimit({
 })
 app.use('/api/pagos/webhook', webhookLimiter)
 
+// Recordatorios de carrito abandonado: máximo 5 por hora por IP
+const recordatorioLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Demasiados recordatorios enviados. Esperá 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+app.use('/api/ordenes/recordatorio', recordatorioLimiter)
+
 // ===== MIDDLEWARE =====
 
 // Limitar tamaño del body (previene ataques de payload gigante)

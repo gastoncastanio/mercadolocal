@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import Tienda from '../models/Tienda.js'
+import { refrescarTokenVendedor } from '../routes/mpOauth.js'
 
 const PORCENTAJE_COMISION = 10
 
@@ -87,7 +88,25 @@ export async function crearPreferencia(orden, compradorEmail) {
         accessToken: vendedorAccessToken
       })
       const vendedorPreference = new Preference(vendedorClient)
-      result = await vendedorPreference.create({ body: preferenceBody })
+      try {
+        result = await vendedorPreference.create({ body: preferenceBody })
+      } catch (splitError) {
+        // Si falla por token expirado, intentar refresh
+        if (splitError?.status === 401 || splitError?.message?.includes('token')) {
+          console.log('🔄 Token MP expirado, intentando refresh...')
+          const tienda = await Tienda.findById(tiendaIds[0])
+          const nuevoToken = await refrescarTokenVendedor(tienda)
+          if (nuevoToken) {
+            const refreshedClient = new MercadoPagoConfig({ accessToken: nuevoToken })
+            result = await new Preference(refreshedClient).create({ body: preferenceBody })
+            console.log('✅ Token refrescado y preferencia creada')
+          } else {
+            throw splitError
+          }
+        } else {
+          throw splitError
+        }
+      }
       console.log(`💰 Preferencia Split creada: orden ${orden._id} | Fee marketplace: $${marketplaceFee}`)
     } else {
       result = await preference.create({ body: preferenceBody })
@@ -105,7 +124,11 @@ export async function crearPreferencia(orden, compradorEmail) {
     ? (result.init_point || result.sandbox_init_point)
     : (result.sandbox_init_point || result.init_point)
 
-  console.log(`🔗 URL de pago generada: ${initPoint?.substring(0, 60)}...`)
+  if (!initPoint) {
+    throw new Error('Mercado Pago no devolvió una URL de pago válida. Intentá de nuevo.')
+  }
+
+  console.log(`🔗 URL de pago generada: ${initPoint.substring(0, 60)}...`)
 
   return {
     preferenceId: result.id,

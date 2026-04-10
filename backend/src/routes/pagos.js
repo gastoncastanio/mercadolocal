@@ -246,6 +246,34 @@ router.post('/webhook', async (req, res) => {
         await orden.save()
         console.log(`❌ Pago rechazado: orden ${ordenId}`)
 
+        // Notificar al comprador que su pago falló
+        try {
+          await new Notificacion({
+            usuarioId: orden.compradorId,
+            tipo: 'compra',
+            titulo: 'Pago rechazado',
+            mensaje: `Tu pago de $${orden.total.toLocaleString('es-AR')} fue rechazado. Podés intentar de nuevo desde "Mis Órdenes".`,
+            enlace: '/mis-ordenes'
+          }).save()
+
+          // Notificar a vendedores que el pago no se concretó
+          const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]
+          for (const tiendaId of tiendaIds) {
+            const tienda = await Tienda.findById(tiendaId)
+            if (tienda) {
+              await new Notificacion({
+                usuarioId: tienda.usuarioId,
+                tipo: 'venta',
+                titulo: 'Pago rechazado en una orden',
+                mensaje: `El pago de la orden #${orden._id.toString().slice(-8)} por $${orden.total.toLocaleString('es-AR')} fue rechazado.`,
+                enlace: '/pedidos-vendedor'
+              }).save()
+            }
+          }
+        } catch (notifErr) {
+          console.error('Error notificando pago rechazado:', notifErr.message)
+        }
+
         // Auditoría de rechazo
         try {
           await new AuditoriaFinanciera({

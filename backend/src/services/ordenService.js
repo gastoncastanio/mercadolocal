@@ -1,5 +1,6 @@
 import Orden from '../models/Orden.js'
 import Carrito from '../models/Carrito.js'
+import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
 import { calcularTotal } from './carritoService.js'
@@ -13,7 +14,21 @@ export async function crearOrden(usuarioId, datosEntrega) {
     throw new Error('El carrito está vacío')
   }
 
-  // Crear items de la orden
+  // Validar que todos los productos existan, estén activos, tengan stock y precio correcto
+  for (const item of carrito.items) {
+    const producto = await Producto.findById(item.productoId)
+    if (!producto || !producto.activo) {
+      throw new Error(`"${item.nombre}" ya no está disponible. Eliminalo del carrito.`)
+    }
+    if (producto.stock < item.cantidad) {
+      throw new Error(`Stock insuficiente para "${item.nombre}". Disponible: ${producto.stock}`)
+    }
+    if (producto.precio !== item.precio) {
+      throw new Error(`El precio de "${item.nombre}" cambió. Actualizá tu carrito.`)
+    }
+  }
+
+  // Crear items de la orden con precios verificados
   const items = carrito.items.map(item => ({
     productoId: item.productoId,
     tiendaId: item.tiendaId,
@@ -112,9 +127,15 @@ export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId) {
 
   if (!tienePermiso) throw new Error('No tienes permiso para modificar esta orden')
 
-  const estadosValidos = ['pendiente', 'pagada', 'enviada', 'completada', 'cancelada']
-  if (!estadosValidos.includes(nuevoEstado)) {
-    throw new Error('Estado no válido')
+  // Máquina de estados: solo transiciones válidas
+  const transicionesValidas = {
+    pagada: ['enviada', 'cancelada'],
+    enviada: ['completada']
+  }
+
+  const permitidas = transicionesValidas[orden.estado]
+  if (!permitidas || !permitidas.includes(nuevoEstado)) {
+    throw new Error(`No se puede cambiar de "${orden.estado}" a "${nuevoEstado}"`)
   }
 
   orden.estado = nuevoEstado
