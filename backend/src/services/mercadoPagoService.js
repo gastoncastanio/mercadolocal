@@ -43,10 +43,7 @@ export async function crearPreferencia(orden, compradorEmail) {
     }
   }
 
-  const backendUrl = (process.env.BACKEND_URL || 'http://localhost:3001').trim().replace(/\/+$/, '')
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
-
-  const webhookUrl = `${backendUrl}/api/pagos/webhook`
 
   const preferenceBody = {
     items,
@@ -63,11 +60,22 @@ export async function crearPreferencia(orden, compradorEmail) {
     statement_descriptor: 'MERCADOLOCAL'
   }
 
-  // Solo agregar notification_url si es una URL HTTPS válida (MP la requiere HTTPS)
-  if (webhookUrl.startsWith('https://')) {
-    preferenceBody.notification_url = webhookUrl
-  } else {
-    console.warn('⚠️ notification_url no es HTTPS, se omite:', webhookUrl)
+  // notification_url: validar que sea una URL HTTPS bien formada
+  // MP la rechaza si tiene formato inválido, espacios, caracteres raros, etc.
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+        console.log('🔔 Webhook URL:', webhookUrl)
+      } else {
+        console.warn('⚠️ notification_url no es HTTPS válida, se omite:', webhookUrl)
+      }
+    } catch (urlErr) {
+      console.error('❌ BACKEND_URL mal formada, se omite notification_url. Valor raw:', JSON.stringify(rawBackendUrl))
+    }
   }
 
   let result
