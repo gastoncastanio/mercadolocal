@@ -26,11 +26,33 @@ function emailValido(email) {
 // POST /api/auth/registro
 router.post('/registro', async (req, res) => {
   try {
-    let { email, contraseña, nombre, rol, direccion, telefono, nombreTienda, descripcionTienda, ciudad, tipoTienda } = req.body
+    let { email, contraseña, nombre, rol, direccion, telefono, dni, nombreTienda, descripcionTienda, ciudad, tipoTienda, mayorDeEdad, aceptaTerminos } = req.body
 
     // Validaciones estrictas
     if (!email || !contraseña || !nombre) {
       return res.status(400).json({ error: 'Email, contraseña y nombre son obligatorios' })
+    }
+
+    // Validar declaración de mayoría de edad y aceptación de términos
+    // Validar DNI
+    if (!dni) {
+      return res.status(400).json({ error: 'El DNI es obligatorio' })
+    }
+    const dniLimpio = dni.replace(/\D/g, '')
+    if (dniLimpio.length < 7 || dniLimpio.length > 8) {
+      return res.status(400).json({ error: 'El DNI debe tener 7 u 8 dígitos' })
+    }
+    // Verificar DNI no duplicado
+    const dniExistente = await Usuario.findOne({ dni: dniLimpio })
+    if (dniExistente) {
+      return res.status(400).json({ error: 'Ya existe una cuenta registrada con este DNI' })
+    }
+
+    if (!mayorDeEdad) {
+      return res.status(400).json({ error: 'Debés declarar que sos mayor de 18 años' })
+    }
+    if (!aceptaTerminos) {
+      return res.status(400).json({ error: 'Debés aceptar los Términos y Condiciones' })
     }
 
     // Sanitizar inputs
@@ -68,7 +90,7 @@ router.post('/registro', async (req, res) => {
     }
 
     const resultado = await registrarUsuario({
-      email, contraseña, nombre, rol, direccion, telefono,
+      email, contraseña, nombre, rol, direccion, telefono, dni: dniLimpio,
       nombreTienda, descripcionTienda, ciudad, tipoTienda
     })
 

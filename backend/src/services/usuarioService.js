@@ -6,7 +6,7 @@ import { enviarBienvenida } from './emailService.js'
 
 // Registrar nuevo usuario
 export async function registrarUsuario(datos) {
-  const { email, contraseña, nombre, rol, direccion, telefono } = datos
+  const { email, contraseña, nombre, rol, direccion, telefono, dni } = datos
 
   // Verificar si ya existe
   const existente = await Usuario.findOne({ email })
@@ -21,7 +21,8 @@ export async function registrarUsuario(datos) {
     nombre,
     rol: rol || 'comprador',
     direccion: direccion || '',
-    telefono: telefono || ''
+    telefono: telefono || '',
+    dni: dni || ''
   })
 
   await usuario.save()

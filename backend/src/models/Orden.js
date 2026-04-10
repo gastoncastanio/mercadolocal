@@ -85,6 +85,14 @@ const ordenSchema = new mongoose.Schema({
   mpStatus: {
     type: String,
     default: ''
+  },
+  usaSplit: {
+    type: Boolean,
+    default: false
+  },
+  fechaConfirmacion: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

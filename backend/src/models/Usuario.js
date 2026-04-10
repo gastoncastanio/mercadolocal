@@ -33,6 +33,12 @@ const usuarioSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  dni: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   telefono: {
     type: String,
     default: ''

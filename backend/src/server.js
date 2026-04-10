@@ -26,6 +26,7 @@ import favoritosRouter from './routes/favoritos.js'
 import notificacionesRouter from './routes/notificaciones.js'
 import enviosRouter from './routes/envios.js'
 import destacadosRouter from './routes/destacados.js'
+import mpOauthRouter from './routes/mpOauth.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -124,6 +125,7 @@ app.use('/api/favoritos', favoritosRouter)
 app.use('/api/notificaciones', notificacionesRouter)
 app.use('/api/envios', enviosRouter)
 app.use('/api/destacados', destacadosRouter)
+app.use('/api/mp', mpOauthRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

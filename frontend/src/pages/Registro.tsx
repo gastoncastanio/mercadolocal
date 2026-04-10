@@ -12,6 +12,7 @@ export default function Registro() {
   const [form, setForm] = useState({
     nombre: '',
     email: '',
+    dni: '',
     contraseña: '',
     confirmarContraseña: '',
     rol: rolInicial,
@@ -24,6 +25,8 @@ export default function Registro() {
     tipoTienda: 'online'
   })
 
+  const [mayorDeEdad, setMayorDeEdad] = useState(false)
+  const [aceptaTerminos, setAceptaTerminos] = useState(false)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
 
@@ -36,6 +39,12 @@ export default function Registro() {
     e.preventDefault()
     setError('')
 
+    const dniLimpio = form.dni.replace(/\D/g, '')
+    if (!dniLimpio || dniLimpio.length < 7 || dniLimpio.length > 8) {
+      setError('Ingresá un DNI válido (7 u 8 dígitos)')
+      return
+    }
+
     if (form.contraseña !== form.confirmarContraseña) {
       setError('Las contraseñas no coinciden')
       return
@@ -43,6 +52,16 @@ export default function Registro() {
 
     if (form.contraseña.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres')
+      return
+    }
+
+    if (!mayorDeEdad) {
+      setError('Debés declarar que sos mayor de 18 años para registrarte')
+      return
+    }
+
+    if (!aceptaTerminos) {
+      setError('Debés aceptar los Términos y Condiciones')
       return
     }
 
@@ -54,7 +73,7 @@ export default function Registro() {
     setCargando(true)
 
     try {
-      await registro(form)
+      await registro({ ...form, mayorDeEdad, aceptaTerminos })
       navigate(form.rol === 'vendedor' ? '/mi-tienda' : '/catalogo')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al registrarse')
@@ -130,6 +149,26 @@ export default function Registro() {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               placeholder="tu@email.com"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+            <input
+              name="dni"
+              type="text"
+              required
+              inputMode="numeric"
+              maxLength={10}
+              value={form.dni}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^\d.]/g, '')
+                setForm({ ...form, dni: val })
+                setError('')
+              }}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              placeholder="Ej: 35.123.456"
+            />
+            <p className="text-xs text-gray-400 mt-1">Requerido para verificar tu identidad. No se comparte públicamente.</p>
           </div>
 
           <div>
@@ -241,9 +280,39 @@ export default function Registro() {
             </div>
           )}
 
+          {/* Declaraciones legales */}
+          <div className="space-y-3 pt-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={mayorDeEdad}
+                onChange={(e) => { setMayorDeEdad(e.target.checked); setError('') }}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+              />
+              <span className="text-sm text-gray-600">
+                Declaro bajo juramento ser <strong>mayor de 18 años</strong>. Entiendo que proporcionar información falsa puede resultar en la suspensión de mi cuenta.
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={aceptaTerminos}
+                onChange={(e) => { setAceptaTerminos(e.target.checked); setError('') }}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+              />
+              <span className="text-sm text-gray-600">
+                Acepto los{' '}
+                <Link to="/terminos" target="_blank" className="text-blue-600 hover:underline font-medium">Términos y Condiciones</Link>
+                {' '}y la{' '}
+                <Link to="/privacidad" target="_blank" className="text-blue-600 hover:underline font-medium">Política de Privacidad</Link>
+              </span>
+            </label>
+          </div>
+
           <button
             type="submit"
-            disabled={cargando}
+            disabled={cargando || !mayorDeEdad || !aceptaTerminos}
             className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
           >
             {cargando ? 'Creando cuenta...' : 'Crear Cuenta'}

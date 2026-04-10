@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -10,14 +10,63 @@ interface Stats {
   calificacion: number
 }
 
+interface MpEstado {
+  vinculado: boolean
+  mpUserId?: string
+  vinculadoEn?: string
+}
+
 export default function CentralVendedor() {
   const { tienda, usuario } = useAuth()
+  const [searchParams] = useSearchParams()
   const [stats, setStats] = useState<Stats>({ totalProductos: 0, totalVentas: 0, ganancias: 0, calificacion: 0 })
   const [cargando, setCargando] = useState(true)
+  const [mpEstado, setMpEstado] = useState<MpEstado>({ vinculado: false })
+  const [mpMensaje, setMpMensaje] = useState('')
+  const [vinculandoMp, setVinculandoMp] = useState(false)
 
   useEffect(() => {
     cargarStats()
+    cargarEstadoMp()
+    // Verificar resultado de OAuth callback
+    const mpResult = searchParams.get('mp')
+    if (mpResult === 'ok') {
+      setMpMensaje('Mercado Pago vinculado exitosamente')
+      setMpEstado({ vinculado: true })
+    } else if (mpResult === 'error') {
+      setMpMensaje('Error al vincular Mercado Pago. Intentá de nuevo.')
+    }
   }, [tienda])
+
+  async function cargarEstadoMp() {
+    try {
+      const res = await api.get('/mp/estado')
+      setMpEstado(res.data)
+    } catch (err) {
+      console.error('Error cargando estado MP:', err)
+    }
+  }
+
+  async function vincularMp() {
+    setVinculandoMp(true)
+    try {
+      const res = await api.get('/mp/auth-url')
+      window.location.href = res.data.authUrl
+    } catch (err: any) {
+      setMpMensaje(err.response?.data?.error || 'Error al generar enlace')
+      setVinculandoMp(false)
+    }
+  }
+
+  async function desvincularMp() {
+    try {
+      await api.post('/mp/desvincular')
+      setMpEstado({ vinculado: false })
+      setMpMensaje('Mercado Pago desvinculado')
+    } catch (err) {
+      setMpMensaje('Error al desvincular')
+    }
+  }
 
   async function cargarStats() {
     if (!tienda) { setCargando(false); return }
@@ -116,6 +165,57 @@ export default function CentralVendedor() {
             <p className="text-sm text-gray-500 mb-1">Reputaci&oacute;n</p>
             <p className="text-3xl font-bold text-gray-800">{stats.calificacion.toFixed(1)}</p>
           </div>
+        </div>
+
+        {/* Mercado Pago - Vinculación */}
+        <div className={`rounded-2xl shadow-sm p-6 mb-6 border ${mpEstado.vinculado ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-[#009ee3] flex items-center justify-center">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l7 4.5-7 4.5z"/></svg>
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg">Mercado Pago</h3>
+                {mpEstado.vinculado ? (
+                  <p className="text-sm text-green-700">
+                    Cuenta vinculada {mpEstado.vinculadoEn && `desde ${new Date(mpEstado.vinculadoEn).toLocaleDateString()}`}
+                  </p>
+                ) : (
+                  <p className="text-sm text-yellow-700">
+                    Vinculá tu cuenta para recibir pagos automáticamente
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {mpEstado.vinculado ? (
+                <>
+                  <span className="px-4 py-2 bg-green-100 text-green-700 rounded-xl font-semibold text-sm flex items-center gap-2">
+                    Vinculado
+                  </span>
+                  <button onClick={desvincularMp}
+                    className="px-4 py-2 bg-white text-gray-600 rounded-xl text-sm border border-gray-300 hover:bg-gray-50">
+                    Desvincular
+                  </button>
+                </>
+              ) : (
+                <button onClick={vincularMp} disabled={vinculandoMp}
+                  className="px-6 py-3 bg-[#009ee3] text-white rounded-xl font-bold hover:bg-[#0087c9] transition-all disabled:opacity-50 flex items-center gap-2">
+                  {vinculandoMp ? 'Redirigiendo...' : 'Vincular Mercado Pago'}
+                </button>
+              )}
+            </div>
+          </div>
+          {mpMensaje && (
+            <p className={`mt-3 text-sm ${mpMensaje.includes('error') || mpMensaje.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+              {mpMensaje}
+            </p>
+          )}
+          {!mpEstado.vinculado && (
+            <p className="mt-3 text-xs text-gray-500">
+              Al vincular tu cuenta, los pagos de tus ventas se acreditarán directamente en tu billetera de Mercado Pago. Solo recibiremos nuestra comisión (10%).
+            </p>
+          )}
         </div>
 
         {/* Grid de secciones */}

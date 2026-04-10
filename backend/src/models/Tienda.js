@@ -55,6 +55,27 @@ const tiendaSchema = new mongoose.Schema({
   activo: {
     type: Boolean,
     default: true
+  },
+  // Mercado Pago Marketplace - OAuth del vendedor
+  mpAccessToken: {
+    type: String,
+    default: ''
+  },
+  mpRefreshToken: {
+    type: String,
+    default: ''
+  },
+  mpUserId: {
+    type: String,
+    default: ''
+  },
+  mpVinculado: {
+    type: Boolean,
+    default: false
+  },
+  mpVinculadoEn: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

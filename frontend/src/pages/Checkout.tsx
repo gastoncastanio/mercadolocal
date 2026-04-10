@@ -113,6 +113,13 @@ export default function Checkout() {
                 <span className="font-semibold text-[#009ee3]">Mercado Pago</span>
                 <span>| Tarjetas, cuotas, Mercado Crédito</span>
               </div>
+
+              <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-200">
+                <p className="text-xs text-green-700 flex items-center gap-2">
+                  <span className="text-base">🛡️</span>
+                  <span><strong>Compra protegida:</strong> tu dinero se retiene hasta que confirmes que recibiste el producto en las condiciones esperadas.</span>
+                </p>
+              </div>
             </form>
           </div>
 
