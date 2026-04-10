@@ -48,7 +48,6 @@ export async function crearPreferencia(orden, compradorEmail) {
       email: compradorEmail
     },
     external_reference: orden._id.toString(),
-    marketplace_fee: marketplaceFee,
     back_urls: {
       success: `${frontendUrl}/pago-exitoso`,
       failure: `${frontendUrl}/pago-fallido`,
@@ -62,8 +61,8 @@ export async function crearPreferencia(orden, compradorEmail) {
   let result
 
   if (usarSplit) {
-    // Split Payment: el pago se crea con el token del vendedor
-    // pero el marketplace_fee va a tu cuenta automáticamente
+    // Split Payment: marketplace_fee solo se usa con el token del vendedor
+    preferenceBody.marketplace_fee = marketplaceFee
     const vendedorClient = new MercadoPagoConfig({
       accessToken: vendedorAccessToken
     })
@@ -73,7 +72,6 @@ export async function crearPreferencia(orden, compradorEmail) {
     console.log(`💰 Preferencia Split creada: orden ${orden._id} | Fee marketplace: $${marketplaceFee}`)
   } else {
     // Sin split: todo va a tu cuenta (flujo anterior)
-    // Útil cuando el vendedor no tiene MP vinculado o hay múltiples vendedores
     result = await preference.create({ body: preferenceBody })
 
     console.log(`💰 Preferencia estándar creada: orden ${orden._id} (vendedor sin MP vinculado)`)
