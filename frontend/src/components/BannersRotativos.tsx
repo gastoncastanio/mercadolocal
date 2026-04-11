@@ -16,14 +16,6 @@ interface BannerDef {
 
 const BANNERS_BASE: BannerDef[] = [
   {
-    titulo: 'Env\u00edos a todo el pa\u00eds',
-    subtitulo: 'Comprale a vendedores locales y recib\u00ed en tu puerta',
-    cta: 'Explorar cat\u00e1logo',
-    enlace: '/catalogo',
-    gradiente: 'from-blue-600 via-indigo-600 to-purple-700',
-    emoji: '\u{1F69A}'
-  },
-  {
     titulo: 'Hasta 12 cuotas sin inter\u00e9s',
     subtitulo: 'Financiaci\u00f3n directa con Mercado Pago',
     cta: 'Ver productos',
