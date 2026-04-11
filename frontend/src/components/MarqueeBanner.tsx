@@ -1,28 +1,39 @@
 export default function MarqueeBanner() {
-  const mensaje = 'Compr\u00e1 y vend\u00e9 en un solo lugar al mejor precio'
-  // Repetimos el texto para un efecto continuo
-  const items = Array.from({ length: 8 }, (_, i) => i)
+  const items = [
+    { text: 'Pago protegido en todas tus compras', icon: '\u{1F6E1}\uFE0F' },
+    { text: 'Env\u00edos a todo el pa\u00eds', icon: '\u{1F69A}' },
+    { text: 'Hasta 12 cuotas sin inter\u00e9s', icon: '\u{1F4B3}' },
+    { text: 'Cre\u00e1 tu tienda gratis', icon: '\u{1F3EA}' },
+    { text: '+350 vendedores activos', icon: '\u2B50' },
+    { text: 'Soporte 24/7', icon: '\u{1F4AC}' }
+  ]
+
+  const repeats = Array.from({ length: 4 }, (_, i) => i)
 
   return (
-    <div className="bg-white border-b border-gray-200 overflow-hidden">
+    <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
       <div className="relative flex whitespace-nowrap py-2">
         <div className="flex animate-marquee whitespace-nowrap">
-          {items.map(i => (
-            <span key={`a${i}`} className="mx-8 text-sm sm:text-base font-semibold text-gray-900 inline-flex items-center gap-2">
-              <span className="text-blue-600">&#x2728;</span>
-              {mensaje}
-              <span className="text-purple-600">&#x1F6D2;</span>
-            </span>
-          ))}
+          {repeats.map(r =>
+            items.map((item, i) => (
+              <span key={`a${r}-${i}`} className="mx-6 text-xs sm:text-sm font-medium text-white/90 inline-flex items-center gap-2">
+                <span>{item.icon}</span>
+                {item.text}
+                <span className="text-white/30 mx-2">&bull;</span>
+              </span>
+            ))
+          )}
         </div>
         <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
-          {items.map(i => (
-            <span key={`b${i}`} className="mx-8 text-sm sm:text-base font-semibold text-gray-900 inline-flex items-center gap-2">
-              <span className="text-blue-600">&#x2728;</span>
-              {mensaje}
-              <span className="text-purple-600">&#x1F6D2;</span>
-            </span>
-          ))}
+          {repeats.map(r =>
+            items.map((item, i) => (
+              <span key={`b${r}-${i}`} className="mx-6 text-xs sm:text-sm font-medium text-white/90 inline-flex items-center gap-2">
+                <span>{item.icon}</span>
+                {item.text}
+                <span className="text-white/30 mx-2">&bull;</span>
+              </span>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -17,30 +17,30 @@ interface BannerDef {
 const BANNERS_BASE: BannerDef[] = [
   {
     titulo: 'Env\u00edos a todo el pa\u00eds',
-    subtitulo: 'Comprale a vendedores locales de forma segura',
+    subtitulo: 'Comprale a vendedores locales y recib\u00ed en tu puerta',
     cta: 'Explorar cat\u00e1logo',
     enlace: '/catalogo',
     gradiente: 'from-blue-600 via-indigo-600 to-purple-700',
     emoji: '\u{1F69A}'
   },
   {
-    titulo: 'Pag\u00e1 hasta en 12 cuotas',
-    subtitulo: 'Financiaci\u00f3n con Mercado Pago',
+    titulo: 'Hasta 12 cuotas sin inter\u00e9s',
+    subtitulo: 'Financiaci\u00f3n directa con Mercado Pago',
     cta: 'Ver productos',
     enlace: '/catalogo',
     gradiente: 'from-emerald-500 via-teal-600 to-cyan-700',
     emoji: '\u{1F4B3}'
   },
   {
-    titulo: 'Vend\u00e9 en MercadoLocal',
-    subtitulo: 'Abr\u00ed tu tienda gratis y empez\u00e1 hoy mismo',
+    titulo: 'Abr\u00ed tu tienda gratis',
+    subtitulo: 'Empez\u00e1 a vender hoy. Solo pag\u00e1s cuando vend\u00e9s.',
     cta: 'Crear mi tienda',
     enlace: '/registro?rol=vendedor',
     gradiente: 'from-orange-500 via-red-500 to-pink-600',
     emoji: '\u{1F3EA}'
   },
   {
-    titulo: 'Compra protegida',
+    titulo: 'Compra 100% protegida',
     subtitulo: 'Tu dinero queda retenido hasta que confirmes la entrega',
     cta: '\u00bfC\u00f3mo funciona?',
     enlace: '/devoluciones',
@@ -60,15 +60,12 @@ export default function BannersRotativos() {
   const [idx, setIdx] = useState(0)
   const [banners, setBanners] = useState<BannerDef[]>(BANNERS_BASE)
 
-  useEffect(() => {
-    cargarDestacados()
-  }, [])
+  useEffect(() => { cargarDestacados() }, [])
 
   async function cargarDestacados() {
     try {
       const res = await api.get('/destacados/activos?ubicacion=banner')
       const destacados = res.data || []
-
       if (destacados.length > 0) {
         const bannersPromo: BannerDef[] = destacados.slice(0, 3).map((d: any, i: number) => {
           const prod = d.productoId as Producto
@@ -84,7 +81,6 @@ export default function BannersRotativos() {
             destacadoId: d._id
           }
         })
-        // Intercalar: promo, base, promo, base...
         const mezclados: BannerDef[] = []
         const maxLen = Math.max(bannersPromo.length, BANNERS_BASE.length)
         for (let i = 0; i < maxLen; i++) {
@@ -114,18 +110,24 @@ export default function BannersRotativos() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-4">
       <div className={`relative bg-gradient-to-br ${banner.gradiente} rounded-2xl overflow-hidden shadow-lg`}>
-        <div key={idx} className="banner-fade">
+        {/* Patron decorativo sutil */}
+        <div className="absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+          backgroundSize: '24px 24px'
+        }} />
+
+        <div key={idx} className="banner-fade relative">
           <div className="grid md:grid-cols-2 gap-4 items-center p-5 sm:p-8 md:p-10 min-h-[180px] sm:min-h-[220px]">
             <div className="text-white">
               {banner.destacadoId && (
-                <span className="inline-block text-[10px] uppercase tracking-wide bg-white/20 px-2 py-0.5 rounded mb-2 font-semibold">
+                <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wide bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full mb-3 font-semibold">
                   &#x2B50; Producto promocionado
                 </span>
               )}
-              <h2 className="text-xl sm:text-2xl md:text-4xl font-extrabold mb-2 sm:mb-3 leading-tight">
+              <h2 className="text-xl sm:text-2xl md:text-4xl font-extrabold mb-2 sm:mb-3 leading-tight tracking-tight">
                 {banner.titulo}
               </h2>
-              <p className="text-sm sm:text-base text-white/90 mb-4">
+              <p className="text-sm sm:text-base text-white/90 mb-4 leading-relaxed">
                 {banner.subtitulo}
               </p>
               {banner.producto && (
@@ -136,9 +138,10 @@ export default function BannersRotativos() {
               <Link
                 to={banner.enlace}
                 onClick={handleClickPromo}
-                className="inline-block px-5 py-2.5 bg-white text-gray-900 rounded-lg font-bold text-sm sm:text-base hover:shadow-xl transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-gray-900 rounded-xl font-bold text-sm sm:text-base hover:shadow-xl hover:scale-[1.03] transition-all"
               >
-                {banner.cta} &rarr;
+                {banner.cta}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </Link>
             </div>
             <div className="hidden md:flex justify-center items-center">
@@ -147,24 +150,27 @@ export default function BannersRotativos() {
                   <img
                     src={banner.producto.imagenes[0]}
                     alt={banner.producto.nombre}
-                    className="w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-xl border-4 border-white/30 shadow-2xl group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                    className="w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-2xl border-4 border-white/20 shadow-2xl group-hover:scale-105 group-hover:border-white/40 transition-all duration-300"
                   />
                 </Link>
               ) : (
-                <span className="text-8xl lg:text-9xl opacity-90 drop-shadow-lg">{banner.emoji}</span>
+                <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center animate-float">
+                  <span className="text-7xl lg:text-8xl drop-shadow-lg">{banner.emoji}</span>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Dots */}
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
+        {/* Dots mejorados */}
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
           {banners.map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
-              className={`h-2 rounded-full transition-all ${
-                i === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
+              className={`rounded-full transition-all duration-300 ${
+                i === idx ? 'w-7 h-2.5 bg-white shadow-sm' : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
               }`}
               aria-label={`Banner ${i + 1}`}
             />
