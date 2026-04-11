@@ -28,10 +28,11 @@ router.get('/', async (req, res) => {
       Orden.countDocuments({ estado: { $in: ['pagada', 'enviada', 'completada', 'cancelada'] } })
     ])
 
-    // Calcular satisfaccion: completadas sin disputa / total completadas
-    const satisfaccion = totalOrdenes > 0
+    // Calcular satisfaccion: completadas / total ordenes
+    // Con menos de 10 ordenes no hay muestra representativa
+    const satisfaccion = totalOrdenes >= 10
       ? Math.round((ordenesCompletadas / totalOrdenes) * 100)
-      : 98
+      : (totalOrdenes > 0 ? 100 : 0)
 
     cache = {
       productosPublicados: totalProductos,
