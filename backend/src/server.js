@@ -28,6 +28,7 @@ import notificacionesRouter from './routes/notificaciones.js'
 import enviosRouter from './routes/envios.js'
 import destacadosRouter from './routes/destacados.js'
 import mpOauthRouter from './routes/mpOauth.js'
+import statsRouter from './routes/stats.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -208,6 +209,7 @@ app.use('/api/notificaciones', notificacionesRouter)
 app.use('/api/envios', enviosRouter)
 app.use('/api/destacados', destacadosRouter)
 app.use('/api/mp', mpOauthRouter)
+app.use('/api/stats', statsRouter)
 
 // Health check
 app.get('/api/health', (req, res) => {

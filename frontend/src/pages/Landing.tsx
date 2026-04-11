@@ -60,6 +60,7 @@ export default function Landing() {
   const { estaLogueado } = useAuth()
   const [destacados, setDestacados] = useState<Producto[]>([])
   const [masVendidos, setMasVendidos] = useState<Producto[]>([])
+  const [stats, setStats] = useState({ productosPublicados: 0, vendedoresActivos: 0, comprasRealizadas: 0, satisfaccion: 0 })
   const hero = useInView(0.2)
   const beneficios = useInView(0.15)
   const escrow = useInView(0.1)
@@ -70,12 +71,16 @@ export default function Landing() {
 
   async function cargar() {
     try {
-      const [d, mv] = await Promise.all([
-        api.get('/productos?ordenar=calificacion&limite=8'),
-        api.get('/productos?ordenar=ventas&limite=8')
+      const [d, mv, s] = await Promise.all([
+        api.get('/productos?ordenar=calificacion&limite=8').catch(() => ({ data: [] })),
+        api.get('/productos?ordenar=ventas&limite=8').catch(() => ({ data: [] })),
+        api.get('/stats').catch(() => ({ data: null }))
       ])
       setDestacados(d.data)
       setMasVendidos(mv.data)
+      if (s.data && s.data.productosPublicados !== undefined) {
+        setStats(s.data)
+      }
     } catch (err) {
       console.error(err)
     }
@@ -94,10 +99,10 @@ export default function Landing() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
             {[
-              { valor: 1200, sufijo: '+', label: 'Productos publicados', icon: '\u{1F4E6}' },
-              { valor: 350, sufijo: '+', label: 'Vendedores activos', icon: '\u{1F3EA}' },
-              { valor: 2800, sufijo: '+', label: 'Compras realizadas', icon: '\u{1F6D2}' },
-              { valor: 98, sufijo: '%', label: 'Compradores satisfechos', icon: '\u2B50' }
+              { valor: stats.productosPublicados, sufijo: '', label: 'Productos publicados', icon: '\u{1F4E6}' },
+              { valor: stats.vendedoresActivos, sufijo: '', label: 'Vendedores activos', icon: '\u{1F3EA}' },
+              { valor: stats.comprasRealizadas, sufijo: '', label: 'Compras realizadas', icon: '\u{1F6D2}' },
+              { valor: stats.satisfaccion, sufijo: '%', label: 'Compradores satisfechos', icon: '\u2B50' }
             ].map((stat, i) => (
               <div key={i} className="flex flex-col items-center">
                 <span className="text-2xl mb-1">{stat.icon}</span>
@@ -135,10 +140,12 @@ export default function Landing() {
                 opacity: hero.visible ? 1 : 0
               }}
             >
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-sm text-white/90 mb-4">
-                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                +350 vendedores ya venden ac&aacute;
-              </div>
+              {stats.vendedoresActivos > 0 && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-sm text-white/90 mb-4">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  +{stats.vendedoresActivos} vendedores ya venden ac&aacute;
+                </div>
+              )}
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.4rem] font-extrabold text-white mb-4 leading-[1.1] tracking-tight">
                 Lo que busc&aacute;s est&aacute; cerca.
