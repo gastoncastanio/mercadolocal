@@ -10,12 +10,10 @@ export default function Navbar() {
   const [menuVendedor, setMenuVendedor] = useState(false)
   const [menuUsuario, setMenuUsuario] = useState(false)
   const [menuCompras, setMenuCompras] = useState(false)
-  const [menuAyuda, setMenuAyuda] = useState(false)
   const [notifsNoLeidas, setNotifsNoLeidas] = useState(0)
   const refVendedor = useRef<HTMLDivElement>(null)
   const refUsuario = useRef<HTMLDivElement>(null)
   const refCompras = useRef<HTMLDivElement>(null)
-  const refAyuda = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!estaLogueado) return
@@ -29,7 +27,6 @@ export default function Navbar() {
       if (refVendedor.current && !refVendedor.current.contains(e.target as Node)) setMenuVendedor(false)
       if (refUsuario.current && !refUsuario.current.contains(e.target as Node)) setMenuUsuario(false)
       if (refCompras.current && !refCompras.current.contains(e.target as Node)) setMenuCompras(false)
-      if (refAyuda.current && !refAyuda.current.contains(e.target as Node)) setMenuAyuda(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -104,58 +101,15 @@ export default function Navbar() {
               <Link to="/mas-vendidos" className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
                 &#x1F525; M&aacute;s vendidos
               </Link>
-              <Link to="/catalogo?categoria=ofertas" className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
-                Ofertas
+              <Link to="/catalogo?categoria=tecnologia" className="hidden md:block text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
+                Tecnolog&iacute;a
               </Link>
-              <Link to="/catalogo?categoria=envio-gratis" className="hidden md:block text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
-                Env&iacute;o gratis
+              <Link to="/catalogo?categoria=moda" className="hidden md:block text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
+                Moda
               </Link>
-              <Link to="/catalogo?categoria=tendencias" className="hidden md:block text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
-                Tendencias
+              <Link to="/ayuda" className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap">
+                Ayuda
               </Link>
-              <div ref={refAyuda} className="relative">
-                <button
-                  onClick={() => { setMenuAyuda(!menuAyuda); setMenuUsuario(false); setMenuVendedor(false); setMenuCompras(false) }}
-                  className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap"
-                >
-                  Ayuda
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M5.5 7.5L10 12l4.5-4.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-                  </svg>
-                </button>
-                {menuAyuda && (
-                  <div className="absolute left-0 mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-2 z-50">
-                    <Link to="/ayuda" onClick={() => setMenuAyuda(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-blue-50">
-                      <span className="text-xl">&#x2753;</span>
-                      <div>
-                        <p className="font-semibold text-blue-700 text-sm">Centro de Ayuda</p>
-                        <p className="text-xs text-gray-500">Preguntas frecuentes</p>
-                      </div>
-                    </Link>
-                    <Link to="/devoluciones" onClick={() => setMenuAyuda(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                      <span className="text-xl">&#x1F504;</span>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">Pol&iacute;tica de devoluciones</p>
-                        <p className="text-xs text-gray-500">Reembolsos en 48 hs</p>
-                      </div>
-                    </Link>
-                    <Link to="/privacidad" onClick={() => setMenuAyuda(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                      <span className="text-xl">&#x1F512;</span>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">Pol&iacute;tica de privacidad</p>
-                        <p className="text-xs text-gray-500">C&oacute;mo protegemos tus datos</p>
-                      </div>
-                    </Link>
-                    <Link to="/terminos" onClick={() => setMenuAyuda(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50">
-                      <span className="text-xl">&#x1F4C4;</span>
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">T&eacute;rminos y condiciones</p>
-                        <p className="text-xs text-gray-500">Reglas del marketplace</p>
-                      </div>
-                    </Link>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Derecha - usuario + menús */}

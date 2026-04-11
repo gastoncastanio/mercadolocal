@@ -8,7 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // 15 segundos máximo por request
+  timeout: 5000, // 5 segundos máximo por request
 })
 
 // Interceptor: manejar 401 (token expirado/inválido)

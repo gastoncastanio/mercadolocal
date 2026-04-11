@@ -1,50 +1,60 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import MarqueeBanner from './components/MarqueeBanner'
 import PortonPrivado from './components/PortonPrivado'
 
-// Páginas
+// Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
-import Registro from './pages/Registro'
-import Login from './pages/Login'
-import CatalogoProductos from './pages/CatalogoProductos'
-import DetalleProducto from './pages/DetalleProducto'
-import Carrito from './pages/Carrito'
-import Checkout from './pages/Checkout'
-import MisOrdenes from './pages/MisOrdenes'
-import MiTienda from './pages/MiTienda'
-import PublicarProducto from './pages/PublicarProducto'
-import PedidosVendedor from './pages/PedidosVendedor'
-import DashboardAdmin from './pages/DashboardAdmin'
-import PagoExitoso from './pages/PagoExitoso'
-import PagoFallido from './pages/PagoFallido'
-import PagoPendiente from './pages/PagoPendiente'
-import Terminos from './pages/Terminos'
-import Privacidad from './pages/Privacidad'
-import Devoluciones from './pages/Devoluciones'
-import RecuperarContraseña from './pages/RecuperarContraseña'
-import PromoverProducto from './pages/PromoverProducto'
-import Chat from './pages/Chat'
-import MisDisputas from './pages/MisDisputas'
-import DisputasAdmin from './pages/DisputasAdmin'
-import DashboardVendedor from './pages/DashboardVendedor'
-import RecuperarPassword from './pages/RecuperarPassword'
-import AdminCMS from './pages/AdminCMS'
-import Favoritos from './pages/Favoritos'
-import Notificaciones from './pages/Notificaciones'
-import MasVendidos from './pages/MasVendidos'
-import CentralVendedor from './pages/CentralVendedor'
-import TiendaPublica from './pages/TiendaPublica'
-import Ayuda from './pages/Ayuda'
-import CarritosAbandonados from './pages/CarritosAbandonados'
-import ChatbotSoporte from './components/ChatbotSoporte'
 
-// Ruta protegida
+// Todas las demas paginas se cargan lazy
+const Registro = lazy(() => import('./pages/Registro'))
+const Login = lazy(() => import('./pages/Login'))
+const CatalogoProductos = lazy(() => import('./pages/CatalogoProductos'))
+const DetalleProducto = lazy(() => import('./pages/DetalleProducto'))
+const Carrito = lazy(() => import('./pages/Carrito'))
+const Checkout = lazy(() => import('./pages/Checkout'))
+const MisOrdenes = lazy(() => import('./pages/MisOrdenes'))
+const MiTienda = lazy(() => import('./pages/MiTienda'))
+const PublicarProducto = lazy(() => import('./pages/PublicarProducto'))
+const PedidosVendedor = lazy(() => import('./pages/PedidosVendedor'))
+const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'))
+const PagoExitoso = lazy(() => import('./pages/PagoExitoso'))
+const PagoFallido = lazy(() => import('./pages/PagoFallido'))
+const PagoPendiente = lazy(() => import('./pages/PagoPendiente'))
+const Terminos = lazy(() => import('./pages/Terminos'))
+const Privacidad = lazy(() => import('./pages/Privacidad'))
+const Devoluciones = lazy(() => import('./pages/Devoluciones'))
+const RecuperarContraseña = lazy(() => import('./pages/RecuperarContraseña'))
+const PromoverProducto = lazy(() => import('./pages/PromoverProducto'))
+const Chat = lazy(() => import('./pages/Chat'))
+const MisDisputas = lazy(() => import('./pages/MisDisputas'))
+const DisputasAdmin = lazy(() => import('./pages/DisputasAdmin'))
+const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'))
+const RecuperarPassword = lazy(() => import('./pages/RecuperarPassword'))
+const AdminCMS = lazy(() => import('./pages/AdminCMS'))
+const Favoritos = lazy(() => import('./pages/Favoritos'))
+const Notificaciones = lazy(() => import('./pages/Notificaciones'))
+const MasVendidos = lazy(() => import('./pages/MasVendidos'))
+const CentralVendedor = lazy(() => import('./pages/CentralVendedor'))
+const TiendaPublica = lazy(() => import('./pages/TiendaPublica'))
+const Ayuda = lazy(() => import('./pages/Ayuda'))
+const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
+const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
+
+function LoadingSpinner() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="spinner" />
+    </div>
+  )
+}
+
 function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
   const { estaLogueado, usuario, cargando } = useAuth()
 
-  if (cargando) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
+  if (cargando) return <LoadingSpinner />
   if (!estaLogueado) return <Navigate to="/login" />
   if (roles && usuario && !roles.includes(usuario.rol)) return <Navigate to="/catalogo" />
 
@@ -58,60 +68,62 @@ function ConNavbar({ children }: { children: React.ReactNode }) {
 function AppContent() {
   return (
     <Router>
-      <Routes>
-        {/* Públicas */}
-        <Route path="/" element={<ConNavbar><Landing /></ConNavbar>} />
-        <Route path="/registro" element={<ConNavbar><Registro /></ConNavbar>} />
-        <Route path="/login" element={<ConNavbar><Login /></ConNavbar>} />
-        <Route path="/catalogo" element={<ConNavbar><CatalogoProductos /></ConNavbar>} />
-        <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
-        <Route path="/tienda/:id" element={<ConNavbar><TiendaPublica /></ConNavbar>} />
-        <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* Publicas */}
+          <Route path="/" element={<ConNavbar><Landing /></ConNavbar>} />
+          <Route path="/registro" element={<ConNavbar><Registro /></ConNavbar>} />
+          <Route path="/login" element={<ConNavbar><Login /></ConNavbar>} />
+          <Route path="/catalogo" element={<ConNavbar><CatalogoProductos /></ConNavbar>} />
+          <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
+          <Route path="/tienda/:id" element={<ConNavbar><TiendaPublica /></ConNavbar>} />
+          <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
 
-        {/* Requieren login */}
-        <Route path="/carrito" element={<ConNavbar><RutaPrivada><Carrito /></RutaPrivada></ConNavbar>} />
-        <Route path="/checkout" element={<ConNavbar><RutaPrivada><Checkout /></RutaPrivada></ConNavbar>} />
-        <Route path="/mis-ordenes" element={<ConNavbar><RutaPrivada><MisOrdenes /></RutaPrivada></ConNavbar>} />
-        <Route path="/pago-exitoso" element={<ConNavbar><RutaPrivada><PagoExitoso /></RutaPrivada></ConNavbar>} />
-        <Route path="/pago-fallido" element={<ConNavbar><RutaPrivada><PagoFallido /></RutaPrivada></ConNavbar>} />
-        <Route path="/pago-pendiente" element={<ConNavbar><RutaPrivada><PagoPendiente /></RutaPrivada></ConNavbar>} />
-        <Route path="/favoritos" element={<ConNavbar><RutaPrivada><Favoritos /></RutaPrivada></ConNavbar>} />
-        <Route path="/notificaciones" element={<ConNavbar><RutaPrivada><Notificaciones /></RutaPrivada></ConNavbar>} />
+          {/* Requieren login */}
+          <Route path="/carrito" element={<ConNavbar><RutaPrivada><Carrito /></RutaPrivada></ConNavbar>} />
+          <Route path="/checkout" element={<ConNavbar><RutaPrivada><Checkout /></RutaPrivada></ConNavbar>} />
+          <Route path="/mis-ordenes" element={<ConNavbar><RutaPrivada><MisOrdenes /></RutaPrivada></ConNavbar>} />
+          <Route path="/pago-exitoso" element={<ConNavbar><RutaPrivada><PagoExitoso /></RutaPrivada></ConNavbar>} />
+          <Route path="/pago-fallido" element={<ConNavbar><RutaPrivada><PagoFallido /></RutaPrivada></ConNavbar>} />
+          <Route path="/pago-pendiente" element={<ConNavbar><RutaPrivada><PagoPendiente /></RutaPrivada></ConNavbar>} />
+          <Route path="/favoritos" element={<ConNavbar><RutaPrivada><Favoritos /></RutaPrivada></ConNavbar>} />
+          <Route path="/notificaciones" element={<ConNavbar><RutaPrivada><Notificaciones /></RutaPrivada></ConNavbar>} />
 
-        {/* Solo vendedores */}
-        <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><MiTienda /></RutaPrivada></ConNavbar>} />
-        <Route path="/publicar" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PublicarProducto /></RutaPrivada></ConNavbar>} />
-        <Route path="/pedidos-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PedidosVendedor /></RutaPrivada></ConNavbar>} />
-        <Route path="/carritos-abandonados" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CarritosAbandonados /></RutaPrivada></ConNavbar>} />
+          {/* Solo vendedores */}
+          <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><MiTienda /></RutaPrivada></ConNavbar>} />
+          <Route path="/publicar" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PublicarProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/pedidos-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PedidosVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/carritos-abandonados" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CarritosAbandonados /></RutaPrivada></ConNavbar>} />
 
-        {/* Mensajes y disputas */}
-        <Route path="/chat" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
-        <Route path="/chat/:conversacionId" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
-        <Route path="/mis-disputas" element={<ConNavbar><RutaPrivada><MisDisputas /></RutaPrivada></ConNavbar>} />
+          {/* Mensajes y disputas */}
+          <Route path="/chat" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
+          <Route path="/chat/:conversacionId" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
+          <Route path="/mis-disputas" element={<ConNavbar><RutaPrivada><MisDisputas /></RutaPrivada></ConNavbar>} />
 
-        {/* Dashboard vendedor */}
-        <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><DashboardVendedor /></RutaPrivada></ConNavbar>} />
-        <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CentralVendedor /></RutaPrivada></ConNavbar>} />
-        <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
+          {/* Dashboard vendedor */}
+          <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><DashboardVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CentralVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
 
-        {/* Solo admin - SIN navbar, tiene su propia sidebar */}
-        <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
-        <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
-        <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
+          {/* Solo admin */}
+          <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
+          <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
-        {/* Ayuda */}
-        <Route path="/ayuda" element={<ConNavbar><Ayuda /></ConNavbar>} />
+          {/* Ayuda */}
+          <Route path="/ayuda" element={<ConNavbar><Ayuda /></ConNavbar>} />
 
-        {/* Públicas legales */}
-        <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
-        <Route path="/privacidad" element={<ConNavbar><Privacidad /></ConNavbar>} />
-        <Route path="/devoluciones" element={<ConNavbar><Devoluciones /></ConNavbar>} />
-        <Route path="/recuperar" element={<RecuperarContraseña />} />
-        <Route path="/recuperar-password" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
+          {/* Publicas legales */}
+          <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
+          <Route path="/privacidad" element={<ConNavbar><Privacidad /></ConNavbar>} />
+          <Route path="/devoluciones" element={<ConNavbar><Devoluciones /></ConNavbar>} />
+          <Route path="/recuperar" element={<Suspense fallback={<LoadingSpinner />}><RecuperarContraseña /></Suspense>} />
+          <Route path="/recuperar-password" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Suspense>
     </Router>
   )
 }
@@ -121,7 +133,9 @@ export default function App() {
     <PortonPrivado>
       <AuthProvider>
         <AppContent />
-        <ChatbotSoporte />
+        <Suspense fallback={null}>
+          <ChatbotSoporte />
+        </Suspense>
       </AuthProvider>
     </PortonPrivado>
   )
