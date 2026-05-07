@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { verificarToken, soloVendedor } from '../middleware/auth.js'
 import { crearTienda, obtenerTienda, obtenerMiTienda, actualizarTienda, listarTiendas } from '../services/tiendaService.js'
+import { emitNuevaTienda } from '../services/socketService.js'
 
 const router = Router()
 
@@ -32,6 +33,7 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
   try {
     const tienda = await crearTienda(req.usuario.id, req.body)
     console.log(`✅ Nueva tienda creada: "${tienda.nombre}" por ${req.usuario.nombre}`)
+    emitNuevaTienda(tienda)
     res.status(201).json(tienda)
   } catch (error) {
     res.status(400).json({ error: error.message })

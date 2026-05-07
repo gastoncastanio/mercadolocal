@@ -10,6 +10,7 @@ import Usuario from '../models/Usuario.js'
 import Notificacion from '../models/Notificacion.js'
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
+import { emitPagoAprobado, emitVentaConfirmada, emitStockActualizado, emitNotificacion } from '../services/socketService.js'
 
 const router = Router()
 
@@ -153,10 +154,17 @@ router.post('/webhook', async (req, res) => {
 
         // Descontar stock (solo cuando el pago se confirma)
         for (const item of ordenActualizada.items) {
-          await Producto.findByIdAndUpdate(item.productoId, {
+          const prodActualizado = await Producto.findByIdAndUpdate(item.productoId, {
             $inc: { stock: -item.cantidad, totalVentas: item.cantidad }
-          })
+          }, { new: true })
+          // Emitir stock actualizado en tiempo real
+          if (prodActualizado) {
+            emitStockActualizado(item.productoId.toString(), prodActualizado.stock)
+          }
         }
+
+        // Emitir pago aprobado al comprador via WebSocket
+        emitPagoAprobado(ordenActualizada.compradorId.toString(), ordenActualizada)
 
         // Actualizar stats de la tienda
         const tiendaIds = [...new Set(ordenActualizada.items.map(i => i.tiendaId.toString()))]
@@ -213,13 +221,16 @@ router.post('/webhook', async (req, res) => {
             if (tienda) {
               const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
               const totalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-              await new Notificacion({
+              const notifVenta = await new Notificacion({
                 usuarioId: tienda.usuarioId,
                 tipo: 'venta',
                 titulo: 'Nueva venta confirmada',
                 mensaje: `Venta confirmada por $${totalTienda.toLocaleString('es-AR')}. El pago fue aprobado. Prepará el envío.`,
                 enlace: '/pedidos-vendedor'
               }).save()
+              // Emitir venta al vendedor via WebSocket
+              emitVentaConfirmada(tienda.usuarioId.toString(), { total: totalTienda, cantidadItems: itemsTienda.length })
+              emitNotificacion(tienda.usuarioId.toString(), notifVenta)
               const vendedor = await Usuario.findById(tienda.usuarioId)
               if (vendedor) {
                 await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)

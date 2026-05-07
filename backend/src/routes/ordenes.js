@@ -5,6 +5,7 @@ import { obtenerMiTienda } from '../services/tiendaService.js'
 import { enviarRecordatorioCompra } from '../services/emailService.js'
 import Usuario from '../models/Usuario.js'
 import Orden from '../models/Orden.js'
+import { emitOrdenEstado } from '../services/socketService.js'
 
 const router = Router()
 
@@ -55,6 +56,8 @@ router.put('/:ordenId/estado', verificarToken, soloVendedor, async (req, res) =>
       return res.status(400).json({ error: 'No tienes una tienda' })
     }
     const orden = await actualizarEstadoOrden(req.params.ordenId, estado, tienda._id)
+    // Emitir cambio de estado al comprador en tiempo real
+    emitOrdenEstado(orden.compradorId.toString(), orden._id.toString(), estado)
     res.json(orden)
   } catch (error) {
     res.status(400).json({ error: error.message })

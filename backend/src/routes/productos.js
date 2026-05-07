@@ -3,6 +3,7 @@ import { verificarToken, soloVendedor } from '../middleware/auth.js'
 import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
+import { emitNuevoProducto } from '../services/socketService.js'
 
 const router = Router()
 
@@ -70,6 +71,7 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
 
     const producto = await crearProducto(tienda._id, req.body)
     console.log(`✅ Nuevo producto: "${producto.nombre}" en tienda "${tienda.nombre}"`)
+    emitNuevoProducto(producto)
     res.status(201).json(producto)
   } catch (error) {
     res.status(400).json({ error: error.message })

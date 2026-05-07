@@ -1,6 +1,7 @@
 // CARGAR VARIABLES DE ENTORNO PRIMERO
 import './config/env.js'
 
+import http from 'http'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -9,6 +10,7 @@ import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
 import { connectDB } from './config/database.js'
 import { limpiarOrdenesPendientes } from './services/ordenService.js'
+import { initSocket } from './services/socketService.js'
 
 // Rutas del Marketplace
 import authRouter from './routes/auth.js'
@@ -32,6 +34,7 @@ import statsRouter from './routes/stats.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
+const httpServer = http.createServer(app)
 const PORT = process.env.PORT || 3001
 
 // ===== SEGURIDAD NIVEL 1: Headers y Protección Base =====
@@ -44,7 +47,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://*.mercadopago.com"],
-      connectSrc: ["'self'", "https://api.mercadopago.com", "https://api.mercadolibre.com"],
+      connectSrc: ["'self'", "https://api.mercadopago.com", "https://api.mercadolibre.com", "wss:", "ws:"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       frameSrc: ["'self'", "https://*.mercadopago.com"],
       objectSrc: ["'none'"],
@@ -211,9 +214,24 @@ app.use('/api/destacados', destacadosRouter)
 app.use('/api/mp', mpOauthRouter)
 app.use('/api/stats', statsRouter)
 
-// Health check
+// Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', mensaje: 'Marketplace activo', timestamp: new Date() })
+})
+
+// Health check detallado (verifica servicios)
+app.get('/api/health/detalle', async (req, res) => {
+  const checks = { api: 'OK', mongodb: 'ERROR', websocket: 'ERROR' }
+  try {
+    const mongoose = (await import('mongoose')).default
+    if (mongoose.connection.readyState === 1) checks.mongodb = 'OK'
+  } catch {}
+  try {
+    const { getIO } = await import('./services/socketService.js')
+    if (getIO()) checks.websocket = 'OK'
+  } catch {}
+  const allOk = Object.values(checks).every(v => v === 'OK')
+  res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
 // Error handling global
@@ -226,13 +244,20 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: mensaje })
 })
 
-// Iniciar servidor
-app.listen(PORT, () => {
+// Inicializar WebSockets
+const corsOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim()).filter(Boolean)
+  : ['http://localhost:5173']
+initSocket(httpServer, corsOrigins)
+
+// Iniciar servidor HTTP (con WebSocket)
+httpServer.listen(PORT, () => {
   console.log(``)
   console.log(`🛒 ==========================================`)
   console.log(`🛒  MARKETPLACE LOCAL - Servidor Activo`)
   console.log(`🛒 ==========================================`)
   console.log(`🚀 Escuchando en http://localhost:${PORT}`)
+  console.log(`⚡ WebSockets: Socket.IO activo`)
   console.log(`🔐 Seguridad: Helmet + CORS + NoSQL Sanitize`)
   console.log(`🛡️  Rate Limit + HPP + XSS Protection`)
   console.log(`📝 API: http://localhost:${PORT}/api`)
