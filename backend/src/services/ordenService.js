@@ -23,7 +23,8 @@ export async function crearOrden(usuarioId, datosEntrega) {
     if (producto.stock < item.cantidad) {
       throw new Error(`Stock insuficiente para "${item.nombre}". Disponible: ${producto.stock}`)
     }
-    if (producto.precio !== item.precio) {
+    // Tolerancia para comparación de floats: diferencia menor a 1 centavo se considera igual
+    if (Math.abs(producto.precio - item.precio) > 0.01) {
       throw new Error(`El precio de "${item.nombre}" cambió. Actualizá tu carrito.`)
     }
   }
@@ -63,9 +64,8 @@ export async function crearOrden(usuarioId, datosEntrega) {
 
   const tiendaIds = [...new Set(items.map(i => i.tiendaId.toString()))]
 
-  // Vaciar carrito
-  carrito.items = []
-  await carrito.save()
+  // NO vaciar el carrito ac\u00e1: se vac\u00eda solo cuando el pago es confirmado por el webhook.
+  // Si el usuario abandona el checkout, su carrito sigue intacto para retomar.
 
   console.log(`\u2705 Orden creada (pendiente de pago): $${total}`)
 

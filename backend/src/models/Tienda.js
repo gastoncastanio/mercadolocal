@@ -77,6 +77,12 @@ const tiendaSchema = new mongoose.Schema({
   mpVinculadoEn: {
     type: Date,
     default: null
+  },
+  // Token CSRF temporal usado durante el flujo OAuth con Mercado Pago.
+  // Se setea al pedir auth-url y se valida en el callback.
+  mpCsrfToken: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

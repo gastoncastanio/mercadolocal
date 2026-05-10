@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 
-const CLAVE_CORRECTA = 'mercadolocal2026'
+// Clave del sitio leída desde variable de entorno (no hardcodeada).
+// Si no está definida, el portón no aparece y la app es pública.
+const CLAVE_CORRECTA = import.meta.env.VITE_SITE_PASSWORD || ''
 const STORAGE_KEY = 'mercadolocal_acceso'
 
 export default function PortonPrivado({ children }: { children: React.ReactNode }) {
@@ -13,6 +15,11 @@ export default function PortonPrivado({ children }: { children: React.ReactNode 
       setAutorizado(true)
     }
   }, [])
+
+  // Si no hay VITE_SITE_PASSWORD configurada, no mostrar portón (app pública)
+  if (!CLAVE_CORRECTA) {
+    return <>{children}</>
+  }
 
   const intentar = (e: React.FormEvent) => {
     e.preventDefault()

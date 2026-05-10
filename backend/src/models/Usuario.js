@@ -13,7 +13,7 @@ const usuarioSchema = new mongoose.Schema({
   contraseña: {
     type: String,
     required: [true, 'La contraseña es obligatoria'],
-    minlength: [6, 'La contraseña debe tener al menos 6 caracteres']
+    minlength: [8, 'La contraseña debe tener al menos 8 caracteres']
   },
   nombre: {
     type: String,
@@ -54,6 +54,20 @@ const usuarioSchema = new mongoose.Schema({
   resetTokenExpira: {
     type: Date,
     default: null
+  },
+  // Refresh tokens persistentes (sesiones largas)
+  refreshTokens: {
+    type: [{
+      token: { type: String, required: true },
+      creadoEn: { type: Date, default: Date.now },
+      expiraEn: { type: Date, required: true }
+    }],
+    default: []
+  },
+  // Marca del último login exitoso
+  ultimoLogin: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
@@ -77,10 +91,13 @@ usuarioSchema.methods.compararContraseña = async function(contraseñaIngresada)
   return await bcrypt.compare(contraseñaIngresada, this.contraseña)
 }
 
-// No devolver la contraseña en JSON
+// No devolver la contraseña ni datos sensibles en JSON
 usuarioSchema.methods.toJSON = function() {
   const usuario = this.toObject()
   delete usuario.contraseña
+  delete usuario.refreshTokens
+  delete usuario.resetToken
+  delete usuario.resetTokenExpira
   return usuario
 }
 

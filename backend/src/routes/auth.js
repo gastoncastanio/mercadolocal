@@ -1,11 +1,59 @@
 import { Router } from 'express'
 import crypto from 'crypto'
 import { registrarUsuario, loginUsuario, obtenerPerfil, actualizarPerfil } from '../services/usuarioService.js'
-import { verificarToken } from '../middleware/auth.js'
+import {
+  verificarToken,
+  generarAccessToken,
+  verificarRefreshToken,
+  rotarRefreshToken,
+  revocarRefreshToken
+} from '../middleware/auth.js'
 import Usuario from '../models/Usuario.js'
 import { enviarCodigoRecuperacion } from '../services/emailService.js'
 
 const router = Router()
+
+// ===== Rate limit por email (memoria) — refuerza el rate limit por IP del server =====
+// Map<email, { intentos: number, ventanaInicio: number }>
+const intentosLoginPorEmail = new Map()
+const VENTANA_LOGIN_MS = 15 * 60 * 1000   // 15 minutos
+const MAX_INTENTOS_EMAIL = 10              // 10 intentos por email en la ventana
+
+function chequearRateLimitEmail(email) {
+  const ahora = Date.now()
+  const registro = intentosLoginPorEmail.get(email)
+  if (!registro || ahora - registro.ventanaInicio > VENTANA_LOGIN_MS) {
+    intentosLoginPorEmail.set(email, { intentos: 1, ventanaInicio: ahora })
+    return { permitido: true }
+  }
+  registro.intentos += 1
+  if (registro.intentos > MAX_INTENTOS_EMAIL) {
+    return { permitido: false, esperar: Math.ceil((VENTANA_LOGIN_MS - (ahora - registro.ventanaInicio)) / 60000) }
+  }
+  return { permitido: true }
+}
+
+function resetRateLimitEmail(email) {
+  intentosLoginPorEmail.delete(email)
+}
+
+// Limpieza periódica del Map (cada 30 minutos) para evitar leaks de memoria
+setInterval(() => {
+  const ahora = Date.now()
+  for (const [email, registro] of intentosLoginPorEmail.entries()) {
+    if (ahora - registro.ventanaInicio > VENTANA_LOGIN_MS) {
+      intentosLoginPorEmail.delete(email)
+    }
+  }
+}, 30 * 60 * 1000)
+
+// Validar fortaleza de contraseña: mínimo 8 caracteres y al menos un número
+function contraseñaFuerte(password) {
+  if (typeof password !== 'string') return false
+  if (password.length < 8) return false
+  if (!/\d/.test(password)) return false
+  return true
+}
 
 // Sanitizar strings: remover vectores de XSS conocidos
 function sanitizar(str) {
@@ -76,9 +124,9 @@ router.post('/registro', async (req, res) => {
       return res.status(400).json({ error: 'Email no válido' })
     }
 
-    // Validar contraseña
-    if (contraseña.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+    // Validar contraseña: mínimo 8 caracteres y al menos un número
+    if (!contraseñaFuerte(contraseña)) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres y un número' })
     }
 
     if (contraseña.length > 128) {
@@ -112,6 +160,7 @@ router.post('/registro', async (req, res) => {
 
 // POST /api/auth/login
 router.post('/login', async (req, res) => {
+  let emailNormalizado = ''
   try {
     let { email, contraseña } = req.body
 
@@ -120,20 +169,95 @@ router.post('/login', async (req, res) => {
     }
 
     email = sanitizar(email).toLowerCase()
+    emailNormalizado = email
 
     if (!emailValido(email)) {
       return res.status(400).json({ error: 'Email no válido' })
     }
 
+    // Rate limit por email (complementa el limit por IP del server)
+    const rateCheck = chequearRateLimitEmail(email)
+    if (!rateCheck.permitido) {
+      return res.status(429).json({
+        error: `Demasiados intentos para este email. Esperá ${rateCheck.esperar} minutos.`
+      })
+    }
+
     const resultado = await loginUsuario(email, contraseña)
+
+    // Login exitoso: resetear contador del rate limit por email
+    resetRateLimitEmail(email)
 
     console.log(`✅ Login exitoso: ${email}`)
 
     res.json(resultado)
   } catch (error) {
     // No revelar si el email existe o no (seguridad)
-    console.warn(`⚠️ Login fallido: ${req.body.email || 'sin email'}`)
+    console.warn(`⚠️ Login fallido: ${emailNormalizado || 'sin email'}`)
     res.status(401).json({ error: 'Email o contraseña incorrectos' })
+  }
+})
+
+// POST /api/auth/refresh - Renovar access token con refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body
+    if (!refreshToken) {
+      return res.status(400).json({ error: 'Refresh token requerido' })
+    }
+
+    const usuario = await verificarRefreshToken(refreshToken)
+    if (!usuario || !usuario.activo) {
+      return res.status(401).json({ error: 'Refresh token inválido o expirado' })
+    }
+
+    // Rotar el refresh token: invalidar el viejo, emitir uno nuevo
+    const nuevoRefreshToken = await rotarRefreshToken(usuario._id, refreshToken)
+    const accessToken = generarAccessToken(usuario)
+
+    res.json({
+      token: accessToken,
+      refreshToken: nuevoRefreshToken
+    })
+  } catch (error) {
+    console.error('Error refrescando token:', error.message)
+    res.status(500).json({ error: 'Error al renovar la sesión' })
+  }
+})
+
+// POST /api/auth/logout - Invalidar refresh token (cierre de sesión)
+router.post('/logout', verificarToken, async (req, res) => {
+  try {
+    const { refreshToken } = req.body
+    if (refreshToken) {
+      await revocarRefreshToken(req.usuario.id, refreshToken)
+    }
+    res.json({ mensaje: 'Sesión cerrada' })
+  } catch (error) {
+    console.error('Error en logout:', error.message)
+    res.json({ mensaje: 'Sesión cerrada' })
+  }
+})
+
+// GET /api/auth/verify - Verificar si el access token sigue siendo válido
+// Útil para que el frontend valide la sesión sin esperar 401 en otro endpoint
+router.get('/verify', verificarToken, async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.usuario.id).select('_id email nombre rol activo')
+    if (!usuario || !usuario.activo) {
+      return res.status(401).json({ valido: false, error: 'Usuario no activo' })
+    }
+    res.json({
+      valido: true,
+      usuario: {
+        id: usuario._id,
+        email: usuario.email,
+        nombre: usuario.nombre,
+        rol: usuario.rol
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ valido: false, error: 'Error verificando sesión' })
   }
 })
 
@@ -212,8 +336,8 @@ router.post('/reset', async (req, res) => {
       return res.status(400).json({ error: 'Email, c\u00f3digo y nueva contrase\u00f1a son obligatorios' })
     }
 
-    if (nuevaContraseña.length < 6) {
-      return res.status(400).json({ error: 'La contrase\u00f1a debe tener al menos 6 caracteres' })
+    if (!contraseñaFuerte(nuevaContraseña)) {
+      return res.status(400).json({ error: 'La contrase\u00f1a debe tener al menos 8 caracteres y un n\u00famero' })
     }
 
     const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex')

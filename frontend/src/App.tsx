@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/Navbar'
 import MarqueeBanner from './components/MarqueeBanner'
-import PortonPrivado from './components/PortonPrivado'
+import ErrorBoundary from './components/ErrorBoundary'
+import { BannerFlotanteInstalar } from './components/InstalarApp'
 
 // Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
@@ -26,7 +27,7 @@ const PagoPendiente = lazy(() => import('./pages/PagoPendiente'))
 const Terminos = lazy(() => import('./pages/Terminos'))
 const Privacidad = lazy(() => import('./pages/Privacidad'))
 const Devoluciones = lazy(() => import('./pages/Devoluciones'))
-const RecuperarContraseña = lazy(() => import('./pages/RecuperarContraseña'))
+// RecuperarContraseña re-exporta a RecuperarPassword (componente unificado)
 const PromoverProducto = lazy(() => import('./pages/PromoverProducto'))
 const Chat = lazy(() => import('./pages/Chat'))
 const MisDisputas = lazy(() => import('./pages/MisDisputas'))
@@ -117,7 +118,7 @@ function AppContent() {
           <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
           <Route path="/privacidad" element={<ConNavbar><Privacidad /></ConNavbar>} />
           <Route path="/devoluciones" element={<ConNavbar><Devoluciones /></ConNavbar>} />
-          <Route path="/recuperar" element={<Suspense fallback={<LoadingSpinner />}><RecuperarContraseña /></Suspense>} />
+          <Route path="/recuperar" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
           <Route path="/recuperar-password" element={<ConNavbar><RecuperarPassword /></ConNavbar>} />
 
           {/* Fallback */}
@@ -130,13 +131,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <PortonPrivado>
+    <ErrorBoundary>
       <AuthProvider>
         <AppContent />
         <Suspense fallback={null}>
           <ChatbotSoporte />
         </Suspense>
+        <BannerFlotanteInstalar />
       </AuthProvider>
-    </PortonPrivado>
+    </ErrorBoundary>
   )
 }

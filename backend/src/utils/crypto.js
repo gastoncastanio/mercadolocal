@@ -4,10 +4,18 @@ const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
 const TAG_LENGTH = 16
 
-// Derivar clave de encriptación del JWT_SECRET (o variable dedicada)
+// Derivar clave de encriptación dedicada (MP_ENCRYPTION_KEY).
+// En producción es obligatoria; en desarrollo permitimos fallback al JWT_SECRET con warning.
 function getEncryptionKey() {
-  const secret = process.env.MP_ENCRYPTION_KEY || process.env.JWT_SECRET
-  if (!secret) throw new Error('No hay clave de encriptación disponible')
+  const secret = process.env.MP_ENCRYPTION_KEY
+  if (!secret) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('⚠️ MP_ENCRYPTION_KEY no configurado, usando JWT_SECRET como fallback. Configurar en producción.')
+      const fallback = process.env.JWT_SECRET || 'dev'
+      return crypto.createHash('sha256').update(fallback).digest()
+    }
+    throw new Error('MP_ENCRYPTION_KEY debe estar configurado en producción')
+  }
   return crypto.createHash('sha256').update(secret).digest()
 }
 

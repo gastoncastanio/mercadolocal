@@ -7,6 +7,7 @@ import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
+import Carrito from '../models/Carrito.js'
 import Notificacion from '../models/Notificacion.js'
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
@@ -161,6 +162,17 @@ router.post('/webhook', async (req, res) => {
           if (prodActualizado) {
             emitStockActualizado(item.productoId.toString(), prodActualizado.stock)
           }
+        }
+
+        // Vaciar el carrito del comprador ahora que el pago fue confirmado.
+        // Se hace acá (no al crear la orden) para que un checkout abandonado no destruya el carrito.
+        try {
+          await Carrito.findOneAndUpdate(
+            { usuarioId: ordenActualizada.compradorId },
+            { $set: { items: [] } }
+          )
+        } catch (carritoErr) {
+          console.error('Error vaciando carrito post-pago:', carritoErr.message)
         }
 
         // Emitir pago aprobado al comprador via WebSocket

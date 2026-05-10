@@ -1,7 +1,7 @@
 import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
-import { generarToken } from '../middleware/auth.js'
+import { generarAccessToken, generarRefreshToken } from '../middleware/auth.js'
 import { enviarBienvenida } from './emailService.js'
 
 // Registrar nuevo usuario
@@ -77,12 +77,14 @@ export async function registrarUsuario(datos) {
     await tienda.save()
   }
 
-  const token = generarToken(usuario)
+  const token = generarAccessToken(usuario)
+  const refreshToken = await generarRefreshToken(usuario._id)
 
   return {
     usuario: usuario.toJSON(),
     tienda,
-    token
+    token,
+    refreshToken
   }
 }
 
@@ -102,7 +104,8 @@ export async function loginUsuario(email, contraseña) {
     throw new Error('Email o contraseña incorrectos')
   }
 
-  const token = generarToken(usuario)
+  const token = generarAccessToken(usuario)
+  const refreshToken = await generarRefreshToken(usuario._id)
 
   // Si es vendedor, obtener su tienda
   let tienda = null
@@ -113,7 +116,8 @@ export async function loginUsuario(email, contraseña) {
   return {
     usuario: usuario.toJSON(),
     tienda,
-    token
+    token,
+    refreshToken
   }
 }
 

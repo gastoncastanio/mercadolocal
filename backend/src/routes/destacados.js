@@ -142,9 +142,7 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
       })
     }
 
-    tienda.ganancias -= precioTotal
-    await tienda.save()
-
+    // 1) Crear primero el Destacado. Si falla ac\u00e1, no se descuenta nada.
     const destacado = new Destacado({
       productoId,
       tiendaId: tienda._id,
@@ -158,6 +156,20 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
     })
 
     await destacado.save()
+
+    // 2) Solo despu\u00e9s de creado el Destacado, descontar ganancias de la tienda.
+    // Si esta operaci\u00f3n fallara, intentamos revertir el Destacado para no dejar inconsistencia.
+    try {
+      await Tienda.findByIdAndUpdate(tienda._id, { $inc: { ganancias: -precioTotal } })
+    } catch (errDescuento) {
+      console.error('Error descontando ganancias, revirtiendo destacado:', errDescuento.message)
+      try {
+        await Destacado.findByIdAndDelete(destacado._id)
+      } catch (errRollback) {
+        console.error('Error revirtiendo destacado:', errRollback.message)
+      }
+      return res.status(500).json({ error: 'No se pudo procesar la promoci\u00f3n. Intent\u00e1 de nuevo.' })
+    }
 
     console.log(`\u2B50 Nueva promoci\u00f3n: ${producto.nombre} - Plan ${plan} (${duracionDias} d\u00edas) - $${precioTotal}`)
 

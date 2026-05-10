@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import { verificarToken } from '../middleware/auth.js'
 import Tienda from '../models/Tienda.js'
 
@@ -22,8 +23,19 @@ router.get('/auth-url', verificarToken, async (req, res) => {
     }
 
     const redirectUri = `${BACKEND_URL}/api/mp/callback`
-    // state lleva tiendaId + hash para verificar en callback
-    const statePayload = `${tienda._id}_${req.usuario.id}`
+
+    // Generar token CSRF aleatorio y guardarlo en la tienda para validar en callback.
+    // Esto previene ataques CSRF donde un atacante engaña a un vendedor para que vincule
+    // la cuenta MP del atacante a la tienda del vendedor.
+    const csrfToken = crypto.randomBytes(16).toString('hex')
+    tienda.mpCsrfToken = csrfToken
+    await tienda.save()
+
+    const statePayload = JSON.stringify({
+      tiendaId: tienda._id.toString(),
+      usuarioId: req.usuario.id.toString(),
+      csrfToken
+    })
     const state = Buffer.from(statePayload).toString('base64url')
 
     const authUrl = `https://auth.mercadopago.com.ar/authorization?client_id=${MP_APP_ID}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`
@@ -44,14 +56,29 @@ router.get('/callback', async (req, res) => {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=parametros_invalidos`)
     }
 
-    // Decodificar state y extraer tiendaId + usuarioId
-    let tiendaId, usuarioId
+    // Decodificar state y extraer tiendaId, usuarioId y csrfToken
+    let tiendaId, usuarioId, csrfToken
     try {
       const decoded = Buffer.from(state, 'base64url').toString()
-      ;[tiendaId, usuarioId] = decoded.split('_')
-      if (!tiendaId || !usuarioId) throw new Error('State inválido')
+      const payload = JSON.parse(decoded)
+      tiendaId = payload.tiendaId
+      usuarioId = payload.usuarioId
+      csrfToken = payload.csrfToken
+      if (!tiendaId || !usuarioId || !csrfToken) throw new Error('State incompleto')
     } catch {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=state_invalido`)
+    }
+
+    // Buscar la tienda y validar el csrfToken almacenado
+    const tienda = await Tienda.findById(tiendaId)
+    if (!tienda || tienda.usuarioId.toString() !== usuarioId) {
+      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=tienda_no_encontrada`)
+    }
+
+    // Validación CSRF: el token del state debe coincidir con el guardado en la tienda
+    if (!tienda.mpCsrfToken || tienda.mpCsrfToken !== csrfToken) {
+      console.warn(`🚨 Intento de OAuth MP con CSRF inválido para tienda ${tiendaId}`)
+      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=csrf_invalido`)
     }
 
     // Intercambiar code por access_token
@@ -74,17 +101,13 @@ router.get('/callback', async (req, res) => {
       return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=token_invalido`)
     }
 
-    // Verificar que la tienda existe y pertenece al usuario
-    const tienda = await Tienda.findById(tiendaId)
-    if (!tienda || tienda.usuarioId.toString() !== usuarioId) {
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=tienda_no_encontrada`)
-    }
-
     tienda.mpAccessToken = data.access_token
     tienda.mpRefreshToken = data.refresh_token
     tienda.mpUserId = data.user_id?.toString() || ''
     tienda.mpVinculado = true
     tienda.mpVinculadoEn = new Date()
+    // Limpiar CSRF token (uso único)
+    tienda.mpCsrfToken = null
     await tienda.save()
 
     console.log(`✅ Vendedor vinculó MP: tienda ${tienda.nombre} (MP user: ${data.user_id})`)
@@ -127,6 +150,7 @@ router.post('/desvincular', verificarToken, async (req, res) => {
     tienda.mpUserId = ''
     tienda.mpVinculado = false
     tienda.mpVinculadoEn = null
+    tienda.mpCsrfToken = null
     await tienda.save()
 
     res.json({ mensaje: 'Mercado Pago desvinculado correctamente' })

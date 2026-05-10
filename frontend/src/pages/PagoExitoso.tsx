@@ -1,30 +1,153 @@
-import { useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import api from '../services/api'
+
+type EstadoVisual = 'verificando' | 'pagada' | 'pendiente_demorado' | 'sin_referencia' | 'error'
+
+const MAX_INTENTOS = 15      // 15 intentos
+const INTERVALO_MS = 2000    // cada 2 segundos = 30 seg total
 
 export default function PagoExitoso() {
   const [params] = useSearchParams()
+  const navigate = useNavigate()
   const paymentId = params.get('payment_id')
   const externalReference = params.get('external_reference')
 
+  const [estado, setEstado] = useState<EstadoVisual>(externalReference ? 'verificando' : 'sin_referencia')
+  const [intentos, setIntentos] = useState(0)
+  const timeoutRef = useRef<number | null>(null)
+  const cancelado = useRef(false)
+
+  useEffect(() => {
+    cancelado.current = false
+
+    // Sin external_reference: mostrar éxito genérico (caso fallback)
+    if (!externalReference) {
+      setEstado('sin_referencia')
+      return
+    }
+
+    let intentoActual = 0
+
+    async function consultarEstado() {
+      if (cancelado.current) return
+      try {
+        const res = await api.get(`/pagos/estado/${externalReference}`)
+        const estadoOrden = res.data?.estado
+        const mpStatus = res.data?.mpStatus
+
+        if (cancelado.current) return
+
+        if (estadoOrden === 'pagada' || estadoOrden === 'enviada' || estadoOrden === 'completada') {
+          setEstado('pagada')
+          return
+        }
+
+        if (estadoOrden === 'cancelada' || mpStatus === 'rejected') {
+          navigate('/pago-fallido', { replace: true })
+          return
+        }
+
+        // Aún pendiente: reintentar
+        intentoActual += 1
+        setIntentos(intentoActual)
+        if (intentoActual >= MAX_INTENTOS) {
+          setEstado('pendiente_demorado')
+          return
+        }
+        timeoutRef.current = window.setTimeout(consultarEstado, INTERVALO_MS)
+      } catch (err: any) {
+        // Si no se puede consultar (401, etc.), igual mostrar pantalla genérica de éxito
+        if (cancelado.current) return
+        intentoActual += 1
+        setIntentos(intentoActual)
+        if (intentoActual >= MAX_INTENTOS) {
+          setEstado('pendiente_demorado')
+          return
+        }
+        timeoutRef.current = window.setTimeout(consultarEstado, INTERVALO_MS)
+      }
+    }
+
+    consultarEstado()
+
+    return () => {
+      cancelado.current = true
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+  }, [externalReference, navigate])
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-4xl">&#10003;</span>
-        </div>
-        <h1 className="text-3xl font-bold text-gray-800 mb-3">Pago Exitoso!</h1>
-        <p className="text-gray-500 mb-2">Tu pedido fue procesado correctamente.</p>
-        {paymentId && (
-          <p className="text-sm text-gray-400 mb-6">ID de pago: {paymentId}</p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full">
+        {estado === 'verificando' && (
+          <>
+            <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+              <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">Verificando tu pago...</h1>
+            <p className="text-gray-500 mb-2">Estamos confirmando con Mercado Pago.</p>
+            <p className="text-xs text-gray-400 mb-6">Intento {intentos + 1} de {MAX_INTENTOS}. No cierres esta ventana.</p>
+          </>
         )}
-        <div className="space-y-3">
-          <Link to="/mis-ordenes"
-            className="block w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors">
-            Ver Mis Pedidos
+
+        {estado === 'pagada' && (
+          <>
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
+              <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Pago confirmado!</h1>
+            <p className="text-gray-500 mb-2">Tu pedido fue procesado correctamente.</p>
+            {paymentId && (
+              <p className="text-xs text-gray-400 mb-6">ID de pago: {paymentId}</p>
+            )}
+          </>
+        )}
+
+        {estado === 'pendiente_demorado' && (
+          <>
+            <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <span className="text-4xl">⏳</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">Tu pago está siendo procesado</h1>
+            <p className="text-gray-500 mb-6">
+              Te avisaremos por email cuando se confirme. Podés ver el estado actualizado en "Mis pedidos".
+            </p>
+          </>
+        )}
+
+        {estado === 'sin_referencia' && (
+          <>
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Pago Exitoso!</h1>
+            <p className="text-gray-500 mb-2">Tu pedido fue procesado correctamente.</p>
+            {paymentId && (
+              <p className="text-xs text-gray-400 mb-6">ID de pago: {paymentId}</p>
+            )}
+          </>
+        )}
+
+        <div className="space-y-3 mt-6">
+          <Link
+            to="/mis-ordenes"
+            className="block w-full py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-colors"
+          >
+            Ver mis pedidos
           </Link>
-          <Link to="/catalogo"
-            className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors">
-            Seguir Comprando
+          <Link
+            to="/catalogo"
+            className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+          >
+            Seguir comprando
           </Link>
         </div>
       </div>
