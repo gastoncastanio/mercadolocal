@@ -2,11 +2,17 @@ import { useState, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
+
+const MAX_IMAGENES = 6
 
 export default function PublicarProducto() {
   const navigate = useNavigate()
   const { tienda } = useAuth()
+  const toast = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
   const [form, setForm] = useState({
     nombre: '',
     descripcion: '',
@@ -17,8 +23,8 @@ export default function PublicarProducto() {
   })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
-  const [subiendoImagen, setSubiendoImagen] = useState(false)
-  const [previewImagen, setPreviewImagen] = useState<string | null>(null)
+  const [progresoImagen, setProgresoImagen] = useState<UploadProgress | null>(null)
+  const [subiendoCantidad, setSubiendoCantidad] = useState({ actual: 0, total: 0 })
 
   const categorias = ['Electrónica', 'Ropa', 'Hogar', 'Alimentos', 'Belleza', 'Deportes', 'Juguetes', 'Otro']
 
@@ -31,43 +37,68 @@ export default function PublicarProducto() {
     }))
   }
 
-  async function subirImagen(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  /**
+   * Sube las imágenes seleccionadas, una por una, con progreso visual.
+   * Si una falla, muestra error pero sigue con las demás.
+   */
+  async function subirImagenes(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivos = Array.from(e.target.files || [])
+    if (archivos.length === 0) return
 
-    // Preview local
-    const reader = new FileReader()
-    reader.onload = (ev) => setPreviewImagen(ev.target?.result as string)
-    reader.readAsDataURL(file)
-
-    setSubiendoImagen(true)
-    try {
-      const formData = new FormData()
-      formData.append('imagen', file)
-
-      const res = await api.post('/upload/imagen', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-
-      setForm(prev => ({ ...prev, imagenes: [res.data.url] }))
-    } catch (err: any) {
-      setError('Error al subir la imagen. Intentá de nuevo.')
-      setPreviewImagen(null)
-    } finally {
-      setSubiendoImagen(false)
+    const espacioDisponible = MAX_IMAGENES - form.imagenes.length
+    if (espacioDisponible <= 0) {
+      toast.warning(`Ya tenés el máximo de ${MAX_IMAGENES} fotos`)
+      return
     }
+
+    const aSubir = archivos.slice(0, espacioDisponible)
+    if (archivos.length > espacioDisponible) {
+      toast.info(`Solo se subirán ${espacioDisponible} fotos (máximo permitido)`)
+    }
+
+    setSubiendoCantidad({ actual: 0, total: aSubir.length })
+
+    for (let i = 0; i < aSubir.length; i++) {
+      setSubiendoCantidad({ actual: i + 1, total: aSubir.length })
+      try {
+        const resultado = await subirImagenOptimizada(aSubir[i], (p) => {
+          setProgresoImagen(p)
+        })
+        setForm(prev => ({ ...prev, imagenes: [...prev.imagenes, resultado.url] }))
+      } catch (err: any) {
+        toast.error(err.message || 'Error al subir una imagen')
+      }
+    }
+
+    setProgresoImagen(null)
+    setSubiendoCantidad({ actual: 0, total: 0 })
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
-  function eliminarImagen() {
-    setForm(prev => ({ ...prev, imagenes: [] }))
-    setPreviewImagen(null)
-    if (fileInputRef.current) fileInputRef.current.value = ''
+  function eliminarImagen(idx: number) {
+    setForm(prev => ({ ...prev, imagenes: prev.imagenes.filter((_, i) => i !== idx) }))
+  }
+
+  function moverImagenAprincipal(idx: number) {
+    if (idx === 0) return
+    setForm(prev => {
+      const nuevas = [...prev.imagenes]
+      const [movida] = nuevas.splice(idx, 1)
+      nuevas.unshift(movida)
+      return { ...prev, imagenes: nuevas }
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
     if (!form.nombre || !form.precio) {
       setError('Nombre y precio son obligatorios')
+      return
+    }
+
+    if (form.imagenes.length === 0) {
+      setError('Subí al menos una foto del producto')
       return
     }
 
@@ -80,6 +111,7 @@ export default function PublicarProducto() {
         precio: Number(form.precio),
         stock: Number(form.stock)
       })
+      toast.exito('Producto publicado correctamente')
       navigate('/mi-tienda')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error al publicar')
@@ -125,6 +157,8 @@ export default function PublicarProducto() {
     )
   }
 
+  const subiendoActivo = progresoImagen !== null
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-lg mx-auto px-4">
@@ -133,72 +167,152 @@ export default function PublicarProducto() {
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
 
-          {/* Subida de imagen */}
+          {/* ===== Galería de fotos ===== */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Foto del producto</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Fotos del producto{' '}
+              <span className="text-gray-400 font-normal">
+                ({form.imagenes.length}/{MAX_IMAGENES})
+              </span>
+            </label>
 
-            {previewImagen || form.imagenes[0] ? (
-              <div className="relative">
-                <img
-                  src={previewImagen || form.imagenes[0]}
-                  alt="Preview"
-                  className="w-full h-64 object-cover rounded-xl border border-gray-200"
-                />
-                {subiendoImagen && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-xl flex items-center justify-center">
-                    <div className="text-white font-semibold animate-pulse">Subiendo...</div>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={eliminarImagen}
-                  className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-lg font-bold"
+            <div className="grid grid-cols-3 gap-2">
+              {/* Fotos ya subidas */}
+              {form.imagenes.map((url, idx) => (
+                <div key={url + idx} className="relative aspect-square group">
+                  <img
+                    src={url}
+                    alt={`Foto ${idx + 1}`}
+                    className="w-full h-full object-cover rounded-xl border border-gray-200"
+                  />
+                  {idx === 0 && (
+                    <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
+                      PRINCIPAL
+                    </span>
+                  )}
+                  {idx !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => moverImagenAprincipal(idx)}
+                      className="absolute bottom-1 left-1 bg-white/90 text-gray-700 text-[10px] font-medium px-2 py-0.5 rounded-md shadow hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Marcar como principal"
+                    >
+                      Hacer principal
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => eliminarImagen(idx)}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm font-bold shadow-md"
+                    aria-label="Eliminar foto"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {/* Botón de agregar / progreso */}
+              {form.imagenes.length < MAX_IMAGENES && (
+                <div
+                  onClick={() => !subiendoActivo && fileInputRef.current?.click()}
+                  className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-colors ${
+                    subiendoActivo
+                      ? 'border-blue-500 bg-blue-50 cursor-wait'
+                      : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 cursor-pointer'
+                  }`}
                 >
-                  x
-                </button>
-              </div>
-            ) : (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full h-48 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-              >
-                <span className="text-4xl mb-2">📷</span>
-                <span className="text-gray-500 font-medium">Tocá para subir una foto</span>
-                <span className="text-gray-400 text-sm mt-1">JPG, PNG (máx. 5MB)</span>
-              </div>
-            )}
+                  {subiendoActivo ? (
+                    <div className="w-full px-2 text-center">
+                      <div className="text-[11px] text-gray-700 mb-1.5 font-medium leading-tight">
+                        {progresoImagen.mensaje}
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 transition-all duration-300"
+                          style={{ width: `${progresoImagen.porcentaje}%` }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-1">
+                        {progresoImagen.porcentaje}%
+                        {subiendoCantidad.total > 1 && (
+                          <span> · {subiendoCantidad.actual}/{subiendoCantidad.total}</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="text-3xl mb-1">📷</span>
+                      <span className="text-xs text-gray-500 font-medium text-center px-2">
+                        Agregar foto
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <p className="text-xs text-gray-400 mt-2">
+              Hasta {MAX_IMAGENES} fotos. La primera es la que ven primero los compradores.
+              Aceptamos JPG, PNG y HEIC (iPhone).
+            </p>
 
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              onChange={subirImagen}
+              accept="image/*,.heic,.heif"
+              multiple
+              onChange={subirImagenes}
               className="hidden"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del producto *</label>
-            <input type="text" required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Nombre del producto" />
+            <input
+              type="text"
+              required
+              value={form.nombre}
+              onChange={e => setForm({...form, nombre: e.target.value})}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              placeholder="Nombre del producto"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Describe tu producto..." />
+            <textarea
+              value={form.descripcion}
+              onChange={e => setForm({...form, descripcion: e.target.value})}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              placeholder="Describe tu producto..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Precio *</label>
-              <input type="number" required min="0" step="0.01" value={form.precio} onChange={e => setForm({...form, precio: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0.00" />
+              <input
+                type="number"
+                required
+                min="0"
+                step="0.01"
+                value={form.precio}
+                onChange={e => setForm({...form, precio: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="0.00"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-              <input type="number" min="0" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1" />
+              <input
+                type="number"
+                min="0"
+                value={form.stock}
+                onChange={e => setForm({...form, stock: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="1"
+              />
             </div>
           </div>
 
@@ -206,19 +320,28 @@ export default function PublicarProducto() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Categorías</label>
             <div className="flex flex-wrap gap-2">
               {categorias.map(cat => (
-                <button key={cat} type="button" onClick={() => toggleCategoria(cat)}
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => toggleCategoria(cat)}
                   className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    form.categorias.includes(cat) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}>
+                    form.categorias.includes(cat)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
                   {cat}
                 </button>
               ))}
             </div>
           </div>
 
-          <button type="submit" disabled={cargando || subiendoImagen}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50">
-            {cargando ? 'Publicando...' : 'Publicar Producto'}
+          <button
+            type="submit"
+            disabled={cargando || subiendoActivo}
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+          >
+            {cargando ? 'Publicando...' : subiendoActivo ? 'Esperá que terminen las fotos...' : 'Publicar Producto'}
           </button>
         </form>
       </div>

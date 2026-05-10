@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
+import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { Producto } from '../types'
 
 export default function MiTienda() {
@@ -24,9 +25,11 @@ export default function MiTienda() {
     telefono: tienda?.telefono || '',
     logo: tienda?.logo || ''
   })
-  const [subiendoLogo, setSubiendoLogo] = useState(false)
+  const [progresoLogo, setProgresoLogo] = useState<UploadProgress | null>(null)
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
+  // Compatibilidad con código que aún use subiendoLogo
+  const subiendoLogo = progresoLogo !== null
 
   // Estado para editar/eliminar productos
   const [productoEditando, setProductoEditando] = useState<string | null>(null)
@@ -43,7 +46,8 @@ export default function MiTienda() {
   })
   const [editError, setEditError] = useState('')
   const [editCargando, setEditCargando] = useState(false)
-  const [subiendoImagenEdit, setSubiendoImagenEdit] = useState(false)
+  const [progresoImagenEdit, setProgresoImagenEdit] = useState<UploadProgress | null>(null)
+  const subiendoImagenEdit = progresoImagenEdit !== null
   const editFileRef = useRef<HTMLInputElement>(null)
 
   const categorias = ['Electrónica', 'Ropa', 'Hogar', 'Alimentos', 'Belleza', 'Deportes', 'Juguetes', 'Otro']
@@ -86,20 +90,21 @@ export default function MiTienda() {
   async function subirLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+
+    // Preview local mientras se sube (mejora percepción de velocidad)
     const reader = new FileReader()
     reader.onload = (ev) => setPreviewLogo(ev.target?.result as string)
     reader.readAsDataURL(file)
-    setSubiendoLogo(true)
+
     try {
-      const formData = new FormData()
-      formData.append('imagen', file)
-      const res = await api.post('/upload/imagen', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setForm(prev => ({ ...prev, logo: res.data.url }))
-    } catch {
-      toast.error('Error al subir el logo. Intentá de nuevo.')
+      const resultado = await subirImagenOptimizada(file, (p) => setProgresoLogo(p))
+      setForm(prev => ({ ...prev, logo: resultado.url }))
+      toast.exito('Logo cargado')
+    } catch (err: any) {
+      toast.error(err.message || 'Error al subir el logo')
       setPreviewLogo(null)
     } finally {
-      setSubiendoLogo(false)
+      setProgresoLogo(null)
     }
   }
 
@@ -181,16 +186,14 @@ export default function MiTienda() {
   async function subirImagenEdit(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    setSubiendoImagenEdit(true)
+    setEditError('')
     try {
-      const formData = new FormData()
-      formData.append('imagen', file)
-      const res = await api.post('/upload/imagen', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-      setEditForm(prev => ({ ...prev, imagenes: [res.data.url] }))
-    } catch {
-      setEditError('Error al subir la imagen.')
+      const resultado = await subirImagenOptimizada(file, (p) => setProgresoImagenEdit(p))
+      setEditForm(prev => ({ ...prev, imagenes: [resultado.url] }))
+    } catch (err: any) {
+      setEditError(err.message || 'Error al subir la imagen.')
     } finally {
-      setSubiendoImagenEdit(false)
+      setProgresoImagenEdit(null)
     }
   }
 
@@ -296,9 +299,18 @@ export default function MiTienda() {
               {logoSrc ? (
                 <div className="relative inline-block">
                   <img src={logoSrc} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200" />
-                  {subiendoLogo && (
-                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center">
-                      <div className="text-white font-semibold animate-pulse text-sm">Subiendo...</div>
+                  {progresoLogo && (
+                    <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center px-3">
+                      <div className="text-white text-xs font-medium mb-2 text-center leading-tight">
+                        {progresoLogo.mensaje}
+                      </div>
+                      <div className="w-full h-1.5 bg-white/30 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-white transition-all duration-300"
+                          style={{ width: `${progresoLogo.porcentaje}%` }}
+                        />
+                      </div>
+                      <div className="text-white text-[10px] mt-1">{progresoLogo.porcentaje}%</div>
                     </div>
                   )}
                   <button type="button" onClick={eliminarLogo}
@@ -314,7 +326,7 @@ export default function MiTienda() {
                   <span className="text-gray-400 text-xs text-center">Subir logo</span>
                 </div>
               )}
-              <input ref={logoInputRef} type="file" accept="image/*" onChange={subirLogo} className="hidden" />
+              <input ref={logoInputRef} type="file" accept="image/*,.heic,.heif" onChange={subirLogo} className="hidden" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
@@ -651,9 +663,18 @@ export default function MiTienda() {
                 {editForm.imagenes[0] ? (
                   <div className="relative">
                     <img src={editForm.imagenes[0]} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-gray-200" />
-                    {subiendoImagenEdit && (
-                      <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
-                        <div className="text-white font-semibold animate-pulse">Subiendo...</div>
+                    {progresoImagenEdit && (
+                      <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center px-6">
+                        <div className="text-white text-sm font-medium mb-2 text-center">
+                          {progresoImagenEdit.mensaje}
+                        </div>
+                        <div className="w-full max-w-[200px] h-2 bg-white/30 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-white transition-all duration-300"
+                            style={{ width: `${progresoImagenEdit.porcentaje}%` }}
+                          />
+                        </div>
+                        <div className="text-white text-xs mt-1.5">{progresoImagenEdit.porcentaje}%</div>
                       </div>
                     )}
                     <button type="button" onClick={() => { setEditForm(prev => ({ ...prev, imagenes: [] })); if (editFileRef.current) editFileRef.current.value = '' }}
@@ -669,7 +690,7 @@ export default function MiTienda() {
                     <span className="text-gray-500 text-sm font-medium">Subir foto</span>
                   </div>
                 )}
-                <input ref={editFileRef} type="file" accept="image/*" onChange={subirImagenEdit} className="hidden" />
+                <input ref={editFileRef} type="file" accept="image/*,.heic,.heif" onChange={subirImagenEdit} className="hidden" />
               </div>
 
               <div>
