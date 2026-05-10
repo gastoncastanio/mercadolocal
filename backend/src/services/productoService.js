@@ -85,24 +85,29 @@ export async function productosDetienda(tiendaId) {
   return await Producto.find({ tiendaId, activo: true }).sort({ createdAt: -1 })
 }
 
-// Productos de la tienda del vendedor logueado (sin filtro de MP)
+// Productos de la tienda del vendedor logueado (sin filtro de MP ni activo)
 // Se usa para que el dueño pueda ver/editar sus productos aunque no haya vinculado MP
+// y también los pausados (activo: false) para poder reactivarlos desde MiTienda.
 export async function productosDeMiTienda(tiendaId) {
-  return await Producto.find({ tiendaId, activo: true }).sort({ createdAt: -1 })
+  return await Producto.find({ tiendaId }).sort({ createdAt: -1 })
 }
 
 // Actualizar producto
 export async function actualizarProducto(productoId, tiendaId, datos) {
+  const update = {
+    nombre: datos.nombre,
+    descripcion: datos.descripcion,
+    precio: datos.precio,
+    stock: datos.stock,
+    imagenes: datos.imagenes,
+    categorias: datos.categorias
+  }
+  // Soporte para pausar/reactivar producto: solo se actualiza si viene definido
+  if (datos.activo !== undefined) update.activo = datos.activo
+
   const producto = await Producto.findOneAndUpdate(
     { _id: productoId, tiendaId },
-    {
-      nombre: datos.nombre,
-      descripcion: datos.descripcion,
-      precio: datos.precio,
-      stock: datos.stock,
-      imagenes: datos.imagenes,
-      categorias: datos.categorias
-    },
+    update,
     { new: true }
   )
 

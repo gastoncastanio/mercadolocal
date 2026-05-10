@@ -31,6 +31,8 @@ export default function MiTienda() {
   // Estado para editar/eliminar productos
   const [productoEditando, setProductoEditando] = useState<string | null>(null)
   const [productoEliminando, setProductoEliminando] = useState<string | null>(null)
+  // Menu kebab (3 puntitos) abierto: ID del producto cuyo menu esta abierto
+  const [menuAbierto, setMenuAbierto] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     nombre: '',
     descripcion: '',
@@ -224,6 +226,28 @@ export default function MiTienda() {
     } finally {
       setEditCargando(false)
     }
+  }
+
+  // ===== PAUSAR / REACTIVAR PRODUCTO =====
+  // Togglea el campo activo. Cuando activo=false el producto desaparece del catalogo
+  // publico pero sigue siendo visible para el dueno en MiTienda.
+  async function toggleActivoProducto(producto: Producto) {
+    try {
+      const res = await api.put(`/productos/${producto._id}`, {
+        nombre: producto.nombre,
+        descripcion: producto.descripcion,
+        precio: producto.precio,
+        stock: producto.stock,
+        imagenes: producto.imagenes,
+        categorias: producto.categorias,
+        activo: !producto.activo
+      })
+      setProductos(prev => prev.map(p => p._id === producto._id ? res.data : p))
+      toast.exito(producto.activo ? 'Producto pausado' : 'Producto reactivado')
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al actualizar')
+    }
+    setMenuAbierto(null)
   }
 
   // ===== ELIMINAR PRODUCTO =====
@@ -436,7 +460,75 @@ export default function MiTienda() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {productos.map(p => (
-              <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group">
+              <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group relative">
+                {/* Menu kebab (3 puntitos) en esquina superior derecha */}
+                <div className="absolute top-2 right-2 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setMenuAbierto(menuAbierto === p._id ? null : p._id)
+                    }}
+                    className="w-8 h-8 bg-white/95 backdrop-blur rounded-full shadow-md flex items-center justify-center hover:bg-white hover:shadow-lg transition-all"
+                    aria-label="Más opciones"
+                  >
+                    <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
+                    </svg>
+                  </button>
+
+                  {menuAbierto === p._id && (
+                    <>
+                      {/* Backdrop invisible para cerrar al click afuera */}
+                      <div className="fixed inset-0 z-20" onClick={() => setMenuAbierto(null)} />
+
+                      {/* Dropdown menu */}
+                      <div className="absolute right-0 top-10 w-52 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-30 animate-dropdown-in">
+                        <button
+                          onClick={() => { abrirEditorProducto(p); setMenuAbierto(null) }}
+                          className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                          </svg>
+                          Editar producto
+                        </button>
+
+                        <button
+                          onClick={() => toggleActivoProducto(p)}
+                          className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-50"
+                        >
+                          {p.activo === false ? (
+                            <>
+                              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Reactivar producto
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Pausar temporalmente
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => { setProductoEliminando(p._id); setMenuAbierto(null) }}
+                          className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors border-t border-gray-50"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
+                          Eliminar producto
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 {/* Imagen */}
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                   {p.imagenes[0] ? (
@@ -457,6 +549,12 @@ export default function MiTienda() {
                   {p.stock > 0 && p.stock <= 3 && (
                     <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
                       Quedan {p.stock}
+                    </div>
+                  )}
+                  {/* Overlay PAUSADO cuando el producto esta desactivado */}
+                  {p.activo === false && (
+                    <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center pointer-events-none">
+                      <span className="bg-gray-900 text-white px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider">Pausado</span>
                     </div>
                   )}
                 </div>
@@ -522,27 +620,7 @@ export default function MiTienda() {
                       ))}
                     </div>
                   )}
-
-                  {/* Botones de accion */}
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                    <button
-                      onClick={() => abrirEditorProducto(p)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                      </svg>
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => setProductoEliminando(p._id)}
-                      className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                      </svg>
-                    </button>
-                  </div>
+                  {/* Las acciones (editar/pausar/eliminar) ahora viven en el menu kebab arriba a la derecha */}
                 </div>
               </div>
             ))}
