@@ -15,6 +15,7 @@ export async function crearOrden(usuarioId, datosEntrega) {
   }
 
   // Validar que todos los productos existan, estén activos, tengan stock y precio correcto
+  // Además, verificar que cada tienda tenga Mercado Pago vinculado (no se puede vender sin eso)
   for (const item of carrito.items) {
     const producto = await Producto.findById(item.productoId)
     if (!producto || !producto.activo) {
@@ -26,6 +27,12 @@ export async function crearOrden(usuarioId, datosEntrega) {
     // Tolerancia para comparación de floats: diferencia menor a 1 centavo se considera igual
     if (Math.abs(producto.precio - item.precio) > 0.01) {
       throw new Error(`El precio de "${item.nombre}" cambió. Actualizá tu carrito.`)
+    }
+    // Verificar que la tienda del producto tenga MP vinculado
+    // Mensaje genérico para no exponer info comercial al comprador
+    const tienda = await Tienda.findById(item.tiendaId).select('mpVinculado')
+    if (!tienda || !tienda.mpVinculado) {
+      throw new Error('Lo sentimos, este producto no está disponible para compra en este momento.')
     }
   }
 

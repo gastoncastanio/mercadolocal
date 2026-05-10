@@ -169,22 +169,42 @@ export default function CentralVendedor() {
         </div>
 
         {/* Mercado Pago - Vinculación */}
-        <div className={`rounded-2xl shadow-sm p-6 mb-6 border ${mpEstado.vinculado ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+        {/* Sin vinculación: banner enfatizado en rojo/naranja, obligatorio para vender */}
+        <div className={`rounded-2xl shadow-md p-6 mb-6 border-2 ${
+          mpEstado.vinculado
+            ? 'bg-green-50 border-green-300'
+            : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-400'
+        }`}>
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#009ee3] flex items-center justify-center">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l7 4.5-7 4.5z"/></svg>
+              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${
+                mpEstado.vinculado ? 'bg-green-500' : 'bg-[#009ee3]'
+              }`}>
+                {mpEstado.vinculado ? (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                  </svg>
+                ) : (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l7 4.5-7 4.5z"/></svg>
+                )}
               </div>
               <div>
-                <h3 className="font-bold text-gray-800 text-lg">Mercado Pago</h3>
+                <h3 className={`font-bold text-lg ${mpEstado.vinculado ? 'text-green-800' : 'text-red-800'}`}>
+                  {mpEstado.vinculado ? '✓ Mercado Pago conectado correctamente' : '⚠️ Vinculá Mercado Pago'}
+                </h3>
                 {mpEstado.vinculado ? (
-                  <p className="text-sm text-green-700">
-                    Cuenta vinculada {mpEstado.vinculadoEn && `desde ${new Date(mpEstado.vinculadoEn).toLocaleDateString()}`}
+                  <p className="text-sm text-green-700 mt-1">
+                    Tu tienda está lista para vender. {mpEstado.vinculadoEn && `Conectado desde ${new Date(mpEstado.vinculadoEn).toLocaleDateString()}`}
                   </p>
                 ) : (
-                  <p className="text-sm text-yellow-700">
-                    Vinculá tu cuenta para recibir pagos automáticamente
-                  </p>
+                  <>
+                    <p className="text-sm text-red-700 font-semibold mt-1">
+                      Sin esto NO podés vender. Es obligatorio.
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Tus productos no aparecen en el catálogo hasta que vincules tu cuenta.
+                    </p>
+                  </>
                 )}
               </div>
             </div>
@@ -201,7 +221,7 @@ export default function CentralVendedor() {
                 </>
               ) : (
                 <button onClick={vincularMp} disabled={vinculandoMp}
-                  className="px-6 py-3 bg-[#009ee3] text-white rounded-xl font-bold hover:bg-[#0087c9] transition-all disabled:opacity-50 flex items-center gap-2">
+                  className="px-8 py-4 bg-[#009ee3] text-white rounded-xl font-bold text-lg hover:bg-[#0087c9] transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg">
                   {vinculandoMp ? 'Redirigiendo...' : 'Vincular Mercado Pago'}
                 </button>
               )}
@@ -213,7 +233,7 @@ export default function CentralVendedor() {
             </p>
           )}
           {!mpEstado.vinculado && (
-            <p className="mt-3 text-xs text-gray-500">
+            <p className="mt-4 text-xs text-gray-600 bg-white/60 p-3 rounded-lg">
               Al vincular tu cuenta, los pagos de tus ventas se acreditarán directamente en tu billetera de Mercado Pago. Solo recibiremos nuestra comisión (10%).
             </p>
           )}

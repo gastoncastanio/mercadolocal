@@ -25,6 +25,9 @@ export interface Tienda {
   totalVentas: number
   ganancias: number
   activo: boolean
+  // Estado de vinculación con Mercado Pago (requisito para vender)
+  mpVinculado?: boolean
+  mpVinculadoEn?: string
   createdAt?: string
 }
 

@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
+import { useAuth } from '../context/AuthContext'
 
 export default function PublicarProducto() {
   const navigate = useNavigate()
+  const { tienda } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     nombre: '',
@@ -84,6 +86,43 @@ export default function PublicarProducto() {
     } finally {
       setCargando(false)
     }
+  }
+
+  // Bloqueo crítico: si no tiene Mercado Pago vinculado, no puede publicar
+  // (los pagos caerían en cuenta admin sin trazabilidad del vendedor)
+  if (tienda && !tienda.mpVinculado) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-lg mx-auto">
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-orange-300 rounded-2xl shadow-lg p-8 text-center">
+            <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-5">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-3">
+              Vinculá Mercado Pago para empezar a vender
+            </h1>
+            <p className="text-gray-700 mb-2">
+              Para publicar productos necesitás conectar tu cuenta de Mercado Pago.
+            </p>
+            <p className="text-gray-600 mb-6 text-sm">
+              Así los pagos de tus ventas se acreditan directamente en tu billetera, sin intermediarios.
+            </p>
+            <Link
+              to="/central-vendedor"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#009ee3] text-white rounded-xl font-bold text-lg hover:bg-[#0087c9] transition-colors shadow-md"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l7 4.5-7 4.5z"/>
+              </svg>
+              Vincular Mercado Pago
+            </Link>
+            <p className="text-xs text-gray-500 mt-5">
+              Es rápido y solo lo hacés una vez.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

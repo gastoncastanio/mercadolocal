@@ -70,7 +70,9 @@ export default function MiTienda() {
   async function cargarProductos() {
     if (!tienda) { setCargando(false); return }
     try {
-      const res = await api.get(`/productos?tiendaId=${tienda._id}`)
+      // Endpoint específico que retorna TODOS los productos del vendedor
+      // (sin filtrar por mpVinculado, para que pueda ver/editar aunque no haya vinculado MP)
+      const res = await api.get('/productos/mis-productos')
       setProductos(res.data)
     } catch (error) {
       console.error('Error:', error)
@@ -365,15 +367,53 @@ export default function MiTienda() {
           </div>
         </div>
 
+        {/* Banner: tienda sin Mercado Pago vinculado */}
+        {tienda && !tienda.mpVinculado && (
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-300 rounded-2xl p-5 mb-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl flex-shrink-0">⚠️</span>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-base">
+                    Tus productos NO son visibles en el catálogo público
+                  </h3>
+                  <p className="text-sm text-gray-700 mt-1">
+                    Vinculá Mercado Pago para que los compradores puedan verlos y comprarlos. Los pagos se acreditan directamente en tu billetera.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/central-vendedor"
+                className="flex-shrink-0 px-5 py-3 bg-[#009ee3] text-white rounded-xl font-bold hover:bg-[#0087c9] transition-colors shadow-md text-sm whitespace-nowrap"
+              >
+                Vincular Mercado Pago
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Productos */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">Mis Productos ({productos.length})</h2>
-          <Link to="/publicar" className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Publicar
-          </Link>
+          {tienda?.mpVinculado ? (
+            <Link to="/publicar" className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Publicar
+            </Link>
+          ) : (
+            <Link
+              to="/central-vendedor"
+              title="Vinculá Mercado Pago primero"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gray-300 text-gray-600 rounded-xl font-semibold cursor-not-allowed text-sm hover:bg-gray-400 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Publicar
+            </Link>
+          )}
         </div>
 
         {cargando ? (

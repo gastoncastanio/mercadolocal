@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { verificarToken, soloVendedor } from '../middleware/auth.js'
-import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda } from '../services/productoService.js'
+import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
 import { emitNuevoProducto, emitProductoActualizado, emitProductoEliminado } from '../services/socketService.js'
@@ -51,6 +51,21 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/productos/mis-productos - Productos del vendedor logueado (sin filtro de MP)
+// IMPORTANTE: debe ir ANTES de /:id para que no choque con esa ruta
+router.get('/mis-productos', verificarToken, soloVendedor, async (req, res) => {
+  try {
+    const tienda = await obtenerMiTienda(req.usuario.id)
+    if (!tienda) {
+      return res.status(400).json({ error: 'No tenés una tienda' })
+    }
+    const productos = await productosDeMiTienda(tienda._id)
+    res.json(productos)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // GET /api/productos/:id - Ver detalle (público)
 router.get('/:id', async (req, res) => {
   try {
@@ -69,16 +84,29 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
       return res.status(400).json({ error: 'Primero debes crear una tienda' })
     }
 
+    // Bloqueo: sin MP vinculado no se puede publicar (evita pagos sin trazabilidad)
+    if (!tienda.mpVinculado) {
+      return res.status(403).json({
+        error: 'Debés vincular tu cuenta de Mercado Pago antes de publicar productos. Ingresá a "Central Vendedor" → "Vincular Mercado Pago".',
+        code: 'MP_NO_VINCULADO'
+      })
+    }
+
     const producto = await crearProducto(tienda._id, req.body)
     console.log(`✅ Nuevo producto: "${producto.nombre}" en tienda "${tienda.nombre}"`)
     emitNuevoProducto(producto)
     res.status(201).json(producto)
   } catch (error) {
+    if (error.code === 'MP_NO_VINCULADO') {
+      return res.status(403).json({ error: error.message, code: 'MP_NO_VINCULADO' })
+    }
     res.status(400).json({ error: error.message })
   }
 })
 
 // PUT /api/productos/:id - Actualizar (solo dueño)
+// Permite editar productos existentes aunque no esté MP vinculado.
+// Los productos quedan ocultos del catálogo público vía listarProductos hasta que vincule.
 router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)

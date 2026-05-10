@@ -6,6 +6,14 @@ export async function crearProducto(tiendaId, datos) {
   const tienda = await Tienda.findById(tiendaId)
   if (!tienda) throw new Error('Tienda no encontrada')
 
+  // Bloqueo crítico: no se permite publicar sin Mercado Pago vinculado
+  // (los pagos caerían en cuenta admin sin trazabilidad)
+  if (!tienda.mpVinculado) {
+    const error = new Error('Debés vincular tu cuenta de Mercado Pago antes de publicar productos. Ingresá a "Central Vendedor" → "Vincular Mercado Pago".')
+    error.code = 'MP_NO_VINCULADO'
+    throw error
+  }
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
@@ -54,8 +62,8 @@ export async function listarProductos(filtros = {}) {
     query.tiendaId = filtros.tiendaId
   }
 
-  const productos = await Producto.find(query)
-    .populate('tiendaId', 'nombre ciudad logo')
+  let productos = await Producto.find(query)
+    .populate('tiendaId', 'nombre ciudad logo mpVinculado')
     .sort(filtros.ordenar === 'precio_asc' ? { precio: 1 } :
           filtros.ordenar === 'precio_desc' ? { precio: -1 } :
           filtros.ordenar === 'ventas' ? { totalVentas: -1 } :
@@ -63,11 +71,23 @@ export async function listarProductos(filtros = {}) {
           { createdAt: -1 })
     .limit(filtros.limite ? Number(filtros.limite) : 50)
 
+  // Filtrar productos cuya tienda no tenga MP vinculado
+  // (no aparecen en catálogo público hasta que el vendedor conecte su cuenta)
+  productos = productos.filter(p => p.tiendaId?.mpVinculado === true)
+
   return productos
 }
 
-// Productos de una tienda
+// Productos de una tienda (público): solo si la tienda tiene MP vinculado
 export async function productosDetienda(tiendaId) {
+  const tienda = await Tienda.findById(tiendaId).select('mpVinculado')
+  if (!tienda || !tienda.mpVinculado) return []
+  return await Producto.find({ tiendaId, activo: true }).sort({ createdAt: -1 })
+}
+
+// Productos de la tienda del vendedor logueado (sin filtro de MP)
+// Se usa para que el dueño pueda ver/editar sus productos aunque no haya vinculado MP
+export async function productosDeMiTienda(tiendaId) {
   return await Producto.find({ tiendaId, activo: true }).sort({ createdAt: -1 })
 }
 
