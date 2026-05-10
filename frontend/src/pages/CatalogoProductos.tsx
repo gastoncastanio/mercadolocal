@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import api from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
@@ -18,6 +19,47 @@ export default function CatalogoProductos() {
   useEffect(() => {
     cargarProductos()
   }, [categoria, ordenar])
+
+  // Sincronizacion en tiempo real con Socket.IO
+  useEffect(() => {
+    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
+    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
+
+    // Producto nuevo: lo agregamos al inicio
+    socket.on('producto:nuevo', (data: any) => {
+      setProductos(prev => {
+        if (prev.some(p => p._id === data.id)) return prev
+        const nuevo: any = {
+          _id: data.id,
+          nombre: data.nombre,
+          precio: data.precio,
+          imagenes: data.imagen ? [data.imagen] : [],
+          stock: 0,
+          totalVentas: 0,
+          calificacion: 0,
+          categorias: []
+        }
+        return [nuevo, ...prev]
+      })
+    })
+
+    // Producto actualizado: mergear cambios en el state local
+    socket.on('producto:actualizado', (data: any) => {
+      setProductos(prev => prev.map(p => p._id === data.id ? { ...p, ...data } : p))
+    })
+
+    // Producto eliminado: removerlo del listado
+    socket.on('producto:eliminado', (data: any) => {
+      setProductos(prev => prev.filter(p => p._id !== data.id))
+    })
+
+    // Cambios de stock especificos
+    socket.on('producto:stockCambio', (data: any) => {
+      setProductos(prev => prev.map(p => p._id === data.productoId ? { ...p, stock: data.stock } : p))
+    })
+
+    return () => { socket.disconnect() }
+  }, [])
 
   async function cargarProductos() {
     setCargando(true)
@@ -187,7 +229,7 @@ export default function CatalogoProductos() {
               precioMax === '50000' ? 'bg-emerald-600 text-white border border-emerald-600' : 'bg-white text-gray-600 border border-gray-300 hover:bg-emerald-50'
             }`}
           >
-            &#x1F4B3; 3 cuotas sin inter&eacute;s
+            &#x1F4B3; Hasta $50.000
           </button>
           <button
             onClick={() => setOrdenar(ordenar === 'calificacion' ? '' : 'calificacion')}

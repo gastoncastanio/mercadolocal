@@ -156,3 +156,59 @@ export function emitOrdenEstado(compradorId, ordenId, nuevoEstado) {
     timestamp: new Date()
   })
 }
+
+/**
+ * Notifica que un producto fue actualizado (a todos los clientes conectados)
+ */
+export function emitProductoActualizado(producto) {
+  if (!io) return
+  io.emit('producto:actualizado', {
+    id: producto._id,
+    nombre: producto.nombre,
+    precio: producto.precio,
+    stock: producto.stock,
+    imagenes: producto.imagenes,
+    descripcion: producto.descripcion,
+    categorias: producto.categorias,
+    activo: producto.activo,
+    timestamp: new Date()
+  })
+  // Tambien emitir a la sala especifica del producto
+  io.to(`producto:${producto._id}`).emit('producto:detalleActualizado', producto)
+}
+
+/**
+ * Notifica que un producto fue eliminado/desactivado
+ */
+export function emitProductoEliminado(productoId) {
+  if (!io) return
+  io.emit('producto:eliminado', {
+    id: productoId,
+    timestamp: new Date()
+  })
+}
+
+/**
+ * Notifica que la configuracion del sitio cambio (admin actualizo CMS)
+ */
+export function emitConfigActualizada(cambios) {
+  if (!io) return
+  io.emit('config:actualizado', {
+    cambios, // array de { clave, valor }
+    timestamp: new Date()
+  })
+}
+
+/**
+ * Notifica que la tienda fue actualizada (logo, nombre, etc)
+ */
+export function emitTiendaActualizada(tienda) {
+  if (!io) return
+  io.emit('tienda:actualizada', {
+    id: tienda._id,
+    nombre: tienda.nombre,
+    logo: tienda.logo,
+    descripcion: tienda.descripcion,
+    timestamp: new Date()
+  })
+}

@@ -8,6 +8,7 @@ import {
   actualizarMultiplesConfig,
   inicializarConfig
 } from '../services/configService.js'
+import { emitConfigActualizada } from '../services/socketService.js'
 
 const router = Router()
 
@@ -65,6 +66,7 @@ router.put('/:clave', verificarToken, async (req, res) => {
       return res.status(403).json({ error: 'Solo admin puede modificar configuraciones' })
     }
     const config = await actualizarConfig(req.params.clave, req.body.valor)
+    emitConfigActualizada([{ clave: req.params.clave, valor: req.body.valor }])
     res.json(config)
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -78,6 +80,7 @@ router.put('/', verificarToken, async (req, res) => {
       return res.status(403).json({ error: 'Solo admin' })
     }
     const resultados = await actualizarMultiplesConfig(req.body.cambios)
+    emitConfigActualizada(req.body.cambios)
     res.json({ actualizados: resultados.length, configs: resultados })
   } catch (error) {
     res.status(400).json({ error: error.message })

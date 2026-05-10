@@ -3,7 +3,7 @@ import { verificarToken, soloVendedor } from '../middleware/auth.js'
 import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
-import { emitNuevoProducto } from '../services/socketService.js'
+import { emitNuevoProducto, emitProductoActualizado, emitProductoEliminado } from '../services/socketService.js'
 
 const router = Router()
 
@@ -87,6 +87,7 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
     }
 
     const producto = await actualizarProducto(req.params.id, tienda._id, req.body)
+    emitProductoActualizado(producto)
     res.json(producto)
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -102,6 +103,7 @@ router.delete('/:id', verificarToken, soloVendedor, async (req, res) => {
     }
 
     await eliminarProducto(req.params.id, tienda._id)
+    emitProductoEliminado(req.params.id)
     res.json({ mensaje: 'Producto eliminado' })
   } catch (error) {
     res.status(400).json({ error: error.message })

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ConfigProvider } from './context/ConfigContext'
 import Navbar from './components/Navbar'
 import MarqueeBanner from './components/MarqueeBanner'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -133,11 +134,13 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <AppContent />
-        <Suspense fallback={null}>
-          <ChatbotSoporte />
-        </Suspense>
-        <BannerFlotanteInstalar />
+        <ConfigProvider>
+          <AppContent />
+          <Suspense fallback={null}>
+            <ChatbotSoporte />
+          </Suspense>
+          <BannerFlotanteInstalar />
+        </ConfigProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { io } from 'socket.io-client'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import { Producto } from '../types'
 
 export default function MiTienda() {
   const { tienda, actualizarTienda } = useAuth()
+  const toast = useToast()
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
   const [editando, setEditando] = useState(false)
+  // Edicion inline rapida de precio/stock
+  const [editandoPrecioId, setEditandoPrecioId] = useState<string | null>(null)
+  const [editandoStockId, setEditandoStockId] = useState<string | null>(null)
+  const [guardandoRapido, setGuardandoRapido] = useState(false)
   const [form, setForm] = useState({
     nombre: tienda?.nombre || '',
     descripcion: tienda?.descripcion || '',
@@ -21,8 +28,43 @@ export default function MiTienda() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
+  // Estado para editar/eliminar productos
+  const [productoEditando, setProductoEditando] = useState<string | null>(null)
+  const [productoEliminando, setProductoEliminando] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    nombre: '',
+    descripcion: '',
+    precio: '',
+    stock: '',
+    categorias: [] as string[],
+    imagenes: [] as string[]
+  })
+  const [editError, setEditError] = useState('')
+  const [editCargando, setEditCargando] = useState(false)
+  const [subiendoImagenEdit, setSubiendoImagenEdit] = useState(false)
+  const editFileRef = useRef<HTMLInputElement>(null)
+
+  const categorias = ['Electrónica', 'Ropa', 'Hogar', 'Alimentos', 'Belleza', 'Deportes', 'Juguetes', 'Otro']
+
   useEffect(() => {
     cargarProductos()
+  }, [tienda])
+
+  // Listeners de Socket.IO para sincronizacion en tiempo real
+  useEffect(() => {
+    if (!tienda) return
+    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
+    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
+
+    socket.on('producto:actualizado', (data: any) => {
+      setProductos(prev => prev.map(p => p._id === data.id ? { ...p, ...data } : p))
+    })
+
+    socket.on('producto:eliminado', (data: any) => {
+      setProductos(prev => prev.filter(p => p._id !== data.id))
+    })
+
+    return () => { socket.disconnect() }
   }, [tienda])
 
   async function cargarProductos() {
@@ -40,21 +82,17 @@ export default function MiTienda() {
   async function subirLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
     const reader = new FileReader()
     reader.onload = (ev) => setPreviewLogo(ev.target?.result as string)
     reader.readAsDataURL(file)
-
     setSubiendoLogo(true)
     try {
       const formData = new FormData()
       formData.append('imagen', file)
-      const res = await api.post('/upload/imagen', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
+      const res = await api.post('/upload/imagen', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
       setForm(prev => ({ ...prev, logo: res.data.url }))
-    } catch (err: any) {
-      alert('Error al subir el logo. Intentá de nuevo.')
+    } catch {
+      toast.error('Error al subir el logo. Intentá de nuevo.')
       setPreviewLogo(null)
     } finally {
       setSubiendoLogo(false)
@@ -79,16 +117,135 @@ export default function MiTienda() {
       }
       setEditando(false)
       setPreviewLogo(null)
+      toast.exito('Tienda guardada')
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Error al guardar')
+      toast.error(err.response?.data?.error || 'Error al guardar')
     }
   }
 
+  // Guardar rapido un campo (precio o stock) sin abrir el modal completo
+  async function guardarCampoRapido(productoId: string, campo: 'precio' | 'stock', valor: number) {
+    if (isNaN(valor) || valor < 0) {
+      toast.error('Valor inválido')
+      setEditandoPrecioId(null)
+      setEditandoStockId(null)
+      return
+    }
+    setGuardandoRapido(true)
+    try {
+      const producto = productos.find(p => p._id === productoId)
+      if (!producto) return
+      const res = await api.put(`/productos/${productoId}`, {
+        nombre: producto.nombre,
+        descripcion: producto.descripcion,
+        precio: campo === 'precio' ? valor : producto.precio,
+        stock: campo === 'stock' ? valor : producto.stock,
+        imagenes: producto.imagenes,
+        categorias: producto.categorias
+      })
+      setProductos(prev => prev.map(p => p._id === productoId ? res.data : p))
+      toast.exito(`${campo === 'precio' ? 'Precio' : 'Stock'} actualizado`)
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al actualizar')
+    } finally {
+      setGuardandoRapido(false)
+      setEditandoPrecioId(null)
+      setEditandoStockId(null)
+    }
+  }
+
+  // ===== EDITAR PRODUCTO =====
+  function abrirEditorProducto(producto: Producto) {
+    setProductoEditando(producto._id)
+    setEditForm({
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      precio: producto.precio.toString(),
+      stock: producto.stock.toString(),
+      categorias: producto.categorias || [],
+      imagenes: producto.imagenes || []
+    })
+    setEditError('')
+  }
+
+  function cerrarEditorProducto() {
+    setProductoEditando(null)
+    setEditError('')
+    setEditCargando(false)
+  }
+
+  async function subirImagenEdit(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setSubiendoImagenEdit(true)
+    try {
+      const formData = new FormData()
+      formData.append('imagen', file)
+      const res = await api.post('/upload/imagen', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+      setEditForm(prev => ({ ...prev, imagenes: [res.data.url] }))
+    } catch {
+      setEditError('Error al subir la imagen.')
+    } finally {
+      setSubiendoImagenEdit(false)
+    }
+  }
+
+  function toggleCategoriaEdit(cat: string) {
+    setEditForm(prev => ({
+      ...prev,
+      categorias: prev.categorias.includes(cat)
+        ? prev.categorias.filter(c => c !== cat)
+        : [...prev.categorias, cat]
+    }))
+  }
+
+  async function guardarProducto(e: React.FormEvent) {
+    e.preventDefault()
+    if (!productoEditando) return
+    if (!editForm.nombre || !editForm.precio) {
+      setEditError('Nombre y precio son obligatorios')
+      return
+    }
+    setEditCargando(true)
+    setEditError('')
+    try {
+      const res = await api.put(`/productos/${productoEditando}`, {
+        ...editForm,
+        precio: Number(editForm.precio),
+        stock: Number(editForm.stock)
+      })
+      setProductos(prev => prev.map(p => p._id === productoEditando ? res.data : p))
+      cerrarEditorProducto()
+      toast.exito('Producto actualizado')
+    } catch (err: any) {
+      setEditError(err.response?.data?.error || 'Error al guardar los cambios')
+    } finally {
+      setEditCargando(false)
+    }
+  }
+
+  // ===== ELIMINAR PRODUCTO =====
+  async function eliminarProducto(productoId: string) {
+    try {
+      await api.delete(`/productos/${productoId}`)
+      setProductos(prev => prev.filter(p => p._id !== productoId))
+      setProductoEliminando(null)
+      toast.exito('Producto eliminado')
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Error al eliminar el producto')
+    }
+  }
+
+  // ===== RENDER: Sin tienda =====
   if (!tienda && !editando) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
-          <p className="text-5xl mb-4">&#x1F3EA;</p>
+          <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-18 0A2.997 2.997 0 017.5 6.2l.4-2.1A1.5 1.5 0 019.375 3h5.25a1.5 1.5 0 011.475 1.1l.4 2.1a2.997 2.997 0 014.5 3.149" />
+            </svg>
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Crea tu Tienda</h2>
           <p className="text-gray-500 mb-6">Configura tu tienda para empezar a vender</p>
           <button onClick={() => setEditando(true)}
@@ -100,6 +257,7 @@ export default function MiTienda() {
     )
   }
 
+  // ===== RENDER: Editando tienda =====
   if (editando) {
     const logoSrc = previewLogo || form.logo
     return (
@@ -107,46 +265,31 @@ export default function MiTienda() {
         <div className="max-w-lg mx-auto px-4">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">{tienda ? 'Editar' : 'Crear'} Tienda</h1>
           <form onSubmit={guardarTienda} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-
-            {/* Logo upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Logo de la tienda</label>
               {logoSrc ? (
                 <div className="relative inline-block">
-                  <img
-                    src={logoSrc}
-                    alt="Logo"
-                    className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200"
-                  />
+                  <img src={logoSrc} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200" />
                   {subiendoLogo && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 rounded-2xl flex items-center justify-center">
                       <div className="text-white font-semibold animate-pulse text-sm">Subiendo...</div>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={eliminarLogo}
-                    className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm font-bold"
-                  >x</button>
+                  <button type="button" onClick={eliminarLogo}
+                    className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm font-bold">x</button>
                 </div>
               ) : (
-                <div
-                  onClick={() => logoInputRef.current?.click()}
-                  className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                >
-                  <span className="text-3xl mb-1">&#x1F4F7;</span>
+                <div onClick={() => logoInputRef.current?.click()}
+                  className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                  <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                  </svg>
                   <span className="text-gray-400 text-xs text-center">Subir logo</span>
                 </div>
               )}
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={subirLogo}
-                className="hidden"
-              />
+              <input ref={logoInputRef} type="file" accept="image/*" onChange={subirLogo} className="hidden" />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
               <input type="text" required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
@@ -158,21 +301,21 @@ export default function MiTienda() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripci&oacute;n</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
               <textarea value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} rows={3}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tel&eacute;fono</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
               <input type="text" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: +54 11 1234-5678" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-              <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})}
+              <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value as 'online' | 'fisica' | 'ambas'})}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
                 <option value="online">Solo Online</option>
-                <option value="fisica">Tienda F&iacute;sica</option>
+                <option value="fisica">Tienda Fisica</option>
                 <option value="ambas">Ambas</option>
               </select>
             </div>
@@ -195,26 +338,29 @@ export default function MiTienda() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Info tienda */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {logoUrl ? (
                 <img src={logoUrl} alt={tienda?.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-4xl">
-                  &#x1F3EA;
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                  <svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-18 0A2.997 2.997 0 017.5 6.2l.4-2.1A1.5 1.5 0 019.375 3h5.25a1.5 1.5 0 011.475 1.1l.4 2.1a2.997 2.997 0 014.5 3.149" />
+                  </svg>
                 </div>
               )}
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">{tienda?.nombre}</h1>
-                <p className="text-gray-500 mt-1">&#x1F4CD; {tienda?.ciudad} &middot; {tienda?.tipo}</p>
-                <p className="text-gray-600 mt-1">{tienda?.descripcion}</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{tienda?.nombre}</h1>
+                <p className="text-gray-500 mt-1 text-sm">{tienda?.ciudad} · {tienda?.tipo === 'online' ? 'Solo Online' : tienda?.tipo === 'fisica' ? 'Tienda Fisica' : 'Online + Fisica'}</p>
+                {tienda?.descripcion && <p className="text-gray-600 mt-1 text-sm">{tienda.descripcion}</p>}
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Ventas totales</p>
-              <p className="text-2xl font-bold text-green-600">${tienda?.ganancias?.toLocaleString() || 0}</p>
+            <div className="text-left sm:text-right">
+              <p className="text-sm text-gray-500">Ganancias totales</p>
+              <p className="text-2xl font-bold text-green-600">${tienda?.ganancias?.toLocaleString('es-AR') || 0}</p>
+              <p className="text-xs text-gray-400">{tienda?.totalVentas || 0} ventas</p>
               <button onClick={() => { setForm({nombre: tienda?.nombre||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||''}); setEditando(true) }}
-                className="mt-2 text-sm text-blue-600 hover:underline">Editar tienda</button>
+                className="mt-2 text-sm text-blue-600 hover:underline font-medium">Editar tienda</button>
             </div>
           </div>
         </div>
@@ -222,34 +368,280 @@ export default function MiTienda() {
         {/* Productos */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">Mis Productos ({productos.length})</h2>
-          <Link to="/publicar" className="px-4 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
-            + Publicar Producto
+          <Link to="/publicar" className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Publicar
           </Link>
         </div>
 
-        {productos.length === 0 ? (
+        {cargando ? (
+          <div className="flex justify-center py-16">
+            <div className="spinner" />
+          </div>
+        ) : productos.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
-            <p className="text-5xl mb-4">&#x1F4E6;</p>
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+              </svg>
+            </div>
             <h3 className="text-xl font-semibold text-gray-800 mb-2">No tienes productos</h3>
-            <Link to="/publicar" className="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
+            <p className="text-gray-500 mb-4">Publica tu primer producto y empeza a vender</p>
+            <Link to="/publicar" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
               Publicar Mi Primer Producto
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {productos.map(p => (
-              <div key={p._id} className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
-                  {p.imagenes[0] ? <img src={p.imagenes[0]} alt={p.nombre} className="w-full h-full object-cover" /> : <span className="text-4xl">&#x1F4E6;</span>}
+              <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group">
+                {/* Imagen */}
+                <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                  {p.imagenes[0] ? (
+                    <img src={p.imagenes[0]} alt={p.nombre} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                      </svg>
+                    </div>
+                  )}
+                  {/* Stock badge */}
+                  {p.stock <= 0 && (
+                    <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                      Sin stock
+                    </div>
+                  )}
+                  {p.stock > 0 && p.stock <= 3 && (
+                    <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-lg">
+                      Quedan {p.stock}
+                    </div>
+                  )}
                 </div>
-                <h3 className="font-semibold text-gray-800 truncate">{p.nombre}</h3>
-                <p className="text-blue-600 font-bold">${p.precio.toLocaleString()}</p>
-                <p className="text-xs text-gray-400">Stock: {p.stock} &middot; Ventas: {p.totalVentas}</p>
+
+                {/* Info */}
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-800 truncate">{p.nombre}</h3>
+                  {/* Precio editable inline */}
+                  {editandoPrecioId === p._id ? (
+                    <input
+                      type="number"
+                      autoFocus
+                      defaultValue={p.precio}
+                      onBlur={(e) => guardarCampoRapido(p._id, 'precio', Number(e.target.value))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                        if (e.key === 'Escape') setEditandoPrecioId(null)
+                      }}
+                      className="text-blue-600 font-bold text-lg w-full px-2 py-1 border-2 border-blue-500 rounded-lg outline-none"
+                      disabled={guardandoRapido}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setEditandoPrecioId(p._id)}
+                      className="text-blue-600 font-bold text-lg hover:bg-blue-50 px-1 -ml-1 rounded transition-colors text-left w-full"
+                      title="Click para editar precio"
+                    >
+                      ${p.precio.toLocaleString('es-AR')} <span className="text-xs text-gray-300 font-normal">✏</span>
+                    </button>
+                  )}
+                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                    {/* Stock editable inline */}
+                    {editandoStockId === p._id ? (
+                      <input
+                        type="number"
+                        autoFocus
+                        min="0"
+                        defaultValue={p.stock}
+                        onBlur={(e) => guardarCampoRapido(p._id, 'stock', Number(e.target.value))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                          if (e.key === 'Escape') setEditandoStockId(null)
+                        }}
+                        className="w-20 px-2 py-0.5 border-2 border-blue-500 rounded text-xs text-gray-700 outline-none"
+                        disabled={guardandoRapido}
+                      />
+                    ) : (
+                      <button
+                        onClick={() => setEditandoStockId(p._id)}
+                        className="hover:bg-gray-100 px-1 -ml-1 rounded transition-colors"
+                        title="Click para editar stock"
+                      >
+                        Stock: {p.stock} <span className="text-gray-300">✏</span>
+                      </button>
+                    )}
+                    <span>·</span>
+                    <span>Ventas: {p.totalVentas}</span>
+                  </div>
+                  {p.categorias?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {p.categorias.slice(0, 2).map(cat => (
+                        <span key={cat} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{cat}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Botones de accion */}
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                    <button
+                      onClick={() => abrirEditorProducto(p)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setProductoEliminando(p._id)}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* ===== MODAL: Editar Producto ===== */}
+      {productoEditando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={cerrarEditorProducto} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Editar Producto</h2>
+              <button onClick={cerrarEditorProducto} className="text-gray-400 hover:text-gray-600 p-1" aria-label="Cerrar">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={guardarProducto} className="p-6 space-y-4">
+              {editError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{editError}</div>}
+
+              {/* Imagen */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Foto del producto</label>
+                {editForm.imagenes[0] ? (
+                  <div className="relative">
+                    <img src={editForm.imagenes[0]} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-gray-200" />
+                    {subiendoImagenEdit && (
+                      <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                        <div className="text-white font-semibold animate-pulse">Subiendo...</div>
+                      </div>
+                    )}
+                    <button type="button" onClick={() => { setEditForm(prev => ({ ...prev, imagenes: [] })); if (editFileRef.current) editFileRef.current.value = '' }}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 font-bold">x</button>
+                  </div>
+                ) : (
+                  <div onClick={() => editFileRef.current?.click()}
+                    className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                    <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+                    </svg>
+                    <span className="text-gray-500 text-sm font-medium">Subir foto</span>
+                  </div>
+                )}
+                <input ref={editFileRef} type="file" accept="image/*" onChange={subirImagenEdit} className="hidden" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input type="text" required value={editForm.nombre} onChange={e => setEditForm({...editForm, nombre: e.target.value})}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                <textarea value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Precio *</label>
+                  <input type="number" required min="0" step="0.01" value={editForm.precio} onChange={e => setEditForm({...editForm, precio: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <input type="number" min="0" value={editForm.stock} onChange={e => setEditForm({...editForm, stock: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Categorias</label>
+                <div className="flex flex-wrap gap-2">
+                  {categorias.map(cat => (
+                    <button key={cat} type="button" onClick={() => toggleCategoriaEdit(cat)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                        editForm.categorias.includes(cat) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}>
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={editCargando || subiendoImagenEdit}
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  {editCargando ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+                <button type="button" onClick={cerrarEditorProducto}
+                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL: Confirmar Eliminacion ===== */}
+      {productoEliminando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setProductoEliminando(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-gray-800 mb-2">Eliminar producto</h3>
+            <p className="text-gray-500 text-sm mb-1">
+              {productos.find(p => p._id === productoEliminando)?.nombre}
+            </p>
+            <p className="text-gray-400 text-xs mb-6">
+              El producto dejara de aparecer en el catalogo. Esta accion no se puede deshacer.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setProductoEliminando(null)}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => eliminarProducto(productoEliminando)}
+                className="flex-1 py-2.5 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
