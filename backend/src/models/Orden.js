@@ -93,6 +93,19 @@ const ordenSchema = new mongoose.Schema({
   fechaConfirmacion: {
     type: Date,
     default: null
+  },
+  // Datos del envío (cuando el vendedor marca como "enviada")
+  codigoSeguimiento: {
+    type: String,
+    default: ''
+  },
+  empresaEnvio: {
+    type: String,
+    default: '' // ej: "Andreani", "OCA", "Correo Argentino", "Entrega propia"
+  },
+  fechaEnvio: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

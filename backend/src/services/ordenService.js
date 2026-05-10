@@ -105,7 +105,8 @@ export async function ordenesDelVendedor(tiendaId) {
     'items.tiendaId': tiendaId,
     estado: { $in: ['pagada', 'enviada', 'completada'] }
   })
-    .populate('compradorId', 'nombre email telefono')
+    .populate('compradorId', 'nombre email telefono avatar')
+    .populate('items.productoId', 'imagenes')
     .sort({ createdAt: -1 })
 }
 
@@ -122,8 +123,10 @@ export async function ordenesPendientesPago(tiendaId) {
     .sort({ createdAt: -1 })
 }
 
-// Actualizar estado de orden
-export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId) {
+// Actualizar estado de orden.
+// Acepta opcionalmente datos de envío (codigoSeguimiento, empresaEnvio)
+// que se guardan cuando se transiciona a "enviada".
+export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId, datosEnvio = {}) {
   const orden = await Orden.findById(ordenId)
   if (!orden) throw new Error('Orden no encontrada')
 
@@ -146,12 +149,26 @@ export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId) {
   }
 
   orden.estado = nuevoEstado
+
+  // Cuando se marca como enviada, guardar datos del envío y la fecha
+  if (nuevoEstado === 'enviada') {
+    orden.fechaEnvio = new Date()
+    if (datosEnvio.codigoSeguimiento) {
+      orden.codigoSeguimiento = String(datosEnvio.codigoSeguimiento).trim().slice(0, 100)
+    }
+    if (datosEnvio.empresaEnvio) {
+      orden.empresaEnvio = String(datosEnvio.empresaEnvio).trim().slice(0, 50)
+    }
+  }
+
   await orden.save()
 
   // Notificar al comprador del cambio de estado
   const mensajesEstado = {
     pagada: 'Tu pago fue confirmado. El vendedor preparar\u00e1 tu pedido.',
-    enviada: '\u00a1Tu pedido fue enviado! Revis\u00e1 los datos de seguimiento.',
+    enviada: orden.codigoSeguimiento
+      ? `\u00a1Tu pedido fue enviado! Seguimiento: ${orden.codigoSeguimiento}${orden.empresaEnvio ? ` (${orden.empresaEnvio})` : ''}`
+      : '\u00a1Tu pedido fue enviado!',
     completada: 'Tu pedido fue completado. \u00a1Gracias por tu compra!',
     cancelada: 'Tu pedido fue cancelado. Si ten\u00e9s dudas, contact\u00e1 soporte.'
   }

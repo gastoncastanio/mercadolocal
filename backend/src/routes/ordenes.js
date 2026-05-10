@@ -48,14 +48,21 @@ router.get('/vendedor', verificarToken, soloVendedor, async (req, res) => {
 })
 
 // PUT /api/ordenes/:ordenId/estado - Actualizar estado (vendedor)
+// Body: { estado, codigoSeguimiento?, empresaEnvio? }
+// Si estado === 'enviada' y se mandan codigoSeguimiento y/o empresaEnvio, se guardan.
 router.put('/:ordenId/estado', verificarToken, soloVendedor, async (req, res) => {
   try {
-    const { estado } = req.body
+    const { estado, codigoSeguimiento, empresaEnvio } = req.body
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
       return res.status(400).json({ error: 'No tienes una tienda' })
     }
-    const orden = await actualizarEstadoOrden(req.params.ordenId, estado, tienda._id)
+    const orden = await actualizarEstadoOrden(
+      req.params.ordenId,
+      estado,
+      tienda._id,
+      { codigoSeguimiento, empresaEnvio }
+    )
     // Emitir cambio de estado al comprador en tiempo real
     emitOrdenEstado(orden.compradorId.toString(), orden._id.toString(), estado)
     res.json(orden)

@@ -72,7 +72,8 @@ export interface Carrito {
 }
 
 export interface ItemOrden {
-  productoId: string
+  // productoId puede venir como string o populated con { _id, imagenes }
+  productoId: string | { _id: string; imagenes?: string[] }
   tiendaId: string
   nombre: string
   cantidad: number
@@ -93,7 +94,14 @@ export interface Orden {
   notasComprador: string
   nombreComprador: string
   telefonoComprador: string
+  // Datos del envío (cuando estado === 'enviada' o posterior)
+  codigoSeguimiento?: string
+  empresaEnvio?: string
+  fechaEnvio?: string
+  // Pago confirmado (cuando estado === 'pagada' o posterior)
+  fechaConfirmacion?: string
   createdAt?: string
+  updatedAt?: string
 }
 
 export interface AuthResponse {
