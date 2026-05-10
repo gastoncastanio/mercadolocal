@@ -72,9 +72,10 @@ export interface Carrito {
 }
 
 export interface ItemOrden {
-  // productoId puede venir como string o populated con { _id, imagenes }
-  productoId: string | { _id: string; imagenes?: string[] }
-  tiendaId: string
+  // productoId puede venir como string o populated con { _id, imagenes, nombre }
+  productoId: string | { _id: string; imagenes?: string[]; nombre?: string }
+  // tiendaId puede venir como string (vista vendedor) o populated (vista comprador)
+  tiendaId: string | { _id: string; nombre: string; logo?: string; telefono?: string; ciudad?: string }
   nombre: string
   cantidad: number
   precioUnitario: number

@@ -93,9 +93,15 @@ export async function crearOrden(usuarioId, datosEntrega) {
   return orden
 }
 
-// Obtener órdenes del comprador
+// Obtener órdenes del comprador.
+// Hacemos populate de productos (para mostrar fotos) y tiendas (para mostrar
+// nombre, logo y teléfono del vendedor — el comprador necesita poder
+// contactarlo y saber a quién le compró).
 export async function ordenesDelComprador(usuarioId) {
-  return await Orden.find({ compradorId: usuarioId }).sort({ createdAt: -1 })
+  return await Orden.find({ compradorId: usuarioId })
+    .populate('items.productoId', 'imagenes nombre')
+    .populate('items.tiendaId', 'nombre logo telefono ciudad')
+    .sort({ createdAt: -1 })
 }
 
 // Obtener órdenes PAGADAS para un vendedor (por tienda)
