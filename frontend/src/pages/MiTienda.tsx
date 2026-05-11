@@ -659,7 +659,11 @@ export default function MiTienda() {
             </div>
 
             <form onSubmit={guardarProducto} className="p-6 space-y-4">
-              {editError && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{editError}</div>}
+              {editError && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm whitespace-pre-line">
+                  {editError}
+                </div>
+              )}
 
               {/* Imagen */}
               <div>

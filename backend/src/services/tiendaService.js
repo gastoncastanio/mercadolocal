@@ -1,4 +1,22 @@
 import Tienda from '../models/Tienda.js'
+import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
+
+/**
+ * Valida contenido público de la tienda (nombre + descripcion).
+ * IMPORTANTE: el campo `telefono` NO se valida porque es legítimo —
+ * se le muestra al comprador SOLO después de concretarse la venta.
+ */
+function validarContenidoTienda(datos) {
+  const validacion = validarPublicacion({
+    titulo: datos.nombre,
+    descripcion: datos.descripcion
+  })
+  if (!validacion.valido) {
+    const error = new Error(construirMensajeRechazo(validacion.motivos))
+    error.code = 'CONTENIDO_INVALIDO'
+    throw error
+  }
+}
 
 // Crear tienda
 export async function crearTienda(usuarioId, datos) {
@@ -6,6 +24,9 @@ export async function crearTienda(usuarioId, datos) {
   if (existente) {
     throw new Error('Ya tienes una tienda creada')
   }
+
+  // Validar nombre + descripción públicas (NO telefono — ese campo es legítimo)
+  validarContenidoTienda(datos)
 
   const tienda = new Tienda({
     usuarioId,
@@ -36,6 +57,11 @@ export async function obtenerMiTienda(usuarioId) {
 
 // Actualizar tienda
 export async function actualizarTienda(usuarioId, datos) {
+  // Validar nombre + descripción si fueron editados
+  if (datos.nombre !== undefined || datos.descripcion !== undefined) {
+    validarContenidoTienda(datos)
+  }
+
   const tienda = await Tienda.findOneAndUpdate(
     { usuarioId },
     {

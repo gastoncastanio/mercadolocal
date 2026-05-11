@@ -175,7 +175,11 @@ export default function PublicarProducto() {
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Publicar Producto</h1>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-          {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm whitespace-pre-line">
+              {error}
+            </div>
+          )}
 
           {/* ===== Galería de fotos ===== */}
           <div>

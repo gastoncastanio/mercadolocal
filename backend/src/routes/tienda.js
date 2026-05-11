@@ -37,6 +37,9 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
     emitTiendaActualizada(tienda)
     res.status(201).json(tienda)
   } catch (error) {
+    if (error.code === 'CONTENIDO_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
+    }
     res.status(400).json({ error: error.message })
   }
 })
@@ -48,6 +51,9 @@ router.put('/', verificarToken, soloVendedor, async (req, res) => {
     emitTiendaActualizada(tienda)
     res.json(tienda)
   } catch (error) {
+    if (error.code === 'CONTENIDO_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
+    }
     res.status(400).json({ error: error.message })
   }
 })

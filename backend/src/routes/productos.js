@@ -100,6 +100,9 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
     if (error.code === 'MP_NO_VINCULADO') {
       return res.status(403).json({ error: error.message, code: 'MP_NO_VINCULADO' })
     }
+    if (error.code === 'CONTENIDO_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
+    }
     res.status(400).json({ error: error.message })
   }
 })
@@ -118,6 +121,9 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
     emitProductoActualizado(producto)
     res.json(producto)
   } catch (error) {
+    if (error.code === 'CONTENIDO_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
+    }
     res.status(400).json({ error: error.message })
   }
 })

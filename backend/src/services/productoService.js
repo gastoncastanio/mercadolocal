@@ -1,5 +1,6 @@
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
+import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
 
 // Crear producto
 export async function crearProducto(tiendaId, datos) {
@@ -11,6 +12,18 @@ export async function crearProducto(tiendaId, datos) {
   if (!tienda.mpVinculado) {
     const error = new Error('Debés vincular tu cuenta de Mercado Pago antes de publicar productos. Ingresá a "Central Vendedor" → "Vincular Mercado Pago".')
     error.code = 'MP_NO_VINCULADO'
+    throw error
+  }
+
+  // Validación de contenido: no permitir teléfonos, emails, URLs, redes sociales
+  // ni frases que inviten a contactar fuera del marketplace
+  const validacion = validarPublicacion({
+    titulo: datos.nombre,
+    descripcion: datos.descripcion
+  })
+  if (!validacion.valido) {
+    const error = new Error(construirMensajeRechazo(validacion.motivos))
+    error.code = 'CONTENIDO_INVALIDO'
     throw error
   }
 
@@ -94,6 +107,20 @@ export async function productosDeMiTienda(tiendaId) {
 
 // Actualizar producto
 export async function actualizarProducto(productoId, tiendaId, datos) {
+  // Validar contenido SOLO si se está editando título o descripción
+  // (las ediciones inline de precio/stock no necesitan revalidación)
+  if (datos.nombre !== undefined || datos.descripcion !== undefined) {
+    const validacion = validarPublicacion({
+      titulo: datos.nombre,
+      descripcion: datos.descripcion
+    })
+    if (!validacion.valido) {
+      const error = new Error(construirMensajeRechazo(validacion.motivos))
+      error.code = 'CONTENIDO_INVALIDO'
+      throw error
+    }
+  }
+
   const update = {
     nombre: datos.nombre,
     descripcion: datos.descripcion,
