@@ -42,6 +42,8 @@ const MasVendidos = lazy(() => import('./pages/MasVendidos'))
 const CentralVendedor = lazy(() => import('./pages/CentralVendedor'))
 const TiendaPublica = lazy(() => import('./pages/TiendaPublica'))
 const Ayuda = lazy(() => import('./pages/Ayuda'))
+const Soporte = lazy(() => import('./pages/Soporte'))
+const SoporteAdmin = lazy(() => import('./pages/SoporteAdmin'))
 const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
@@ -114,6 +116,9 @@ function AppContent() {
 
           {/* Ayuda */}
           <Route path="/ayuda" element={<ConNavbar><Ayuda /></ConNavbar>} />
+          <Route path="/soporte" element={<ConNavbar><Soporte /></ConNavbar>} />
+          <Route path="/soporte/:ticketId" element={<ConNavbar><Soporte /></ConNavbar>} />
+          <Route path="/admin/soporte" element={<ConNavbar><RutaPrivada roles={['admin']}><SoporteAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Publicas legales */}
           <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />
