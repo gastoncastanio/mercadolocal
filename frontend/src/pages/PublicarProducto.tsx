@@ -4,6 +4,7 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
+import { CATEGORIAS, getCategoria } from '../constants/categorias'
 
 const MAX_IMAGENES = 6
 
@@ -26,14 +27,18 @@ export default function PublicarProducto() {
   const [progresoImagen, setProgresoImagen] = useState<UploadProgress | null>(null)
   const [subiendoCantidad, setSubiendoCantidad] = useState({ actual: 0, total: 0 })
 
-  const categorias = ['Electrónica', 'Ropa', 'Hogar', 'Alimentos', 'Belleza', 'Deportes', 'Juguetes', 'Otro']
+  // Categorías centralizadas en /constants/categorias.ts
+  // Solo se permite UNA categoría principal por producto (más profesional y mejor para filtros)
+  // Si el vendedor cambia de categoría, mostramos los avisos legales asociados
+  const categoriaSeleccionada = form.categorias[0]
+    ? getCategoria(form.categorias[0])
+    : undefined
 
-  function toggleCategoria(cat: string) {
+  function seleccionarCategoria(catId: string) {
     setForm(prev => ({
       ...prev,
-      categorias: prev.categorias.includes(cat)
-        ? prev.categorias.filter(c => c !== cat)
-        : [...prev.categorias, cat]
+      // Reemplazo en lugar de toggle: solo una categoría principal
+      categorias: prev.categorias[0] === catId ? [] : [catId]
     }))
   }
 
@@ -94,6 +99,11 @@ export default function PublicarProducto() {
 
     if (!form.nombre || !form.precio) {
       setError('Nombre y precio son obligatorios')
+      return
+    }
+
+    if (form.categorias.length === 0) {
+      setError('Elegí una categoría para tu producto')
       return
     }
 
@@ -317,23 +327,54 @@ export default function PublicarProducto() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Categorías</label>
-            <div className="flex flex-wrap gap-2">
-              {categorias.map(cat => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => toggleCategoria(cat)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    form.categorias.includes(cat)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Categoría <span className="text-red-500">*</span>
+            </label>
+            <p className="text-xs text-gray-500 mb-3">Elegí la categoría que mejor describa tu producto.</p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {CATEGORIAS.map(cat => {
+                const seleccionada = form.categorias[0] === cat.id
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => seleccionarCategoria(cat.id)}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all border-2 text-left ${
+                      seleccionada
+                        ? 'bg-blue-50 border-blue-500 text-blue-700'
+                        : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl flex-shrink-0">{cat.icono}</span>
+                    <span className="text-xs leading-tight">{cat.nombre}</span>
+                  </button>
+                )
+              })}
             </div>
+
+            {/* Avisos legales de la categoría elegida */}
+            {categoriaSeleccionada && categoriaSeleccionada.avisosLegales && categoriaSeleccionada.avisosLegales.length > 0 && (
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-xs font-semibold text-amber-900 mb-1.5">
+                  ⚠️ Importante para esta categoría:
+                </p>
+                <ul className="space-y-1">
+                  {categoriaSeleccionada.avisosLegales.map((aviso, i) => (
+                    <li key={i} className="text-xs text-amber-800 leading-relaxed">• {aviso}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Si no permite pago integrado (ej: Automotor), avisar */}
+            {categoriaSeleccionada && !categoriaSeleccionada.permitePago && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs font-medium text-blue-900">
+                  ℹ️ Esta categoría no permite pago integrado. Los compradores solo podrán contactarte para coordinar la operación.
+                </p>
+              </div>
+            )}
           </div>
 
           <button

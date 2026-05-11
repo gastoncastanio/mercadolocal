@@ -5,6 +5,7 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
+import { CATEGORIAS, getCategoria } from '../constants/categorias'
 import { Producto } from '../types'
 
 export default function MiTienda() {
@@ -50,7 +51,11 @@ export default function MiTienda() {
   const subiendoImagenEdit = progresoImagenEdit !== null
   const editFileRef = useRef<HTMLInputElement>(null)
 
-  const categorias = ['Electrónica', 'Ropa', 'Hogar', 'Alimentos', 'Belleza', 'Deportes', 'Juguetes', 'Otro']
+  // Categorías centralizadas en /constants/categorias.ts (NO hardcodear acá)
+  // Si tenés que agregar/sacar categorías, tocá ese archivo único.
+  const categoriaSeleccionadaEdit = editForm.categorias[0]
+    ? getCategoria(editForm.categorias[0])
+    : undefined
 
   useEffect(() => {
     cargarProductos()
@@ -197,12 +202,11 @@ export default function MiTienda() {
     }
   }
 
-  function toggleCategoriaEdit(cat: string) {
+  // Single-select: solo una categoría por producto (igual que PublicarProducto)
+  function seleccionarCategoriaEdit(catId: string) {
     setEditForm(prev => ({
       ...prev,
-      categorias: prev.categorias.includes(cat)
-        ? prev.categorias.filter(c => c !== cat)
-        : [...prev.categorias, cat]
+      categorias: prev.categorias[0] === catId ? [] : [catId]
     }))
   }
 
@@ -719,17 +723,39 @@ export default function MiTienda() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Categorias</label>
-                <div className="flex flex-wrap gap-2">
-                  {categorias.map(cat => (
-                    <button key={cat} type="button" onClick={() => toggleCategoriaEdit(cat)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                        editForm.categorias.includes(cat) ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}>
-                      {cat}
-                    </button>
-                  ))}
+                <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {CATEGORIAS.map(cat => {
+                    const seleccionada = editForm.categorias[0] === cat.id
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => seleccionarCategoriaEdit(cat.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border-2 text-left ${
+                          seleccionada
+                            ? 'bg-blue-50 border-blue-500 text-blue-700'
+                            : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="text-lg flex-shrink-0">{cat.icono}</span>
+                        <span className="leading-tight">{cat.nombre}</span>
+                      </button>
+                    )
+                  })}
                 </div>
+
+                {/* Avisos legales de la categoría elegida */}
+                {categoriaSeleccionadaEdit && categoriaSeleccionadaEdit.avisosLegales && categoriaSeleccionadaEdit.avisosLegales.length > 0 && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs font-semibold text-amber-900 mb-1.5">⚠️ Importante para esta categoría:</p>
+                    <ul className="space-y-1">
+                      {categoriaSeleccionadaEdit.avisosLegales.map((aviso, i) => (
+                        <li key={i} className="text-xs text-amber-800 leading-relaxed">• {aviso}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-2">
