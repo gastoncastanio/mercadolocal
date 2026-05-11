@@ -36,6 +36,7 @@ import destacadosRouter from './routes/destacados.js'
 import mpOauthRouter from './routes/mpOauth.js'
 import statsRouter from './routes/stats.js'
 import soporteRouter from './routes/soporte.js'
+import diagnosticoRouter from './routes/_diagnostico.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -219,6 +220,7 @@ app.use('/api/destacados', destacadosRouter)
 app.use('/api/mp', mpOauthRouter)
 app.use('/api/stats', statsRouter)
 app.use('/api/soporte', soporteRouter)
+app.use('/api/_diag', diagnosticoRouter) // TEMPORAL — borrar después
 
 // Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
