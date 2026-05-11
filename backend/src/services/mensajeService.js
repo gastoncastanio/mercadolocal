@@ -1,4 +1,40 @@
 import Mensaje from '../models/Mensaje.js'
+import Orden from '../models/Orden.js'
+import Tienda from '../models/Tienda.js'
+import { censurarContacto } from '../utils/validacionContenido.js'
+
+/**
+ * Verifica si entre dos usuarios ya existe una orden PAGADA (comprador-vendedor).
+ * Si existe, el chat se desbloquea (ya pueden compartir contacto directo).
+ * Si NO existe, los mensajes se censuran para evitar evasión del marketplace.
+ *
+ * @returns {Promise<boolean>}
+ */
+async function existeOrdenPagadaEntre(userA, userB) {
+  // Buscar todas las tiendas de A y de B (cada uno puede ser comprador o vendedor)
+  const [tiendaA, tiendaB] = await Promise.all([
+    Tienda.findOne({ usuarioId: userA }).select('_id'),
+    Tienda.findOne({ usuarioId: userB }).select('_id')
+  ])
+
+  const tiendaIds = []
+  if (tiendaA) tiendaIds.push(tiendaA._id)
+  if (tiendaB) tiendaIds.push(tiendaB._id)
+
+  if (tiendaIds.length === 0) return false // ninguno tiene tienda, no hay venta posible
+
+  // Buscar una orden pagada donde el comprador sea uno y un item sea de tienda del otro
+  const orden = await Orden.findOne({
+    $or: [
+      // userA comprador, userB vendedor
+      { compradorId: userA, 'items.tiendaId': { $in: tiendaIds }, estado: { $in: ['pagada', 'enviada', 'completada'] } },
+      // userB comprador, userA vendedor
+      { compradorId: userB, 'items.tiendaId': { $in: tiendaIds }, estado: { $in: ['pagada', 'enviada', 'completada'] } }
+    ]
+  }).select('_id').lean()
+
+  return !!orden
+}
 
 // Enviar mensaje
 export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje }) {
@@ -6,12 +42,32 @@ export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje 
     ? `${[emisorId, receptorId].sort().join('_')}_${productoId}`
     : `${[emisorId, receptorId].sort().join('_')}`
 
+  // Censurar contacto externo si NO hay venta concretada entre los dos
+  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga)
+  const hayVenta = await existeOrdenPagadaEntre(emisorId, receptorId)
+
+  let mensajeFinal = mensaje
+  let mensajeOriginal = ''
+  let huboCensura = false
+
+  if (!hayVenta) {
+    const resultado = censurarContacto(mensaje)
+    if (resultado.huboCensura) {
+      mensajeOriginal = mensaje
+      mensajeFinal = resultado.textoCensurado
+      huboCensura = true
+      console.log(`🔒 Mensaje censurado (${resultado.motivos.join(', ')}) — emisor ${emisorId}`)
+    }
+  }
+
   const nuevoMensaje = new Mensaje({
     conversacionId,
     emisorId,
     receptorId,
     productoId: productoId || undefined,
-    mensaje
+    mensaje: mensajeFinal,
+    mensajeOriginal: huboCensura ? mensajeOriginal : '',
+    huboCensura
   })
 
   await nuevoMensaje.save()

@@ -17,6 +17,8 @@ interface Mensaje {
   receptorId: string
   mensaje: string
   leido: boolean
+  // Si true, este mensaje tuvo contacto externo censurado por seguridad
+  huboCensura?: boolean
   createdAt: string
 }
 
@@ -209,7 +211,15 @@ export default function Chat() {
                           : 'bg-gray-200 text-gray-800 rounded-bl-md'
                       }`}
                     >
-                      <p className="text-sm">{msg.mensaje}</p>
+                      <p className="text-sm whitespace-pre-line">{msg.mensaje}</p>
+
+                      {/* Indicador de mensaje censurado */}
+                      {msg.huboCensura && (
+                        <p className={`text-[10px] mt-1 italic ${esMio ? 'text-blue-100' : 'text-gray-500'}`}>
+                          🔒 Por seguridad, el contacto se desbloquea al concretar la compra
+                        </p>
+                      )}
+
                       <p
                         className={`text-xs mt-1 ${
                           esMio ? 'text-blue-100' : 'text-gray-400'
@@ -227,7 +237,10 @@ export default function Chat() {
             </div>
 
             {/* Input */}
-            <form onSubmit={enviarMensaje} className="bg-white border-t border-gray-200 px-6 py-4">
+            <form onSubmit={enviarMensaje} className="bg-white border-t border-gray-200 px-6 py-3">
+              <p className="text-[11px] text-gray-400 text-center mb-2 leading-tight">
+                🔒 Por tu seguridad, los teléfonos, emails y links se ocultan hasta que se concrete la compra
+              </p>
               <div className="flex gap-3">
                 <input
                   type="text"

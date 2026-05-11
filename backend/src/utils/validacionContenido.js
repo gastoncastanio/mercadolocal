@@ -267,3 +267,100 @@ export function construirMensajeRechazo(motivos) {
     'Cuando alguien te compre, vas a poder coordinar el envío por WhatsApp.'
   return `${intro}\n\n${lista}${cierre}`
 }
+
+// ============================================================
+// CENSURA DE CONTENIDO (para mensajes de chat pre-venta)
+// ============================================================
+
+/**
+ * Reemplaza contacto externo (teléfonos, emails, URLs, redes sociales) por
+ * un placeholder. Se usa en mensajes de chat cuando todavía NO hay
+ * transacción entre los usuarios — estilo Mercado Libre.
+ *
+ * @param {string} texto
+ * @returns {{ textoCensurado: string, huboCensura: boolean, motivos: string[] }}
+ */
+export function censurarContacto(texto) {
+  if (!texto || typeof texto !== 'string') {
+    return { textoCensurado: texto || '', huboCensura: false, motivos: [] }
+  }
+
+  let resultado = texto
+  const motivos = new Set()
+  const REEMPLAZO = '[contacto oculto]'
+
+  // 1. URLs (primero porque pueden contener arrobas o puntos)
+  if (/https?:\/\/\S+/i.test(resultado)) {
+    resultado = resultado.replace(/https?:\/\/\S+/gi, REEMPLAZO)
+    motivos.add('enlace web')
+  }
+  if (/\bwww\.\S+/i.test(resultado)) {
+    resultado = resultado.replace(/\bwww\.\S+/gi, REEMPLAZO)
+    motivos.add('dirección web')
+  }
+  // Dominios sueltos: palabra.com / .com.ar / .net / etc
+  const regexDominio = /\b[a-z0-9-]{2,}\.(com|ar|net|org|edu|gov|me|io|app|store|tienda|shop|info|biz|online|site|web|tk|ly|gl)(\.[a-z]{2,})?\b/gi
+  if (regexDominio.test(resultado)) {
+    resultado = resultado.replace(regexDominio, REEMPLAZO)
+    motivos.add('dominio web')
+  }
+
+  // 2. Emails completos (capturar usuario + @ + dominio)
+  // El dominio ya pudo haberse censurado antes, así que también capturamos "usuario@[contacto oculto]"
+  if (/[a-z0-9._+-]+@(\[contacto oculto\]|[a-z0-9.-]+\.[a-z]{2,})/i.test(resultado)) {
+    resultado = resultado.replace(/[a-z0-9._+-]+@(\[contacto oculto\]|[a-z0-9.-]+\.[a-z]{2,})/gi, REEMPLAZO)
+    motivos.add('email')
+  }
+
+  // 3. Arrobas sueltas (Instagram, Twitter) — DESPUÉS de emails para no romper @
+  resultado = resultado.replace(/@[a-z0-9._]{3,}/gi, (match) => {
+    motivos.add('usuario de red social')
+    return REEMPLAZO
+  })
+
+  // 4. Teléfonos (8+ dígitos consecutivos con o sin separadores)
+  resultado = resultado.replace(/(\d[\s\-.()\\/+]*){8,}/g, (match) => {
+    const digitos = match.replace(/\D/g, '')
+    if (digitos.length >= 8) {
+      motivos.add('número de teléfono')
+      return REEMPLAZO
+    }
+    return match
+  })
+
+  // 5. Nombres de redes sociales como palabras
+  const palabrasRedes = [
+    'whatsapp', 'whats app', 'wpp', 'wsp', 'wapp', 'watsap', 'guasap',
+    'instagram', 'insta',
+    'facebook', 'face book', 'messenger', 'mesenger',
+    'telegram', 'telegrama',
+    'tiktok', 'tik tok',
+    'snapchat', 'discord'
+  ]
+  for (const p of palabrasRedes) {
+    const regex = new RegExp(`\\b${p.replace(/ /g, '\\s*')}\\b`, 'gi')
+    if (regex.test(resultado)) {
+      resultado = resultado.replace(regex, REEMPLAZO)
+      motivos.add('mención de red social')
+    }
+  }
+
+  // 6. Teléfonos en letras
+  // ("uno dos tres cuatro cinco seis siete ocho" = "12345678")
+  const palabrasNum = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve']
+  const regexLetras = new RegExp(`(\\b(?:${palabrasNum.join('|')})\\s+){7,}\\b(?:${palabrasNum.join('|')})\\b`, 'gi')
+  if (regexLetras.test(resultado)) {
+    resultado = resultado.replace(regexLetras, REEMPLAZO)
+    motivos.add('número en letras')
+  }
+
+  // Limpiar múltiples [contacto oculto] consecutivos
+  resultado = resultado.replace(/(\[contacto oculto\][\s,.-]*){2,}/g, '[contacto oculto] ')
+
+  const huboCensura = motivos.size > 0
+  return {
+    textoCensurado: resultado.trim(),
+    huboCensura,
+    motivos: [...motivos]
+  }
+}

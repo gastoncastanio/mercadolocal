@@ -24,6 +24,18 @@ const mensajeSchema = new mongoose.Schema({
     required: [true, 'El mensaje es obligatorio'],
     maxlength: 1000
   },
+  // Si el mensaje fue censurado (contenía contacto externo pre-venta),
+  // guardamos el texto original para auditoría y detección de evasores sistemáticos.
+  // El comprador/vendedor NUNCA ve este campo — es solo para moderación interna.
+  mensajeOriginal: {
+    type: String,
+    default: '',
+    maxlength: 1000
+  },
+  huboCensura: {
+    type: Boolean,
+    default: false
+  },
   leido: {
     type: Boolean,
     default: false
@@ -31,6 +43,17 @@ const mensajeSchema = new mongoose.Schema({
 }, {
   timestamps: true
 })
+
+// Índice para que el panel de moderación pueda buscar evasores rápidamente
+mensajeSchema.index({ emisorId: 1, huboCensura: 1, createdAt: -1 })
+
+// IMPORTANTE: nunca exponer el mensaje original al frontend.
+// Solo el panel de moderación interno puede leerlo.
+mensajeSchema.methods.toJSON = function () {
+  const obj = this.toObject()
+  delete obj.mensajeOriginal
+  return obj
+}
 
 const Mensaje = mongoose.model('Mensaje', mensajeSchema)
 
