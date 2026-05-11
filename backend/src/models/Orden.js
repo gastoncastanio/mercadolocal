@@ -111,9 +111,17 @@ const ordenSchema = new mongoose.Schema({
   timestamps: true
 })
 
+// ===== Índices compuestos para queries frecuentes =====
+// Órdenes del comprador, ordenadas por fecha
 ordenSchema.index({ compradorId: 1, createdAt: -1 })
-ordenSchema.index({ 'items.tiendaId': 1, createdAt: -1 })
-ordenSchema.index({ estado: 1 })
+// Órdenes del vendedor por tienda + estado (panel de pedidos)
+ordenSchema.index({ 'items.tiendaId': 1, estado: 1, createdAt: -1 })
+// Limpieza de órdenes pendientes vencidas (cron)
+ordenSchema.index({ estado: 1, createdAt: 1 })
+// Búsqueda por referencia de MP (webhook callbacks)
+ordenSchema.index({ mpPaymentId: 1 }, { sparse: true })
+// Estadísticas de admin: órdenes pagadas en rango de fecha
+ordenSchema.index({ estado: 1, fechaConfirmacion: -1 })
 
 const Orden = mongoose.model('Orden', ordenSchema)
 

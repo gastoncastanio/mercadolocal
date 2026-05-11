@@ -7,7 +7,22 @@ import { emitNuevoProducto, emitProductoActualizado, emitProductoEliminado } fro
 
 const router = Router()
 
-// GET /api/productos - Listar todos (público)
+// GET /api/productos - Listar productos del catálogo público (paginado por cursor)
+//
+// Query params:
+//   busqueda, categoria, ciudad, precioMin, precioMax, tiendaId, ordenar
+//   limite (default 24, máx 100)
+//   cursor (opcional, _id del último producto de la página anterior)
+//
+// Respuesta:
+//   {
+//     productos: [...],
+//     siguienteCursor: 'objectId' | null,
+//     hayMas: boolean
+//   }
+//
+// Para retrocompatibilidad: si no se pasa cursor, devuelve array directo
+// (los clientes viejos siguen funcionando).
 router.get('/', async (req, res) => {
   try {
     const filtros = {
@@ -18,35 +33,47 @@ router.get('/', async (req, res) => {
       precioMax: req.query.precioMax,
       tiendaId: req.query.tiendaId,
       ordenar: req.query.ordenar,
-      limite: req.query.limite
+      limite: req.query.limite,
+      cursor: req.query.cursor
     }
 
-    let productos = await listarProductos(filtros)
+    const { productos, siguienteCursor, hayMas } = await listarProductos(filtros)
 
-    // Insertar productos destacados al inicio del listado
-    try {
-      const ahora = new Date()
-      const destacados = await Destacado.find({
-        activo: true,
-        estado: 'activo',
-        fechaFin: { $gt: ahora },
-        fechaInicio: { $lte: ahora },
-        ubicacion: 'catalogo'
-      }).select('productoId')
+    let listaFinal = productos
 
-      const idsDestacados = new Set(destacados.map(d => d.productoId.toString()))
+    // Insertar productos destacados al inicio del listado (solo en la primera página)
+    if (!filtros.cursor) {
+      try {
+        const ahora = new Date()
+        const destacados = await Destacado.find({
+          activo: true,
+          estado: 'activo',
+          fechaFin: { $gt: ahora },
+          fechaInicio: { $lte: ahora },
+          ubicacion: 'catalogo'
+        }).select('productoId').lean()
 
-      if (idsDestacados.size > 0) {
-        const prodsDestacados = productos.filter(p => idsDestacados.has(p._id.toString()))
-        const prodsNormales = productos.filter(p => !idsDestacados.has(p._id.toString()))
-        // Marcar como destacado para el frontend
-        prodsDestacados.forEach(p => { p._doc.esDestacado = true })
-        productos = [...prodsDestacados, ...prodsNormales]
-      }
-    } catch {}
+        const idsDestacados = new Set(destacados.map(d => d.productoId.toString()))
 
-    res.json(productos)
+        if (idsDestacados.size > 0) {
+          const prodsDestacados = listaFinal.filter(p => idsDestacados.has(p._id.toString()))
+          const prodsNormales = listaFinal.filter(p => !idsDestacados.has(p._id.toString()))
+          // Marcar como destacado (objeto plano porque viene de aggregate, no doc)
+          prodsDestacados.forEach(p => { p.esDestacado = true })
+          listaFinal = [...prodsDestacados, ...prodsNormales]
+        }
+      } catch {}
+    }
+
+    // Retrocompatibilidad: si no usan cursor, devolver array directo
+    // (frontend viejo que espera Producto[] sigue funcionando)
+    if (!req.query.cursor && req.query.formato !== 'paginado') {
+      return res.json(listaFinal)
+    }
+
+    res.json({ productos: listaFinal, siguienteCursor, hayMas })
   } catch (error) {
+    console.error('Error listando productos:', error)
     res.status(500).json({ error: error.message })
   }
 })

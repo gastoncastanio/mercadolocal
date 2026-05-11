@@ -135,12 +135,49 @@ const productoSchema = new mongoose.Schema({
   timestamps: true
 })
 
-// Índices para búsqueda y performance
+// ============================================================
+// ÍNDICES — diseñados para las consultas reales del catálogo
+// ============================================================
+//
+// MongoDB recorre índices en orden, así que el ORDEN de los campos
+// importa. Patrón típico de catálogo:
+//   1. Filtrar por activo:true (siempre primero)
+//   2. Filtrar por ciudad y/o categoría
+//   3. Ordenar por relevancia (ventas / calificación / fecha / precio)
+//
+// Cada índice cubre un patrón de búsqueda específico.
+
+// 1. Búsqueda por texto (search bar)
 productoSchema.index({ nombre: 'text', descripcion: 'text', categorias: 'text' })
-productoSchema.index({ tiendaId: 1, activo: 1 })
-productoSchema.index({ activo: 1, totalVentas: -1 })
-productoSchema.index({ activo: 1, calificacion: -1 })
-productoSchema.index({ activo: 1, precio: 1 })
+
+// 2. Productos de UNA tienda (vendedor viendo sus propios productos)
+productoSchema.index({ tiendaId: 1, activo: 1, createdAt: -1 })
+
+// 3. Catálogo por ciudad + categoría (la query más común)
+productoSchema.index({ activo: 1, ciudad: 1, categorias: 1, createdAt: -1 })
+
+// 4. Más vendidos en categoría
+productoSchema.index({ activo: 1, categorias: 1, totalVentas: -1 })
+
+// 5. Filtros de precio
+productoSchema.index({ activo: 1, categorias: 1, precio: 1 })
+
+// 6. Filtros por marca + categoría (cuando integremos comparación)
+productoSchema.index({ activo: 1, marca: 1, categorias: 1 })
+
+// 7. Productos por código de barras (para agrupar duplicados en catálogo)
+productoSchema.index({ codigoBarras: 1, activo: 1 }, {
+  // sparse: solo indexa documentos que tienen el campo (no todos)
+  // Reduce mucho el tamaño del índice porque la mayoría de productos
+  // no van a tener código de barras al inicio.
+  sparse: true
+})
+
+// 8. Novedades globales
+productoSchema.index({ activo: 1, createdAt: -1 })
+
+// 9. Productos destacados de la home
+productoSchema.index({ activo: 1, calificacion: -1, totalVentas: -1 })
 
 const Producto = mongoose.model('Producto', productoSchema)
 

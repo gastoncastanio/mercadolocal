@@ -1,6 +1,10 @@
 // CARGAR VARIABLES DE ENTORNO PRIMERO
 import './config/env.js'
 
+// Sentry debe inicializarse ANTES de cualquier import que pueda fallar
+import { inicializarSentry, sentryErrorHandler } from './config/sentry.js'
+inicializarSentry()
+
 import http from 'http'
 import express from 'express'
 import cors from 'cors'
@@ -233,6 +237,10 @@ app.get('/api/health/detalle', async (req, res) => {
   const allOk = Object.values(checks).every(v => v === 'OK')
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
+
+// Sentry: capturar errores ANTES del handler global de Express
+// (debe ir después de las rutas, antes del error handler propio)
+app.use(sentryErrorHandler())
 
 // Error handling global
 app.use((err, req, res, next) => {

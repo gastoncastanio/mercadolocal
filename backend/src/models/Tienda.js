@@ -88,6 +88,14 @@ const tiendaSchema = new mongoose.Schema({
   timestamps: true
 })
 
+// ===== Índices =====
+// Búsqueda de tiendas por ciudad y activas (listado público)
+tiendaSchema.index({ activo: 1, ciudad: 1, calificacion: -1 })
+// Tiendas con MP vinculado (para listar las que pueden vender)
+tiendaSchema.index({ mpVinculado: 1, activo: 1 })
+// Búsqueda por nombre
+tiendaSchema.index({ nombre: 'text', descripcion: 'text' })
+
 // Encriptar tokens de MP antes de guardar
 tiendaSchema.pre('save', function (next) {
   if (this.isModified('mpAccessToken') && this.mpAccessToken && !estaEncriptado(this.mpAccessToken)) {

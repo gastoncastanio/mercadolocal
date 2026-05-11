@@ -3,20 +3,62 @@ import crypto from 'crypto'
 const ALGORITHM = 'aes-256-gcm'
 const IV_LENGTH = 16
 const TAG_LENGTH = 16
+const MIN_KEY_LENGTH = 32 // mínimo 32 chars para resistir bruteforce básico
 
-// Derivar clave de encriptación dedicada (MP_ENCRYPTION_KEY).
-// En producción es obligatoria; en desarrollo permitimos fallback al JWT_SECRET con warning.
+/**
+ * Clave de encriptación dedicada para tokens sensibles (MP, futuras integraciones).
+ *
+ * SEGURIDAD: esta clave debe ser ÚNICA y SEPARADA de JWT_SECRET.
+ * Si JWT_SECRET se filtra, el atacante puede forjar tokens de usuario.
+ * Si MP_ENCRYPTION_KEY se filtra, puede desencriptar tokens de MP de vendedores.
+ * Tener la MISMA clave para ambos = single point of failure crítico.
+ *
+ * Cache de la clave derivada para no re-hashearla en cada llamada.
+ */
+let cachedKey = null
+
 function getEncryptionKey() {
+  if (cachedKey) return cachedKey
+
   const secret = process.env.MP_ENCRYPTION_KEY
+  const esProduccion = process.env.NODE_ENV === 'production'
+
   if (!secret) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('⚠️ MP_ENCRYPTION_KEY no configurado, usando JWT_SECRET como fallback. Configurar en producción.')
-      const fallback = process.env.JWT_SECRET || 'dev'
-      return crypto.createHash('sha256').update(fallback).digest()
+    if (esProduccion) {
+      throw new Error(
+        'MP_ENCRYPTION_KEY es OBLIGATORIO en producción. ' +
+        'Generala con: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))" ' +
+        'y configurala en las variables de entorno.'
+      )
     }
-    throw new Error('MP_ENCRYPTION_KEY debe estar configurado en producción')
+    // En desarrollo, fallback al JWT_SECRET pero con warning fuerte
+    console.warn(
+      '⚠️  MP_ENCRYPTION_KEY no configurado. Usando JWT_SECRET como fallback (SOLO DESARROLLO). ' +
+      'En producción configurar MP_ENCRYPTION_KEY separado.'
+    )
+    const fallback = process.env.JWT_SECRET || 'dev-only-do-not-use-in-production'
+    cachedKey = crypto.createHash('sha256').update(fallback).digest()
+    return cachedKey
   }
-  return crypto.createHash('sha256').update(secret).digest()
+
+  // Validar que la clave tenga longitud razonable
+  if (secret.length < MIN_KEY_LENGTH) {
+    throw new Error(
+      `MP_ENCRYPTION_KEY debe tener al menos ${MIN_KEY_LENGTH} caracteres. ` +
+      `Generala con: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
+    )
+  }
+
+  // Validar que NO sea idéntica al JWT_SECRET (single point of failure)
+  if (esProduccion && process.env.JWT_SECRET && secret === process.env.JWT_SECRET) {
+    throw new Error(
+      'MP_ENCRYPTION_KEY no puede ser igual a JWT_SECRET. ' +
+      'Si uno se filtra el otro queda comprometido. Generá claves distintas.'
+    )
+  }
+
+  cachedKey = crypto.createHash('sha256').update(secret).digest()
+  return cachedKey
 }
 
 // Encriptar un string sensible (tokens MP, etc.)

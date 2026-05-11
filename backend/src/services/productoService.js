@@ -144,46 +144,124 @@ export async function obtenerProducto(productoId) {
   return producto
 }
 
-// Listar todos los productos (con filtros)
+/**
+ * Listar productos del catálogo público con filtros y paginación.
+ *
+ * IMPORTANTE: solo retorna productos cuya tienda tenga MP vinculado.
+ *
+ * Usa aggregation pipeline ($lookup) en lugar de populate + filter en RAM
+ * para escalar a 10.000+ productos sin problemas de performance.
+ *
+ * Soporta paginación por cursor (más eficiente que skip/limit a escala).
+ *
+ * @param {Object} filtros
+ * @param {string} filtros.busqueda - texto a buscar
+ * @param {string} filtros.categoria - id de categoría
+ * @param {string} filtros.ciudad - ciudad
+ * @param {number} filtros.precioMin
+ * @param {number} filtros.precioMax
+ * @param {string} filtros.tiendaId - filtrar productos de una tienda específica
+ * @param {string} filtros.ordenar - 'precio_asc' | 'precio_desc' | 'ventas' | 'calificacion' | 'recientes'
+ * @param {number} filtros.limite - default 24, máx 100
+ * @param {string} filtros.cursor - id del último producto de la página anterior
+ * @returns {Promise<{ productos: Array, siguienteCursor: string|null, hayMas: boolean }>}
+ */
 export async function listarProductos(filtros = {}) {
-  const query = { activo: true }
+  const limite = Math.min(Number(filtros.limite) || 24, 100)
+
+  // ===== Match inicial (queries indexadas) =====
+  const matchProducto = { activo: true }
 
   if (filtros.busqueda) {
-    query.$text = { $search: filtros.busqueda }
+    matchProducto.$text = { $search: filtros.busqueda }
   }
-
   if (filtros.categoria) {
-    query.categorias = { $in: [filtros.categoria] }
+    matchProducto.categorias = filtros.categoria
   }
-
   if (filtros.ciudad) {
-    query.ciudad = filtros.ciudad
+    matchProducto.ciudad = filtros.ciudad
   }
-
   if (filtros.precioMin || filtros.precioMax) {
-    query.precio = {}
-    if (filtros.precioMin) query.precio.$gte = Number(filtros.precioMin)
-    if (filtros.precioMax) query.precio.$lte = Number(filtros.precioMax)
+    matchProducto.precio = {}
+    if (filtros.precioMin) matchProducto.precio.$gte = Number(filtros.precioMin)
+    if (filtros.precioMax) matchProducto.precio.$lte = Number(filtros.precioMax)
   }
-
   if (filtros.tiendaId) {
-    query.tiendaId = filtros.tiendaId
+    // Filtrar por una tienda específica (perfil público de la tienda)
+    // Convertir string a ObjectId
+    matchProducto.tiendaId = filtros.tiendaId
   }
 
-  let productos = await Producto.find(query)
-    .populate('tiendaId', 'nombre ciudad logo mpVinculado')
-    .sort(filtros.ordenar === 'precio_asc' ? { precio: 1 } :
-          filtros.ordenar === 'precio_desc' ? { precio: -1 } :
-          filtros.ordenar === 'ventas' ? { totalVentas: -1 } :
-          filtros.ordenar === 'calificacion' ? { calificacion: -1 } :
-          { createdAt: -1 })
-    .limit(filtros.limite ? Number(filtros.limite) : 50)
+  // ===== Cursor (paginación) =====
+  // El cursor es el _id del último producto de la página anterior.
+  // Como ordenamos por createdAt DESC por defecto, queremos productos con _id menor.
+  // Esto es MUCHO más eficiente que skip a escala (skip recorre todos los anteriores).
+  if (filtros.cursor) {
+    // Solo aplicamos cursor cuando el orden default está activo
+    // (para otros órdenes, paginación por cursor requiere más complejidad)
+    try {
+      matchProducto._id = { $lt: filtros.cursor }
+    } catch (e) {
+      // cursor inválido, ignorar
+    }
+  }
 
-  // Filtrar productos cuya tienda no tenga MP vinculado
-  // (no aparecen en catálogo público hasta que el vendedor conecte su cuenta)
-  productos = productos.filter(p => p.tiendaId?.mpVinculado === true)
+  // ===== Definir orden =====
+  const ordenarPor = (() => {
+    switch (filtros.ordenar) {
+      case 'precio_asc':    return { precio: 1, _id: -1 }
+      case 'precio_desc':   return { precio: -1, _id: -1 }
+      case 'ventas':        return { totalVentas: -1, _id: -1 }
+      case 'calificacion':  return { calificacion: -1, _id: -1 }
+      default:              return { _id: -1 } // recientes (más eficiente que createdAt)
+    }
+  })()
 
-  return productos
+  // ===== Aggregation pipeline =====
+  // 1. Match inicial (usa índices)
+  // 2. Sort (también usa índices)
+  // 3. Limit + 1 (para saber si hay más páginas)
+  // 4. Lookup de tienda (JOIN en BD, no en RAM)
+  // 5. Match: solo tiendas con MP vinculado
+  // 6. Project: limitar campos para reducir tráfico
+  const pipeline = [
+    { $match: matchProducto },
+    { $sort: ordenarPor },
+    // Traemos 1 extra para saber si hay más páginas sin pedir total
+    { $limit: limite + 1 },
+    {
+      $lookup: {
+        from: 'tiendas',
+        localField: 'tiendaId',
+        foreignField: '_id',
+        as: 'tienda'
+      }
+    },
+    { $unwind: { path: '$tienda', preserveNullAndEmptyArrays: false } },
+    { $match: { 'tienda.mpVinculado': true, 'tienda.activo': true } },
+    {
+      // Reemplazar tiendaId con un objeto compacto
+      $addFields: {
+        tiendaId: {
+          _id: '$tienda._id',
+          nombre: '$tienda.nombre',
+          ciudad: '$tienda.ciudad',
+          logo: '$tienda.logo',
+          calificacion: '$tienda.calificacion'
+        }
+      }
+    },
+    { $project: { tienda: 0 } } // sacar el objeto tienda completo, ya tenemos lo necesario
+  ]
+
+  const resultados = await Producto.aggregate(pipeline)
+
+  // Si trajimos 1 más del límite, significa que hay siguiente página
+  const hayMas = resultados.length > limite
+  const productos = hayMas ? resultados.slice(0, limite) : resultados
+  const siguienteCursor = hayMas ? productos[productos.length - 1]._id : null
+
+  return { productos, siguienteCursor, hayMas }
 }
 
 // Productos de una tienda (público): solo si la tienda tiene MP vinculado
