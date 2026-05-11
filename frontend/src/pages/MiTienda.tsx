@@ -5,7 +5,7 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
-import { CATEGORIAS, getCategoria } from '../constants/categorias'
+import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
 import { Producto } from '../types'
 
 export default function MiTienda() {
@@ -43,7 +43,9 @@ export default function MiTienda() {
     precio: '',
     stock: '',
     categorias: [] as string[],
-    imagenes: [] as string[]
+    imagenes: [] as string[],
+    marca: '',
+    codigoBarras: ''
   })
   const [editError, setEditError] = useState('')
   const [editCargando, setEditCargando] = useState(false)
@@ -155,7 +157,10 @@ export default function MiTienda() {
         precio: campo === 'precio' ? valor : producto.precio,
         stock: campo === 'stock' ? valor : producto.stock,
         imagenes: producto.imagenes,
-        categorias: producto.categorias
+        categorias: producto.categorias,
+        // Preservar marca y código de barras existentes (no pisarlos al editar inline)
+        marca: producto.marca || '',
+        codigoBarras: producto.codigoBarras || ''
       })
       setProductos(prev => prev.map(p => p._id === productoId ? res.data : p))
       toast.exito(`${campo === 'precio' ? 'Precio' : 'Stock'} actualizado`)
@@ -177,7 +182,9 @@ export default function MiTienda() {
       precio: producto.precio.toString(),
       stock: producto.stock.toString(),
       categorias: producto.categorias || [],
-      imagenes: producto.imagenes || []
+      imagenes: producto.imagenes || [],
+      marca: producto.marca || '',
+      codigoBarras: producto.codigoBarras || ''
     })
     setEditError('')
   }
@@ -247,6 +254,8 @@ export default function MiTienda() {
         stock: producto.stock,
         imagenes: producto.imagenes,
         categorias: producto.categorias,
+        marca: producto.marca || '',
+        codigoBarras: producto.codigoBarras || '',
         activo: !producto.activo
       })
       setProductos(prev => prev.map(p => p._id === producto._id ? res.data : p))
@@ -760,6 +769,42 @@ export default function MiTienda() {
                     </ul>
                   </div>
                 )}
+              </div>
+
+              {/* ===== Marca y Código de barras ===== */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Marca <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={80}
+                    value={editForm.marca}
+                    onChange={e => setEditForm({ ...editForm, marca: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Ej: Samsung, Genérico"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Código de barras{' '}
+                    {categoriaSeleccionadaEdit && requiereCodigoBarras(categoriaSeleccionadaEdit.id) ? (
+                      <span className="text-red-500">*</span>
+                    ) : (
+                      <span className="text-gray-400 font-normal">(opcional)</span>
+                    )}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={14}
+                    value={editForm.codigoBarras}
+                    onChange={e => setEditForm({ ...editForm, codigoBarras: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                    placeholder="Ej: 7790070451095"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 pt-2">

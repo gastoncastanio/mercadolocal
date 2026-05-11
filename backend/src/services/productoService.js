@@ -1,6 +1,19 @@
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
+import { validarCodigoBarras, normalizarCodigoBarras } from '../utils/codigoBarras.js'
+
+// Categorías que REQUIEREN código de barras obligatorio (alto riesgo legal/fraude)
+// - Electrónica: detecta IMEI bloqueados y permite verificar contra catálogo
+// - Alimentos: RNPA va en el código, sirve para trazabilidad
+// - Belleza: verificación ANMAT
+// - Electrodomésticos: garantía oficial requiere serie/código
+const CATEGORIAS_REQUIEREN_CODIGO_BARRAS = new Set([
+  'electronica',
+  'alimentos',
+  'belleza',
+  'electrodomesticos'
+])
 
 // Crear producto
 export async function crearProducto(tiendaId, datos) {
@@ -27,6 +40,31 @@ export async function crearProducto(tiendaId, datos) {
     throw error
   }
 
+  // ===== Validación de código de barras =====
+  // En categorías de alto riesgo (electrónica, alimentos, belleza, electrodomésticos)
+  // el código es OBLIGATORIO. En el resto es opcional.
+  const categoriaPrincipal = (datos.categorias && datos.categorias[0]) || ''
+  const requiereCodigo = CATEGORIAS_REQUIEREN_CODIGO_BARRAS.has(categoriaPrincipal)
+  let codigoBarrasNormalizado = ''
+
+  if (datos.codigoBarras) {
+    const validacionCodigo = validarCodigoBarras(datos.codigoBarras)
+    if (!validacionCodigo.valido) {
+      const error = new Error(validacionCodigo.motivo)
+      error.code = 'CODIGO_BARRAS_INVALIDO'
+      throw error
+    }
+    codigoBarrasNormalizado = normalizarCodigoBarras(datos.codigoBarras)
+  } else if (requiereCodigo) {
+    const error = new Error(
+      'Para esta categoría es obligatorio el código de barras del producto. ' +
+      'Lo encontrás en la etiqueta del producto (EAN-13 o UPC). ' +
+      'Esto permite verificar el producto y agruparlo con otros vendedores que lo tienen.'
+    )
+    error.code = 'CODIGO_BARRAS_REQUERIDO'
+    throw error
+  }
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
@@ -35,7 +73,9 @@ export async function crearProducto(tiendaId, datos) {
     stock: datos.stock || 1,
     imagenes: datos.imagenes || [],
     categorias: datos.categorias || [],
-    ciudad: tienda.ciudad
+    ciudad: tienda.ciudad,
+    codigoBarras: codigoBarrasNormalizado,
+    marca: (datos.marca || '').trim().slice(0, 80)
   })
 
   await producto.save()
@@ -121,6 +161,16 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
     }
   }
 
+  // Validar código de barras si se está editando
+  if (datos.codigoBarras !== undefined && datos.codigoBarras !== '') {
+    const validacionCodigo = validarCodigoBarras(datos.codigoBarras)
+    if (!validacionCodigo.valido) {
+      const error = new Error(validacionCodigo.motivo)
+      error.code = 'CODIGO_BARRAS_INVALIDO'
+      throw error
+    }
+  }
+
   const update = {
     nombre: datos.nombre,
     descripcion: datos.descripcion,
@@ -131,6 +181,13 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
   }
   // Soporte para pausar/reactivar producto: solo se actualiza si viene definido
   if (datos.activo !== undefined) update.activo = datos.activo
+  // Código de barras y marca solo se actualizan si vienen definidos
+  if (datos.codigoBarras !== undefined) {
+    update.codigoBarras = normalizarCodigoBarras(datos.codigoBarras)
+  }
+  if (datos.marca !== undefined) {
+    update.marca = String(datos.marca).trim().slice(0, 80)
+  }
 
   const producto = await Producto.findOneAndUpdate(
     { _id: productoId, tiendaId },

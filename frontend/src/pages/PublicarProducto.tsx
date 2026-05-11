@@ -4,7 +4,7 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
-import { CATEGORIAS, getCategoria } from '../constants/categorias'
+import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
 
 const MAX_IMAGENES = 6
 
@@ -20,7 +20,9 @@ export default function PublicarProducto() {
     precio: '',
     stock: '1',
     categorias: [] as string[],
-    imagenes: [] as string[]
+    imagenes: [] as string[],
+    marca: '',
+    codigoBarras: ''
   })
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
@@ -380,6 +382,60 @@ export default function PublicarProducto() {
               </div>
             )}
           </div>
+
+          {/* ===== Marca y Código de barras ===== */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Marca <span className="text-gray-400 font-normal">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                maxLength={80}
+                value={form.marca}
+                onChange={e => setForm({ ...form, marca: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                placeholder="Ej: Samsung, Apple, Genérico"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Código de barras{' '}
+                {categoriaSeleccionada && requiereCodigoBarras(categoriaSeleccionada.id) ? (
+                  <span className="text-red-500">*</span>
+                ) : (
+                  <span className="text-gray-400 font-normal">(opcional)</span>
+                )}
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={14}
+                value={form.codigoBarras}
+                onChange={e => setForm({ ...form, codigoBarras: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                placeholder="Ej: 7790070451095"
+              />
+            </div>
+          </div>
+
+          {/* Aviso cuando código es opcional pero útil */}
+          {categoriaSeleccionada && !requiereCodigoBarras(categoriaSeleccionada.id) && (
+            <p className="text-xs text-gray-500 -mt-2">
+              💡 Si cargás el código de barras, tu producto aparece destacado y agrupado con otros vendedores que tengan el mismo producto.
+            </p>
+          )}
+
+          {/* Aviso cuando código es obligatorio */}
+          {categoriaSeleccionada && requiereCodigoBarras(categoriaSeleccionada.id) && (
+            <div className="-mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs text-blue-900 leading-relaxed">
+                <span className="font-semibold">⚠️ En esta categoría el código de barras es obligatorio.</span>{' '}
+                Lo encontrás en la etiqueta del producto (13 dígitos típicamente).
+                Nos sirve para verificar que el producto es original.
+              </p>
+            </div>
+          )}
 
           <button
             type="submit"

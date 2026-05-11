@@ -279,3 +279,20 @@ export const CATEGORIAS_RIESGOSAS = CATEGORIAS.filter(c => c.riesgoLegal === 'al
 
 /** Categorías que NO permiten pago integrado (solo contacto) */
 export const CATEGORIAS_SIN_PAGO = CATEGORIAS.filter(c => !c.permitePago)
+
+/**
+ * Categorías donde el código de barras es OBLIGATORIO.
+ * IMPORTANTE: debe coincidir con la lista del backend (productoService.js).
+ * Si cambia acá, cambialo allá también.
+ */
+export const CATEGORIAS_CODIGO_BARRAS_OBLIGATORIO = new Set([
+  'electronica',       // detección de IMEI/serial bloqueados
+  'alimentos',         // RNPA va en el código
+  'belleza',           // verificación ANMAT
+  'electrodomesticos'  // garantía oficial requiere serie
+])
+
+/** True si esta categoría requiere código de barras obligatorio */
+export function requiereCodigoBarras(catId: string): boolean {
+  return CATEGORIAS_CODIGO_BARRAS_OBLIGATORIO.has(catId)
+}

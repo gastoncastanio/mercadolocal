@@ -103,6 +103,9 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
     if (error.code === 'CONTENIDO_INVALIDO') {
       return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
     }
+    if (error.code === 'CODIGO_BARRAS_REQUERIDO' || error.code === 'CODIGO_BARRAS_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: error.code })
+    }
     res.status(400).json({ error: error.message })
   }
 })
@@ -123,6 +126,9 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
   } catch (error) {
     if (error.code === 'CONTENIDO_INVALIDO') {
       return res.status(400).json({ error: error.message, code: 'CONTENIDO_INVALIDO' })
+    }
+    if (error.code === 'CODIGO_BARRAS_INVALIDO') {
+      return res.status(400).json({ error: error.message, code: 'CODIGO_BARRAS_INVALIDO' })
     }
     res.status(400).json({ error: error.message })
   }

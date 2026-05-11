@@ -52,6 +52,11 @@ export interface Producto {
   condicion?: 'nuevo' | 'usado' | 'reacondicionado'
   garantia?: string
   caracteristicas?: { clave: string; valor: string }[]
+  // Código de barras universal (EAN-13/UPC-A/etc) — opcional, obligatorio en categorías
+  // de alto riesgo (electrónica, alimentos, belleza, electrodomésticos)
+  codigoBarras?: string
+  // Marca del producto (Samsung, Apple, etc.) — distinta de la tienda que lo vende
+  marca?: string
   createdAt?: string
 }
 
