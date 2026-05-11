@@ -99,6 +99,15 @@ export default function Checkout() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Instrucciones especiales..." />
               </div>
 
+              {/* Aviso sobre envío — el costo se coordina aparte */}
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <p className="text-xs text-amber-900 leading-relaxed">
+                  <span className="font-semibold">📦 Sobre el envío:</span> el costo NO está incluido en este pago.
+                  Una vez confirmada la compra, vas a poder coordinar el envío o retiro directamente con el
+                  vendedor por WhatsApp (las formas de entrega están en cada producto).
+                </p>
+              </div>
+
               {/* Botón Mercado Pago */}
               <button type="submit" disabled={procesando}
                 className="w-full py-4 bg-[#009ee3] text-white rounded-xl font-bold text-lg hover:bg-[#0087c9] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
@@ -149,9 +158,12 @@ export default function Checkout() {
                   <span>${total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Envío</span>
-                  <span className="text-green-600">A coordinar</span>
+                  <span className="text-gray-500">Env&iacute;o</span>
+                  <span className="text-gray-500 text-xs">Coordinado con el vendedor</span>
                 </div>
+                <p className="text-[10px] text-gray-400 leading-snug">
+                  El vendedor te contactar&aacute; para coordinar el env&iacute;o despu&eacute;s del pago. El costo var&iacute;a seg&uacute;n ubicaci&oacute;n y proveedor.
+                </p>
                 <div className="flex justify-between font-bold text-lg pt-2 border-t">
                   <span>Total</span>
                   <span className="text-[#009ee3]">${total.toLocaleString()}</span>

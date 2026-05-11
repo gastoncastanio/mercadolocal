@@ -102,6 +102,31 @@ const productoSchema = new mongoose.Schema({
     default: '',
     trim: true
   },
+  // ===== Modalidades de entrega que ofrece el vendedor =====
+  // El costo del envío NO se procesa dentro de la app: se coordina aparte
+  // entre comprador y vendedor por WhatsApp/chat. Más adelante integraremos
+  // API de Andreani para cotización automática.
+  // Al menos una modalidad debe estar activa para publicar.
+  entrega: {
+    retiroEnLocal: {
+      activo: { type: Boolean, default: false },
+      direccion: { type: String, default: '', trim: true, maxlength: 200 },
+      horarios: { type: String, default: '', trim: true, maxlength: 200 }
+    },
+    envioPropio: {
+      activo: { type: Boolean, default: false },
+      // Zonas que el vendedor cubre con su propia logística
+      zonas: { type: String, default: '', trim: true, maxlength: 300 },
+      // Notas adicionales: tiempos, costos aproximados, etc.
+      notas: { type: String, default: '', trim: true, maxlength: 300 }
+    },
+    envioCorreo: {
+      // Por correo/encomienda: el comprador coordina y paga directo con la empresa
+      activo: { type: Boolean, default: false },
+      // Empresas que el vendedor maneja habitualmente (informativo)
+      empresas: { type: String, default: '', trim: true, maxlength: 200 }
+    }
+  },
   activo: {
     type: Boolean,
     default: true

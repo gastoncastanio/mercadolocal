@@ -6,6 +6,8 @@ import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
+import SelectorEntrega from '../components/SelectorEntrega'
+import { ENTREGA_VACIA, EntregaProducto } from '../types'
 
 const MAX_IMAGENES = 6
 
@@ -27,6 +29,8 @@ export default function PublicarProducto() {
   })
   // Características específicas de la categoría (IMEI, talle, vencimiento, etc.)
   const [caracteristicas, setCaracteristicas] = useState<CaracteristicaItem[]>([])
+  // Modalidades de entrega (retiro / envío propio / envío por correo)
+  const [entrega, setEntrega] = useState<EntregaProducto>(ENTREGA_VACIA)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const [progresoImagen, setProgresoImagen] = useState<UploadProgress | null>(null)
@@ -130,6 +134,22 @@ export default function PublicarProducto() {
       }
     }
 
+    // Validar modalidades de entrega: al menos una activa + campos requeridos
+    const algunaEntrega =
+      entrega.retiroEnLocal.activo || entrega.envioPropio.activo || entrega.envioCorreo.activo
+    if (!algunaEntrega) {
+      setError('Activá al menos una forma de entrega (retiro, envío propio o envío por correo).')
+      return
+    }
+    if (entrega.retiroEnLocal.activo && entrega.retiroEnLocal.direccion.trim().length < 5) {
+      setError('Si ofrecés retiro en local, indicá la dirección.')
+      return
+    }
+    if (entrega.envioPropio.activo && entrega.envioPropio.zonas.trim().length < 3) {
+      setError('Si ofrecés envío propio, indicá qué zonas cubrís.')
+      return
+    }
+
     setCargando(true)
     setError('')
 
@@ -138,7 +158,8 @@ export default function PublicarProducto() {
         ...form,
         precio: Number(form.precio),
         stock: Number(form.stock),
-        caracteristicas
+        caracteristicas,
+        entrega
       })
       toast.exito('Producto publicado correctamente')
       navigate('/mi-tienda')
@@ -462,6 +483,9 @@ export default function PublicarProducto() {
               onChange={setCaracteristicas}
             />
           )}
+
+          {/* ===== Modalidades de entrega ===== */}
+          <SelectorEntrega valor={entrega} onChange={setEntrega} />
 
           <button
             type="submit"

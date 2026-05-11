@@ -7,6 +7,8 @@ import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
+import SelectorEntrega from '../components/SelectorEntrega'
+import { ENTREGA_VACIA, EntregaProducto } from '../types'
 import { Producto } from '../types'
 
 export default function MiTienda() {
@@ -51,6 +53,8 @@ export default function MiTienda() {
   // Características específicas de la categoría (separadas del form porque
   // tienen su propio renderer y validación)
   const [editCaracteristicas, setEditCaracteristicas] = useState<CaracteristicaItem[]>([])
+  // Modalidades de entrega (retiro / envío propio / envío por correo)
+  const [editEntrega, setEditEntrega] = useState<EntregaProducto>(ENTREGA_VACIA)
   const [editError, setEditError] = useState('')
   const [editCargando, setEditCargando] = useState(false)
   const [progresoImagenEdit, setProgresoImagenEdit] = useState<UploadProgress | null>(null)
@@ -166,6 +170,8 @@ export default function MiTienda() {
         marca: producto.marca || '',
         codigoBarras: producto.codigoBarras || '',
         caracteristicas: producto.caracteristicas || []
+        // NOTA: NO mandamos `entrega` acá — el backend solo valida entrega cuando viene definida.
+        // Si la mandamos vacía romperíamos productos viejos que no la tienen configurada.
       })
       setProductos(prev => prev.map(p => p._id === productoId ? res.data : p))
       toast.exito(`${campo === 'precio' ? 'Precio' : 'Stock'} actualizado`)
@@ -192,6 +198,8 @@ export default function MiTienda() {
       codigoBarras: producto.codigoBarras || ''
     })
     setEditCaracteristicas(producto.caracteristicas || [])
+    // Cargar modalidades de entrega (productos viejos pueden no tenerlas)
+    setEditEntrega(producto.entrega || ENTREGA_VACIA)
     setEditError('')
   }
 
@@ -244,6 +252,22 @@ export default function MiTienda() {
       }
     }
 
+    // Validar modalidades de entrega
+    const algunaEntrega =
+      editEntrega.retiroEnLocal.activo || editEntrega.envioPropio.activo || editEntrega.envioCorreo.activo
+    if (!algunaEntrega) {
+      setEditError('Activá al menos una forma de entrega (retiro, envío propio o envío por correo).')
+      return
+    }
+    if (editEntrega.retiroEnLocal.activo && editEntrega.retiroEnLocal.direccion.trim().length < 5) {
+      setEditError('Si ofrecés retiro en local, indicá la dirección.')
+      return
+    }
+    if (editEntrega.envioPropio.activo && editEntrega.envioPropio.zonas.trim().length < 3) {
+      setEditError('Si ofrecés envío propio, indicá qué zonas cubrís.')
+      return
+    }
+
     setEditCargando(true)
     setEditError('')
     try {
@@ -251,7 +275,8 @@ export default function MiTienda() {
         ...editForm,
         precio: Number(editForm.precio),
         stock: Number(editForm.stock),
-        caracteristicas: editCaracteristicas
+        caracteristicas: editCaracteristicas,
+        entrega: editEntrega
       })
       setProductos(prev => prev.map(p => p._id === productoEditando ? res.data : p))
       cerrarEditorProducto()
@@ -278,6 +303,7 @@ export default function MiTienda() {
         marca: producto.marca || '',
         codigoBarras: producto.codigoBarras || '',
         caracteristicas: producto.caracteristicas || [],
+        // NO mandamos entrega: solo togglemos activo, no editamos modalidades.
         activo: !producto.activo
       })
       setProductos(prev => prev.map(p => p._id === producto._id ? res.data : p))
@@ -837,6 +863,9 @@ export default function MiTienda() {
                   onChange={setEditCaracteristicas}
                 />
               )}
+
+              {/* ===== Modalidades de entrega ===== */}
+              <SelectorEntrega valor={editEntrega} onChange={setEditEntrega} />
 
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={editCargando || subiendoImagenEdit}

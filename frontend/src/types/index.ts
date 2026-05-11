@@ -57,7 +57,34 @@ export interface Producto {
   codigoBarras?: string
   // Marca del producto (Samsung, Apple, etc.) — distinta de la tienda que lo vende
   marca?: string
+  // Modalidades de entrega que ofrece el vendedor. Costos NO se procesan
+  // dentro de la app — se coordinan aparte entre comprador y vendedor.
+  entrega?: EntregaProducto
   createdAt?: string
+}
+
+export interface EntregaProducto {
+  retiroEnLocal: {
+    activo: boolean
+    direccion: string
+    horarios: string
+  }
+  envioPropio: {
+    activo: boolean
+    zonas: string
+    notas: string
+  }
+  envioCorreo: {
+    activo: boolean
+    empresas: string
+  }
+}
+
+/** Valor por defecto al crear un producto nuevo */
+export const ENTREGA_VACIA: EntregaProducto = {
+  retiroEnLocal: { activo: false, direccion: '', horarios: '' },
+  envioPropio: { activo: false, zonas: '', notas: '' },
+  envioCorreo: { activo: false, empresas: '' }
 }
 
 export interface ItemCarrito {

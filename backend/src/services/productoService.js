@@ -3,6 +3,17 @@ import Tienda from '../models/Tienda.js'
 import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
 import { validarCodigoBarras, normalizarCodigoBarras } from '../utils/codigoBarras.js'
 import { validarCamposObligatoriosCategoria, categoriaValida } from '../constants/categoriasMeta.js'
+import { normalizarEntrega, validarEntrega, construirMensajeEntregaInvalida } from '../utils/entrega.js'
+
+/**
+ * Modalidad de entrega por defecto para productos viejos que no tenían
+ * este campo. Se asume "envío por correo a coordinar" para no romper nada.
+ */
+const ENTREGA_DEFAULT_LEGACY = {
+  retiroEnLocal: { activo: false, direccion: '', horarios: '' },
+  envioPropio: { activo: false, zonas: '', notas: '' },
+  envioCorreo: { activo: true, empresas: '' }
+}
 
 // Categorías que REQUIEREN código de barras obligatorio (alto riesgo legal/fraude)
 // - Electrónica: detecta IMEI bloqueados y permite verificar contra catálogo
@@ -97,6 +108,16 @@ export async function crearProducto(tiendaId, datos) {
       valor: String(c.valor).trim().slice(0, 200)
     }))
 
+  // ===== Validación de modalidades de entrega =====
+  // Al menos una modalidad debe estar activa para publicar
+  const entregaNormalizada = normalizarEntrega(datos.entrega)
+  const validacionEntrega = validarEntrega(entregaNormalizada)
+  if (!validacionEntrega.valido) {
+    const error = new Error(construirMensajeEntregaInvalida(validacionEntrega.motivos))
+    error.code = 'ENTREGA_INVALIDA'
+    throw error
+  }
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
@@ -108,7 +129,8 @@ export async function crearProducto(tiendaId, datos) {
     ciudad: tienda.ciudad,
     codigoBarras: codigoBarrasNormalizado,
     marca: (datos.marca || '').trim().slice(0, 80),
-    caracteristicas: caracteristicasLimpias
+    caracteristicas: caracteristicasLimpias,
+    entrega: entregaNormalizada
   })
 
   await producto.save()
@@ -227,6 +249,17 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
     }
   }
 
+  // Validar entrega si se está editando
+  if (datos.entrega !== undefined) {
+    const entregaNorm = normalizarEntrega(datos.entrega)
+    const vEntrega = validarEntrega(entregaNorm)
+    if (!vEntrega.valido) {
+      const error = new Error(construirMensajeEntregaInvalida(vEntrega.motivos))
+      error.code = 'ENTREGA_INVALIDA'
+      throw error
+    }
+  }
+
   const update = {
     nombre: datos.nombre,
     descripcion: datos.descripcion,
@@ -237,6 +270,10 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
   }
   // Soporte para pausar/reactivar producto: solo se actualiza si viene definido
   if (datos.activo !== undefined) update.activo = datos.activo
+  // Modalidades de entrega solo se actualizan si vienen definidas
+  if (datos.entrega !== undefined) {
+    update.entrega = normalizarEntrega(datos.entrega)
+  }
   // Características solo se actualizan si vienen definidas (normalizadas y limitadas)
   if (datos.caracteristicas !== undefined) {
     update.caracteristicas = (Array.isArray(datos.caracteristicas) ? datos.caracteristicas : [])

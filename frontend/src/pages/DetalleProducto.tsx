@@ -216,24 +216,73 @@ export default function DetalleProducto() {
                       <span className="text-lg font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-[15px] text-green-600 font-normal mt-2">
-                    en 12x ${cuota12.toLocaleString('es-AR')}
+                  <p className="text-[15px] text-gray-500 font-normal mt-2">
+                    en 12x ${cuota12.toLocaleString('es-AR')} <span className="text-xs text-gray-400">(precio referencial)</span>
                   </p>
                   <Link to="#cuotas" className="text-[13px] text-blue-500 hover:text-blue-600">
-                    Ver los medios de pago
+                    Calcular cuotas con tu tarjeta
                   </Link>
                 </div>
 
-                {/* Envio gratis */}
-                {producto.envioGratis && (
-                  <div className="flex items-center gap-2 mb-4">
-                    <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-green-600 font-semibold">Env&iacute;o gratis a todo el pa&iacute;s</p>
-                      <p className="text-[11px] text-gray-400">Conoce los tiempos y formas de env&iacute;o.</p>
+                {/* ===== Modalidades de entrega ===== */}
+                {producto.entrega && (
+                  producto.entrega.retiroEnLocal.activo ||
+                  producto.entrega.envioPropio.activo ||
+                  producto.entrega.envioCorreo.activo
+                ) && (
+                  <div className="mb-4 border border-gray-200 rounded-xl p-3 bg-gray-50">
+                    <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+                      Cómo recibís este producto
+                    </p>
+                    <div className="space-y-2">
+                      {producto.entrega.retiroEnLocal.activo && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg leading-none mt-0.5">🏪</span>
+                          <div className="flex-1 text-sm">
+                            <p className="font-semibold text-gray-800">
+                              Retiro en local <span className="text-green-600 font-normal">— Sin costo</span>
+                            </p>
+                            {producto.entrega.retiroEnLocal.direccion && (
+                              <p className="text-xs text-gray-600">{producto.entrega.retiroEnLocal.direccion}</p>
+                            )}
+                            {producto.entrega.retiroEnLocal.horarios && (
+                              <p className="text-[11px] text-gray-500">{producto.entrega.retiroEnLocal.horarios}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {producto.entrega.envioPropio.activo && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg leading-none mt-0.5">🛵</span>
+                          <div className="flex-1 text-sm">
+                            <p className="font-semibold text-gray-800">
+                              Envío propio del vendedor
+                            </p>
+                            {producto.entrega.envioPropio.zonas && (
+                              <p className="text-xs text-gray-600">Zonas: {producto.entrega.envioPropio.zonas}</p>
+                            )}
+                            {producto.entrega.envioPropio.notas && (
+                              <p className="text-[11px] text-gray-500">{producto.entrega.envioPropio.notas}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {producto.entrega.envioCorreo.activo && (
+                        <div className="flex items-start gap-2">
+                          <span className="text-lg leading-none mt-0.5">📦</span>
+                          <div className="flex-1 text-sm">
+                            <p className="font-semibold text-gray-800">Envío por correo</p>
+                            {producto.entrega.envioCorreo.empresas && (
+                              <p className="text-xs text-gray-600">{producto.entrega.envioCorreo.empresas}</p>
+                            )}
+                            <p className="text-[11px] text-gray-500">A coordinar con el vendedor</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                    <p className="text-[11px] text-gray-500 italic mt-3 border-t border-gray-200 pt-2">
+                      💡 El costo del envío se coordina con el vendedor después de comprar. No se procesa por la app.
+                    </p>
                   </div>
                 )}
 
@@ -246,6 +295,11 @@ export default function DetalleProducto() {
                   ) : (
                     <p className="text-sm font-semibold text-red-500">Sin stock</p>
                   )}
+                </div>
+
+                {/* Calculadora de cuotas - bien visible */}
+                <div id="cuotas" className="mb-4 scroll-mt-40">
+                  <CalculadoraCuotas precio={producto.precio} />
                 </div>
 
                 {/* Description short */}
@@ -315,8 +369,8 @@ export default function DetalleProducto() {
                       <span className="text-base font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-sm text-green-600 mt-1">
-                    en 6x ${cuota6.toLocaleString('es-AR')} sin inter&eacute;s
+                  <p className="text-sm text-gray-500 mt-1">
+                    en 6x ${cuota6.toLocaleString('es-AR')} <span className="text-xs text-gray-400">(ver cuotas)</span>
                   </p>
                 </div>
 
@@ -328,7 +382,7 @@ export default function DetalleProducto() {
                     </svg>
                     <div>
                       <p className="text-sm text-green-600 font-semibold">Env&iacute;o gratis</p>
-                      <p className="text-[11px] text-gray-400">a todo el pa&iacute;s</p>
+                      <p className="text-[11px] text-gray-400">El vendedor cubre el costo</p>
                     </div>
                   </div>
                 )}
@@ -509,10 +563,7 @@ export default function DetalleProducto() {
               largo={producto.largo}
             />
 
-            {/* Medios de pago */}
-            <div id="cuotas" className="scroll-mt-40">
-              <CalculadoraCuotas precio={producto.precio} />
-            </div>
+            {/* Medios de pago ya se muestra arriba junto al precio */}
           </div>
         </div>
       </div>

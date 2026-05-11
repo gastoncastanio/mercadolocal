@@ -116,6 +116,9 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
         faltantes: error.faltantes || []
       })
     }
+    if (error.code === 'ENTREGA_INVALIDA') {
+      return res.status(400).json({ error: error.message, code: 'ENTREGA_INVALIDA' })
+    }
     res.status(400).json({ error: error.message })
   }
 })
@@ -149,6 +152,9 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
         code: 'CAMPOS_OBLIGATORIOS_FALTANTES',
         faltantes: error.faltantes || []
       })
+    }
+    if (error.code === 'ENTREGA_INVALIDA') {
+      return res.status(400).json({ error: error.message, code: 'ENTREGA_INVALIDA' })
     }
     res.status(400).json({ error: error.message })
   }
