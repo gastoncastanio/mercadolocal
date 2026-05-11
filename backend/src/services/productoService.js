@@ -2,6 +2,7 @@ import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
 import { validarCodigoBarras, normalizarCodigoBarras } from '../utils/codigoBarras.js'
+import { validarCamposObligatoriosCategoria, categoriaValida } from '../constants/categoriasMeta.js'
 
 // Categorías que REQUIEREN código de barras obligatorio (alto riesgo legal/fraude)
 // - Electrónica: detecta IMEI bloqueados y permite verificar contra catálogo
@@ -65,6 +66,37 @@ export async function crearProducto(tiendaId, datos) {
     throw error
   }
 
+  // ===== Validación de categoría válida =====
+  if (categoriaPrincipal && !categoriaValida(categoriaPrincipal)) {
+    const error = new Error(`La categoría "${categoriaPrincipal}" no existe.`)
+    error.code = 'CATEGORIA_INVALIDA'
+    throw error
+  }
+
+  // ===== Validación de campos personalizados obligatorios =====
+  const validacionCampos = validarCamposObligatoriosCategoria(
+    datos.categorias || [],
+    datos.caracteristicas || []
+  )
+  if (!validacionCampos.valido) {
+    const error = new Error(
+      `Faltan datos obligatorios para esta categoría: ${validacionCampos.faltantes.join(', ')}`
+    )
+    error.code = 'CAMPOS_OBLIGATORIOS_FALTANTES'
+    error.faltantes = validacionCampos.faltantes
+    throw error
+  }
+
+  // Normalizar características: solo guardar items con valor válido,
+  // limitar tamaño para evitar abuso de memoria
+  const caracteristicasLimpias = (Array.isArray(datos.caracteristicas) ? datos.caracteristicas : [])
+    .filter(c => c && c.clave && typeof c.valor === 'string' && c.valor.trim() !== '')
+    .slice(0, 30) // máx 30 características por producto
+    .map(c => ({
+      clave: String(c.clave).trim().slice(0, 50),
+      valor: String(c.valor).trim().slice(0, 200)
+    }))
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
@@ -75,7 +107,8 @@ export async function crearProducto(tiendaId, datos) {
     categorias: datos.categorias || [],
     ciudad: tienda.ciudad,
     codigoBarras: codigoBarrasNormalizado,
-    marca: (datos.marca || '').trim().slice(0, 80)
+    marca: (datos.marca || '').trim().slice(0, 80),
+    caracteristicas: caracteristicasLimpias
   })
 
   await producto.save()
@@ -171,6 +204,29 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
     }
   }
 
+  // Validar categoría y campos obligatorios si se está editando categoría o características
+  if (datos.categorias !== undefined || datos.caracteristicas !== undefined) {
+    const catPrincipal = (datos.categorias && datos.categorias[0]) || ''
+    if (catPrincipal && !categoriaValida(catPrincipal)) {
+      const error = new Error(`La categoría "${catPrincipal}" no existe.`)
+      error.code = 'CATEGORIA_INVALIDA'
+      throw error
+    }
+
+    const validacionCampos = validarCamposObligatoriosCategoria(
+      datos.categorias || [],
+      datos.caracteristicas || []
+    )
+    if (!validacionCampos.valido) {
+      const error = new Error(
+        `Faltan datos obligatorios para esta categoría: ${validacionCampos.faltantes.join(', ')}`
+      )
+      error.code = 'CAMPOS_OBLIGATORIOS_FALTANTES'
+      error.faltantes = validacionCampos.faltantes
+      throw error
+    }
+  }
+
   const update = {
     nombre: datos.nombre,
     descripcion: datos.descripcion,
@@ -181,6 +237,16 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
   }
   // Soporte para pausar/reactivar producto: solo se actualiza si viene definido
   if (datos.activo !== undefined) update.activo = datos.activo
+  // Características solo se actualizan si vienen definidas (normalizadas y limitadas)
+  if (datos.caracteristicas !== undefined) {
+    update.caracteristicas = (Array.isArray(datos.caracteristicas) ? datos.caracteristicas : [])
+      .filter(c => c && c.clave && typeof c.valor === 'string' && c.valor.trim() !== '')
+      .slice(0, 30)
+      .map(c => ({
+        clave: String(c.clave).trim().slice(0, 50),
+        valor: String(c.valor).trim().slice(0, 200)
+      }))
+  }
   // Código de barras y marca solo se actualizan si vienen definidos
   if (datos.codigoBarras !== undefined) {
     update.codigoBarras = normalizarCodigoBarras(datos.codigoBarras)

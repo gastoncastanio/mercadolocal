@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
+import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 import { Producto } from '../types'
 
 export default function MiTienda() {
@@ -47,6 +48,9 @@ export default function MiTienda() {
     marca: '',
     codigoBarras: ''
   })
+  // Características específicas de la categoría (separadas del form porque
+  // tienen su propio renderer y validación)
+  const [editCaracteristicas, setEditCaracteristicas] = useState<CaracteristicaItem[]>([])
   const [editError, setEditError] = useState('')
   const [editCargando, setEditCargando] = useState(false)
   const [progresoImagenEdit, setProgresoImagenEdit] = useState<UploadProgress | null>(null)
@@ -158,9 +162,10 @@ export default function MiTienda() {
         stock: campo === 'stock' ? valor : producto.stock,
         imagenes: producto.imagenes,
         categorias: producto.categorias,
-        // Preservar marca y código de barras existentes (no pisarlos al editar inline)
+        // Preservar campos existentes (no pisarlos al editar inline)
         marca: producto.marca || '',
-        codigoBarras: producto.codigoBarras || ''
+        codigoBarras: producto.codigoBarras || '',
+        caracteristicas: producto.caracteristicas || []
       })
       setProductos(prev => prev.map(p => p._id === productoId ? res.data : p))
       toast.exito(`${campo === 'precio' ? 'Precio' : 'Stock'} actualizado`)
@@ -186,6 +191,7 @@ export default function MiTienda() {
       marca: producto.marca || '',
       codigoBarras: producto.codigoBarras || ''
     })
+    setEditCaracteristicas(producto.caracteristicas || [])
     setEditError('')
   }
 
@@ -215,6 +221,8 @@ export default function MiTienda() {
       ...prev,
       categorias: prev.categorias[0] === catId ? [] : [catId]
     }))
+    // Limpiar características al cambiar de categoría (cada una tiene sus campos)
+    setEditCaracteristicas([])
   }
 
   async function guardarProducto(e: React.FormEvent) {
@@ -224,13 +232,26 @@ export default function MiTienda() {
       setEditError('Nombre y precio son obligatorios')
       return
     }
+
+    // Validar campos personalizados obligatorios de la categoría
+    if (categoriaSeleccionadaEdit) {
+      const { labelsFaltantes } = validarCamposObligatorios(categoriaSeleccionadaEdit, editCaracteristicas)
+      if (labelsFaltantes.length > 0) {
+        setEditError(
+          `Te faltan completar estos datos obligatorios:\n• ${labelsFaltantes.join('\n• ')}`
+        )
+        return
+      }
+    }
+
     setEditCargando(true)
     setEditError('')
     try {
       const res = await api.put(`/productos/${productoEditando}`, {
         ...editForm,
         precio: Number(editForm.precio),
-        stock: Number(editForm.stock)
+        stock: Number(editForm.stock),
+        caracteristicas: editCaracteristicas
       })
       setProductos(prev => prev.map(p => p._id === productoEditando ? res.data : p))
       cerrarEditorProducto()
@@ -256,6 +277,7 @@ export default function MiTienda() {
         categorias: producto.categorias,
         marca: producto.marca || '',
         codigoBarras: producto.codigoBarras || '',
+        caracteristicas: producto.caracteristicas || [],
         activo: !producto.activo
       })
       setProductos(prev => prev.map(p => p._id === producto._id ? res.data : p))
@@ -806,6 +828,15 @@ export default function MiTienda() {
                   />
                 </div>
               </div>
+
+              {/* ===== Campos específicos de la categoría elegida ===== */}
+              {categoriaSeleccionadaEdit && (
+                <CamposCategoria
+                  categoria={categoriaSeleccionadaEdit}
+                  valores={editCaracteristicas}
+                  onChange={setEditCaracteristicas}
+                />
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={editCargando || subiendoImagenEdit}

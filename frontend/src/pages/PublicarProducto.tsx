@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
+import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 
 const MAX_IMAGENES = 6
 
@@ -24,6 +25,8 @@ export default function PublicarProducto() {
     marca: '',
     codigoBarras: ''
   })
+  // Características específicas de la categoría (IMEI, talle, vencimiento, etc.)
+  const [caracteristicas, setCaracteristicas] = useState<CaracteristicaItem[]>([])
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const [progresoImagen, setProgresoImagen] = useState<UploadProgress | null>(null)
@@ -42,6 +45,8 @@ export default function PublicarProducto() {
       // Reemplazo en lugar de toggle: solo una categoría principal
       categorias: prev.categorias[0] === catId ? [] : [catId]
     }))
+    // Limpiar características al cambiar de categoría (cada una tiene sus campos)
+    setCaracteristicas([])
   }
 
   /**
@@ -114,6 +119,17 @@ export default function PublicarProducto() {
       return
     }
 
+    // Validar campos personalizados obligatorios de la categoría
+    if (categoriaSeleccionada) {
+      const { labelsFaltantes } = validarCamposObligatorios(categoriaSeleccionada, caracteristicas)
+      if (labelsFaltantes.length > 0) {
+        setError(
+          `Te faltan completar estos datos obligatorios:\n• ${labelsFaltantes.join('\n• ')}`
+        )
+        return
+      }
+    }
+
     setCargando(true)
     setError('')
 
@@ -121,7 +137,8 @@ export default function PublicarProducto() {
       await api.post('/productos', {
         ...form,
         precio: Number(form.precio),
-        stock: Number(form.stock)
+        stock: Number(form.stock),
+        caracteristicas
       })
       toast.exito('Producto publicado correctamente')
       navigate('/mi-tienda')
@@ -435,6 +452,15 @@ export default function PublicarProducto() {
                 Nos sirve para verificar que el producto es original.
               </p>
             </div>
+          )}
+
+          {/* ===== Campos específicos de la categoría elegida ===== */}
+          {categoriaSeleccionada && (
+            <CamposCategoria
+              categoria={categoriaSeleccionada}
+              valores={caracteristicas}
+              onChange={setCaracteristicas}
+            />
           )}
 
           <button

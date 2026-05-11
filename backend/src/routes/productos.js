@@ -106,6 +106,16 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
     if (error.code === 'CODIGO_BARRAS_REQUERIDO' || error.code === 'CODIGO_BARRAS_INVALIDO') {
       return res.status(400).json({ error: error.message, code: error.code })
     }
+    if (error.code === 'CATEGORIA_INVALIDA') {
+      return res.status(400).json({ error: error.message, code: 'CATEGORIA_INVALIDA' })
+    }
+    if (error.code === 'CAMPOS_OBLIGATORIOS_FALTANTES') {
+      return res.status(400).json({
+        error: error.message,
+        code: 'CAMPOS_OBLIGATORIOS_FALTANTES',
+        faltantes: error.faltantes || []
+      })
+    }
     res.status(400).json({ error: error.message })
   }
 })
@@ -129,6 +139,16 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
     }
     if (error.code === 'CODIGO_BARRAS_INVALIDO') {
       return res.status(400).json({ error: error.message, code: 'CODIGO_BARRAS_INVALIDO' })
+    }
+    if (error.code === 'CATEGORIA_INVALIDA') {
+      return res.status(400).json({ error: error.message, code: 'CATEGORIA_INVALIDA' })
+    }
+    if (error.code === 'CAMPOS_OBLIGATORIOS_FALTANTES') {
+      return res.status(400).json({
+        error: error.message,
+        code: 'CAMPOS_OBLIGATORIOS_FALTANTES',
+        faltantes: error.faltantes || []
+      })
     }
     res.status(400).json({ error: error.message })
   }
