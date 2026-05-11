@@ -240,6 +240,17 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
+// Diagnóstico temporal MP_ENCRYPTION_KEY (eliminar después de verificar)
+app.get('/api/_diag2/enc', (req, res) => {
+  const val = process.env.MP_ENCRYPTION_KEY || ''
+  res.json({
+    existe: val.length > 0,
+    length: val.length,
+    preview: val.length > 0 ? val.slice(0, 8) + '...' + val.slice(-4) : null,
+    ok: val.length === 128
+  })
+})
+
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
