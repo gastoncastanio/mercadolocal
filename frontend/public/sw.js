@@ -1,45 +1,37 @@
-const CACHE_NAME = 'mercadolocal-v1'
-const STATIC_ASSETS = [
-  '/',
-  '/manifest.json'
-]
+// ===== SW kill-switch =====
+// Este Service Worker reemplaza al viejo que cacheaba JavaScript y rompía
+// los deploys. No cachea NADA: solo se desinstala a sí mismo y limpia los
+// caches que pudo haber dejado el SW anterior.
+//
+// Una vez que todos los usuarios cargaron este SW, podemos eliminar el
+// archivo entero del proyecto.
 
-// Install: cache static assets
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
-  )
+self.addEventListener('install', () => {
+  self.skipWaiting()
 })
 
-// Activate: clean old caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  )
+self.addEventListener('activate', async (event) => {
+  event.waitUntil((async () => {
+    // Limpiar todos los caches creados por el SW anterior
+    try {
+      const keys = await caches.keys()
+      await Promise.all(keys.map(k => caches.delete(k)))
+    } catch (e) {}
+
+    // Desinstalar este SW para que en próximas visitas el navegador
+    // cargue directo de Vercel (sin intermediarios).
+    try {
+      await self.registration.unregister()
+    } catch (e) {}
+
+    // Forzar reload de todas las pestañas abiertas para que tomen
+    // el código fresco sin SW.
+    try {
+      const clients = await self.clients.matchAll({ type: 'window' })
+      clients.forEach(client => client.navigate(client.url))
+    } catch (e) {}
+  })())
 })
 
-// Fetch: network first, fallback to cache
-self.addEventListener('fetch', event => {
-  // Skip non-GET requests and API calls
-  if (event.request.method !== 'GET') return
-  if (event.request.url.includes('/api/')) return
-
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Cache successful responses
-        if (response.ok) {
-          const clone = response.clone()
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone))
-        }
-        return response
-      })
-      .catch(() => caches.match(event.request))
-  )
-})
+// No interceptar ningún fetch — todo va directo a la red
+self.addEventListener('fetch', () => {})

@@ -259,63 +259,6 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
-// DIAG: ver últimos mensajes del canal general
-app.get('/api/_diag_msgs/:secreto', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  try {
-    const MO = (await import('./models/MensajeOrganizacion.js')).default
-    const msgs = await MO.find({ canal: req.query.canal || 'general' })
-      .sort({ createdAt: -1 })
-      .limit(8)
-      .lean()
-    res.json({
-      total: msgs.length,
-      msgs: msgs.map(m => ({
-        autor: m.autorSlug,
-        tipo: m.autorTipo,
-        contenido: m.contenido.slice(0, 200),
-        edad_seg: Math.round((Date.now() - new Date(m.createdAt).getTime()) / 1000)
-      }))
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message })
-  }
-})
-
-// DIAG: hacer login + POST a /cerebro/mensajes igual que el frontend
-app.post('/api/_diag_login_post/:secreto', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  try {
-    const Usuario = (await import('./models/Usuario.js')).default
-    const { generarAccessToken } = await import('./middleware/auth.js')
-    const admin = await Usuario.findOne({ rol: 'admin' })
-    if (!admin) return res.json({ error: 'no admin' })
-    const token = generarAccessToken(admin)
-
-    // Hacer POST interno al endpoint real de cerebro
-    const inicio = Date.now()
-    const url = `http://localhost:${process.env.PORT || 3001}/api/cerebro/mensajes/general`
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ contenido: req.query.texto || 'hola test bg' })
-    })
-    const data = await resp.json()
-    res.json({
-      status: resp.status,
-      duracionMs: Date.now() - inicio,
-      respuesta: data
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 5) })
-  }
-})
-
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
