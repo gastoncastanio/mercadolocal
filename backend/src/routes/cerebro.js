@@ -98,6 +98,8 @@ router.get('/mensajes/:canal', async (req, res) => {
  * Body: { contenido: string }
  */
 router.post('/mensajes/:canal', async (req, res) => {
+  const inicio = Date.now()
+  console.log(`📨 [CEREBRO] ${req.params.canal} ← "${req.body?.contenido?.slice(0, 80)}"`)
   try {
     const { canal } = req.params
     const { contenido } = req.body
@@ -113,10 +115,17 @@ router.post('/mensajes/:canal', async (req, res) => {
     }
 
     const resultado = await procesarMensajeAdmin(canal, contenido.trim())
+    console.log(`✅ [CEREBRO] ${canal} → ${resultado.respuestas.length} respuesta(s) en ${Date.now() - inicio}ms`)
     res.json(resultado)
   } catch (e) {
-    console.error('Error procesando mensaje admin:', e)
-    res.status(500).json({ error: 'Error al procesar tu mensaje' })
+    console.error(`❌ [CEREBRO] ${req.params.canal} falló en ${Date.now() - inicio}ms:`, e.message)
+    console.error('Stack:', e.stack?.split('\n').slice(0, 5).join('\n'))
+    // Devolvemos info para diagnosticar en frontend (sin filtrar secretos)
+    res.status(500).json({
+      error: 'Error al procesar tu mensaje',
+      detalle: e.message,
+      tipo: e.name
+    })
   }
 })
 
