@@ -21,6 +21,7 @@ import Agente from '../models/Agente.js'
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
 import {
   procesarMensajeAdmin,
+  procesarMensajeAdminBackground,
   generarReporteDiarioCEO,
   procesarAscensosAutomaticos
 } from '../services/cerebro.js'
@@ -114,13 +115,26 @@ router.post('/mensajes/:canal', async (req, res) => {
       return res.status(400).json({ error: 'Máximo 4000 caracteres' })
     }
 
-    const resultado = await procesarMensajeAdmin(canal, contenido.trim())
-    console.log(`✅ [CEREBRO] ${canal} → ${resultado.respuestas.length} respuesta(s) en ${Date.now() - inicio}ms`)
-    res.json(resultado)
+    // ARQUITECTURA NUEVA: guardamos el mensaje del admin Y respondemos
+    // INMEDIATAMENTE (<200ms). Los agentes responden EN SEGUNDO PLANO,
+    // y el frontend los ve aparecer vía polling cada 15s.
+    //
+    // Esto elimina el problema de:
+    //  - timeout del navegador en requests > 30s
+    //  - usuario viendo "cargando" mucho tiempo
+    //  - reintentos que duplican mensajes
+    const mensajeAdmin = await procesarMensajeAdminBackground(canal, contenido.trim())
+    const duracionInicial = Date.now() - inicio
+    console.log(`✅ [CEREBRO] ${canal} mensaje guardado en ${duracionInicial}ms, agentes respondiendo en background`)
+    res.json({
+      ok: true,
+      mensajeAdmin,
+      respuestas: [], // las respuestas llegan por polling
+      esperandoAgentes: true
+    })
   } catch (e) {
     console.error(`❌ [CEREBRO] ${req.params.canal} falló en ${Date.now() - inicio}ms:`, e.message)
     console.error('Stack:', e.stack?.split('\n').slice(0, 5).join('\n'))
-    // Devolvemos info para diagnosticar en frontend (sin filtrar secretos)
     res.status(500).json({
       error: 'Error al procesar tu mensaje',
       detalle: e.message,

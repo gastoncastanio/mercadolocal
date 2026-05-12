@@ -406,6 +406,74 @@ export async function procesarMensajeAdmin(canal, contenido) {
 }
 
 /**
+ * Versión "background" de procesarMensajeAdmin.
+ *
+ * Guarda el mensaje del admin y vuelve INMEDIATAMENTE (< 200ms).
+ * Los agentes responden en segundo plano sin bloquear el response HTTP.
+ * El frontend ve las respuestas aparecer vía polling.
+ *
+ * Ventajas vs el procesarMensajeAdmin tradicional:
+ *  - Cero timeouts del navegador (axios espera < 1s en lugar de 15+s)
+ *  - UX más fluida: el usuario ve su mensaje al instante
+ *  - Si un agente falla, los otros siguen contestando sin bloquear
+ *  - Sin reintentos accidentales por timeout (que duplicaban mensajes)
+ */
+export async function procesarMensajeAdminBackground(canal, contenido) {
+  // Normalizar menciones cortas
+  const contenidoNormalizado = await normalizarMenciones(contenido)
+
+  // Guardar el mensaje del admin (rápido, no hace I/O fuera de Mongo)
+  const mensajeAdmin = await new MensajeOrganizacion({
+    canal,
+    autorSlug: 'admin',
+    autorTipo: 'admin',
+    contenido: contenidoNormalizado,
+    tipo: 'conversacion',
+    leidoPorAdmin: true
+  }).save()
+
+  // Decidir qué agentes deben responder
+  let slugsRespondedores = []
+  if (mensajeAdmin.menciones?.length) {
+    slugsRespondedores = mensajeAdmin.menciones
+  } else if (canal === 'privado_ceo') {
+    slugsRespondedores = ['diego_ceo']
+  } else {
+    slugsRespondedores = [decidirAgenteRelevante(contenido)]
+  }
+
+  // Disparar las respuestas en background. NO usamos await — es intencional.
+  // Esta función retorna ya mismo y los agentes contestan después.
+  setImmediate(async () => {
+    try {
+      const agentes = await Agente.find({
+        slug: { $in: slugsRespondedores },
+        activo: true
+      }, 'slug').lean()
+      let slugsValidos = agentes.map(a => a.slug)
+
+      if (slugsValidos.length === 0) {
+        const diego = await Agente.findOne({ slug: 'diego_ceo', activo: true }, 'slug').lean()
+        if (diego) slugsValidos = ['diego_ceo']
+      }
+
+      for (const slug of slugsValidos) {
+        try {
+          await hablarComoAgente(slug, canal, { tipo: 'conversacion' })
+        } catch (err) {
+          console.error(`[BG] Fallo respuesta de ${slug}:`, err.message)
+        }
+      }
+      console.log(`[BG] ✅ Cadena de ${slugsValidos.length} agente(s) completada en canal ${canal}`)
+    } catch (err) {
+      console.error(`[BG] Error procesando respuestas background:`, err.message)
+    }
+  })
+
+  return mensajeAdmin
+}
+
+/**
  * Heurística simple para decidir qué agente del equipo responde
  * cuando el admin no menciona a nadie explícito.
  * NO usa IA — sería gastar tokens en algo trivial.

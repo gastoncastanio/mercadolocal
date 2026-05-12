@@ -259,33 +259,6 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
-// Diag: invocar el flujo COMPLETO de procesarMensajeAdmin (igual que el frontend)
-app.post('/api/_diag_real/:secreto', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  const inicio = Date.now()
-  try {
-    const { procesarMensajeAdmin } = await import('./services/cerebro.js')
-    const canal = req.query.canal || 'general'
-    const texto = req.query.texto || 'hola equipo'
-    const r = await procesarMensajeAdmin(canal, texto)
-    res.json({
-      ok: true,
-      duracionMs: Date.now() - inicio,
-      mensajeAdminGuardado: !!r.mensajeAdmin,
-      cantidadRespuestas: r.respuestas.length,
-      respuestas: r.respuestas.map(x => ({ autor: x.autorSlug, texto: x.contenido.slice(0, 200) }))
-    })
-  } catch (e) {
-    res.status(500).json({
-      error: e.message,
-      name: e.name,
-      stack: e.stack?.split('\n').slice(0, 10),
-      duracionMs: Date.now() - inicio
-    })
-  }
-})
-
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())

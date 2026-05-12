@@ -194,27 +194,34 @@ export default function Cerebro() {
     } catch {}
   }, [])
 
-  // Ref para pausar polling cuando hay una request en vuelo
-  // (evita race conditions: el POST tarda 3-5s en Claude y el polling
-  // de 5s podía pisar el estado optimista)
+  // Polling adaptativo:
+  //   - Normal: cada 10s (cuando no hay agentes pensando)
+  //   - Acelerado: cada 2s durante 30s después de enviar (hasta que llegan)
+  // Esto evita gastar requests pero responde rápido cuando importa.
   const requestEnVuelo = useRef(false)
+  const polingHastaTs = useRef<number>(0) // timestamp hasta cuando hacer polling rápido
 
-  // Polling cada 15s para mensajes (subimos de 5s a 15s para no quemar
-  // peticiones; los agentes no responden tan seguido).
-  // Solo pollea cuando la pestaña está VISIBLE (document.visibilityState).
   useEffect(() => {
     cargarAgentes()
     cargarMensajes(canalActivo)
     cargarNoLeidos()
 
-    const t = setInterval(() => {
-      if (requestEnVuelo.current) return // no pisar mientras esperamos respuesta
-      if (document.visibilityState !== 'visible') return // ahorrar requests si está en otra pestaña
-      cargarMensajes(canalActivo)
-      if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
-      cargarNoLeidos()
-    }, 15000)
-    return () => clearInterval(t)
+    let interval: ReturnType<typeof setTimeout> | null = null
+    const tick = () => {
+      const ahora = Date.now()
+      const acelerado = ahora < polingHastaTs.current
+      const sigPoll = acelerado ? 2000 : 10000
+
+      if (!requestEnVuelo.current && document.visibilityState === 'visible') {
+        cargarMensajes(canalActivo)
+        if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
+        cargarNoLeidos()
+      }
+      interval = setTimeout(tick, sigPoll)
+    }
+    interval = setTimeout(tick, 2000) // arranca rápido
+
+    return () => { if (interval) clearTimeout(interval) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canalActivo, chatPrivadoAbierto])
 
@@ -304,9 +311,8 @@ export default function Cerebro() {
 
     setEnviando(true)
     setTextoInput('')
-    requestEnVuelo.current = true // pausar polling
 
-    // Optimistic UI: agregamos el mensaje del admin ya
+    // Optimistic UI: tu mensaje aparece al instante
     const optimista: MensajeOrg = {
       _id: 'temp_' + Date.now(),
       canal: canalActivo,
@@ -320,30 +326,27 @@ export default function Cerebro() {
     }
     setMensajes(prev => [...prev, optimista])
 
-    // Mostrar "X está escribiendo..." mientras esperamos
+    // Mostrar "X está escribiendo..." con la heurística local
     const respondedores = adivinarRespondedores(texto, canalActivo)
     marcarPensando(respondedores)
 
+    // Acelerar polling por 30 segundos para captar las respuestas rápido
+    polingHastaTs.current = Date.now() + 30000
+
     try {
+      // Backend ahora responde inmediatamente (< 500ms). Las respuestas
+      // de los agentes llegan vía polling acelerado.
       await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
-      // Refrescamos los mensajes. Si la respuesta del agente todavía no
-      // está, el polling de 15s la va a traer.
       await cargarMensajes(canalActivo)
-      // NO mostramos warning si data.respuestas está vacío: a veces el
-      // backend devuelve antes de que los agentes terminen, y la respuesta
-      // llega por polling. Mostrar warning ahí confunde al usuario.
+
+      // Quitamos "pensando" después de unos segundos, el polling traerá las respuestas
+      setTimeout(() => quitarPensando(), 12000)
     } catch (e: any) {
-      const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
-      if (esTimeout) {
-        toast.info('Tu mensaje se envió. La respuesta va a aparecer en unos segundos.')
-      } else {
-        toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
-        setTextoInput(texto)
-      }
+      quitarPensando()
+      toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
+      setTextoInput(texto)
     } finally {
       setEnviando(false)
-      quitarPensando()
-      requestEnVuelo.current = false
     }
   }
 
@@ -353,7 +356,6 @@ export default function Cerebro() {
 
     setEnviandoPrivado(true)
     setTextoPrivado('')
-    requestEnVuelo.current = true
 
     const optimista: MensajeOrg = {
       _id: 'temp_' + Date.now(),
@@ -368,22 +370,18 @@ export default function Cerebro() {
     }
     setMensajesPrivado(prev => [...prev, optimista])
     marcarPensando(['diego_ceo'])
+    polingHastaTs.current = Date.now() + 30000
 
     try {
       await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
       await cargarMensajes('privado_ceo')
+      setTimeout(() => quitarPensando(), 12000)
     } catch (e: any) {
-      const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
-      if (esTimeout) {
-        toast.info('Tu mensaje se envió. Diego va a responder en unos segundos.')
-      } else {
-        toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
-        setTextoPrivado(texto)
-      }
+      quitarPensando()
+      toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
+      setTextoPrivado(texto)
     } finally {
       setEnviandoPrivado(false)
-      quitarPensando()
-      requestEnVuelo.current = false
     }
   }
 
