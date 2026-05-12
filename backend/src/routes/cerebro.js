@@ -93,32 +93,6 @@ router.get('/mensajes/:canal', async (req, res) => {
 })
 
 /**
- * GET /api/cerebro/_debug/hablar/:slug?canal=privado_ceo
- * Diagnóstico: fuerza a un agente a hablar y devuelve detalles de la llamada.
- */
-router.get('/_debug/hablar/:slug', async (req, res) => {
-  try {
-    const { hablarComoAgente } = await import('../services/cerebro.js')
-    const canal = req.query.canal || 'general'
-    const inicio = Date.now()
-    const msg = await hablarComoAgente(req.params.slug, canal, {
-      gatillo: 'Decí "hola, soy [tu nombre], escuchando" y nada más.'
-    })
-    res.json({
-      ok: !!msg,
-      duracionMs: Date.now() - inicio,
-      mensaje: msg ? {
-        contenido: msg.contenido,
-        tokens: msg.tokens
-      } : null,
-      anthropicKey: process.env.ANTHROPIC_API_KEY ? 'SI' : 'NO'
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message, stack: e.stack })
-  }
-})
-
-/**
  * POST /api/cerebro/mensajes/:canal
  * El admin manda un mensaje y los agentes responden (en cadena).
  * Body: { contenido: string }
