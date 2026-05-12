@@ -254,28 +254,6 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
-// Debug temporal: fuerza un agente a hablar (sin auth, con secreto en URL)
-app.get('/api/_diag_brain/:secreto/:slug', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  try {
-    const { hablarComoAgente } = await import('./services/cerebro.js')
-    const canal = req.query.canal || 'general'
-    const inicio = Date.now()
-    const msg = await hablarComoAgente(req.params.slug, canal, {
-      gatillo: 'Saludá brevemente al equipo en una sola oración.'
-    })
-    res.json({
-      ok: !!msg,
-      duracionMs: Date.now() - inicio,
-      mensaje: msg ? { contenido: msg.contenido, tokens: msg.tokens } : null,
-      anthropicKey: process.env.ANTHROPIC_API_KEY ? 'configurada' : 'FALTANTE'
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message, name: e.name, stack: e.stack?.split('\n').slice(0, 5) })
-  }
-})
-
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
