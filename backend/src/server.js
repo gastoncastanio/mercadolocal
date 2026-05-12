@@ -259,6 +259,16 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
+// Diag temporal: verificar GEMINI_API_KEY
+app.get('/api/_diag_gemini', (req, res) => {
+  const key = process.env.GEMINI_API_KEY || ''
+  res.json({
+    existe: key.length > 0,
+    length: key.length,
+    preview: key.length > 0 ? key.slice(0, 8) + '...' + key.slice(-4) : null
+  })
+})
+
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
