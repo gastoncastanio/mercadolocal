@@ -254,23 +254,6 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
-// Diagnóstico temporal de variables de email (eliminar después)
-app.get('/api/_diag2/email', (req, res) => {
-  const resendKey = process.env.RESEND_API_KEY || ''
-  const emailFrom = process.env.EMAIL_FROM || ''
-  res.json({
-    resendKey: {
-      existe: resendKey.length > 0,
-      length: resendKey.length,
-      preview: resendKey.length > 0 ? resendKey.slice(0, 8) + '...' + resendKey.slice(-4) : null
-    },
-    emailFrom: {
-      existe: emailFrom.length > 0,
-      valor: emailFrom || '(usa default onboarding@resend.dev)'
-    }
-  })
-})
-
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
