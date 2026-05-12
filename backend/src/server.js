@@ -300,9 +300,27 @@ app.post('/api/_rescue/:secreto', async (req, res) => {
       })
     }
 
+    // Sin parámetros: lista TODOS los usuarios para ubicar la cuenta correcta
+    if (req.query.todos === '1') {
+      const todos = await Usuario.find({})
+        .select('email nombre rol activo createdAt')
+        .sort({ createdAt: -1 })
+        .lean()
+      return res.json({
+        total: todos.length,
+        usuarios: todos.map(u => ({
+          email: u.email,
+          nombre: u.nombre,
+          rol: u.rol,
+          activo: u.activo,
+          creado: u.createdAt
+        }))
+      })
+    }
+
     // Sin parámetros: lista los admins disponibles
     return res.json({
-      mensaje: 'Pasá ?email=xxx para generar un código de reseteo',
+      mensaje: 'Pasá ?email=xxx para generar un código, o ?todos=1 para ver toda la base',
       admins: admins.map(a => ({ email: a.email, nombre: a.nombre, creado: a.createdAt }))
     })
   } catch (e) {
