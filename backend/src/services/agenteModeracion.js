@@ -9,21 +9,18 @@
  *   - "revision"  → se publica pero queda marcado para revisión humana
  *                   (si confianza es baja o detecta algo borderline)
  *
- * Por qué Haiku 4.5: las publicaciones llegan en ráfagas (vendedores
- * publicando catálogos de 20-50 productos seguidos) y necesitamos respuesta
- * <2 segundos. Sonnet sería 5× más caro y solo marginalmente mejor para
- * este caso de uso (clasificación con reglas claras).
- *
- * Prompt caching: el system prompt (~4500 tokens) se cachea durante 5min.
- * Cuando un vendedor publica varios productos seguidos, se ahorra ~90% del
- * costo de input.
+ * Modelo: gemini-2.5-flash (rapidísimo, 1500 req/día gratis en AI Studio).
+ * Las publicaciones llegan en ráfagas (vendedores publicando catálogos de
+ * 20-50 productos seguidos) y necesitamos respuesta <2 segundos.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null
 
-const MODELO = 'claude-haiku-4-5'
+const MODELO = 'gemini-2.5-flash'
 
 /**
  * System prompt del agente moderador.
@@ -174,11 +171,10 @@ Tenés que responder SIEMPRE con un objeto JSON válido, sin texto extra, sin ma
 export async function moderarProducto(datos, contexto = {}) {
   const inicio = Date.now()
 
-  // Si no hay API key, fallback permisivo (no bloquear el negocio)
-  if (!client) {
-    console.warn('AGENTE-MODERACIÓN: ANTHROPIC_API_KEY no configurada, aprobando por defecto')
+  if (!genAI) {
+    console.warn('AGENTE-MODERACIÓN: GEMINI_API_KEY no configurada, aprobando por defecto')
     return {
-      decision: 'revision', // por seguridad, pasamos a revisión humana
+      decision: 'revision',
       confianza: 0,
       motivos: ['Moderación automática no disponible. Tu producto será revisado por nuestro equipo en 24h.'],
       banderas: ['agente_no_disponible'],
@@ -187,40 +183,37 @@ export async function moderarProducto(datos, contexto = {}) {
     }
   }
 
-  // Armar el prompt del usuario con los datos del producto
   const promptUsuario = construirPromptUsuario(datos, contexto)
 
   try {
-    const respuesta = await client.messages.create({
+    const model = genAI.getGenerativeModel({
       model: MODELO,
-      max_tokens: 500,
-      system: [
-        {
-          type: 'text',
-          text: SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' } // cachea por 5min
-        }
-      ],
-      messages: [
-        { role: 'user', content: promptUsuario }
-      ]
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: {
+        temperature: 0.3, // moderación: queremos determinismo
+        maxOutputTokens: 800,
+        responseMimeType: 'application/json'
+      }
     })
 
-    const texto = respuesta.content[0]?.text || '{}'
+    const result = await model.generateContent(promptUsuario)
+    const texto = result.response.text() || '{}'
     const parsed = parsearRespuesta(texto)
+
+    // Gemini reporta uso de tokens distinto a Anthropic
+    const usage = result.response.usageMetadata || {}
 
     return {
       ...parsed,
       tokens: {
-        entrada: respuesta.usage?.input_tokens || 0,
-        salida: respuesta.usage?.output_tokens || 0,
-        entradaCached: respuesta.usage?.cache_read_input_tokens || 0
+        entrada: usage.promptTokenCount || 0,
+        salida: usage.candidatesTokenCount || 0,
+        entradaCached: usage.cachedContentTokenCount || 0
       },
       duracionMs: Date.now() - inicio
     }
   } catch (error) {
     console.error('AGENTE-MODERACIÓN error:', error.message)
-    // En caso de error del API, mandamos a revisión (no bloqueamos al vendedor)
     return {
       decision: 'revision',
       confianza: 0,

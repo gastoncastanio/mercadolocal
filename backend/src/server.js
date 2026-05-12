@@ -269,6 +269,36 @@ app.get('/api/_diag_gemini', (req, res) => {
   })
 })
 
+// Test temporal: probar los 3 agentes con Gemini
+app.get('/api/_test_gemini/:secreto', async (req, res) => {
+  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
+  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
+  try {
+    const { hablarComoAgente } = await import('./services/cerebro.js')
+    const inicio = Date.now()
+    const resultados = []
+    for (const slug of ['diego_ceo', 'sofia_cmo', 'tomas_cto']) {
+      const t0 = Date.now()
+      const msg = await hablarComoAgente(slug, 'general', {
+        gatillo: 'Saludá al equipo en UNA sola oración corta.'
+      })
+      resultados.push({
+        slug,
+        ok: !!msg,
+        duracionMs: Date.now() - t0,
+        texto: msg?.contenido?.slice(0, 200) || null
+      })
+    }
+    res.json({
+      totalMs: Date.now() - inicio,
+      modelo: 'gemini-2.5-flash',
+      resultados
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 6) })
+  }
+})
+
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())

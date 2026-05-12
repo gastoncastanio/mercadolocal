@@ -16,7 +16,7 @@
  * conversación se sienta natural y se respete el orden jerárquico.
  */
 
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import Agente from '../models/Agente.js'
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
 import Producto from '../models/Producto.js'
@@ -24,8 +24,10 @@ import Orden from '../models/Orden.js'
 import Moderacion from '../models/Moderacion.js'
 import Ticket from '../models/Ticket.js'
 
-const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null
-const MODELO = 'claude-haiku-4-5'
+const genAI = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+  : null
+const MODELO = 'gemini-2.5-flash'
 
 // ============================================================
 // MANIFIESTO COMPARTIDO — la cultura del equipo
@@ -190,8 +192,8 @@ async function construirHistorialConversacion(canal, limite = 20) {
  * @returns {Promise<MensajeOrganizacion|null>}
  */
 export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
-  if (!client) {
-    console.warn(`Cerebro: no hay ANTHROPIC_API_KEY, ${agenteSlug} no puede hablar`)
+  if (!genAI) {
+    console.warn(`Cerebro: no hay GEMINI_API_KEY, ${agenteSlug} no puede hablar`)
     return null
   }
 
@@ -204,33 +206,40 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
   const systemPrompt = construirSystemPrompt(agente)
   const historial = await construirHistorialConversacion(canal, 15)
 
-  // Fusión defensiva: si vino un gatillo extra o el historial está vacío,
-  // se incorpora al ÚNICO mensaje "user" para no romper la alternancia.
+  // Construir el prompt final como un solo mensaje user.
+  // Cerebro usa "content" → Gemini usa "parts: [{ text }]".
+  let promptFinal
   if (historial.length === 0) {
-    historial.push({
-      role: 'user',
-      content: opciones.gatillo || 'Presentate brevemente al equipo, qué estás haciendo hoy.'
-    })
-  } else if (opciones.gatillo) {
-    historial[0].content += `\n\n[Contexto adicional]: ${opciones.gatillo}`
+    promptFinal = opciones.gatillo || 'Presentate brevemente al equipo, qué estás haciendo hoy.'
+  } else {
+    promptFinal = historial[0].content
+    if (opciones.gatillo) {
+      promptFinal += `\n\n[Contexto adicional]: ${opciones.gatillo}`
+    }
   }
 
   try {
-    const respuesta = await client.messages.create({
+    const model = genAI.getGenerativeModel({
       model: MODELO,
-      max_tokens: 600,
-      system: [
-        { type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }
-      ],
-      messages: historial
+      systemInstruction: systemPrompt,
+      generationConfig: {
+        temperature: 0.85, // conversación: queremos personalidad, no determinismo
+        maxOutputTokens: 800
+      }
     })
 
-    const textoRaw = respuesta.content[0]?.text || ''
-    // Quitamos el prefijo "[Nombre]:" si el modelo lo agregó (le pedimos
-    // primera persona, pero a veces lo hace igual por imitar el formato).
+    const result = await model.generateContent(promptFinal)
+    const textoRaw = result.response.text() || ''
+
+    // Quitamos el prefijo "[Nombre]:" si el modelo lo agregó
     const texto = textoRaw.replace(/^\[?[A-Za-zÁÉÍÓÚáéíóúñÑ ]+\]?:\s*/i, '').trim()
 
-    if (!texto) return null
+    if (!texto) {
+      console.warn(`Cerebro: ${agenteSlug} respondió texto vacío`)
+      return null
+    }
+
+    const usage = result.response.usageMetadata || {}
 
     const nuevo = await new MensajeOrganizacion({
       canal,
@@ -240,9 +249,9 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
       tipo: opciones.tipo || 'conversacion',
       contexto: opciones.contexto || null,
       tokens: {
-        entrada: respuesta.usage?.input_tokens || 0,
-        salida: respuesta.usage?.output_tokens || 0,
-        entradaCached: respuesta.usage?.cache_read_input_tokens || 0
+        entrada: usage.promptTokenCount || 0,
+        salida: usage.candidatesTokenCount || 0,
+        entradaCached: usage.cachedContentTokenCount || 0
       }
     }).save()
 
@@ -256,9 +265,8 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
 
     return nuevo
   } catch (e) {
-    console.error(`Error haciendo hablar a ${agenteSlug}:`, e.message)
-    if (e.response?.data) console.error('Response:', JSON.stringify(e.response.data))
-    if (e.status) console.error('Status:', e.status, 'Body:', e.error || e.body)
+    console.error(`Error haciendo hablar a ${agenteSlug} (Gemini):`, e.message)
+    if (e.errorDetails) console.error('Details:', JSON.stringify(e.errorDetails).slice(0, 500))
     return null
   }
 }
