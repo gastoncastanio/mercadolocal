@@ -16,8 +16,8 @@ interface BannerDef {
 
 const BANNERS_BASE: BannerDef[] = [
   {
-    titulo: 'Hasta 12 cuotas sin inter\u00e9s',
-    subtitulo: 'Financiaci\u00f3n directa con Mercado Pago',
+    titulo: 'Pagá en cuotas con Mercado Pago',
+    subtitulo: 'Financiación con todas las tarjetas. El costo depende de tu banco.',
     cta: 'Ver productos',
     enlace: '/catalogo',
     gradiente: 'from-emerald-500 via-teal-600 to-cyan-700',

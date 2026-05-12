@@ -76,7 +76,11 @@ export default function Registro() {
       await registro({ ...form, mayorDeEdad, aceptaTerminos })
       navigate(form.rol === 'vendedor' ? '/mi-tienda' : '/catalogo')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al registrarse')
+      if (!err.response && (err.code === 'ECONNABORTED' || err.message?.includes('Network Error'))) {
+        setError('El servidor está cargando. Esperá unos segundos e intentá de nuevo.')
+      } else {
+        setError(err.response?.data?.error || 'Error al registrarse. Intentá de nuevo.')
+      }
     } finally {
       setCargando(false)
     }

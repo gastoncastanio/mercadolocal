@@ -7,7 +7,7 @@ const categorias = [
     titulo: 'Compras',
     preguntas: [
       { pregunta: 'Como compro un producto?', respuesta: 'Busca el producto en el catalogo, hacé click en "Agregar al carrito", anda al carrito y luego al checkout. Completa tus datos de entrega y paga con Mercado Pago.' },
-      { pregunta: 'Que medios de pago aceptan?', respuesta: 'Aceptamos todos los medios de Mercado Pago: tarjetas de credito y debito (Visa, Mastercard, Naranja), dinero en cuenta MP, Mercado Credito y cuotas sin interes.' },
+      { pregunta: 'Que medios de pago aceptan?', respuesta: 'Aceptamos todos los medios de Mercado Pago: tarjetas de credito y debito (Visa, Mastercard, Naranja), dinero en cuenta MP y Mercado Credito. Podes pagar en cuotas, el costo de financiacion depende de tu tarjeta y banco emisor.' },
       { pregunta: 'Mi compra esta protegida?', respuesta: 'Si. Tu dinero queda retenido por MercadoLocal hasta que confirmes que recibiste el producto en buenas condiciones. No liberamos el pago al vendedor sin tu aprobacion.' },
       { pregunta: 'Como veo el estado de mi pedido?', respuesta: 'Anda a "Mis pedidos" desde el menu. Ahi vas a ver todos tus pedidos con su estado actual: pagado, enviado o completado.' },
     ]
@@ -26,9 +26,10 @@ const categorias = [
     icono: '🚚',
     titulo: 'Envios',
     preguntas: [
-      { pregunta: 'Quien se encarga del envio?', respuesta: 'El vendedor coordina el envio directamente. Al comprar, el vendedor recibe tu direccion de entrega y prepara el despacho.' },
-      { pregunta: 'Cuanto tarda en llegar?', respuesta: 'Depende del vendedor y tu ubicacion. Generalmente entre 1-5 dias habiles para envios dentro de la misma ciudad. El vendedor te notificara cuando despache.' },
-      { pregunta: 'Que hago si no recibo mi pedido?', respuesta: 'Si no recibis el pedido, abri un reclamo desde "Mis pedidos". Nuestro equipo revisara el caso y te reembolsaremos si corresponde.' },
+      { pregunta: 'Como funciona el envio?', respuesta: 'MercadoLocal es una plataforma que conecta compradores con vendedores locales. El vendedor coordina el envio directamente con vos despues de la compra. Al pagar, el vendedor recibe tu direccion y te contacta para coordinar.' },
+      { pregunta: 'Cuanto cuesta el envio?', respuesta: 'El costo de envio depende del vendedor, la distancia y el peso del producto. En la pagina de cada producto podes usar el cotizador de envio ingresando tu codigo postal para ver un precio estimado de referencia.' },
+      { pregunta: 'Cuanto tarda en llegar?', respuesta: 'Depende del vendedor y tu ubicacion. Generalmente entre 1-5 dias habiles para envios dentro de la misma ciudad, y 4-8 dias para envios a otra provincia.' },
+      { pregunta: 'Que hago si no recibo mi pedido?', respuesta: 'Si no recibis el pedido, abri un reclamo desde "Mis pedidos". Tu dinero queda retenido por MercadoLocal hasta que confirmes la recepcion, asi que estas protegido.' },
     ]
   },
   {

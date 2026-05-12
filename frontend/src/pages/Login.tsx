@@ -20,7 +20,12 @@ export default function Login() {
       await login(email, contraseña)
       navigate('/catalogo')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al iniciar sesión')
+      // Distinguir entre error de red/timeout y error de credenciales
+      if (!err.response && (err.code === 'ECONNABORTED' || err.message?.includes('Network Error'))) {
+        setError('El servidor está cargando. Esperá unos segundos e intentá de nuevo.')
+      } else {
+        setError(err.response?.data?.error || 'Error al iniciar sesión. Verificá tu email y contraseña.')
+      }
     } finally {
       setCargando(false)
     }

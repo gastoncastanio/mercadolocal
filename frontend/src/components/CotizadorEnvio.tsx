@@ -121,6 +121,10 @@ export default function CotizadorEnvio({ cpOrigen, pesoGr, alto, ancho, largo }:
       {cotizado && opciones.length === 0 && !error && (
         <p className="text-sm text-gray-500">No se encontraron opciones de env&iacute;o para ese c&oacute;digo postal.</p>
       )}
+
+      <p className="text-[10px] text-gray-400 leading-snug mt-3 border-t border-gray-100 pt-2">
+        Precios estimados de referencia basados en tarifas p&uacute;blicas de Correo Argentino y Andreani. El costo final lo coordina el vendedor seg&uacute;n el servicio que elija. El env&iacute;o se paga por fuera de la plataforma.
+      </p>
     </div>
   )
 }

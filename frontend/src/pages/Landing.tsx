@@ -6,6 +6,7 @@ import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import BannersRotativos from '../components/BannersRotativos'
 import EspaciosPublicitarios from '../components/EspaciosPublicitarios'
+import InstalarApp from '../components/InstalarApp'
 
 const CATEGORIAS = [
   { nombre: 'Tecnolog\u00eda', icon: '\u{1F4F1}', slug: 'tecnologia', color: 'from-blue-500 to-indigo-600' },
@@ -185,7 +186,7 @@ export default function Landing() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                  Hasta 12 cuotas
+                  Pagá en cuotas
                 </span>
               </div>
             </div>
@@ -474,6 +475,9 @@ export default function Landing() {
           </p>
         </div>
       </section>
+
+      {/* ========== DESCARGAR APP ========== */}
+      <InstalarApp />
 
       {/* ========== FOOTER ========== */}
       <footer className="bg-gray-900 text-gray-400 mt-8">
