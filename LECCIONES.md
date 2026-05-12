@@ -202,6 +202,30 @@ lento en idle).
 
 ---
 
+### 11. Límites artificiales sin pensarlos ❌
+
+**Lo que hice mal**: puse `maxOutputTokens: 800` en todos los agentes
+al migrar a Gemini, copiando una config genérica. Resultado: Diego
+se quedaba a media oración cuando el usuario hacía preguntas
+estratégicas. El usuario me preguntó "¿por qué tiene ese límite si
+pago Gemini Pro?" — pregunta perfecta. Era un límite **mío**, no de
+Google.
+
+**Aprendizaje**:
+- Antes de poner cualquier `max*` o `limit`, **preguntarme**:
+  ¿Hay razón técnica o estoy adivinando un número?
+- Si el usuario paga una licencia Pro, **no limitar artificialmente**.
+  El límite real lo pone la API, no yo.
+- Cada agente tiene casos de uso distintos — un ticket de soporte
+  es corto, un reporte ejecutivo del CEO es largo. **Configurarlos
+  acorde**, no a un valor único.
+
+**Regla**: cualquier número arbitrario en código (timeouts, max
+tokens, max retries) merece un comentario que explique por qué ese
+número específico. Si no tengo razón, no lo pongo.
+
+---
+
 ### 10. Rate limiter muy bajo para paneles admin ❌
 
 **Lo que hice mal**: dejé el rate limiter en 200 req/15min sin pensar
