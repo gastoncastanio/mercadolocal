@@ -872,9 +872,22 @@ function ChatPrivadoCEO({
   refChat: React.RefObject<HTMLDivElement>
   pensando: Set<string>
 }) {
+  // Cerrar con tecla ESC
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={onClose} // click en el fondo cierra
+    >
+      <div
+        className="bg-white rounded-xl w-full max-w-2xl h-[80vh] flex flex-col overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-700 to-purple-700 text-white px-4 py-3 flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-2xl">
@@ -886,7 +899,8 @@ function ChatPrivadoCEO({
           </div>
           <button
             onClick={onClose}
-            className="text-white/80 hover:text-white text-2xl leading-none"
+            aria-label="Cerrar chat"
+            className="bg-white/20 hover:bg-white/30 text-white rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none flex-shrink-0"
           >
             ×
           </button>
@@ -943,12 +957,34 @@ function ChatPrivadoCEO({
 // ===================== MODAL DETALLE AGENTE =====================
 
 function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void }) {
+  // Cerrar con tecla ESC (UX estándar de modales)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-gray-900">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      onClick={onClose} // click fuera = cerrar
+    >
+      <div
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-gray-900 relative"
+        onClick={e => e.stopPropagation()} // click adentro NO cierra
+      >
+        {/* Botón cerrar fijo arriba a la derecha, siempre visible (sticky) */}
+        <button
+          onClick={onClose}
+          aria-label="Cerrar"
+          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md"
+        >
+          ×
+        </button>
+
         {/* Header */}
         <div
-          className="px-6 py-4 text-white flex items-center gap-4"
+          className="px-6 py-4 pr-14 text-white flex items-center gap-4"
           style={{ background: `linear-gradient(135deg, ${agente.color}, ${agente.color}dd)` }}
         >
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center text-4xl">
@@ -969,7 +1005,6 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
               </span>
             </div>
           </div>
-          <button onClick={onClose} className="text-white/80 hover:text-white text-2xl">×</button>
         </div>
 
         {/* Métricas */}
