@@ -98,13 +98,18 @@ app.use(hpp())
 
 // ===== SEGURIDAD NIVEL 3: Rate Limiting =====
 
-// General: máximo 200 peticiones por IP cada 15 minutos
+// General: máximo 1000 peticiones por IP cada 15 minutos.
+// Con polling de panels admin (Cerebro consume ~150 req/15min solo de polling)
+// y usuarios navegando, 200 era muy bajo.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 200,
+  max: 1000,
   message: { error: 'Demasiadas peticiones. Intentá de nuevo en 15 minutos.' },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Las rutas del cerebro tienen su propia gestión: no aplicamos rate limit acá
+  // (el panel admin hace polling normal, no es abuso).
+  skip: (req) => req.path.startsWith('/cerebro')
 })
 app.use('/api/', limiter)
 

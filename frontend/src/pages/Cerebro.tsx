@@ -199,9 +199,9 @@ export default function Cerebro() {
   // de 5s podía pisar el estado optimista)
   const requestEnVuelo = useRef(false)
 
-  // Polling cada 5s para mensajes y no leídos.
-  // Las funciones de carga NO van en deps para evitar resetear el interval
-  // en cada render (se re-creaban con useCallback).
+  // Polling cada 15s para mensajes (subimos de 5s a 15s para no quemar
+  // peticiones; los agentes no responden tan seguido).
+  // Solo pollea cuando la pestaña está VISIBLE (document.visibilityState).
   useEffect(() => {
     cargarAgentes()
     cargarMensajes(canalActivo)
@@ -209,10 +209,11 @@ export default function Cerebro() {
 
     const t = setInterval(() => {
       if (requestEnVuelo.current) return // no pisar mientras esperamos respuesta
+      if (document.visibilityState !== 'visible') return // ahorrar requests si está en otra pestaña
       cargarMensajes(canalActivo)
       if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
       cargarNoLeidos()
-    }, 5000)
+    }, 15000)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canalActivo, chatPrivadoAbierto])
