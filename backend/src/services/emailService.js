@@ -238,6 +238,85 @@ export async function enviarRecordatorioCompra(email, nombre, orden) {
   })
 }
 
+// ==================== REPORTE DIARIO DEL CEO ====================
+
+/**
+ * Env\u00eda el reporte diario del CEO Diego al fundador.
+ *
+ * @param {string} email - email del fundador
+ * @param {string} nombreAdmin - nombre del fundador
+ * @param {string} cuerpoReporte - texto del reporte (markdown ligero)
+ * @param {object} metricas - m\u00e9tricas crudas del d\u00eda (opcional)
+ */
+export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metricas = {}) {
+  const fecha = new Date().toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+
+  // Convertir saltos de l\u00ednea simples a <br> y dobles a <p>
+  const cuerpoHtml = (cuerpoReporte || '')
+    .split(/\n\n+/)
+    .map(parrafo => `<p style="margin: 0 0 14px; color: #374151; font-size: 14px; line-height: 1.7;">${
+      parrafo.replace(/\n/g, '<br>')
+    }</p>`)
+    .join('')
+
+  // Tarjetas de m\u00e9tricas (si hay datos)
+  let tarjetasMetricas = ''
+  if (metricas && Object.keys(metricas).length > 0) {
+    const items = []
+    if (metricas.ventas != null) items.push({ l: 'Ventas', v: '$' + (metricas.ventas || 0).toLocaleString('es-AR'), c: '#059669' })
+    if (metricas.comisiones != null) items.push({ l: 'Comisiones', v: '$' + (metricas.comisiones || 0).toLocaleString('es-AR'), c: '#2563eb' })
+    if (metricas.ordenes != null) items.push({ l: '\u00d3rdenes', v: String(metricas.ordenes), c: '#7c3aed' })
+    if (metricas.productosNuevos != null) items.push({ l: 'Productos nuevos', v: String(metricas.productosNuevos), c: '#ea580c' })
+
+    if (items.length) {
+      tarjetasMetricas = `
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 0 0 20px;">
+          <tr>
+            ${items.map(i => `
+              <td style="background: #f9fafb; border-radius: 10px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">${i.l}</div>
+                <div style="font-size: 18px; font-weight: 700; color: ${i.c}; margin-top: 4px;">${i.v}</div>
+              </td>
+            `).join('<td style="width: 8px;"></td>')}
+          </tr>
+        </table>
+      `
+    }
+  }
+
+  const contenido = `
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, #7c3aed); display: inline-flex; align-items: center; justify-content: center; font-size: 24px;">\ud83c\udfa9</div>
+      <div style="display: inline-block; vertical-align: middle; margin-left: 12px;">
+        <div style="font-weight: 700; color: #1f2937; font-size: 15px;">Diego \u2014 CEO MercadoLocal</div>
+        <div style="font-size: 12px; color: #6b7280;">Reporte ejecutivo \u00b7 ${fecha}</div>
+      </div>
+    </div>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0 20px;">
+    ${tarjetasMetricas}
+    ${cuerpoHtml}
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;">
+    <p style="font-size: 12px; color: #6b7280; margin: 0;">
+      Hola ${nombreAdmin}, este reporte se genera autom\u00e1ticamente cada d\u00eda con datos reales del marketplace.
+      Para ver el chat en vivo del equipo IA, ingres\u00e1 al panel de admin.
+    </p>
+    <div style="text-align: center; margin-top: 16px;">
+      <a href="${process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://mercadolocal.com.ar'}/admin/cerebro" class="btn">Ir al panel del equipo</a>
+    </div>
+  `
+
+  return enviarEmail({
+    to: email,
+    subject: `\ud83d\udcca Reporte diario \u00b7 ${fecha}`,
+    html: templateBase(contenido)
+  })
+}
+
 // ==================== CORE ====================
 
 /**

@@ -37,6 +37,9 @@ import mpOauthRouter from './routes/mpOauth.js'
 import statsRouter from './routes/stats.js'
 import soporteRouter from './routes/soporte.js'
 import moderacionRouter from './routes/moderacion.js'
+import cerebroRouter from './routes/cerebro.js'
+import { sembrarAgentesFundadores } from './services/seedAgentes.js'
+import { iniciarCronCerebro } from './services/cronCerebro.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
@@ -181,6 +184,14 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }))
 connectDB().then(async () => {
   inicializarConfig().catch(err => console.warn('Config init:', err.message))
 
+  // Sembrar el equipo IA (idempotente: no pisa nada existente)
+  sembrarAgentesFundadores()
+    .then(r => console.log(`🧠 Equipo IA: ${r.creados} creados, ${r.actualizados} actualizados`))
+    .catch(err => console.warn('Seed agentes:', err.message))
+
+  // Cron del cerebro: reporte diario CEO + ascensos automáticos
+  iniciarCronCerebro()
+
   // Limpiar órdenes pendientes expiradas al iniciar y cada 30 minutos
   try {
     const canceladas = await limpiarOrdenesPendientes()
@@ -221,6 +232,7 @@ app.use('/api/mp', mpOauthRouter)
 app.use('/api/stats', statsRouter)
 app.use('/api/soporte', soporteRouter)
 app.use('/api/moderacion', moderacionRouter)
+app.use('/api/cerebro', cerebroRouter)
 
 // Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
