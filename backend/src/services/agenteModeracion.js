@@ -191,7 +191,9 @@ export async function moderarProducto(datos, contexto = {}) {
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
         temperature: 0.3, // moderación: queremos determinismo
-        maxOutputTokens: 800,
+        // 2048 tokens para moderación: análisis del producto + explicación
+        // clara al vendedor de qué tiene que mejorar.
+        maxOutputTokens: 2048,
         responseMimeType: 'application/json'
       }
     })

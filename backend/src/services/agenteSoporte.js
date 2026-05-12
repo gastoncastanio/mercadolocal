@@ -206,7 +206,10 @@ export async function procesarConsulta(ticket, nuevaPregunta) {
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 1500,
+        // 4096 tokens para soporte: respuestas detalladas a tickets de
+        // usuarios sin truncarse. El usuario paga Gemini Pro, sin sentido
+        // limitar artificialmente.
+        maxOutputTokens: 4096,
         responseMimeType: 'application/json'
       }
     })

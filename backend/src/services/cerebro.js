@@ -224,7 +224,11 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
       systemInstruction: systemPrompt,
       generationConfig: {
         temperature: 0.85, // conversación: queremos personalidad, no determinismo
-        maxOutputTokens: 800
+        // 8192 tokens ≈ 6000 palabras. Suficiente para que cualquier agente
+        // construya reportes estratégicos completos, análisis profundos o
+        // respuestas con contexto rico sin truncarse. El usuario paga la
+        // licencia Pro de Gemini, no tiene sentido limitarnos artificialmente.
+        maxOutputTokens: 8192
       }
     })
 
