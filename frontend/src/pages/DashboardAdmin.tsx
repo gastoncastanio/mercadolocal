@@ -174,6 +174,28 @@ function SeccionInicio() {
         </div>
       </div>
 
+      {/* Acceso destacado al Cerebro IA */}
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">🧠 MercadoLocal Brain</h2>
+      <a
+        href="/admin/cerebro"
+        className="block bg-gradient-to-br from-blue-700 via-purple-700 to-fuchsia-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all mb-6 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full -ml-24 -mb-24" />
+        <div className="relative">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-4xl">🧠</span>
+            <div>
+              <h3 className="text-xl font-bold">Panel del equipo IA</h3>
+              <p className="text-sm opacity-90">Diego (CEO), Sofía (CMO) y Tomás (CTO) trabajando para vos</p>
+            </div>
+          </div>
+          <p className="text-sm opacity-90 mt-3">
+            Ver el equipo en vivo, hablarles, leer el reporte diario y conversar en privado con el CEO →
+          </p>
+        </div>
+      </a>
+
       {/* Accesos rápidos a paneles especializados */}
       <h2 className="text-lg font-semibold text-gray-800 mb-3">Paneles especializados</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
