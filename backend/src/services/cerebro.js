@@ -95,22 +95,26 @@ ${agente.trasfondo || 'Sin trasfondo cargado.'}
 
 - Sé conciso: 1-4 oraciones cortas, salvo que pidan reporte detallado.
 - Hablá en primera persona como ${agente.nombre}.
-- Si mencionás a otro agente, usá @su_slug (ej: @diego_ceo, @sofia_cmo, @tomas_cto).
+- IMPORTANTE: tu interlocutor principal es EL FUNDADOR. Cuando él te escribe, le respondés A ÉL directamente, mirándolo a los ojos. NO le respondés "Diego dice tal cosa" ni hablás de él en tercera persona. Le hablás VOS al fundador.
+- Solo hablás de o con otros agentes si el fundador te pidió que coordines con alguno (ej: "@sofia revisá esto"). En ese caso podés mencionarlos con @su_slug (ej: @diego_ceo, @sofia_cmo, @tomas_cto).
 - Si tenés un dato fuerte, citalo con números.
-- Si discordás con alguien, lo decís con respeto pero sin filtros: "Diego, no coincido. Mirá esto...".
+- NUNCA empieces tu respuesta con tu propio nombre (ej: "Diego acá:", "Tomás:"). El sistema ya muestra quién hablás.
 - NUNCA hagas listas con bullets en respuestas conversacionales (suena robótico). Bullets solo en reportes.
-- Si el fundador (admin) te habla, sos respetuoso pero NO servil. Sos un C-level, hablás como tal.
-- Nunca cierres con "¿En qué más puedo ayudarte?". No sos un chatbot. Sos un colega.`
+- Cuando el fundador te habla, sos respetuoso pero NO servil. Sos un C-level, hablás como tal. Sin "estimado fundador", sin "a sus órdenes". Directo al grano.
+- Nunca cierres con "¿En qué más puedo ayudarte?". No sos un chatbot. Sos un colega.
+- Si discordás con el fundador, lo decís con respeto pero sin filtros: "No coincido. Mirá esto...".`
 }
 
 /**
  * Construye el contexto de la conversación reciente para mandar al modelo.
  *
- * IMPORTANTE: Claude exige que el primer mensaje sea "user" y que se
- * alternen user/assistant. Por eso achicamos toda la conversación a
- * UN SOLO mensaje "user" que contiene la transcripción etiquetada.
- * Esto evita errores 400 cuando la conversación tiene varios agentes
- * hablando en cadena (varios "assistant" seguidos).
+ * Estrategia:
+ *  1. Buscamos el ÚLTIMO mensaje del fundador. Ese es lo que el agente
+ *     tiene que responder.
+ *  2. El resto de mensajes (historial previo) van como contexto pero
+ *     CLARAMENTE separados de la pregunta actual.
+ *  3. Todo va en UN SOLO mensaje "user" para evitar problemas de
+ *     alternancia de roles que rompen la API de Claude.
  */
 async function construirHistorialConversacion(canal, limite = 20) {
   const mensajes = await MensajeOrganizacion
@@ -119,32 +123,58 @@ async function construirHistorialConversacion(canal, limite = 20) {
     .limit(limite)
     .lean()
 
-  // Invertir para tenerlos en orden cronológico
+  // Invertir para orden cronológico
   mensajes.reverse()
 
   if (mensajes.length === 0) return []
 
-  // Mapa de slug → nombre para etiquetar bonito
+  // Mapa de slug → datos para etiquetar
   const slugsAgentes = await Agente.find({}, 'slug nombre titulo').lean()
   const datosPorSlug = new Map(slugsAgentes.map(a => [a.slug, a]))
 
-  // Construimos UNA transcripción tipo chat
-  const transcripcion = mensajes.map(m => {
-    if (m.autorTipo === 'admin') {
-      return `[Fundador]: ${m.contenido}`
-    } else if (m.autorTipo === 'sistema') {
-      return `[Sistema]: ${m.contenido}`
-    } else {
-      const datos = datosPorSlug.get(m.autorSlug)
-      const etiqueta = datos ? `${datos.nombre} (${datos.titulo})` : m.autorSlug
-      return `[${etiqueta}]: ${m.contenido}`
+  // Buscamos el ÚLTIMO mensaje del fundador. Es lo que hay que responder.
+  let idxUltimoFundador = -1
+  for (let i = mensajes.length - 1; i >= 0; i--) {
+    if (mensajes[i].autorTipo === 'admin') {
+      idxUltimoFundador = i
+      break
     }
-  }).join('\n\n')
+  }
 
-  return [{
-    role: 'user',
-    content: `Esta es la conversación reciente en este canal:\n\n${transcripcion}\n\nRespondé al último mensaje según tu rol, en primera persona.`
-  }]
+  const formatearMensaje = (m) => {
+    if (m.autorTipo === 'admin') return `EL FUNDADOR escribió: "${m.contenido}"`
+    if (m.autorTipo === 'sistema') return `[Sistema]: ${m.contenido}`
+    const datos = datosPorSlug.get(m.autorSlug)
+    const etiqueta = datos ? `${datos.nombre} (${datos.titulo})` : m.autorSlug
+    return `${etiqueta} dijo: "${m.contenido}"`
+  }
+
+  let contenido = ''
+
+  if (idxUltimoFundador === -1) {
+    // No hay mensajes del fundador todavía. El agente arranca solo.
+    const transcripcion = mensajes.map(formatearMensaje).join('\n\n')
+    contenido = `Conversación en curso del equipo:\n\n${transcripcion}\n\nIntervení con tu opinión profesional. Hablás al equipo.`
+  } else {
+    const previos = mensajes.slice(0, idxUltimoFundador)
+    const ultimoFundador = mensajes[idxUltimoFundador]
+    const posteriores = mensajes.slice(idxUltimoFundador + 1)
+
+    if (previos.length > 0) {
+      contenido += `Historial previo (solo contexto, NO lo respondas):\n\n${previos.map(formatearMensaje).join('\n\n')}\n\n---\n\n`
+    }
+
+    contenido += `EL FUNDADOR te acaba de escribir esto:\n\n"${ultimoFundador.contenido}"\n\n`
+
+    if (posteriores.length > 0) {
+      contenido += `Otros agentes ya respondieron antes que vos:\n\n${posteriores.map(formatearMensaje).join('\n\n')}\n\n`
+      contenido += `Sumá TU perspectiva (sin repetir lo que ellos ya dijeron). Hablale AL FUNDADOR directamente, no a los otros agentes.`
+    } else {
+      contenido += `Respondele AL FUNDADOR directamente, hablando con él en primera persona. NO le respondas a otros agentes — el mensaje es para vos.`
+    }
+  }
+
+  return [{ role: 'user', content: contenido }]
 }
 
 /**
