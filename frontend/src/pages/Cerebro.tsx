@@ -325,19 +325,17 @@ export default function Cerebro() {
     marcarPensando(respondedores)
 
     try {
-      const { data } = await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
-      // Refrescamos los mensajes para tener la versión "oficial" (con respuestas)
+      await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
+      // Refrescamos los mensajes. Si la respuesta del agente todavía no
+      // está, el polling de 15s la va a traer.
       await cargarMensajes(canalActivo)
-
-      // Solo avisamos si EXPLÍCITAMENTE no hubo respuestas (no si vino undefined)
-      if (Array.isArray(data?.respuestas) && data.respuestas.length === 0) {
-        toast.warning('Los agentes no pudieron responder. Revisá tu mensaje o intentá de nuevo.')
-      }
+      // NO mostramos warning si data.respuestas está vacío: a veces el
+      // backend devuelve antes de que los agentes terminen, y la respuesta
+      // llega por polling. Mostrar warning ahí confunde al usuario.
     } catch (e: any) {
-      // Si fue timeout o error de red, NO mostramos error feo: el polling después lo traerá
       const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
       if (esTimeout) {
-        toast.info('La respuesta está tardando más de lo normal. Va a aparecer en unos segundos.')
+        toast.info('Tu mensaje se envió. La respuesta va a aparecer en unos segundos.')
       } else {
         toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
         setTextoInput(texto)
@@ -372,15 +370,12 @@ export default function Cerebro() {
     marcarPensando(['diego_ceo'])
 
     try {
-      const { data } = await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
+      await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
       await cargarMensajes('privado_ceo')
-      if (Array.isArray(data?.respuestas) && data.respuestas.length === 0) {
-        toast.warning('Diego no pudo responder. Intentá de nuevo en unos segundos.')
-      }
     } catch (e: any) {
       const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
       if (esTimeout) {
-        toast.info('Diego está tardando. Su respuesta va a aparecer en unos segundos.')
+        toast.info('Tu mensaje se envió. Diego va a responder en unos segundos.')
       } else {
         toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
         setTextoPrivado(texto)
