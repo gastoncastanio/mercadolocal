@@ -240,6 +240,50 @@ export default function Cerebro() {
     }
   }, [mensajes])
 
+  // ===== Adivinar qué agentes van a responder =====
+  // Heurística para mostrar "X está escribiendo..." mientras esperamos.
+  // Replica la lógica del backend para mostrar feedback instantáneo.
+  function adivinarRespondedores(texto: string, canal: Canal): string[] {
+    const lower = texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+    // 1. Buscar menciones (cortas o completas)
+    const matches = lower.match(/@([a-z][a-z0-9_]*)/g) || []
+    const slugsEncontrados: string[] = []
+    for (const m of matches) {
+      const palabra = m.slice(1)
+      if (palabra === 'todos' || palabra === 'equipo') {
+        return agentes.filter(a => a.activo).map(a => a.slug)
+      }
+      // ¿Coincide con un slug completo?
+      if (agentesMap.has(palabra)) {
+        slugsEncontrados.push(palabra)
+        continue
+      }
+      // ¿Coincide con el primer nombre o el slug corto?
+      const ag = agentes.find(a => {
+        const slugCorto = a.slug.split('_')[0]
+        const nombreCorto = a.nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(' ')[0]
+        return slugCorto === palabra || nombreCorto === palabra
+      })
+      if (ag) slugsEncontrados.push(ag.slug)
+    }
+    if (slugsEncontrados.length > 0) return slugsEncontrados
+
+    // 2. Sin menciones: default según canal
+    if (canal === 'privado_ceo') return ['diego_ceo']
+    return ['diego_ceo'] // fallback (en general el backend decide por keywords pero acá no lo replicamos)
+  }
+
+  // ===== Estado: agentes pensando =====
+  const [pensando, setPensando] = useState<Set<string>>(new Set())
+
+  function marcarPensando(slugs: string[]) {
+    setPensando(prev => new Set([...prev, ...slugs]))
+  }
+  function quitarPensando() {
+    setPensando(new Set())
+  }
+
   // ===== Enviar mensaje =====
   async function enviarMensaje() {
     const texto = textoInput.trim()
@@ -262,15 +306,24 @@ export default function Cerebro() {
     }
     setMensajes(prev => [...prev, optimista])
 
+    // Mostrar "X está escribiendo..." mientras esperamos
+    const respondedores = adivinarRespondedores(texto, canalActivo)
+    marcarPensando(respondedores)
+
     try {
-      await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
+      const { data } = await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
       await cargarMensajes(canalActivo)
+
+      // Si el backend confirma que nadie respondió, mostramos warning
+      if (data?.respuestas?.length === 0) {
+        toast.warning('Los agentes no pudieron responder. Revisá tu mensaje o intentá de nuevo.')
+      }
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
-      // Volvemos a poner el texto en el input
       setTextoInput(texto)
     } finally {
       setEnviando(false)
+      quitarPensando()
     }
   }
 
@@ -293,15 +346,20 @@ export default function Cerebro() {
       createdAt: new Date().toISOString()
     }
     setMensajesPrivado(prev => [...prev, optimista])
+    marcarPensando(['diego_ceo'])
 
     try {
-      await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
+      const { data } = await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
       await cargarMensajes('privado_ceo')
+      if (data?.respuestas?.length === 0) {
+        toast.warning('Diego no pudo responder. Intentá de nuevo en unos segundos.')
+      }
     } catch (e: any) {
       toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
       setTextoPrivado(texto)
     } finally {
       setEnviandoPrivado(false)
+      quitarPensando()
     }
   }
 
@@ -388,9 +446,17 @@ export default function Cerebro() {
               {canalActivo === 'ascensos' && 'Los ascensos aparecen acá cuando el equipo crece.'}
             </div>
           ) : (
-            mensajes.map(m => (
-              <Burbuja key={m._id} mensaje={m} agentesMap={agentesMap} />
-            ))
+            <>
+              {mensajes.map(m => (
+                <Burbuja key={m._id} mensaje={m} agentesMap={agentesMap} />
+              ))}
+              {/* Indicador "X está escribiendo..." */}
+              {[...pensando].map(slug => {
+                const ag = agentesMap.get(slug)
+                if (!ag) return null
+                return <Escribiendo key={`p-${slug}`} agente={ag} />
+              })}
+            </>
           )}
         </div>
 
@@ -403,7 +469,7 @@ export default function Cerebro() {
                 value={textoInput}
                 onChange={e => setTextoInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && enviarMensaje()}
-                placeholder="Hablale al equipo... usá @sofia_cmo o @tomas_cto"
+                placeholder="Hablale al equipo... probá @diego, @sofia, @tomas o @todos"
                 disabled={enviando}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
               />
@@ -416,7 +482,7 @@ export default function Cerebro() {
               </button>
             </div>
             <p className="text-[10px] text-gray-500 mt-1.5">
-              Los agentes responden con su personalidad. Mencionalos con @slug para que respondan ellos.
+              Los agentes responden con su personalidad. Mencionalos con @diego, @sofia, @tomas o @todos.
             </p>
           </div>
         )}
@@ -454,6 +520,7 @@ export default function Cerebro() {
           enviando={enviandoPrivado}
           onClose={() => setChatPrivadoAbierto(false)}
           refChat={chatPrivadoRef}
+          pensando={pensando}
         />
       )}
 
@@ -792,7 +859,8 @@ function ChatPrivadoCEO({
   onSend,
   enviando,
   onClose,
-  refChat
+  refChat,
+  pensando
 }: {
   mensajes: MensajeOrg[]
   agentesMap: Map<string, Agente>
@@ -802,6 +870,7 @@ function ChatPrivadoCEO({
   enviando: boolean
   onClose: () => void
   refChat: React.RefObject<HTMLDivElement>
+  pensando: Set<string>
 }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
@@ -832,9 +901,16 @@ function ChatPrivadoCEO({
               Pedile reportes, dale órdenes estratégicas, recibí su opinión sin filtros.
             </div>
           ) : (
-            mensajes.map(m => (
-              <Burbuja key={m._id} mensaje={m} agentesMap={agentesMap} />
-            ))
+            <>
+              {mensajes.map(m => (
+                <Burbuja key={m._id} mensaje={m} agentesMap={agentesMap} />
+              ))}
+              {[...pensando].map(slug => {
+                const ag = agentesMap.get(slug)
+                if (!ag) return null
+                return <Escribiendo key={`p-${slug}`} agente={ag} />
+              })}
+            </>
           )}
         </div>
 
@@ -968,6 +1044,32 @@ function MetricaCard({ label, valor }: { label: string; valor: string }) {
     <div className="bg-gray-50 rounded-lg p-3 text-center">
       <div className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</div>
       <div className="font-bold text-gray-900 text-sm mt-0.5">{valor}</div>
+    </div>
+  )
+}
+
+// ===================== INDICADOR "ESCRIBIENDO..." =====================
+
+function Escribiendo({ agente }: { agente: Agente }) {
+  return (
+    <div className="flex items-end gap-2">
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+        style={{ background: agente.color + '30' }}
+      >
+        {agente.avatar}
+      </div>
+      <div className="flex flex-col items-start">
+        <div className="text-[11px] text-gray-500 mb-0.5 px-2">
+          <span className="font-semibold" style={{ color: agente.color }}>{agente.nombre}</span>
+          <span className="text-gray-400"> está escribiendo</span>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
+          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
+          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />
+        </div>
+      </div>
     </div>
   )
 }

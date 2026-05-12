@@ -234,6 +234,68 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
 }
 
 /**
+ * Convierte menciones cortas (@diego, @tomas, @sofia) o variantes
+ * en slugs completos (@diego_ceo, @tomas_cto, @sofia_cmo).
+ *
+ * También soporta:
+ *   - @todos       → menciona a todos los agentes activos
+ *   - @equipo      → idem @todos
+ *   - @ceo         → @diego_ceo
+ *   - @cmo / @cto  → al que tenga ese título
+ *
+ * Si la mención ya es el slug completo (@diego_ceo) no la toca.
+ */
+async function normalizarMenciones(texto) {
+  if (!texto || !texto.includes('@')) return texto
+
+  const agentes = await Agente.find({ activo: true }, 'slug nombre titulo area').lean()
+  if (agentes.length === 0) return texto
+
+  // Construimos un mapa de alias → slug
+  // Cada agente acepta: nombre en minúscula, slug corto antes del "_",
+  // y el primer término del título (ceo, cmo, cto, etc.)
+  const aliasASlug = new Map()
+  for (const a of agentes) {
+    aliasASlug.set(a.slug, a.slug) // slug completo
+    if (a.nombre) {
+      // Solo el primer nombre, en minúsculas y sin tildes
+      const nombre = a.nombre.toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .split(' ')[0]
+      aliasASlug.set(nombre, a.slug)
+    }
+    // Parte antes del primer "_" del slug (ej: "diego" de "diego_ceo")
+    const slugCorto = a.slug.split('_')[0]
+    if (slugCorto && !aliasASlug.has(slugCorto)) {
+      aliasASlug.set(slugCorto, a.slug)
+    }
+    // Título corto (ej: "ceo", "cmo", "cto")
+    if (a.titulo) {
+      const tituloCorto = a.titulo.toLowerCase().split(/[\s(]/)[0].trim()
+      if (tituloCorto && !aliasASlug.has(tituloCorto)) {
+        aliasASlug.set(tituloCorto, a.slug)
+      }
+    }
+  }
+
+  // Reemplazar cada @xxx por @slug_completo si hay match
+  return texto.replace(/@([a-záéíóúñ][a-záéíóúñ0-9_]*)/gi, (full, palabra) => {
+    const clave = palabra.toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+
+    // @todos o @equipo → expandir a todos los slugs
+    if (clave === 'todos' || clave === 'equipo') {
+      return agentes.map(a => `@${a.slug}`).join(' ')
+    }
+
+    const slug = aliasASlug.get(clave)
+    return slug ? `@${slug}` : full
+  })
+}
+
+/**
  * Procesa un mensaje del admin: lo guarda y decide qué agente(s)
  * deben responder en cadena.
  *
@@ -248,12 +310,17 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
  * @returns {Promise<{mensajeAdmin, respuestas: Array}>}
  */
 export async function procesarMensajeAdmin(canal, contenido) {
-  // Guardar el mensaje del admin
+  // Normalizar menciones cortas: "@diego" → "@diego_ceo", "@todos" → @todos los activos
+  // Esto permite que el usuario escriba menciones más naturales.
+  const contenidoNormalizado = await normalizarMenciones(contenido)
+
+  // Guardar el mensaje del admin (con el contenido normalizado para
+  // que las menciones queden persistidas con el slug completo)
   const mensajeAdmin = await new MensajeOrganizacion({
     canal,
     autorSlug: 'admin',
     autorTipo: 'admin',
-    contenido,
+    contenido: contenidoNormalizado,
     tipo: 'conversacion',
     leidoPorAdmin: true
   }).save()
