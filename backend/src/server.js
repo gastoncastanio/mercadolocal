@@ -254,53 +254,6 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
-// Debug temporal: probar que el agente responda directamente
-app.get('/api/_diag_brain/:secreto/:slug', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  try {
-    const { hablarComoAgente } = await import('./services/cerebro.js')
-    const canal = req.query.canal || 'general'
-    const inicio = Date.now()
-    const msg = await hablarComoAgente(req.params.slug, canal, {
-      gatillo: 'Decí solo "ok, escuchando" y nada más.'
-    })
-    res.json({
-      ok: !!msg,
-      duracionMs: Date.now() - inicio,
-      mensaje: msg ? { contenido: msg.contenido, tokens: msg.tokens } : null,
-      anthropicKey: process.env.ANTHROPIC_API_KEY ? 'configurada' : 'FALTANTE'
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message, name: e.name, stack: e.stack?.split('\n').slice(0, 5) })
-  }
-})
-
-// Debug: simular un mensaje del admin como lo haría el frontend
-app.post('/api/_diag_brain/:secreto/msg', async (req, res) => {
-  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
-  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
-  try {
-    const { procesarMensajeAdmin } = await import('./services/cerebro.js')
-    const canal = req.query.canal || 'general'
-    const contenido = req.query.texto || 'hola equipo'
-    const inicio = Date.now()
-    const resultado = await procesarMensajeAdmin(canal, contenido)
-    res.json({
-      ok: true,
-      duracionMs: Date.now() - inicio,
-      mensajeAdmin: resultado.mensajeAdmin.contenido,
-      menciones: resultado.mensajeAdmin.menciones,
-      respuestas: resultado.respuestas.map(r => ({
-        autor: r.autorSlug,
-        contenido: r.contenido.slice(0, 200)
-      }))
-    })
-  } catch (e) {
-    res.status(500).json({ error: e.message, name: e.name, stack: e.stack?.split('\n').slice(0, 8) })
-  }
-})
-
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())

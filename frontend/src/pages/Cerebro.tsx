@@ -314,8 +314,8 @@ export default function Cerebro() {
       const { data } = await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
       await cargarMensajes(canalActivo)
 
-      // Si el backend confirma que nadie respondió, mostramos warning
-      if (data?.respuestas?.length === 0) {
+      // Solo avisamos si EXPLÍCITAMENTE no hubo respuestas (no si vino undefined)
+      if (Array.isArray(data?.respuestas) && data.respuestas.length === 0) {
         toast.warning('Los agentes no pudieron responder. Revisá tu mensaje o intentá de nuevo.')
       }
     } catch (e: any) {
@@ -351,7 +351,7 @@ export default function Cerebro() {
     try {
       const { data } = await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
       await cargarMensajes('privado_ceo')
-      if (data?.respuestas?.length === 0) {
+      if (Array.isArray(data?.respuestas) && data.respuestas.length === 0) {
         toast.warning('Diego no pudo responder. Intentá de nuevo en unos segundos.')
       }
     } catch (e: any) {

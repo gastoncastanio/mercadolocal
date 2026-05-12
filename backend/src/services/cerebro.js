@@ -341,15 +341,27 @@ export async function procesarMensajeAdmin(canal, contenido) {
     slug: { $in: slugsRespondedores },
     activo: true
   }, 'slug').lean()
-  const slugsValidos = agentes.map(a => a.slug)
+  let slugsValidos = agentes.map(a => a.slug)
+
+  // Si no quedó ningún agente válido (ej: mención inválida), fallback
+  // garantizado a Diego para que siempre haya respuesta. Mejor que un
+  // silencio mudo es que el CEO conteste.
+  if (slugsValidos.length === 0) {
+    const diego = await Agente.findOne({ slug: 'diego_ceo', activo: true }, 'slug').lean()
+    if (diego) slugsValidos = ['diego_ceo']
+  }
 
   // Responden en cadena (no en paralelo) para que la convo se sienta natural
   const respuestas = []
   for (const slug of slugsValidos) {
-    const r = await hablarComoAgente(slug, canal, {
-      tipo: 'conversacion'
-    })
-    if (r) respuestas.push(r)
+    try {
+      const r = await hablarComoAgente(slug, canal, {
+        tipo: 'conversacion'
+      })
+      if (r) respuestas.push(r)
+    } catch (err) {
+      console.error(`Fallo respuesta de ${slug}:`, err.message)
+    }
   }
 
   return { mensajeAdmin, respuestas }
