@@ -169,8 +169,11 @@ export default function Cerebro() {
   const cargarMensajes = useCallback(async (canal: Canal) => {
     try {
       const { data } = await api.get(`/cerebro/mensajes/${canal}?limit=80`)
-      if (canal === 'privado_ceo') setMensajesPrivado(data)
-      else setMensajes(data)
+      // Reemplazamos completamente con los mensajes oficiales de la base.
+      // Cualquier mensaje optimista con _id "temp_*" se elimina automáticamente
+      // porque la base ya tiene la versión real con su _id final.
+      if (canal === 'privado_ceo') setMensajesPrivado(Array.isArray(data) ? data : [])
+      else setMensajes(Array.isArray(data) ? data : [])
     } catch (e: any) {
       // Silencioso durante polling
     }
@@ -191,19 +194,28 @@ export default function Cerebro() {
     } catch {}
   }, [])
 
-  // Polling cada 5s para mensajes y no leídos
+  // Ref para pausar polling cuando hay una request en vuelo
+  // (evita race conditions: el POST tarda 3-5s en Claude y el polling
+  // de 5s podía pisar el estado optimista)
+  const requestEnVuelo = useRef(false)
+
+  // Polling cada 5s para mensajes y no leídos.
+  // Las funciones de carga NO van en deps para evitar resetear el interval
+  // en cada render (se re-creaban con useCallback).
   useEffect(() => {
     cargarAgentes()
     cargarMensajes(canalActivo)
     cargarNoLeidos()
 
     const t = setInterval(() => {
+      if (requestEnVuelo.current) return // no pisar mientras esperamos respuesta
       cargarMensajes(canalActivo)
       if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
       cargarNoLeidos()
     }, 5000)
     return () => clearInterval(t)
-  }, [canalActivo, chatPrivadoAbierto, cargarAgentes, cargarMensajes, cargarNoLeidos])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canalActivo, chatPrivadoAbierto])
 
   // Cuando cambia el canal, marcarlo leído y scroll abajo
   useEffect(() => {
@@ -291,6 +303,7 @@ export default function Cerebro() {
 
     setEnviando(true)
     setTextoInput('')
+    requestEnVuelo.current = true // pausar polling
 
     // Optimistic UI: agregamos el mensaje del admin ya
     const optimista: MensajeOrg = {
@@ -312,6 +325,7 @@ export default function Cerebro() {
 
     try {
       const { data } = await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
+      // Refrescamos los mensajes para tener la versión "oficial" (con respuestas)
       await cargarMensajes(canalActivo)
 
       // Solo avisamos si EXPLÍCITAMENTE no hubo respuestas (no si vino undefined)
@@ -319,11 +333,18 @@ export default function Cerebro() {
         toast.warning('Los agentes no pudieron responder. Revisá tu mensaje o intentá de nuevo.')
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
-      setTextoInput(texto)
+      // Si fue timeout o error de red, NO mostramos error feo: el polling después lo traerá
+      const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
+      if (esTimeout) {
+        toast.info('La respuesta está tardando más de lo normal. Va a aparecer en unos segundos.')
+      } else {
+        toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
+        setTextoInput(texto)
+      }
     } finally {
       setEnviando(false)
       quitarPensando()
+      requestEnVuelo.current = false
     }
   }
 
@@ -333,6 +354,7 @@ export default function Cerebro() {
 
     setEnviandoPrivado(true)
     setTextoPrivado('')
+    requestEnVuelo.current = true
 
     const optimista: MensajeOrg = {
       _id: 'temp_' + Date.now(),
@@ -355,11 +377,17 @@ export default function Cerebro() {
         toast.warning('Diego no pudo responder. Intentá de nuevo en unos segundos.')
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
-      setTextoPrivado(texto)
+      const esTimeout = e.code === 'ECONNABORTED' || e.message?.includes('Network Error')
+      if (esTimeout) {
+        toast.info('Diego está tardando. Su respuesta va a aparecer en unos segundos.')
+      } else {
+        toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
+        setTextoPrivado(texto)
+      }
     } finally {
       setEnviandoPrivado(false)
       quitarPensando()
+      requestEnVuelo.current = false
     }
   }
 
