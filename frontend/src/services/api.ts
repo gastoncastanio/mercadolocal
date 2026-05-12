@@ -1,6 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://mercadolocal-production.up.railway.app/api'
+// FORZAMOS Railway como backend único. La variable de entorno VITE_API_URL
+// en Vercel todavía apuntaba a un backend viejo en Render que NO tiene
+// los agentes IA ni los últimos cambios. Hasta que limpiemos esa variable
+// en Vercel, hardcodeamos la URL correcta.
+const API_URL = 'https://mercadolocal-production.up.railway.app/api'
 
 const api = axios.create({
   baseURL: API_URL,
