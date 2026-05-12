@@ -71,11 +71,40 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }))
 
-// CORS: solo permitir peticiones desde nuestro frontend
+// CORS: permitir orígenes específicos + cualquier deploy preview de Vercel
+// del proyecto mercadolocal (mercadolocal-*.vercel.app).
+//
+// La función origen-callback nos permite aceptar el dominio principal,
+// los previews automáticos de Vercel y localhost, sin tener que mantener
+// una lista manual que se desactualice.
+const orígenesPermitidos = (process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map(u => u.trim())
+  .filter(Boolean)
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map(url => url.trim()).filter(Boolean)
-    : ['http://localhost:5173'],
+  origin: (origin, callback) => {
+    // Sin origin (curl, server-to-server, mismo origen) → permitir
+    if (!origin) return callback(null, true)
+
+    // Origen explícitamente listado en FRONTEND_URL
+    if (orígenesPermitidos.includes(origin)) return callback(null, true)
+
+    // Cualquier deploy de Vercel del proyecto mercadolocal:
+    //   mercadolocal.vercel.app, mercadolocal-nu.vercel.app,
+    //   mercadolocal-git-<branch>.vercel.app, etc.
+    if (/^https:\/\/mercadolocal[a-z0-9-]*\.vercel\.app$/i.test(origin)) {
+      return callback(null, true)
+    }
+
+    // Localhost en cualquier puerto (desarrollo)
+    if (/^http:\/\/localhost(:[0-9]+)?$/.test(origin)) {
+      return callback(null, true)
+    }
+
+    console.warn(`🚨 CORS bloqueó origen: ${origin}`)
+    callback(new Error(`Origen no permitido: ${origin}`))
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
