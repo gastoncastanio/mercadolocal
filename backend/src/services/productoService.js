@@ -1,9 +1,11 @@
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
+import Moderacion from '../models/Moderacion.js'
 import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
 import { validarCodigoBarras, normalizarCodigoBarras } from '../utils/codigoBarras.js'
 import { validarCamposObligatoriosCategoria, categoriaValida } from '../constants/categoriasMeta.js'
 import { normalizarEntrega, validarEntrega, construirMensajeEntregaInvalida } from '../utils/entrega.js'
+import { moderarProducto } from './agenteModeracion.js'
 
 /**
  * Modalidad de entrega por defecto para productos viejos que no tenían
@@ -118,6 +120,68 @@ export async function crearProducto(tiendaId, datos) {
     throw error
   }
 
+  // ===== AGENTE-MODERACIÓN =====
+  // Antes de guardar, el agente IA decide si aprobar, mandar a revisión o rechazar.
+  // Si rechaza con alta confianza, el producto ni siquiera se crea.
+  // Si aprueba, sale al catálogo de inmediato.
+  // Si pasa a revisión, se publica pero queda marcado para revisión humana
+  // (filosofía Mercado Libre: no frustrar al vendedor, pero auditar).
+  const totalProductos = await Producto.countDocuments({ tiendaId })
+  const moderacionResultado = await moderarProducto(
+    {
+      nombre: datos.nombre,
+      descripcion: datos.descripcion || '',
+      precio: datos.precio,
+      categorias: datos.categorias || [],
+      marca: datos.marca,
+      codigoBarras: codigoBarrasNormalizado,
+      cantidadImagenes: (datos.imagenes || []).length
+    },
+    {
+      vendedorNuevo: totalProductos === 0,
+      totalProductos,
+      calificacionTienda: tienda.calificacion || 0
+    }
+  )
+
+  // Si el agente rechaza con alta confianza, bloqueamos la publicación
+  if (moderacionResultado.decision === 'rechazado' && moderacionResultado.confianza >= 70) {
+    // Registramos el rechazo para auditoría (aunque no se haya creado el producto)
+    try {
+      await new Moderacion({
+        productoId: new (await import('mongoose')).default.Types.ObjectId(), // placeholder
+        tiendaId,
+        decision: 'rechazado',
+        confianza: moderacionResultado.confianza,
+        motivos: moderacionResultado.motivos,
+        banderas: moderacionResultado.banderas,
+        snapshot: {
+          nombre: datos.nombre,
+          descripcion: (datos.descripcion || '').slice(0, 500),
+          precio: datos.precio,
+          categorias: datos.categorias || [],
+          cantidadImagenes: (datos.imagenes || []).length,
+          marca: datos.marca || ''
+        },
+        tokens: moderacionResultado.tokens,
+        duracionMs: moderacionResultado.duracionMs
+      }).save()
+    } catch (e) {
+      console.warn('No se pudo registrar rechazo de moderación:', e.message)
+    }
+
+    const error = new Error(
+      moderacionResultado.motivos.join(' ') ||
+      'Tu producto no pudo ser publicado. Verificá los datos e intentá nuevamente.'
+    )
+    error.code = 'MODERACION_RECHAZADO'
+    error.banderas = moderacionResultado.banderas
+    throw error
+  }
+
+  // Si el agente decide "revision" o "aprobado", se crea el producto
+  const estadoModeracion = moderacionResultado.decision === 'aprobado' ? 'aprobado' : 'revision'
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
@@ -130,10 +194,41 @@ export async function crearProducto(tiendaId, datos) {
     codigoBarras: codigoBarrasNormalizado,
     marca: (datos.marca || '').trim().slice(0, 80),
     caracteristicas: caracteristicasLimpias,
-    entrega: entregaNormalizada
+    entrega: entregaNormalizada,
+    moderacion: {
+      estado: estadoModeracion,
+      motivo: moderacionResultado.motivos.join(' ').slice(0, 1000),
+      confianza: moderacionResultado.confianza,
+      fecha: new Date()
+    }
   })
 
   await producto.save()
+
+  // Registramos la moderación para auditoría
+  try {
+    await new Moderacion({
+      productoId: producto._id,
+      tiendaId,
+      decision: moderacionResultado.decision,
+      confianza: moderacionResultado.confianza,
+      motivos: moderacionResultado.motivos,
+      banderas: moderacionResultado.banderas,
+      snapshot: {
+        nombre: datos.nombre,
+        descripcion: (datos.descripcion || '').slice(0, 500),
+        precio: datos.precio,
+        categorias: datos.categorias || [],
+        cantidadImagenes: (datos.imagenes || []).length,
+        marca: datos.marca || ''
+      },
+      tokens: moderacionResultado.tokens,
+      duracionMs: moderacionResultado.duracionMs
+    }).save()
+  } catch (e) {
+    console.warn('No se pudo registrar moderación aprobada:', e.message)
+  }
+
   return producto
 }
 
@@ -170,7 +265,13 @@ export async function listarProductos(filtros = {}) {
   const limite = Math.min(Number(filtros.limite) || 24, 100)
 
   // ===== Match inicial (queries indexadas) =====
-  const matchProducto = { activo: true }
+  // Excluimos productos rechazados por moderación. Los "revision" SÍ se muestran
+  // (siguiendo la filosofía Mercado Libre: no penalizar al vendedor mientras
+  // el admin revisa). Si después se confirma el rechazo, se sacan del catálogo.
+  const matchProducto = {
+    activo: true,
+    'moderacion.estado': { $ne: 'rechazado' }
+  }
 
   if (filtros.busqueda) {
     matchProducto.$text = { $search: filtros.busqueda }
@@ -265,10 +366,15 @@ export async function listarProductos(filtros = {}) {
 }
 
 // Productos de una tienda (público): solo si la tienda tiene MP vinculado
+// y solo los aprobados/en revisión (no los rechazados)
 export async function productosDetienda(tiendaId) {
   const tienda = await Tienda.findById(tiendaId).select('mpVinculado')
   if (!tienda || !tienda.mpVinculado) return []
-  return await Producto.find({ tiendaId, activo: true }).sort({ createdAt: -1 })
+  return await Producto.find({
+    tiendaId,
+    activo: true,
+    'moderacion.estado': { $ne: 'rechazado' }
+  }).sort({ createdAt: -1 })
 }
 
 // Productos de la tienda del vendedor logueado (sin filtro de MP ni activo)

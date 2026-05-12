@@ -130,6 +130,38 @@ const productoSchema = new mongoose.Schema({
   activo: {
     type: Boolean,
     default: true
+  },
+  // ===== Estado de moderación (AGENTE-MODERACIÓN) =====
+  // Estado del producto en el flujo de moderación automática.
+  //   - aprobado: el agente IA lo aprobó, visible al público
+  //   - revision: pendiente de revisión humana (visible PERO marcado en admin)
+  //   - rechazado: bloqueado por el agente IA, NO visible al público
+  // Los productos viejos (anteriores a este sistema) son "aprobado" por default
+  // para no romper el catálogo existente.
+  moderacion: {
+    estado: {
+      type: String,
+      enum: ['aprobado', 'revision', 'rechazado'],
+      default: 'aprobado',
+      index: true
+    },
+    // Razón visible al vendedor si fue rechazado o pasó a revisión
+    motivo: {
+      type: String,
+      default: ''
+    },
+    // Confianza del agente IA (0-100)
+    confianza: {
+      type: Number,
+      default: 100,
+      min: 0,
+      max: 100
+    },
+    // Fecha de la última moderación
+    fecha: {
+      type: Date,
+      default: Date.now
+    }
   }
 }, {
   timestamps: true
@@ -178,6 +210,13 @@ productoSchema.index({ activo: 1, createdAt: -1 })
 
 // 9. Productos destacados de la home
 productoSchema.index({ activo: 1, calificacion: -1, totalVentas: -1 })
+
+// 10. Catálogo público: solo aprobados por moderación (incluye 'revision' por default)
+//     Los rechazados NO aparecen en el catálogo público.
+productoSchema.index({ activo: 1, 'moderacion.estado': 1, createdAt: -1 })
+
+// 11. Panel admin: productos que necesitan revisión humana
+productoSchema.index({ 'moderacion.estado': 1, 'moderacion.fecha': -1 })
 
 const Producto = mongoose.model('Producto', productoSchema)
 

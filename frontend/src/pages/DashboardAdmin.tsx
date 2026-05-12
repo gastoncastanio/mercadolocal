@@ -161,7 +161,7 @@ function SeccionInicio() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-2xl shadow-sm p-6">
           <h3 className="font-semibold text-gray-700 mb-2">✅ Completadas</h3>
           <p className="text-3xl font-bold text-green-600">{stats.ordenesCompletadas}</p>
@@ -172,6 +172,44 @@ function SeccionInicio() {
           <p className="text-3xl font-bold text-yellow-600">{stats.ordenesPendientes}</p>
           <p className="text-sm text-gray-400">requieren atención</p>
         </div>
+      </div>
+
+      {/* Accesos rápidos a paneles especializados */}
+      <h2 className="text-lg font-semibold text-gray-800 mb-3">Paneles especializados</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <a
+          href="/admin/moderacion"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">🛡️</span>
+            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">IA</span>
+          </div>
+          <h3 className="font-semibold text-gray-800 group-hover:text-purple-600">Moderación</h3>
+          <p className="text-xs text-gray-500 mt-1">Revisar productos pendientes</p>
+        </a>
+        <a
+          href="/admin/soporte"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">💬</span>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">IA</span>
+          </div>
+          <h3 className="font-semibold text-gray-800 group-hover:text-blue-600">Soporte</h3>
+          <p className="text-xs text-gray-500 mt-1">Tickets escalados por el agente</p>
+        </a>
+        <a
+          href="/admin/disputas"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">⚖️</span>
+            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Manual</span>
+          </div>
+          <h3 className="font-semibold text-gray-800 group-hover:text-red-600">Disputas</h3>
+          <p className="text-xs text-gray-500 mt-1">Resolver conflictos de compras</p>
+        </a>
       </div>
     </div>
   )
