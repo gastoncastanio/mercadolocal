@@ -105,7 +105,12 @@ ${agente.trasfondo || 'Sin trasfondo cargado.'}
 
 /**
  * Construye el contexto de la conversación reciente para mandar al modelo.
- * Trae los últimos N mensajes del canal y los convierte al formato de la API.
+ *
+ * IMPORTANTE: Claude exige que el primer mensaje sea "user" y que se
+ * alternen user/assistant. Por eso achicamos toda la conversación a
+ * UN SOLO mensaje "user" que contiene la transcripción etiquetada.
+ * Esto evita errores 400 cuando la conversación tiene varios agentes
+ * hablando en cadena (varios "assistant" seguidos).
  */
 async function construirHistorialConversacion(canal, limite = 20) {
   const mensajes = await MensajeOrganizacion
@@ -117,23 +122,29 @@ async function construirHistorialConversacion(canal, limite = 20) {
   // Invertir para tenerlos en orden cronológico
   mensajes.reverse()
 
-  // Convertimos al formato que Anthropic entiende:
-  // - admin → user
-  // - cualquier agente → assistant (pero etiquetado con su nombre)
-  // - sistema → user (con marca)
-  const slugsAgentes = await Agente.find({}, 'slug nombre').lean()
-  const nombrePorSlug = new Map(slugsAgentes.map(a => [a.slug, a.nombre]))
+  if (mensajes.length === 0) return []
 
-  return mensajes.map(m => {
+  // Mapa de slug → nombre para etiquetar bonito
+  const slugsAgentes = await Agente.find({}, 'slug nombre titulo').lean()
+  const datosPorSlug = new Map(slugsAgentes.map(a => [a.slug, a]))
+
+  // Construimos UNA transcripción tipo chat
+  const transcripcion = mensajes.map(m => {
     if (m.autorTipo === 'admin') {
-      return { role: 'user', content: `[Fundador]: ${m.contenido}` }
+      return `[Fundador]: ${m.contenido}`
     } else if (m.autorTipo === 'sistema') {
-      return { role: 'user', content: `[Sistema]: ${m.contenido}` }
+      return `[Sistema]: ${m.contenido}`
     } else {
-      const nombre = nombrePorSlug.get(m.autorSlug) || m.autorSlug
-      return { role: 'assistant', content: `[${nombre}]: ${m.contenido}` }
+      const datos = datosPorSlug.get(m.autorSlug)
+      const etiqueta = datos ? `${datos.nombre} (${datos.titulo})` : m.autorSlug
+      return `[${etiqueta}]: ${m.contenido}`
     }
-  })
+  }).join('\n\n')
+
+  return [{
+    role: 'user',
+    content: `Esta es la conversación reciente en este canal:\n\n${transcripcion}\n\nRespondé al último mensaje según tu rol, en primera persona.`
+  }]
 }
 
 /**
@@ -163,14 +174,15 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
   const systemPrompt = construirSystemPrompt(agente)
   const historial = await construirHistorialConversacion(canal, 15)
 
-  // Si vino un gatillo extra, lo agregamos como último mensaje "system"
-  if (opciones.gatillo) {
-    historial.push({ role: 'user', content: `[Contexto adicional]: ${opciones.gatillo}` })
-  }
-
-  // Si el historial está vacío, agregamos un saludo inicial implícito
+  // Fusión defensiva: si vino un gatillo extra o el historial está vacío,
+  // se incorpora al ÚNICO mensaje "user" para no romper la alternancia.
   if (historial.length === 0) {
-    historial.push({ role: 'user', content: 'Presentate brevemente al equipo, qué estás haciendo hoy.' })
+    historial.push({
+      role: 'user',
+      content: opciones.gatillo || 'Presentate brevemente al equipo, qué estás haciendo hoy.'
+    })
+  } else if (opciones.gatillo) {
+    historial[0].content += `\n\n[Contexto adicional]: ${opciones.gatillo}`
   }
 
   try {
@@ -215,6 +227,8 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
     return nuevo
   } catch (e) {
     console.error(`Error haciendo hablar a ${agenteSlug}:`, e.message)
+    if (e.response?.data) console.error('Response:', JSON.stringify(e.response.data))
+    if (e.status) console.error('Status:', e.status, 'Body:', e.error || e.body)
     return null
   }
 }
