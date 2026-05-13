@@ -39,6 +39,7 @@ import soporteRouter from './routes/soporte.js'
 import moderacionRouter from './routes/moderacion.js'
 import cerebroRouter from './routes/cerebro.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
+import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
 import { iniciarCronCerebro } from './services/cronCerebro.js'
 import { inicializarConfig } from './services/configService.js'
 
@@ -222,6 +223,11 @@ connectDB().then(async () => {
   sembrarAgentesFundadores()
     .then(r => console.log(`🧠 Equipo IA: ${r.creados} creados, ${r.actualizados} actualizados`))
     .catch(err => console.warn('Seed agentes:', err.message))
+
+  // Sembrar la memoria persistente del fundador (idempotente)
+  sembrarMemoriaFundador()
+    .then(r => console.log(`📚 Memoria fundador: ${r.creados} hechos nuevos, ${r.yaExistían} existentes (total ${r.total})`))
+    .catch(err => console.warn('Seed memoria:', err.message))
 
   // Cron del cerebro: reporte diario CEO + ascensos automáticos
   iniciarCronCerebro()

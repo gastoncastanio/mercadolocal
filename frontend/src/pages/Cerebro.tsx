@@ -194,34 +194,23 @@ export default function Cerebro() {
     } catch {}
   }, [])
 
-  // Polling adaptativo:
-  //   - Normal: cada 10s (cuando no hay agentes pensando)
-  //   - Acelerado: cada 2s durante 30s después de enviar (hasta que llegan)
-  // Esto evita gastar requests pero responde rápido cuando importa.
-  const requestEnVuelo = useRef(false)
-  const polingHastaTs = useRef<number>(0) // timestamp hasta cuando hacer polling rápido
-
+  // Polling cada 20s para "no leídos" y mantener actualizado el canal
+  // si otro admin estuviera escribiendo en simultáneo (raro pero posible).
+  // Las respuestas a tus mensajes vienen sincrónicamente — no dependemos
+  // del polling para verlas.
   useEffect(() => {
     cargarAgentes()
     cargarMensajes(canalActivo)
     cargarNoLeidos()
 
-    let interval: ReturnType<typeof setTimeout> | null = null
-    const tick = () => {
-      const ahora = Date.now()
-      const acelerado = ahora < polingHastaTs.current
-      const sigPoll = acelerado ? 2000 : 10000
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      cargarMensajes(canalActivo)
+      if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
+      cargarNoLeidos()
+    }, 20000)
 
-      if (!requestEnVuelo.current && document.visibilityState === 'visible') {
-        cargarMensajes(canalActivo)
-        if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
-        cargarNoLeidos()
-      }
-      interval = setTimeout(tick, sigPoll)
-    }
-    interval = setTimeout(tick, 2000) // arranca rápido
-
-    return () => { if (interval) clearTimeout(interval) }
+    return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canalActivo, chatPrivadoAbierto])
 
@@ -326,27 +315,22 @@ export default function Cerebro() {
     }
     setMensajes(prev => [...prev, optimista])
 
-    // Mostrar "X está escribiendo..." con la heurística local
+    // Indicador "X está escribiendo..."
     const respondedores = adivinarRespondedores(texto, canalActivo)
     marcarPensando(respondedores)
 
-    // Acelerar polling por 30 segundos para captar las respuestas rápido
-    polingHastaTs.current = Date.now() + 30000
-
     try {
-      // Backend ahora responde inmediatamente (< 500ms). Las respuestas
-      // de los agentes llegan vía polling acelerado.
+      // Backend espera a los agentes (2-6 seg) y devuelve respuestas en
+      // el mismo response. Sin polling, sin race conditions.
       await api.post(`/cerebro/mensajes/${canalActivo}`, { contenido: texto })
+      // Recargar mensajes para ver todo en orden con los _id reales
       await cargarMensajes(canalActivo)
-
-      // Quitamos "pensando" después de unos segundos, el polling traerá las respuestas
-      setTimeout(() => quitarPensando(), 12000)
     } catch (e: any) {
-      quitarPensando()
       toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
       setTextoInput(texto)
     } finally {
       setEnviando(false)
+      quitarPensando()
     }
   }
 
@@ -370,18 +354,16 @@ export default function Cerebro() {
     }
     setMensajesPrivado(prev => [...prev, optimista])
     marcarPensando(['diego_ceo'])
-    polingHastaTs.current = Date.now() + 30000
 
     try {
       await api.post('/cerebro/mensajes/privado_ceo', { contenido: texto })
       await cargarMensajes('privado_ceo')
-      setTimeout(() => quitarPensando(), 12000)
     } catch (e: any) {
-      quitarPensando()
       toast.error(e.response?.data?.error || 'No se pudo enviar el mensaje')
       setTextoPrivado(texto)
     } finally {
       setEnviandoPrivado(false)
+      quitarPensando()
     }
   }
 

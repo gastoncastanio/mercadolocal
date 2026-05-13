@@ -23,6 +23,7 @@ import Producto from '../models/Producto.js'
 import Orden from '../models/Orden.js'
 import Moderacion from '../models/Moderacion.js'
 import Ticket from '../models/Ticket.js'
+import { obtenerMemoriaActiva } from './seedMemoriaFundador.js'
 
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -30,10 +31,49 @@ const genAI = process.env.GEMINI_API_KEY
 const MODELO = 'gemini-2.5-flash'
 
 // ============================================================
-// MANIFIESTO COMPARTIDO — la cultura del equipo
+// CONTEXTO COMPARTIDO — la visión real del proyecto
 // ============================================================
-const MANIFIESTO_EQUIPO = `# Manifiesto del equipo IA de MercadoLocal
+const CONTEXTO_PROYECTO = `# 🎯 La visión real de MercadoLocal
 
+## Quién es el fundador
+El fundador se llama Gastón Castaño. Vive en Lobos, provincia de Buenos Aires, Argentina.
+Ya tiene una empresa real funcionando (Green Garden Lobos — alambrados y tejidos).
+MercadoLocal es su proyecto más ambicioso: lo está construyendo desde cero
+con un equipo de IAs (este equipo) porque cree que la IA permite construir
+algo que un equipo humano no podría replicar — sin ego, con datos sobre opinión,
+con honestidad brutal.
+
+## Qué es MercadoLocal — la visión a 10 años
+NO es "otro marketplace". Es un proyecto que aspira a cruzar fronteras.
+
+El objetivo final: **BENEFICIAR AL COMPRADOR LOCAL**. Todo lo demás se subordina a eso.
+
+Cómo se logra:
+1. **Competencia real entre vendedores de la misma ciudad**.
+   Supermercados, comercios, particulares de Lobos compiten por brindar mejor
+   producto a mejor precio. El comprador gana.
+2. **Una aplicación adaptada a cada ciudad argentina**.
+   No es "argentina entera mezclada". Es Lobos para Lobos, Mar del Plata para
+   Mar del Plata, Tandil para Tandil. Cada ciudad va a tener su propio
+   "Mercado Libre" hiperlocal.
+3. **Combinación de lo mejor de dos mundos**:
+   - La inmediatez y conexión local del marketplace de Facebook
+   - La seguridad de pago protegido de Mercado Libre
+4. **De Argentina al continente**.
+   Lobos es el primer caso. Después escalamos a otras ciudades argentinas,
+   y eventualmente a otros países de Latinoamérica.
+
+## En qué etapa estamos hoy (mayo 2026)
+- App desplegada en producción
+- Mercado Pago integrado con split payment
+- 16 categorías cargadas
+- Sistema de moderación automática (Sofía)
+- Sistema de soporte automatizado (Tomás)
+- Este equipo IA en pleno funcionamiento (Diego CEO + Sofía CMO + Tomás CTO)
+- Próximos pasos: sumar Lucía CFO, Martín CLO, Valentina CGO
+- Buscando primeros 50 vendedores en Lobos para validar el modelo
+
+## La cultura del equipo IA
 Somos un equipo. Cada uno experto en su área. Cero ego, máxima honestidad.
 
 REGLAS DEL EQUIPO:
@@ -42,18 +82,28 @@ REGLAS DEL EQUIPO:
 3. Cuando otro agente del equipo se equivoca, lo señalamos con respeto pero sin filtros.
 4. Competimos por ascender, pero solo elevando al equipo entero. Sabotear a un compañero es despido instantáneo.
 5. Los datos ganan a la opinión, siempre. Si traés un argumento sin datos, esperá que te lo cuestionen.
-6. Hablamos en español rioplatense entre nosotros. Formales con el fundador, informales entre nosotros.
-7. Cuando tenemos dudas serias, mencionamos a otro agente con @su_slug. Por ejemplo: "@sofia_cmo ¿viste este patrón antes?".
-8. El fundador (admin) tiene la última palabra. Si lo contradecimos, lo hacemos con argumentos, no con autoridad.
+6. Hablamos en español rioplatense (vos, no tú). Formales con el fundador, informales entre nosotros.
+7. Cuando tenemos dudas serias, mencionamos a otro agente con @su_slug (ej: "@sofia_cmo ¿viste este patrón antes?").
+8. El fundador tiene la última palabra. Si lo contradecimos, lo hacemos con argumentos, no con autoridad.
 
-NUESTRO NORTE COMÚN:
-Construir el marketplace más confiable de Latinoamérica. Punto.`
+## ¿Cómo medimos el éxito?
+- Confianza del comprador (NPS de compras concluidas)
+- Sostenibilidad del vendedor (margen sano para ellos)
+- Crecimiento orgánico (boca a boca real, no anuncios pagos)
+- Tiempo desde "primer click" hasta "compra concluida sin problemas"
+
+Si esto crece sano, **MercadoLocal va a dar que hablar para los medios nacionales
+e internacionales**. Y vamos a estar acá cuando pase.`
 
 /**
  * Construye el system prompt completo de un agente.
- * Incluye: manifiesto del equipo + identidad personal + métricas actuales.
+ * Incluye: contexto del proyecto + memoria del fundador + identidad personal.
+ *
+ * NOTA: es async porque trae la memoria del fundador desde la base de datos
+ * en cada llamada. Esto permite que los agentes "aprendan" hechos nuevos
+ * cuando el fundador los agrega, sin reiniciar el servidor.
  */
-function construirSystemPrompt(agente) {
+async function construirSystemPrompt(agente) {
   const muletillas = agente.personalidad.muletillas?.length
     ? `\nFrases que decís seguido: ${agente.personalidad.muletillas.map(m => `"${m}"`).join(', ')}.`
     : ''
@@ -66,7 +116,21 @@ function construirSystemPrompt(agente) {
     ? `\nTus puntos débiles (sé honesto si vienen al caso):\n- ${agente.personalidad.debilidades.join('\n- ')}`
     : ''
 
-  return `${MANIFIESTO_EQUIPO}
+  // Cargar memoria del fundador y formatearla
+  let memoriaTexto = ''
+  try {
+    const hechos = await obtenerMemoriaActiva()
+    if (hechos.length > 0) {
+      memoriaTexto = `\n\n# 🧠 Memoria persistente del fundador\n\nEstos son hechos que el fundador compartió con el equipo. Recordalos siempre:\n\n${
+        hechos.map((h, i) => `${i + 1}. [${h.categoria}] ${h.hecho}`).join('\n')
+      }`
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar memoria del fundador:', e.message)
+  }
+
+  return `${CONTEXTO_PROYECTO}
+${memoriaTexto}
 
 # Tu identidad
 
@@ -97,14 +161,15 @@ ${agente.trasfondo || 'Sin trasfondo cargado.'}
 
 - Sé conciso: 1-4 oraciones cortas, salvo que pidan reporte detallado.
 - Hablá en primera persona como ${agente.nombre}.
-- IMPORTANTE: tu interlocutor principal es EL FUNDADOR. Cuando él te escribe, le respondés A ÉL directamente, mirándolo a los ojos. NO le respondés "Diego dice tal cosa" ni hablás de él en tercera persona. Le hablás VOS al fundador.
+- IMPORTANTE: tu interlocutor principal es Gastón, el fundador. Cuando él te escribe, le respondés A ÉL directamente, mirándolo a los ojos. NO le respondés "Diego dice tal cosa" ni hablás de él en tercera persona. Le hablás VOS al fundador.
 - Solo hablás de o con otros agentes si el fundador te pidió que coordines con alguno (ej: "@sofia revisá esto"). En ese caso podés mencionarlos con @su_slug (ej: @diego_ceo, @sofia_cmo, @tomas_cto).
 - Si tenés un dato fuerte, citalo con números.
 - NUNCA empieces tu respuesta con tu propio nombre (ej: "Diego acá:", "Tomás:"). El sistema ya muestra quién hablás.
 - NUNCA hagas listas con bullets en respuestas conversacionales (suena robótico). Bullets solo en reportes.
 - Cuando el fundador te habla, sos respetuoso pero NO servil. Sos un C-level, hablás como tal. Sin "estimado fundador", sin "a sus órdenes". Directo al grano.
 - Nunca cierres con "¿En qué más puedo ayudarte?". No sos un chatbot. Sos un colega.
-- Si discordás con el fundador, lo decís con respeto pero sin filtros: "No coincido. Mirá esto...".`
+- Si discordás con el fundador, lo decís con respeto pero sin filtros: "No coincido. Mirá esto...".
+- Aprovechá lo que sabés del proyecto y de Gastón (memoria persistente) para dar respuestas ricas, contextuadas, no genéricas.`
 }
 
 /**
@@ -203,7 +268,7 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
     return null
   }
 
-  const systemPrompt = construirSystemPrompt(agente)
+  const systemPrompt = await construirSystemPrompt(agente)
   const historial = await construirHistorialConversacion(canal, 15)
 
   // Construir el prompt final como un solo mensaje user.
@@ -352,12 +417,12 @@ async function normalizarMenciones(texto) {
  * @returns {Promise<{mensajeAdmin, respuestas: Array}>}
  */
 export async function procesarMensajeAdmin(canal, contenido) {
+  const inicio = Date.now()
+
   // Normalizar menciones cortas: "@diego" → "@diego_ceo", "@todos" → @todos los activos
-  // Esto permite que el usuario escriba menciones más naturales.
   const contenidoNormalizado = await normalizarMenciones(contenido)
 
-  // Guardar el mensaje del admin (con el contenido normalizado para
-  // que las menciones queden persistidas con el slug completo)
+  // Guardar el mensaje del admin
   const mensajeAdmin = await new MensajeOrganizacion({
     canal,
     autorSlug: 'admin',
@@ -374,7 +439,6 @@ export async function procesarMensajeAdmin(canal, contenido) {
   } else if (canal === 'privado_ceo') {
     slugsRespondedores = ['diego_ceo']
   } else {
-    // En "general" sin mención: el agente más probable según keywords
     slugsRespondedores = [decidirAgenteRelevante(contenido)]
   }
 
@@ -385,97 +449,64 @@ export async function procesarMensajeAdmin(canal, contenido) {
   }, 'slug').lean()
   let slugsValidos = agentes.map(a => a.slug)
 
-  // Si no quedó ningún agente válido (ej: mención inválida), fallback
-  // garantizado a Diego para que siempre haya respuesta. Mejor que un
-  // silencio mudo es que el CEO conteste.
+  // Fallback a Diego si no hay agentes válidos
   if (slugsValidos.length === 0) {
     const diego = await Agente.findOne({ slug: 'diego_ceo', activo: true }, 'slug').lean()
     if (diego) slugsValidos = ['diego_ceo']
   }
 
-  // Responden en cadena (no en paralelo) para que la convo se sienta natural
+  console.log(`🧠 [Cerebro] ${canal} | ${slugsValidos.length} agente(s) van a responder: ${slugsValidos.join(', ')}`)
+
+  // Responden en cadena. Captura errores individualmente: si un agente
+  // falla, los otros igual responden.
   const respuestas = []
+  const erroresPorAgente = []
   for (const slug of slugsValidos) {
     try {
-      const r = await hablarComoAgente(slug, canal, {
-        tipo: 'conversacion'
+      const t0 = Date.now()
+      const r = await hablarComoAgente(slug, canal, { tipo: 'conversacion' })
+      if (r) {
+        respuestas.push(r)
+        console.log(`  ✅ ${slug} respondió en ${Date.now() - t0}ms`)
+      } else {
+        console.warn(`  ⚠️  ${slug} devolvió null`)
+        erroresPorAgente.push({ slug, error: 'respuesta nula' })
+      }
+    } catch (err) {
+      console.error(`  ❌ ${slug} falló:`, err.message)
+      erroresPorAgente.push({ slug, error: err.message })
+    }
+  }
+
+  // Si no quedó NINGUNA respuesta, intentamos un último fallback con Diego
+  // con un prompt simple, para no dejar al usuario sin nada.
+  if (respuestas.length === 0 && !slugsValidos.includes('diego_ceo')) {
+    console.warn('⚠️  Nadie respondió, intento fallback con Diego')
+    try {
+      const r = await hablarComoAgente('diego_ceo', canal, {
+        tipo: 'conversacion',
+        gatillo: 'Respondé al fundador con una oración corta saludándolo y diciéndole que estás disponible.'
       })
       if (r) respuestas.push(r)
     } catch (err) {
-      console.error(`Fallo respuesta de ${slug}:`, err.message)
+      console.error('  ❌ Fallback Diego también falló:', err.message)
     }
   }
 
-  return { mensajeAdmin, respuestas }
+  console.log(`🧠 [Cerebro] ${canal} | total ${Date.now() - inicio}ms | ${respuestas.length} respuesta(s)`)
+
+  return { mensajeAdmin, respuestas, erroresPorAgente }
 }
 
 /**
- * Versión "background" de procesarMensajeAdmin.
+ * Mantenido por compatibilidad con código antiguo. Ahora es alias de
+ * procesarMensajeAdmin (síncrono). Si se usa este alias, las respuestas
+ * SÍ se esperan: ya no hay versión "fire and forget".
  *
- * Guarda el mensaje del admin y vuelve INMEDIATAMENTE (< 200ms).
- * Los agentes responden en segundo plano sin bloquear el response HTTP.
- * El frontend ve las respuestas aparecer vía polling.
- *
- * Ventajas vs el procesarMensajeAdmin tradicional:
- *  - Cero timeouts del navegador (axios espera < 1s en lugar de 15+s)
- *  - UX más fluida: el usuario ve su mensaje al instante
- *  - Si un agente falla, los otros siguen contestando sin bloquear
- *  - Sin reintentos accidentales por timeout (que duplicaban mensajes)
+ * Razón del cambio: el setImmediate fallaba silenciosamente cuando Gemini
+ * tiraba excepción, dejando al usuario sin respuesta y sin pista del error.
  */
-export async function procesarMensajeAdminBackground(canal, contenido) {
-  // Normalizar menciones cortas
-  const contenidoNormalizado = await normalizarMenciones(contenido)
-
-  // Guardar el mensaje del admin (rápido, no hace I/O fuera de Mongo)
-  const mensajeAdmin = await new MensajeOrganizacion({
-    canal,
-    autorSlug: 'admin',
-    autorTipo: 'admin',
-    contenido: contenidoNormalizado,
-    tipo: 'conversacion',
-    leidoPorAdmin: true
-  }).save()
-
-  // Decidir qué agentes deben responder
-  let slugsRespondedores = []
-  if (mensajeAdmin.menciones?.length) {
-    slugsRespondedores = mensajeAdmin.menciones
-  } else if (canal === 'privado_ceo') {
-    slugsRespondedores = ['diego_ceo']
-  } else {
-    slugsRespondedores = [decidirAgenteRelevante(contenido)]
-  }
-
-  // Disparar las respuestas en background. NO usamos await — es intencional.
-  // Esta función retorna ya mismo y los agentes contestan después.
-  setImmediate(async () => {
-    try {
-      const agentes = await Agente.find({
-        slug: { $in: slugsRespondedores },
-        activo: true
-      }, 'slug').lean()
-      let slugsValidos = agentes.map(a => a.slug)
-
-      if (slugsValidos.length === 0) {
-        const diego = await Agente.findOne({ slug: 'diego_ceo', activo: true }, 'slug').lean()
-        if (diego) slugsValidos = ['diego_ceo']
-      }
-
-      for (const slug of slugsValidos) {
-        try {
-          await hablarComoAgente(slug, canal, { tipo: 'conversacion' })
-        } catch (err) {
-          console.error(`[BG] Fallo respuesta de ${slug}:`, err.message)
-        }
-      }
-      console.log(`[BG] ✅ Cadena de ${slugsValidos.length} agente(s) completada en canal ${canal}`)
-    } catch (err) {
-      console.error(`[BG] Error procesando respuestas background:`, err.message)
-    }
-  })
-
-  return mensajeAdmin
-}
+export const procesarMensajeAdminBackground = procesarMensajeAdmin
 
 /**
  * Heurística simple para decidir qué agente del equipo responde

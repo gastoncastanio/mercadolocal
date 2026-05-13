@@ -19,6 +19,7 @@ import { Router } from 'express'
 import { verificarToken, soloAdmin } from '../middleware/auth.js'
 import Agente from '../models/Agente.js'
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
+import MemoriaFundador from '../models/MemoriaFundador.js'
 import {
   procesarMensajeAdmin,
   procesarMensajeAdminBackground,
@@ -115,22 +116,20 @@ router.post('/mensajes/:canal', async (req, res) => {
       return res.status(400).json({ error: 'Máximo 4000 caracteres' })
     }
 
-    // ARQUITECTURA NUEVA: guardamos el mensaje del admin Y respondemos
-    // INMEDIATAMENTE (<200ms). Los agentes responden EN SEGUNDO PLANO,
-    // y el frontend los ve aparecer vía polling cada 15s.
+    // ARQUITECTURA SÍNCRONA: esperamos las respuestas de los agentes y las
+    // devolvemos en el response. Tarda 2-6 segundos (Gemini Flash).
     //
-    // Esto elimina el problema de:
-    //  - timeout del navegador en requests > 30s
-    //  - usuario viendo "cargando" mucho tiempo
-    //  - reintentos que duplican mensajes
-    const mensajeAdmin = await procesarMensajeAdminBackground(canal, contenido.trim())
-    const duracionInicial = Date.now() - inicio
-    console.log(`✅ [CEREBRO] ${canal} mensaje guardado en ${duracionInicial}ms, agentes respondiendo en background`)
+    // El frontend muestra "X está escribiendo..." mientras espera, y cuando
+    // llega el response pinta las respuestas. Sin polling, sin race
+    // conditions, sin setImmediate frágil.
+    const resultado = await procesarMensajeAdmin(canal, contenido.trim())
+    const duracion = Date.now() - inicio
+    console.log(`✅ [CEREBRO] ${canal} | ${resultado.respuestas.length} respuesta(s) en ${duracion}ms`)
     res.json({
       ok: true,
-      mensajeAdmin,
-      respuestas: [], // las respuestas llegan por polling
-      esperandoAgentes: true
+      mensajeAdmin: resultado.mensajeAdmin,
+      respuestas: resultado.respuestas,
+      duracionMs: duracion
     })
   } catch (e) {
     console.error(`❌ [CEREBRO] ${req.params.canal} falló en ${Date.now() - inicio}ms:`, e.message)
@@ -239,6 +238,83 @@ router.post('/marcar-leido/:canal', async (req, res) => {
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: 'Error al marcar como leído' })
+  }
+})
+
+// ============================================================
+// MEMORIA DEL FUNDADOR — hechos que TODOS los agentes recuerdan
+// ============================================================
+
+/**
+ * GET /api/cerebro/memoria
+ * Lista todos los hechos de la memoria, ordenados por importancia.
+ */
+router.get('/memoria', async (req, res) => {
+  try {
+    const hechos = await MemoriaFundador
+      .find({})
+      .sort({ importancia: -1, createdAt: 1 })
+      .lean()
+    res.json(hechos)
+  } catch (e) {
+    res.status(500).json({ error: 'Error al cargar la memoria' })
+  }
+})
+
+/**
+ * POST /api/cerebro/memoria
+ * Agrega un hecho nuevo a la memoria persistente.
+ * Body: { hecho, categoria, importancia }
+ */
+router.post('/memoria', async (req, res) => {
+  try {
+    const { hecho, categoria, importancia } = req.body
+    if (!hecho || typeof hecho !== 'string' || hecho.trim().length < 5) {
+      return res.status(400).json({ error: 'El hecho debe tener al menos 5 caracteres' })
+    }
+    const nuevo = await new MemoriaFundador({
+      hecho: hecho.trim().slice(0, 500),
+      categoria: categoria || 'identidad',
+      importancia: Math.max(1, Math.min(10, parseInt(importancia) || 5)),
+      creadoPor: 'admin'
+    }).save()
+    res.json(nuevo)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * PUT /api/cerebro/memoria/:id
+ * Actualiza un hecho existente.
+ */
+router.put('/memoria/:id', async (req, res) => {
+  try {
+    const { hecho, categoria, importancia, activo } = req.body
+    const update = {}
+    if (hecho !== undefined) update.hecho = String(hecho).trim().slice(0, 500)
+    if (categoria !== undefined) update.categoria = categoria
+    if (importancia !== undefined) update.importancia = Math.max(1, Math.min(10, parseInt(importancia)))
+    if (activo !== undefined) update.activo = Boolean(activo)
+    const actualizado = await MemoriaFundador.findByIdAndUpdate(req.params.id, update, { new: true })
+    if (!actualizado) return res.status(404).json({ error: 'Hecho no encontrado' })
+    res.json(actualizado)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * DELETE /api/cerebro/memoria/:id
+ * Elimina un hecho de la memoria (físicamente, no es soft delete).
+ */
+router.delete('/memoria/:id', async (req, res) => {
+  try {
+    const borrado = await MemoriaFundador.findByIdAndDelete(req.params.id)
+    if (!borrado) return res.status(404).json({ error: 'Hecho no encontrado' })
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
   }
 })
 
