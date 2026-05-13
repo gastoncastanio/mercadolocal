@@ -294,6 +294,29 @@ app.get('/api/health/detalle', async (req, res) => {
   res.status(allOk ? 200 : 503).json({ status: allOk ? 'OK' : 'DEGRADED', checks, timestamp: new Date() })
 })
 
+// TEST temporal: simular flujo real del frontend
+app.post('/api/_test_flujo/:secreto', async (req, res) => {
+  const SECRETO = 'lobos-2026-mercadolocal-rescue-xyz'
+  if (req.params.secreto !== SECRETO) return res.status(404).json({ error: 'Not found' })
+  try {
+    const { procesarMensajeAdmin } = await import('./services/cerebro.js')
+    const inicio = Date.now()
+    const r = await procesarMensajeAdmin(
+      req.query.canal || 'general',
+      req.query.texto || '@diego presentate y decime qué proyectos importantes tenemos'
+    )
+    res.json({
+      ok: true,
+      duracionMs: Date.now() - inicio,
+      cantidadRespuestas: r.respuestas.length,
+      errores: r.erroresPorAgente,
+      respuestas: r.respuestas.map(x => ({ autor: x.autorSlug, texto: x.contenido.slice(0, 400) }))
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 8) })
+  }
+})
+
 // Sentry: capturar errores ANTES del handler global de Express
 // (debe ir después de las rutas, antes del error handler propio)
 app.use(sentryErrorHandler())
