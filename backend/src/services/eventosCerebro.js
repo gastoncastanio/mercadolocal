@@ -28,9 +28,12 @@
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
 import { hablarComoAgente } from './cerebro.js'
 
-// Memoria en proceso del último evento por tipo (para cooldown)
+// Memoria en proceso del último evento por tipo (para cooldown).
+// Cooldown bajo (5 min) — el fundador pidió velocidad. El cooldown evita
+// que el mismo evento dispare 20 mensajes en pocos segundos, pero permite
+// reaccionar rápido a casos legítimos.
 const ultimoEventoPorTipo = new Map()
-const COOLDOWN_MS = 30 * 60 * 1000 // 30 minutos
+const COOLDOWN_MS = 5 * 60 * 1000 // 5 minutos
 
 function puedeDispararEvento(tipo) {
   const ahora = Date.now()
@@ -38,6 +41,27 @@ function puedeDispararEvento(tipo) {
   if (ahora - ultimo < COOLDOWN_MS) return false
   ultimoEventoPorTipo.set(tipo, ahora)
   return true
+}
+
+/**
+ * Dispara una ronda de propuestas inmediata cuando pasa algo importante.
+ * Con throttle para no spamear: max 1 ronda cada 3 minutos.
+ */
+let ultimaRondaTrigger = 0
+const COOLDOWN_RONDA_TRIGGER = 3 * 60 * 1000
+
+export function dispararRondaPropuestasAhora(motivo = 'evento') {
+  const ahora = Date.now()
+  if (ahora - ultimaRondaTrigger < COOLDOWN_RONDA_TRIGGER) return
+  ultimaRondaTrigger = ahora
+
+  // Async, no bloqueante
+  import('./analistaPropuestas.js')
+    .then(m => m.ejecutarRondaDePropuestas())
+    .then(p => {
+      if (p.length > 0) console.log(`📋 [${motivo}] Ronda reactiva: ${p.length} propuesta(s)`)
+    })
+    .catch(e => console.warn(`Error ronda reactiva (${motivo}):`, e.message))
 }
 
 /**
@@ -49,6 +73,9 @@ function puedeDispararEvento(tipo) {
  * @param {object} moderacion - documento Moderacion (con banderas)
  */
 export async function disparoSofiaModeracionAlerta(producto, moderacion) {
+  // Disparar ronda reactiva en paralelo (max 1 cada 3 min)
+  dispararRondaPropuestasAhora('producto_sospechoso')
+
   if (!puedeDispararEvento('sofia_moderacion_alerta')) return null
 
   // Solo disparamos si la moderación tiene confianza alta de problema
@@ -88,6 +115,9 @@ NO inventes datos. Solo usá lo que te pasé acá.`
  * problema de moderación que escaló).
  */
 export async function disparoTomasTicketEscalado(ticket, usuario) {
+  // Disparar ronda reactiva (max 1 cada 3 min)
+  dispararRondaPropuestasAhora('ticket_escalado')
+
   if (!puedeDispararEvento('tomas_ticket_escalado')) return null
 
   // Solo escalados con prioridad alta o urgente

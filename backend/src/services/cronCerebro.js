@@ -116,29 +116,26 @@ async function tick() {
       }
     }
 
-    // ===== Ronda de propuestas autónomas cada 6 horas =====
-    // Los agentes miran datos reales del último período y proponen al
-    // fundador si detectan patrones. Si no hay patrón, no inventan nada.
-    if ([9, 15, 21, 3].includes(hora)) {
-      const ahora = Date.now()
-      if (!tick._ultimaRondaPropuestas || (ahora - tick._ultimaRondaPropuestas) > 5 * 60 * 60 * 1000) {
-        tick._ultimaRondaPropuestas = ahora
-        console.log('📋 Ejecutando ronda de propuestas autónomas...')
-        const propuestas = await ejecutarRondaDePropuestas()
-        console.log(`📋 Ronda terminada: ${propuestas.length} propuesta(s) nueva(s)`)
-      }
+    // ===== Ronda de propuestas autónomas CADA TICK (cada 30 minutos) =====
+    // El fundador pidió velocidad: los agentes proponen seguido.
+    // El propio servicio analistaPropuestas tiene su lógica anti-duplicado
+    // (max N propuestas pendientes por agente) así que llamarlo seguido
+    // no satura.
+    const ahora = Date.now()
+    if (!tick._ultimaRondaPropuestas || (ahora - tick._ultimaRondaPropuestas) > 25 * 60 * 1000) {
+      tick._ultimaRondaPropuestas = ahora
+      console.log('📋 Ejecutando ronda de propuestas autónomas...')
+      ejecutarRondaDePropuestas()
+        .then(p => console.log(`📋 Ronda terminada: ${p.length} propuesta(s) nueva(s)`))
+        .catch(e => console.warn('Error ronda propuestas:', e.message))
     }
 
-    // ===== Diego supervisor cada 2 horas =====
-    // Lee la conversación reciente del canal general y decide si
-    // intervenir. Si no hay nada que amerite su voz, no postea nada.
-    if ([10, 12, 14, 16, 18, 20].includes(hora)) {
-      const ahora = Date.now()
-      if (!tick._ultimaSupervision || (ahora - tick._ultimaSupervision) > 90 * 60 * 1000) {
-        tick._ultimaSupervision = ahora
-        const resultado = await disparoDiegoSupervision()
-        if (resultado) console.log('🎩 Diego supervisó y comentó algo')
-      }
+    // ===== Diego supervisor cada hora =====
+    if (!tick._ultimaSupervision || (ahora - tick._ultimaSupervision) > 55 * 60 * 1000) {
+      tick._ultimaSupervision = ahora
+      disparoDiegoSupervision()
+        .then(r => { if (r) console.log('🎩 Diego supervisó y comentó algo') })
+        .catch(e => console.warn('Error supervisión Diego:', e.message))
     }
   } catch (e) {
     console.warn('Error en tick del cerebro:', e.message)
@@ -149,9 +146,11 @@ async function tick() {
  * Arranca el cron. Llamar una sola vez al iniciar el servidor.
  */
 export function iniciarCronCerebro() {
-  // Primera ejecución al minuto
-  setTimeout(tick, 60 * 1000)
-  // Después, cada 30 minutos
-  setInterval(tick, 30 * 60 * 1000)
-  console.log('🧠 Cron del cerebro iniciado (reporte 8AM ARG, ascensos cada 6h, propuestas cada 6h)')
+  // Primera ejecución a los 30 segundos (rápido para que ya empiece)
+  setTimeout(tick, 30 * 1000)
+  // Después, cada 10 minutos (cada tick decide qué tareas correr según
+  // su cooldown interno: propuestas cada ~30min, supervisión Diego cada
+  // ~1h, ascensos cada 6h, reporte 1 vez al día)
+  setInterval(tick, 10 * 60 * 1000)
+  console.log('🧠 Cron del cerebro iniciado (tick cada 10min, propuestas cada ~30min)')
 }
