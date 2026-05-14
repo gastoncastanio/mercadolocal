@@ -46,6 +46,7 @@ const Soporte = lazy(() => import('./pages/Soporte'))
 const SoporteAdmin = lazy(() => import('./pages/SoporteAdmin'))
 const ModeracionAdmin = lazy(() => import('./pages/ModeracionAdmin'))
 const Cerebro = lazy(() => import('./pages/Cerebro'))
+const PropuestasEquipo = lazy(() => import('./pages/PropuestasEquipo'))
 const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
@@ -123,6 +124,7 @@ function AppContent() {
           <Route path="/admin/soporte" element={<ConNavbar><RutaPrivada roles={['admin']}><SoporteAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/moderacion" element={<ConNavbar><RutaPrivada roles={['admin']}><ModeracionAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/cerebro" element={<ConNavbar><RutaPrivada roles={['admin']}><Cerebro /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/cerebro/propuestas" element={<ConNavbar><RutaPrivada roles={['admin']}><PropuestasEquipo /></RutaPrivada></ConNavbar>} />
 
           {/* Publicas legales */}
           <Route path="/terminos" element={<ConNavbar><Terminos /></ConNavbar>} />

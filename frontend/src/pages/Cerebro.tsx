@@ -147,6 +147,7 @@ export default function Cerebro() {
   const [noLeidos, setNoLeidos] = useState<Record<string, number>>({})
   const [agenteSeleccionado, setAgenteSeleccionado] = useState<Agente | null>(null)
   const [slugsActivos, setSlugsActivos] = useState<Set<string>>(new Set())
+  const [propuestasPendientes, setPropuestasPendientes] = useState<number>(0)
 
   // Map slug → agente para lookups rápidos
   const agentesMap = new Map<string, Agente>()
@@ -186,6 +187,13 @@ export default function Cerebro() {
     } catch {}
   }, [])
 
+  const cargarPropuestasPendientes = useCallback(async () => {
+    try {
+      const { data } = await api.get('/cerebro/propuestas/no-decididas-count')
+      setPropuestasPendientes(data?.count || 0)
+    } catch {}
+  }, [])
+
   // Marca un canal como leído cuando lo abro
   const marcarLeido = useCallback(async (canal: Canal) => {
     try {
@@ -202,12 +210,14 @@ export default function Cerebro() {
     cargarAgentes()
     cargarMensajes(canalActivo)
     cargarNoLeidos()
+    cargarPropuestasPendientes()
 
     const interval = setInterval(() => {
       if (document.visibilityState !== 'visible') return
       cargarMensajes(canalActivo)
       if (chatPrivadoAbierto) cargarMensajes('privado_ceo')
       cargarNoLeidos()
+      cargarPropuestasPendientes()
     }, 20000)
 
     return () => clearInterval(interval)
@@ -395,12 +405,25 @@ export default function Cerebro() {
               {agentes.filter(a => a.activo).length} agentes activos · Equipo IA
             </p>
           </div>
-          <button
-            onClick={generarReporteAhora}
-            className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium"
-          >
-            Generar reporte ahora
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/admin/cerebro/propuestas"
+              className="relative text-xs bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5"
+            >
+              📋 Propuestas
+              {propuestasPendientes > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                  {propuestasPendientes}
+                </span>
+              )}
+            </a>
+            <button
+              onClick={generarReporteAhora}
+              className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium"
+            >
+              Generar reporte
+            </button>
+          </div>
         </div>
 
         {/* Canvas */}

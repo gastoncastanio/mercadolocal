@@ -229,6 +229,14 @@ export async function crearProducto(tiendaId, datos) {
     console.warn('No se pudo registrar moderación aprobada:', e.message)
   }
 
+  // Disparar evento del cerebro: Sofía postea en sala común si hay
+  // bandera relevante. Es async pero NO await — no bloquea la creación.
+  if (moderacionResultado.decision !== 'aprobado' && moderacionResultado.confianza >= 70) {
+    import('./eventosCerebro.js')
+      .then(m => m.disparoSofiaModeracionAlerta(producto, moderacionResultado))
+      .catch(err => console.warn('Evento Sofía no disparó:', err.message))
+  }
+
   return producto
 }
 

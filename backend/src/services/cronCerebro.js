@@ -15,6 +15,8 @@ import {
   generarReporteDiarioCEO,
   procesarAscensosAutomaticos
 } from './cerebro.js'
+import { ejecutarRondaDePropuestas } from './analistaPropuestas.js'
+import { disparoDiegoSupervision } from './eventosCerebro.js'
 import { enviarReporteCEO } from './emailService.js'
 
 // Bandera para no duplicar el reporte si el server reinicia
@@ -113,6 +115,31 @@ async function tick() {
         }
       }
     }
+
+    // ===== Ronda de propuestas autónomas cada 6 horas =====
+    // Los agentes miran datos reales del último período y proponen al
+    // fundador si detectan patrones. Si no hay patrón, no inventan nada.
+    if ([9, 15, 21, 3].includes(hora)) {
+      const ahora = Date.now()
+      if (!tick._ultimaRondaPropuestas || (ahora - tick._ultimaRondaPropuestas) > 5 * 60 * 60 * 1000) {
+        tick._ultimaRondaPropuestas = ahora
+        console.log('📋 Ejecutando ronda de propuestas autónomas...')
+        const propuestas = await ejecutarRondaDePropuestas()
+        console.log(`📋 Ronda terminada: ${propuestas.length} propuesta(s) nueva(s)`)
+      }
+    }
+
+    // ===== Diego supervisor cada 2 horas =====
+    // Lee la conversación reciente del canal general y decide si
+    // intervenir. Si no hay nada que amerite su voz, no postea nada.
+    if ([10, 12, 14, 16, 18, 20].includes(hora)) {
+      const ahora = Date.now()
+      if (!tick._ultimaSupervision || (ahora - tick._ultimaSupervision) > 90 * 60 * 1000) {
+        tick._ultimaSupervision = ahora
+        const resultado = await disparoDiegoSupervision()
+        if (resultado) console.log('🎩 Diego supervisó y comentó algo')
+      }
+    }
   } catch (e) {
     console.warn('Error en tick del cerebro:', e.message)
   }
@@ -126,5 +153,5 @@ export function iniciarCronCerebro() {
   setTimeout(tick, 60 * 1000)
   // Después, cada 30 minutos
   setInterval(tick, 30 * 60 * 1000)
-  console.log('🧠 Cron del cerebro iniciado (reporte diario CEO a las 8 AM ARG, ascensos cada 6h)')
+  console.log('🧠 Cron del cerebro iniciado (reporte 8AM ARG, ascensos cada 6h, propuestas cada 6h)')
 }

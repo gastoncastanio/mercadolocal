@@ -108,7 +108,7 @@ router.post('/preguntar', verificarToken, async (req, res) => {
       // Notificar a los admins (en paralelo, no bloqueamos la respuesta)
       try {
         const admins = await Usuario.find({ rol: 'admin' }).select('_id').lean()
-        const usuario = await Usuario.findById(req.usuario.id).select('nombre').lean()
+        const usuario = await Usuario.findById(req.usuario.id).select('nombre rol').lean()
         const nombreUsuario = usuario?.nombre || 'Un usuario'
 
         for (const admin of admins) {
@@ -121,6 +121,12 @@ router.post('/preguntar', verificarToken, async (req, res) => {
           }).save()
           emitNotificacion(admin._id.toString(), notif)
         }
+
+        // Disparar evento del cerebro: Tomás postea en sala común
+        // si la prioridad es alta o urgente
+        import('../services/eventosCerebro.js')
+          .then(m => m.disparoTomasTicketEscalado(ticket, usuario))
+          .catch(err => console.warn('Evento Tomás no disparó:', err.message))
       } catch (e) {
         console.error('Error notificando a admins:', e.message)
       }

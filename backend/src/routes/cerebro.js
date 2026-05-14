@@ -20,12 +20,14 @@ import { verificarToken, soloAdmin } from '../middleware/auth.js'
 import Agente from '../models/Agente.js'
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
 import MemoriaFundador from '../models/MemoriaFundador.js'
+import PropuestaEquipo from '../models/PropuestaEquipo.js'
 import {
   procesarMensajeAdmin,
   procesarMensajeAdminBackground,
   generarReporteDiarioCEO,
   procesarAscensosAutomaticos
 } from '../services/cerebro.js'
+import { ejecutarRondaDePropuestas } from '../services/analistaPropuestas.js'
 
 const router = Router()
 
@@ -315,6 +317,173 @@ router.delete('/memoria/:id', async (req, res) => {
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+// ============================================================
+// PROPUESTAS del equipo IA — el sistema de decisiones del fundador
+// ============================================================
+
+/**
+ * GET /api/cerebro/propuestas?estado=X&prioridad=Y&limit=N
+ * Lista propuestas con filtros opcionales.
+ */
+router.get('/propuestas', async (req, res) => {
+  try {
+    const filtro = {}
+    if (req.query.estado) filtro.estado = req.query.estado
+    if (req.query.prioridad) filtro.prioridad = req.query.prioridad
+    if (req.query.categoria) filtro.categoria = req.query.categoria
+    if (req.query.proponente) filtro.proponente = req.query.proponente
+
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100)
+
+    const propuestas = await PropuestaEquipo
+      .find(filtro)
+      .sort({ estado: 1, prioridad: -1, createdAt: -1 })
+      .limit(limit)
+      .lean()
+
+    res.json(propuestas)
+  } catch (e) {
+    res.status(500).json({ error: 'Error al cargar propuestas' })
+  }
+})
+
+/**
+ * GET /api/cerebro/propuestas/no-decididas-count
+ * Devuelve la cantidad de propuestas esperando decisión (para el badge).
+ */
+router.get('/propuestas/no-decididas-count', async (req, res) => {
+  try {
+    const count = await PropuestaEquipo.countDocuments({
+      estado: { $in: ['esperando_admin', 'en_revision'] }
+    })
+    res.json({ count })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * GET /api/cerebro/propuestas/:id
+ * Detalle completo de una propuesta.
+ */
+router.get('/propuestas/:id', async (req, res) => {
+  try {
+    const propuesta = await PropuestaEquipo.findById(req.params.id).lean()
+    if (!propuesta) return res.status(404).json({ error: 'Propuesta no encontrada' })
+    res.json(propuesta)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * POST /api/cerebro/propuestas/:id/decidir
+ * Body: { decision: 'aprobada'|'rechazada'|'pospuesta'|'en_revision', comentario }
+ *
+ * REGLA INVIOLABLE: aprobar una propuesta NO la ejecuta automáticamente.
+ * Solo cambia su estado a 'aprobada'. La ejecución la hace Claude en una
+ * próxima sesión de desarrollo cuando el fundador lo solicite.
+ */
+router.post('/propuestas/:id/decidir', async (req, res) => {
+  try {
+    const { decision, comentario } = req.body
+    const estadosValidos = ['aprobada', 'rechazada', 'pospuesta', 'en_revision']
+    if (!estadosValidos.includes(decision)) {
+      return res.status(400).json({ error: `Decisión inválida. Valores: ${estadosValidos.join(', ')}` })
+    }
+
+    const propuesta = await PropuestaEquipo.findById(req.params.id)
+    if (!propuesta) return res.status(404).json({ error: 'Propuesta no encontrada' })
+
+    propuesta.estado = decision
+    propuesta.decisionFundador = {
+      decidida: true,
+      fecha: new Date(),
+      comentario: String(comentario || '').slice(0, 2000)
+    }
+    await propuesta.save()
+
+    // Notificar en el canal "ascensos" la decisión
+    try {
+      const accionTexto = {
+        aprobada: '✅ APROBÓ',
+        rechazada: '🚫 RECHAZÓ',
+        pospuesta: '⏸️ POSPUSO',
+        en_revision: '🔍 puso EN REVISIÓN'
+      }[decision]
+      await new MensajeOrganizacion({
+        canal: 'ascensos',
+        autorSlug: 'admin',
+        autorTipo: 'admin',
+        contenido: `${accionTexto} la propuesta "${propuesta.titulo}" de @${propuesta.proponente}${comentario ? `. Comentario: ${comentario}` : ''}`,
+        tipo: 'decision',
+        contexto: { propuestaId: propuesta._id.toString(), decision }
+      }).save()
+    } catch (e) {
+      console.warn('No se pudo notificar decisión:', e.message)
+    }
+
+    res.json(propuesta)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * PUT /api/cerebro/propuestas/:id
+ * Permite al fundador modificar el contenido de una propuesta antes de
+ * aprobarla (ej: ajustar el alcance, cambiar prioridad).
+ */
+router.put('/propuestas/:id', async (req, res) => {
+  try {
+    const { titulo, problema, propuesta, impactoEstimado, riesgos, categoria, prioridad } = req.body
+    const update = {}
+    if (titulo !== undefined) update.titulo = String(titulo).slice(0, 150)
+    if (problema !== undefined) update.problema = String(problema).slice(0, 2000)
+    if (propuesta !== undefined) update.propuesta = String(propuesta).slice(0, 3000)
+    if (impactoEstimado !== undefined) update.impactoEstimado = String(impactoEstimado).slice(0, 1500)
+    if (riesgos !== undefined) update.riesgos = String(riesgos).slice(0, 1500)
+    if (categoria !== undefined) update.categoria = categoria
+    if (prioridad !== undefined) update.prioridad = prioridad
+
+    const actualizada = await PropuestaEquipo.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true }
+    )
+    if (!actualizada) return res.status(404).json({ error: 'Propuesta no encontrada' })
+    res.json(actualizada)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * POST /api/cerebro/propuestas/forzar-ronda
+ * Ejecuta una ronda de análisis bajo demanda (sin esperar al cron).
+ * Útil para que el fundador pida "che, miren los datos ahora y propongan".
+ */
+router.post('/propuestas/forzar-ronda', async (req, res) => {
+  try {
+    const inicio = Date.now()
+    const propuestas = await ejecutarRondaDePropuestas()
+    res.json({
+      ok: true,
+      duracionMs: Date.now() - inicio,
+      nuevas: propuestas.length,
+      propuestas: propuestas.map(p => ({
+        id: p._id,
+        titulo: p.titulo,
+        proponente: p.proponente,
+        prioridad: p.prioridad,
+        categoria: p.categoria
+      }))
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 5) })
   }
 })
 
