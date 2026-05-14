@@ -392,11 +392,11 @@ export default function Cerebro() {
 
   // ===== Render =====
   return (
-    <div className="fixed inset-0 top-16 bg-gray-900 text-gray-100 flex overflow-hidden">
+    <div className="fixed inset-0 top-32 bg-gray-900 text-gray-100 flex overflow-hidden">
       {/* CANVAS CENTRAL */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center justify-between">
+        {/* Header — sticky para que SIEMPRE se vea, no se tape con el navbar */}
+        <div className="sticky top-0 z-10 bg-gray-800 border-b border-gray-700 px-6 py-3 flex items-center justify-between shadow-lg">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
               🧠 MercadoLocal Brain
@@ -408,11 +408,11 @@ export default function Cerebro() {
           <div className="flex items-center gap-2">
             <a
               href="/admin/cerebro/propuestas"
-              className="relative text-xs bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5"
+              className="relative text-sm bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md font-semibold flex items-center gap-2 shadow-md"
             >
               📋 Propuestas
               {propuestasPendientes > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[22px] text-center leading-none">
                   {propuestasPendientes}
                 </span>
               )}
