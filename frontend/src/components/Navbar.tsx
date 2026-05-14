@@ -90,11 +90,13 @@ export default function Navbar() {
     }
   }
 
-  function cerrarMenus() {
-    setMenuVendedor(false)
-    setMenuUsuario(false)
-    setMenuCompras(false)
-    setMenuCategorias(false)
+  // Helper: abre un menú específico cerrando todos los demás.
+  // Si el menú ya está abierto, lo cierra (toggle).
+  function toggleMenu(cual: 'vendedor' | 'usuario' | 'compras' | 'categorias') {
+    setMenuVendedor(cual === 'vendedor' ? v => !v : false)
+    setMenuUsuario(cual === 'usuario' ? v => !v : false)
+    setMenuCompras(cual === 'compras' ? v => !v : false)
+    setMenuCategorias(cual === 'categorias' ? v => !v : false)
   }
 
   return (
@@ -173,7 +175,7 @@ export default function Navbar() {
                   {/* Avatar */}
                   <div ref={refUsuario} className="relative">
                     <button
-                      onClick={() => { setMenuUsuario(!menuUsuario); cerrarMenus() }}
+                      onClick={() => toggleMenu('usuario')}
                       className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
                     >
                       <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-semibold border border-white/30">
@@ -286,7 +288,7 @@ export default function Navbar() {
             {/* Categorías dropdown */}
             <div ref={refCategorias} className="relative">
               <button
-                onClick={() => { setMenuCategorias(!menuCategorias); cerrarMenus() }}
+                onClick={() => toggleMenu('categorias')}
                 className="flex items-center gap-1.5 text-gray-700 hover:text-blue-600 font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -331,7 +333,7 @@ export default function Navbar() {
                 <span className="text-gray-200">|</span>
                 <div ref={refVendedor} className="relative">
                   <button
-                    onClick={() => { setMenuVendedor(!menuVendedor); setMenuCompras(false); setMenuCategorias(false) }}
+                    onClick={() => toggleMenu('vendedor')}
                     className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
                   >
                     Vender
@@ -370,7 +372,7 @@ export default function Navbar() {
                 <span className="text-gray-200">|</span>
                 <div ref={refCompras} className="relative">
                   <button
-                    onClick={() => { setMenuCompras(!menuCompras); setMenuVendedor(false); setMenuCategorias(false) }}
+                    onClick={() => toggleMenu('compras')}
                     className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
                   >
                     Mis compras

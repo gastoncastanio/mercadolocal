@@ -21,6 +21,7 @@ export default function DetalleProducto() {
   const [esFavorito, setEsFavorito] = useState(false)
   const [togglingFav, setTogglingFav] = useState(false)
   const [productosTienda, setProductosTienda] = useState<Producto[]>([])
+  const [verTodasCaract, setVerTodasCaract] = useState(false)
 
   useEffect(() => {
     cargarProducto()
@@ -315,7 +316,7 @@ export default function DetalleProducto() {
                   <div>
                     <h3 className="font-semibold text-sm text-gray-800 mb-2">Caracter&iacute;sticas principales</h3>
                     <ul className="space-y-1">
-                      {producto.caracteristicas.slice(0, 5).map((c, i) => (
+                      {(verTodasCaract ? producto.caracteristicas : producto.caracteristicas.slice(0, 5)).map((c, i) => (
                         <li key={i} className="flex text-[13px]">
                           <span className="text-gray-400 mr-2">&bull;</span>
                           <span className="text-gray-500">{c.clave}:</span>
@@ -324,7 +325,12 @@ export default function DetalleProducto() {
                       ))}
                     </ul>
                     {producto.caracteristicas.length > 5 && (
-                      <button className="text-[13px] text-blue-500 hover:text-blue-600 mt-2">Ver todas las caracter&iacute;sticas</button>
+                      <button
+                        onClick={() => setVerTodasCaract(v => !v)}
+                        className="text-[13px] text-blue-500 hover:text-blue-600 mt-2"
+                      >
+                        {verTodasCaract ? 'Ver menos' : `Ver todas las características (${producto.caracteristicas.length})`}
+                      </button>
                     )}
                   </div>
                 )}
