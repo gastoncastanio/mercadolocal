@@ -17,6 +17,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Orden from '../models/Orden.js'
+import { encolar, PRIORIDAD } from './geminiQueue.js'
 
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -214,14 +215,23 @@ export async function procesarConsulta(ticket, nuevaPregunta) {
       }
     })
 
-    // Si hay historia previa, iniciamos un chat; si no, usamos generateContent directo.
+    // Soporte a un usuario REAL → prioridad CRITICA en la cola.
+    // No podemos hacer esperar 10 segundos a alguien que escribió porque
+    // su pago no entró. Si la cola está saturada de tareas BG, se descartan
+    // ellas antes que ésta.
     let textoRespuesta = ''
     if (history.length > 0) {
       const chat = model.startChat({ history })
-      const result = await chat.sendMessage(textoFinal)
+      const result = await encolar(
+        () => chat.sendMessage(textoFinal),
+        { prioridad: PRIORIDAD.CRITICA, descripcion: 'soporte:ticket', timeoutMs: 45_000 }
+      )
       textoRespuesta = result.response.text()
     } else {
-      const result = await model.generateContent(textoFinal)
+      const result = await encolar(
+        () => model.generateContent(textoFinal),
+        { prioridad: PRIORIDAD.CRITICA, descripcion: 'soporte:primer_msg', timeoutMs: 45_000 }
+      )
       textoRespuesta = result.response.text()
     }
 
@@ -287,8 +297,12 @@ export async function generarResumenTicket(ticket) {
       }
     })
 
-    const result = await model.generateContent(
-      `Resumí en UNA sola oración (máximo 200 caracteres) de qué se trata este ticket de soporte de un marketplace argentino. No incluyas saludos ni preámbulos, solo la oración.\n\nConversación:\n\n${conversacion.slice(0, 3000)}`
+    // Resumen para admin → no es crítico, va por BACKGROUND
+    const result = await encolar(
+      () => model.generateContent(
+        `Resumí en UNA sola oración (máximo 200 caracteres) de qué se trata este ticket de soporte de un marketplace argentino. No incluyas saludos ni preámbulos, solo la oración.\n\nConversación:\n\n${conversacion.slice(0, 3000)}`
+      ),
+      { prioridad: PRIORIDAD.BACKGROUND, descripcion: 'soporte:resumen_admin', timeoutMs: 20_000 }
     )
 
     return result.response.text().trim().slice(0, 300)

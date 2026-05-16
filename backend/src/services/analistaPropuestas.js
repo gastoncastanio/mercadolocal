@@ -23,6 +23,7 @@ import PropuestaEquipo from '../models/PropuestaEquipo.js'
 import MensajeOrganizacion from '../models/MensajeOrganizacion.js'
 import { datosParaAgente } from './analistaDatos.js'
 import { obtenerMemoriaActiva } from './seedMemoriaFundador.js'
+import { encolar, PRIORIDAD } from './geminiQueue.js'
 
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -177,7 +178,16 @@ Si no hay propuestas válidas, devolvé propuestas:[] y una razon honesta.`
       }
     })
 
-    const result = await model.generateContent(promptUsuario)
+    // Propuestas autónomas → BACKGROUND. Si la cola está llena, las
+    // propuestas pueden esperar o descartarse antes que tareas críticas.
+    const result = await encolar(
+      () => model.generateContent(promptUsuario),
+      {
+        prioridad: PRIORIDAD.BACKGROUND,
+        descripcion: `propuestas:${slug}`,
+        timeoutMs: 60_000
+      }
+    )
     const texto = result.response.text()
 
     let parsed

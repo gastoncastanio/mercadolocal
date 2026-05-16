@@ -24,6 +24,7 @@ import Orden from '../models/Orden.js'
 import Moderacion from '../models/Moderacion.js'
 import Ticket from '../models/Ticket.js'
 import { obtenerMemoriaActiva } from './seedMemoriaFundador.js'
+import { encolar, PRIORIDAD } from './geminiQueue.js'
 
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -362,7 +363,20 @@ export async function hablarComoAgente(agenteSlug, canal, opciones = {}) {
       }
     })
 
-    const result = await model.generateContent(promptFinal)
+    // La llamada va por la cola con rate limit local. Priorizamos según
+    // tipo de respuesta: si es la sala común (admin habla → agente responde)
+    // es NORMAL. Si es supervisión o reportes (background), es BACKGROUND.
+    const esBackground = ['reporte_diario', 'ascenso', 'propuesta', 'alerta'].includes(opciones.tipo)
+    const prioridad = esBackground ? PRIORIDAD.BACKGROUND : PRIORIDAD.NORMAL
+
+    const result = await encolar(
+      () => model.generateContent(promptFinal),
+      {
+        prioridad,
+        descripcion: `${agenteSlug}:${opciones.tipo || 'conversacion'}`,
+        timeoutMs: 45_000
+      }
+    )
     const textoRaw = result.response.text() || ''
 
     // Quitamos el prefijo "[Nombre]:" si el modelo lo agregó

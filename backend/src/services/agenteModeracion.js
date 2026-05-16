@@ -15,6 +15,7 @@
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { encolar, PRIORIDAD } from './geminiQueue.js'
 
 const genAI = process.env.GEMINI_API_KEY
   ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
@@ -198,7 +199,17 @@ export async function moderarProducto(datos, contexto = {}) {
       }
     })
 
-    const result = await model.generateContent(promptUsuario)
+    // Moderación de producto al publicar → prioridad CRITICA.
+    // Si Sofía tarda demasiado, el vendedor abandona el formulario y
+    // perdemos la publicación. Va antes que cualquier tarea de BG.
+    const result = await encolar(
+      () => model.generateContent(promptUsuario),
+      {
+        prioridad: PRIORIDAD.CRITICA,
+        descripcion: `moderacion:${datos.categorias?.[0] || 'sin_cat'}`,
+        timeoutMs: 30_000
+      }
+    )
     const texto = result.response.text() || '{}'
     const parsed = parsearRespuesta(texto)
 
