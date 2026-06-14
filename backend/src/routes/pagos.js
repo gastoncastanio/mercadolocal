@@ -48,7 +48,11 @@ function verificarFirmaWebhook(req) {
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
   const hmac = crypto.createHmac('sha256', webhookSecret).update(manifest).digest('hex')
 
-  return hmac === v1
+  // Comparación en tiempo constante (evita timing attacks al comparar el hash)
+  const hmacBuf = Buffer.from(hmac, 'hex')
+  const v1Buf = Buffer.from(v1, 'hex')
+  if (hmacBuf.length !== v1Buf.length) return false
+  return crypto.timingSafeEqual(hmacBuf, v1Buf)
 }
 
 // POST /api/pagos/crear-preferencia - Crear preferencia de MP con Split
