@@ -22,8 +22,15 @@ const usuarioSchema = new mongoose.Schema({
   },
   rol: {
     type: String,
+    // 'vendedor' se mantiene por compatibilidad con usuarios previos a la
+    // migración a cuenta unificada (la capacidad de vender ahora vive en
+    // tieneVendedor). No se asigna a usuarios nuevos.
     enum: ['comprador', 'vendedor', 'admin'],
     default: 'comprador'
+  },
+  tieneVendedor: {
+    type: Boolean,
+    default: false
   },
   avatar: {
     type: String,

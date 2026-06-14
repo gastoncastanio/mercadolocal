@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
 import { crearTienda, obtenerTienda, obtenerMiTienda, actualizarTienda, listarTiendas } from '../services/tiendaService.js'
 import { emitNuevaTienda, emitTiendaActualizada } from '../services/socketService.js'
 
@@ -15,8 +15,8 @@ router.get('/', async (req, res) => {
   }
 })
 
-// GET /api/tienda/mi-tienda - Mi tienda (vendedor)
-router.get('/mi-tienda', verificarToken, soloVendedor, async (req, res) => {
+// GET /api/tienda/mi-tienda - Mi tienda (comprador que tiene tienda)
+router.get('/mi-tienda', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -28,8 +28,8 @@ router.get('/mi-tienda', verificarToken, soloVendedor, async (req, res) => {
   }
 })
 
-// POST /api/tienda - Crear tienda (vendedor)
-router.post('/', verificarToken, soloVendedor, async (req, res) => {
+// POST /api/tienda - Crear tienda (cualquier usuario autenticado)
+router.post('/', verificarToken, async (req, res) => {
   try {
     const tienda = await crearTienda(req.usuario.id, req.body)
     console.log(`✅ Nueva tienda creada: "${tienda.nombre}" por ${req.usuario.nombre}`)
@@ -44,8 +44,8 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
   }
 })
 
-// PUT /api/tienda - Actualizar mi tienda (vendedor)
-router.put('/', verificarToken, soloVendedor, async (req, res) => {
+// PUT /api/tienda - Actualizar mi tienda (comprador que tiene tienda)
+router.put('/', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await actualizarTienda(req.usuario.id, req.body)
     emitTiendaActualizada(tienda)

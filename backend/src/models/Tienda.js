@@ -98,13 +98,18 @@ tiendaSchema.index({ nombre: 'text', descripcion: 'text' })
 
 // Encriptar tokens de MP antes de guardar
 tiendaSchema.pre('save', function (next) {
-  if (this.isModified('mpAccessToken') && this.mpAccessToken && !estaEncriptado(this.mpAccessToken)) {
-    this.mpAccessToken = encriptar(this.mpAccessToken)
+  try {
+    if (this.isModified('mpAccessToken') && this.mpAccessToken && !estaEncriptado(this.mpAccessToken)) {
+      this.mpAccessToken = encriptar(this.mpAccessToken)
+    }
+    if (this.isModified('mpRefreshToken') && this.mpRefreshToken && !estaEncriptado(this.mpRefreshToken)) {
+      this.mpRefreshToken = encriptar(this.mpRefreshToken)
+    }
+    next()
+  } catch (error) {
+    console.error('❌ Error al encriptar tokens de MP:', error.message)
+    next(error)
   }
-  if (this.isModified('mpRefreshToken') && this.mpRefreshToken && !estaEncriptado(this.mpRefreshToken)) {
-    this.mpRefreshToken = encriptar(this.mpRefreshToken)
-  }
-  next()
 })
 
 // Método para obtener el access token desencriptado

@@ -39,8 +39,17 @@ export async function crearPreferencia(orden, compradorEmail) {
   if (tiendaIds.length === 1) {
     const tienda = await Tienda.findById(tiendaIds[0])
     if (tienda && tienda.mpVinculado && tienda.mpAccessToken) {
-      usarSplit = true
-      vendedorAccessToken = tienda.getMpAccessToken()
+      try {
+        vendedorAccessToken = tienda.getMpAccessToken()
+        if (vendedorAccessToken) {
+          usarSplit = true
+        } else {
+          console.warn('⚠️ Token de vendedor vacío o inválido para tienda:', tienda._id)
+        }
+      } catch (decryptError) {
+        console.error('⚠️ Error desencriptando token de vendedor:', decryptError.message)
+        // Si falla la desencriptación, continuar sin split
+      }
     }
   }
 

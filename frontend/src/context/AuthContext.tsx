@@ -14,6 +14,7 @@ interface AuthContextType {
   refreshAccessToken: () => Promise<string | null>
   estaLogueado: boolean
   esVendedor: boolean
+  tieneVendedor: boolean
   esAdmin: boolean
 }
 
@@ -123,14 +124,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const estaLogueado = !!usuario
-  const esVendedor = usuario?.rol === 'vendedor'
+  // Tiene capacidad de vender si: tiene el flag nuevo, YA tiene una tienda
+  // (cubre vendedores existentes sin migración), o es rol legacy 'vendedor'.
+  const tieneVendedor = (usuario?.tieneVendedor ?? false) || !!tienda || usuario?.rol === 'vendedor'
+  const esVendedor = tieneVendedor || usuario?.rol === 'admin'
   const esAdmin = usuario?.rol === 'admin'
 
   return (
     <AuthContext.Provider value={{
       usuario, tienda, token, cargando,
       login, registro, logout, actualizarTienda, refreshAccessToken,
-      estaLogueado, esVendedor, esAdmin
+      estaLogueado, esVendedor, tieneVendedor, esAdmin
     }}>
       {children}
     </AuthContext.Provider>

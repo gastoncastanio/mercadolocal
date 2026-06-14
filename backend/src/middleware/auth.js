@@ -31,10 +31,20 @@ export function verificarToken(req, res, next) {
   }
 }
 
-// Middleware para verificar que sea vendedor
+// Middleware para verificar que sea vendedor (roles antiguos: compatibilidad)
 export function soloVendedor(req, res, next) {
   if (req.usuario.rol !== 'vendedor' && req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso solo para vendedores.' })
+  }
+  next()
+}
+
+// Middleware para verificar que el usuario tiene una tienda.
+// Acepta el flag nuevo tieneVendedor, admin, y el rol legacy 'vendedor'
+// (para que las sesiones/JWT previos a la migración sigan funcionando).
+export function soloTieneVendedor(req, res, next) {
+  if (!req.usuario.tieneVendedor && req.usuario.rol !== 'admin' && req.usuario.rol !== 'vendedor') {
+    return res.status(403).json({ error: 'Necesitas crear una tienda primero.' })
   }
   next()
 }
@@ -54,7 +64,8 @@ export function generarAccessToken(usuario) {
       id: usuario._id,
       email: usuario.email,
       nombre: usuario.nombre,
-      rol: usuario.rol
+      rol: usuario.rol,
+      tieneVendedor: usuario.tieneVendedor || false
     },
     JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_EXPIRACION }

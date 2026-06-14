@@ -4,7 +4,10 @@ export interface Usuario {
   _id: string
   email: string
   nombre: string
+  // 'vendedor' es un rol legacy (cuentas previas a la unificación); las cuentas
+  // nuevas son 'comprador' y activan la venta con tieneVendedor.
   rol: 'comprador' | 'vendedor' | 'admin'
+  tieneVendedor?: boolean
   avatar: string
   direccion: string
   telefono: string

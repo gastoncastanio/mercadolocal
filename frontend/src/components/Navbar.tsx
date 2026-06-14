@@ -250,10 +250,10 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-white/80 hover:text-white text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors hidden sm:block">
-                    Ingresá
+                  <Link to="/login" className="text-white border border-white/40 hover:bg-white/10 text-sm font-medium px-3 sm:px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    Iniciar sesión
                   </Link>
-                  <Link to="/registro" className="bg-white text-indigo-700 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors">
+                  <Link to="/registro" className="bg-white text-indigo-700 text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap">
                     Creá tu cuenta
                   </Link>
                 </>

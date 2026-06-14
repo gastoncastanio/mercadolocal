@@ -108,11 +108,15 @@ router.get('/callback', async (req, res) => {
     tienda.mpVinculadoEn = new Date()
     // Limpiar CSRF token (uso único)
     tienda.mpCsrfToken = null
-    await tienda.save()
 
-    console.log(`✅ Vendedor vinculó MP: tienda ${tienda.nombre} (MP user: ${data.user_id})`)
-
-    res.redirect(`${FRONTEND_URL}/central-vendedor?mp=ok`)
+    try {
+      await tienda.save()
+      console.log(`✅ Vendedor vinculó MP: tienda ${tienda.nombre} (MP user: ${data.user_id})`)
+      res.redirect(`${FRONTEND_URL}/central-vendedor?mp=ok`)
+    } catch (saveError) {
+      console.error('❌ Error guardando tienda con tokens MP:', saveError.message)
+      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=error_guardar`)
+    }
   } catch (error) {
     console.error('Error en callback MP:', error)
     res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=error_servidor`)
@@ -164,6 +168,19 @@ export async function refrescarTokenVendedor(tienda) {
   if (!tienda.mpRefreshToken) return null
 
   try {
+    let refreshToken
+    try {
+      refreshToken = tienda.getMpRefreshToken()
+    } catch (decryptError) {
+      console.error('❌ Error desencriptando refresh token:', decryptError.message)
+      return null
+    }
+
+    if (!refreshToken) {
+      console.warn('⚠️ Refresh token vacío o inválido')
+      return null
+    }
+
     const response = await fetch('https://api.mercadopago.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -171,7 +188,7 @@ export async function refrescarTokenVendedor(tienda) {
         client_id: MP_APP_ID,
         client_secret: MP_CLIENT_SECRET,
         grant_type: 'refresh_token',
-        refresh_token: tienda.getMpRefreshToken()
+        refresh_token: refreshToken
       })
     })
 
@@ -179,12 +196,20 @@ export async function refrescarTokenVendedor(tienda) {
 
     if (data.access_token) {
       tienda.mpAccessToken = data.access_token
-      tienda.mpRefreshToken = data.refresh_token
-      await tienda.save()
-      return data.access_token
+      tienda.mpRefreshToken = data.refresh_token || tienda.mpRefreshToken
+      try {
+        await tienda.save()
+        console.log('✅ Token de MP refrescado exitosamente')
+        return data.access_token
+      } catch (saveError) {
+        console.error('❌ Error guardando token refrescado:', saveError.message)
+        return null
+      }
+    } else {
+      console.error('❌ MP no devolvió access_token en refresh:', data)
     }
   } catch (error) {
-    console.error('Error refrescando token MP:', error)
+    console.error('❌ Error refrescando token MP:', error.message)
   }
 
   return null
