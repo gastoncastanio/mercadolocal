@@ -6,7 +6,7 @@ import { enviarBienvenida } from './emailService.js'
 
 // Registrar nuevo usuario
 export async function registrarUsuario(datos) {
-  const { email, contraseña, nombre, rol, direccion, telefono, dni } = datos
+  const { email, contraseña, nombre, direccion, telefono, dni } = datos
 
   // Verificar si ya existe
   const existente = await Usuario.findOne({ email })
@@ -14,29 +14,32 @@ export async function registrarUsuario(datos) {
     throw new Error('Ya existe una cuenta con este email')
   }
 
-  // Crear usuario
+  // Crear usuario (cuenta unificada: siempre comprador por default).
+  // La capacidad de vender se activa después abriendo una tienda.
   const usuario = new Usuario({
     email,
     contraseña,
     nombre,
-    rol: rol || 'comprador',
+    rol: 'comprador',
     direccion: direccion || '',
     telefono: telefono || '',
     dni: dni || ''
   })
+
+  // Si vienen datos de tienda en el registro, se abre la tienda y se marca tieneVendedor
+  const quiereTienda = !!datos.nombreTienda
 
   await usuario.save()
 
   // Notificar a todos los admins del nuevo registro
   try {
     const admins = await Usuario.find({ rol: 'admin' }).select('_id')
-    const rolLabel = (rol || 'comprador') === 'vendedor' ? 'vendedor' : 'comprador'
     for (const admin of admins) {
       await new Notificacion({
         usuarioId: admin._id,
         tipo: 'sistema',
-        titulo: `Nuevo ${rolLabel} registrado`,
-        mensaje: `${nombre} (${email}) se registr\u00f3 como ${rolLabel}`,
+        titulo: 'Nuevo usuario registrado',
+        mensaje: `${nombre} (${email}) cre\u00f3 una cuenta`,
         enlace: '/admin'
       }).save()
     }
@@ -59,14 +62,14 @@ export async function registrarUsuario(datos) {
 
   // Email de bienvenida
   try {
-    await enviarBienvenida(email, nombre, rol || 'comprador')
+    await enviarBienvenida(email, nombre, 'comprador')
   } catch (e) {
     console.error('Error enviando email de bienvenida:', e.message)
   }
 
-  // Si es vendedor, crear tienda
+  // Si pidió abrir tienda en el registro, crearla y marcar tieneVendedor
   let tienda = null
-  if (usuario.rol === 'vendedor' && datos.nombreTienda) {
+  if (quiereTienda) {
     tienda = new Tienda({
       usuarioId: usuario._id,
       nombre: datos.nombreTienda,
@@ -75,6 +78,8 @@ export async function registrarUsuario(datos) {
       tipo: datos.tipoTienda || 'online'
     })
     await tienda.save()
+    usuario.tieneVendedor = true
+    await usuario.save()
   }
 
   const token = generarAccessToken(usuario)
@@ -107,11 +112,8 @@ export async function loginUsuario(email, contraseña) {
   const token = generarAccessToken(usuario)
   const refreshToken = await generarRefreshToken(usuario._id)
 
-  // Si es vendedor, obtener su tienda
-  let tienda = null
-  if (usuario.rol === 'vendedor') {
-    tienda = await Tienda.findOne({ usuarioId: usuario._id })
-  }
+  // Cuenta unificada: siempre buscamos si tiene tienda (null si no tiene)
+  const tienda = await Tienda.findOne({ usuarioId: usuario._id })
 
   return {
     usuario: usuario.toJSON(),
@@ -128,10 +130,8 @@ export async function obtenerPerfil(usuarioId) {
     throw new Error('Usuario no encontrado')
   }
 
-  let tienda = null
-  if (usuario.rol === 'vendedor') {
-    tienda = await Tienda.findOne({ usuarioId: usuario._id })
-  }
+  // Cuenta unificada: siempre buscamos si tiene tienda (null si no tiene)
+  const tienda = await Tienda.findOne({ usuarioId: usuario._id })
 
   return {
     usuario: usuario.toJSON(),

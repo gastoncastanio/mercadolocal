@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
-  const navigate = useNavigate()
   const { usuario } = useAuth()
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)

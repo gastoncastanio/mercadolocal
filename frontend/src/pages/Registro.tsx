@@ -1,28 +1,21 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Registro() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const { registro } = useAuth()
 
-  const rolInicial = searchParams.get('rol') || 'comprador'
-
+  // Cuenta unificada: todos se registran igual. La capacidad de vender
+  // se activa luego desde la cuenta abriendo una tienda (sin re-loguearse).
   const [form, setForm] = useState({
     nombre: '',
     email: '',
     dni: '',
     contraseña: '',
     confirmarContraseña: '',
-    rol: rolInicial,
     telefono: '',
-    direccion: '',
-    // Campos de tienda (solo vendedor)
-    nombreTienda: '',
-    descripcionTienda: '',
-    ciudad: '',
-    tipoTienda: 'online'
+    direccion: ''
   })
 
   const [mayorDeEdad, setMayorDeEdad] = useState(false)
@@ -65,16 +58,11 @@ export default function Registro() {
       return
     }
 
-    if (form.rol === 'vendedor' && !form.nombreTienda) {
-      setError('El nombre de la tienda es obligatorio')
-      return
-    }
-
     setCargando(true)
 
     try {
       await registro({ ...form, mayorDeEdad, aceptaTerminos })
-      navigate(form.rol === 'vendedor' ? '/mi-tienda' : '/catalogo')
+      navigate('/catalogo')
     } catch (err: any) {
       if (!err.response && (err.code === 'ECONNABORTED' || err.message?.includes('Network Error'))) {
         setError('El servidor está cargando. Esperá unos segundos e intentá de nuevo.')
@@ -96,30 +84,12 @@ export default function Registro() {
           </p>
         </div>
 
-        {/* Selector de rol */}
-        <div className="flex gap-2 mb-6">
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, rol: 'comprador' })}
-            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-              form.rol === 'comprador'
-                ? 'bg-purple-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            🛍️ Comprador
-          </button>
-          <button
-            type="button"
-            onClick={() => setForm({ ...form, rol: 'vendedor' })}
-            className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-all ${
-              form.rol === 'vendedor'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            🏪 Vendedor
-          </button>
+        {/* Cuenta unificada: comprás y vendés con la misma cuenta */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
+          <p className="text-sm text-gray-700 text-center">
+            <span className="font-semibold">Una sola cuenta para todo.</span> Comprá desde ya y,
+            cuando quieras, abrí tu tienda para vender — sin crear otra cuenta.
+          </p>
         </div>
 
         {error && (
@@ -224,65 +194,6 @@ export default function Registro() {
               placeholder="Repetir contraseña"
             />
           </div>
-
-          {/* Campos de tienda (solo vendedor) */}
-          {form.rol === 'vendedor' && (
-            <div className="space-y-4 pt-4 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-700">Datos de tu tienda</h3>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
-                <input
-                  name="nombreTienda"
-                  type="text"
-                  required
-                  value={form.nombreTienda}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="Nombre de tu tienda"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                <input
-                  name="ciudad"
-                  type="text"
-                  required
-                  value={form.ciudad}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="Tu ciudad"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                <textarea
-                  name="descripcionTienda"
-                  value={form.descripcionTienda}
-                  onChange={handleChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-                  placeholder="Describe tu tienda..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de tienda</label>
-                <select
-                  name="tipoTienda"
-                  value={form.tipoTienda}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="online">Solo Online</option>
-                  <option value="fisica">Tienda Física</option>
-                  <option value="ambas">Ambas</option>
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Declaraciones legales */}
           <div className="space-y-3 pt-2">

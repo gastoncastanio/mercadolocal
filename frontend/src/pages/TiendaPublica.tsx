@@ -4,18 +4,9 @@ import api from '../services/api'
 import { Producto, Tienda } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 
-interface TiendaExt extends Tienda {
-  totalVentas?: number
-  ganancias?: number
-  calificacion?: number
-  createdAt?: string
-  telefono?: string
-  descripcion?: string
-}
-
 export default function TiendaPublica() {
   const { id } = useParams()
-  const [tienda, setTienda] = useState<TiendaExt | null>(null)
+  const [tienda, setTienda] = useState<Tienda | null>(null)
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
 
