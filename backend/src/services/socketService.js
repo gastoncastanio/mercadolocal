@@ -1,4 +1,5 @@
 import { Server } from 'socket.io'
+import jwt from 'jsonwebtoken'
 
 let io = null
 
@@ -19,11 +20,18 @@ export function initSocket(httpServer, corsOrigins) {
   io.on('connection', (socket) => {
     console.log(`🔌 WebSocket conectado: ${socket.id}`)
 
-    // El cliente envía su userId para unirse a su sala personal
-    socket.on('auth', (userId) => {
-      if (userId) {
-        socket.join(`user:${userId}`)
-        console.log(`👤 Usuario ${userId} se unió a su sala`)
+    // El cliente envía su JWT (access token) para unirse a SU sala personal.
+    // SEGURIDAD: verificamos el token en vez de confiar en un userId crudo,
+    // así nadie puede suscribirse a la sala de otro usuario y espiar sus
+    // eventos de pago/órdenes/notificaciones.
+    socket.on('auth', (token) => {
+      if (!token) return
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        socket.join(`user:${decoded.id}`)
+        console.log(`👤 Usuario ${decoded.id} se unió a su sala (token verificado)`)
+      } catch {
+        console.warn('🚨 Socket auth rechazado: token inválido')
       }
     })
 
