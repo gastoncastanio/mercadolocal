@@ -58,11 +58,15 @@ function LoadingSpinner() {
   )
 }
 
-function RutaPrivada({ children, roles }: { children: React.ReactNode, roles?: string[] }) {
-  const { estaLogueado, usuario, cargando } = useAuth()
+function RutaPrivada({ children, roles, requiereVendedor }: { children: React.ReactNode, roles?: string[], requiereVendedor?: boolean }) {
+  const { estaLogueado, usuario, esVendedor, cargando } = useAuth()
 
   if (cargando) return <LoadingSpinner />
   if (!estaLogueado) return <Navigate to="/login" />
+  // Cuenta unificada: la capacidad de vender se mide por esVendedor (flag
+  // tieneVendedor, tener tienda, o rol legacy), NO por el rol exclusivo.
+  // Un comprador sin tienda se manda a /mi-tienda para que abra la suya.
+  if (requiereVendedor && !esVendedor) return <Navigate to="/mi-tienda" />
   if (roles && usuario && !roles.includes(usuario.rol)) return <Navigate to="/catalogo" />
 
   return <>{children}</>
@@ -96,11 +100,12 @@ function AppContent() {
           <Route path="/favoritos" element={<ConNavbar><RutaPrivada><Favoritos /></RutaPrivada></ConNavbar>} />
           <Route path="/notificaciones" element={<ConNavbar><RutaPrivada><Notificaciones /></RutaPrivada></ConNavbar>} />
 
-          {/* Solo vendedores */}
-          <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><MiTienda /></RutaPrivada></ConNavbar>} />
-          <Route path="/publicar" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PublicarProducto /></RutaPrivada></ConNavbar>} />
-          <Route path="/pedidos-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PedidosVendedor /></RutaPrivada></ConNavbar>} />
-          <Route path="/carritos-abandonados" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CarritosAbandonados /></RutaPrivada></ConNavbar>} />
+          {/* Tienda: cualquier usuario logueado puede entrar a /mi-tienda
+              para abrir la suya (cuenta unificada). El resto requiere ya ser vendedor. */}
+          <Route path="/mi-tienda" element={<ConNavbar><RutaPrivada><MiTienda /></RutaPrivada></ConNavbar>} />
+          <Route path="/publicar" element={<ConNavbar><RutaPrivada requiereVendedor><PublicarProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/pedidos-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><PedidosVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/carritos-abandonados" element={<ConNavbar><RutaPrivada requiereVendedor><CarritosAbandonados /></RutaPrivada></ConNavbar>} />
 
           {/* Mensajes y disputas */}
           <Route path="/chat" element={<ConNavbar><RutaPrivada><Chat /></RutaPrivada></ConNavbar>} />
@@ -108,8 +113,8 @@ function AppContent() {
           <Route path="/mis-disputas" element={<ConNavbar><RutaPrivada><MisDisputas /></RutaPrivada></ConNavbar>} />
 
           {/* Dashboard vendedor */}
-          <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><DashboardVendedor /></RutaPrivada></ConNavbar>} />
-          <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><CentralVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><DashboardVendedor /></RutaPrivada></ConNavbar>} />
+          <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><CentralVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
 
           {/* Solo admin */}

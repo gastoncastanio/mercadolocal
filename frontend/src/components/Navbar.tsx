@@ -367,6 +367,17 @@ export default function Navbar() {
               </>
             )}
 
+            {/* Comprador sin tienda: invitación a empezar a vender (cuenta unificada) */}
+            {estaLogueado && !esVendedor && (
+              <>
+                <span className="text-gray-200">|</span>
+                <Link to="/mi-tienda" className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-semibold px-3 py-1.5 rounded-md hover:bg-blue-50 transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                  Vendé
+                </Link>
+              </>
+            )}
+
             {estaLogueado && (
               <>
                 <span className="text-gray-200">|</span>
@@ -426,6 +437,13 @@ export default function Navbar() {
                   <Link to="/pedidos-vendedor" className="block px-4 py-3 text-gray-700 hover:bg-gray-50">Mis ventas</Link>
                   <Link to="/central-vendedor" className="block px-4 py-3 text-gray-700 hover:bg-gray-50">Central vendedor</Link>
                 </>
+              )}
+
+              {/* Comprador sin tienda: invitación a vender (cuenta unificada) */}
+              {estaLogueado && !esVendedor && (
+                <Link to="/mi-tienda" className="block px-4 py-3 mt-2 text-blue-600 font-semibold hover:bg-blue-50">
+                  Vendé — abrí tu tienda
+                </Link>
               )}
 
               <div className="border-t my-2 mx-3"></div>

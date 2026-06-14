@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
 import { crearResena, resenasDeProducto, responderResena } from '../services/resenaService.js'
 
 const router = Router()
@@ -29,7 +29,7 @@ router.get('/producto/:productoId', async (req, res) => {
 })
 
 // POST /api/resenas/:resenaId/respuesta - Responder resena (vendedor)
-router.post('/:resenaId/respuesta', verificarToken, soloVendedor, async (req, res) => {
+router.post('/:resenaId/respuesta', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const { respuesta } = req.body
     if (!respuesta) {

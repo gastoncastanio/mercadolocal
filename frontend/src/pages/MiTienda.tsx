@@ -12,7 +12,7 @@ import { ENTREGA_VACIA, EntregaProducto } from '../types'
 import { Producto } from '../types'
 
 export default function MiTienda() {
-  const { tienda, actualizarTienda } = useAuth()
+  const { tienda, actualizarTienda, refreshAccessToken } = useAuth()
   const toast = useToast()
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
@@ -138,6 +138,10 @@ export default function MiTienda() {
       } else {
         const res = await api.post('/tienda', form)
         actualizarTienda(res.data)
+        // Recién abrió su tienda: el JWT actual todavía tiene tieneVendedor=false.
+        // Refrescamos el access token para que las rutas de vendedor lo dejen pasar
+        // sin necesidad de re-loguearse.
+        await refreshAccessToken()
       }
       setEditando(false)
       setPreviewLogo(null)

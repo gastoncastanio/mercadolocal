@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor, soloAdmin } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor, soloAdmin } from '../middleware/auth.js'
 import { crearDisputa, disputasDelComprador, disputasDelVendedor, resolverDisputa, disputasPendientes } from '../services/disputaService.js'
 
 const router = Router()
@@ -29,7 +29,7 @@ router.get('/mis-disputas', verificarToken, async (req, res) => {
 })
 
 // GET /api/disputas/vendedor - Disputas del vendedor
-router.get('/vendedor', verificarToken, soloVendedor, async (req, res) => {
+router.get('/vendedor', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const disputas = await disputasDelVendedor(req.usuario.id)
     res.json(disputas)

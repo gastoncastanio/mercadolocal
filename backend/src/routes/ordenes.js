@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
 import { crearOrden, ordenesDelComprador, ordenesDelVendedor, ordenesPendientesPago, actualizarEstadoOrden } from '../services/ordenService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import { enviarRecordatorioCompra } from '../services/emailService.js'
@@ -34,7 +34,7 @@ router.get('/', verificarToken, async (req, res) => {
 })
 
 // GET /api/ordenes/vendedor - Ver órdenes recibidas (vendedor)
-router.get('/vendedor', verificarToken, soloVendedor, async (req, res) => {
+router.get('/vendedor', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -50,7 +50,7 @@ router.get('/vendedor', verificarToken, soloVendedor, async (req, res) => {
 // PUT /api/ordenes/:ordenId/estado - Actualizar estado (vendedor)
 // Body: { estado, codigoSeguimiento?, empresaEnvio? }
 // Si estado === 'enviada' y se mandan codigoSeguimiento y/o empresaEnvio, se guardan.
-router.put('/:ordenId/estado', verificarToken, soloVendedor, async (req, res) => {
+router.put('/:ordenId/estado', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const { estado, codigoSeguimiento, empresaEnvio } = req.body
     const tienda = await obtenerMiTienda(req.usuario.id)
@@ -72,7 +72,7 @@ router.put('/:ordenId/estado', verificarToken, soloVendedor, async (req, res) =>
 })
 
 // GET /api/ordenes/abandonadas - Órdenes pendientes de pago (carritos abandonados)
-router.get('/abandonadas', verificarToken, soloVendedor, async (req, res) => {
+router.get('/abandonadas', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -86,7 +86,7 @@ router.get('/abandonadas', verificarToken, soloVendedor, async (req, res) => {
 })
 
 // POST /api/ordenes/recordatorio/:ordenId - Enviar email recordatorio al comprador
-router.post('/recordatorio/:ordenId', verificarToken, soloVendedor, async (req, res) => {
+router.post('/recordatorio/:ordenId', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {

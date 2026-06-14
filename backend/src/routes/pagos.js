@@ -367,7 +367,7 @@ router.get('/estado/:ordenId', verificarToken, async (req, res) => {
       item => item.tiendaId && item.tiendaId.toString()
     )
     let esVendedorAutorizado = false
-    if (!esComprador && req.usuario.rol === 'vendedor') {
+    if (!esComprador && (req.usuario.tieneVendedor || req.usuario.rol === 'vendedor')) {
       const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })
       if (tienda) {
         esVendedorAutorizado = orden.items.some(
