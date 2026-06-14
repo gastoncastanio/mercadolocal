@@ -39,9 +39,11 @@ export function soloVendedor(req, res, next) {
   next()
 }
 
-// Middleware para verificar que el usuario tiene una tienda
+// Middleware para verificar que el usuario tiene una tienda.
+// Acepta el flag nuevo tieneVendedor, admin, y el rol legacy 'vendedor'
+// (para que las sesiones/JWT previos a la migración sigan funcionando).
 export function soloTieneVendedor(req, res, next) {
-  if (!req.usuario.tieneVendedor && req.usuario.rol !== 'admin') {
+  if (!req.usuario.tieneVendedor && req.usuario.rol !== 'admin' && req.usuario.rol !== 'vendedor') {
     return res.status(403).json({ error: 'Necesitas crear una tienda primero.' })
   }
   next()

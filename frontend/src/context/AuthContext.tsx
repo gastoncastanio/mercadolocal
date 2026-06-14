@@ -124,7 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const estaLogueado = !!usuario
-  const tieneVendedor = usuario?.tieneVendedor ?? false
+  // Tiene capacidad de vender si: tiene el flag nuevo, YA tiene una tienda
+  // (cubre vendedores existentes sin migración), o es rol legacy 'vendedor'.
+  const tieneVendedor = (usuario?.tieneVendedor ?? false) || !!tienda || usuario?.rol === 'vendedor'
   const esVendedor = tieneVendedor || usuario?.rol === 'admin'
   const esAdmin = usuario?.rol === 'admin'
 
