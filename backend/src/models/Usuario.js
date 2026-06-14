@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcrypt'
+import { validarDNI } from '../utils/dniValidator.js'
 
 const usuarioSchema = new mongoose.Schema({
   email: {
@@ -44,7 +45,14 @@ const usuarioSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true,
-    trim: true
+    trim: true,
+    validate: {
+      validator: function(v) {
+        if (!v) return true
+        return validarDNI(v)
+      },
+      message: 'El DNI debe tener 8 dígitos válidos (no repetidos, con dígito verificador correcto)'
+    }
   },
   telefono: {
     type: String,

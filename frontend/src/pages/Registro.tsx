@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { validarDNI } from '../utils/dniValidator'
 
 export default function Registro() {
   const navigate = useNavigate()
@@ -32,9 +33,8 @@ export default function Registro() {
     e.preventDefault()
     setError('')
 
-    const dniLimpio = form.dni.replace(/\D/g, '')
-    if (!dniLimpio || dniLimpio.length < 7 || dniLimpio.length > 8) {
-      setError('Ingresá un DNI válido (7 u 8 dígitos)')
+    if (form.dni && !validarDNI(form.dni)) {
+      setError('El DNI debe tener 8 dígitos válidos (no puede ser una secuencia repetida)')
       return
     }
 
