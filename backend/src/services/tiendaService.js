@@ -1,4 +1,5 @@
 import Tienda from '../models/Tienda.js'
+import Usuario from '../models/Usuario.js'
 import { validarPublicacion, construirMensajeRechazo } from '../utils/validacionContenido.js'
 
 /**
@@ -39,6 +40,10 @@ export async function crearTienda(usuarioId, datos) {
   })
 
   await tienda.save()
+
+  // Actualizar el usuario para indicar que tiene tienda
+  await Usuario.findByIdAndUpdate(usuarioId, { tieneVendedor: true })
+
   return tienda
 }
 

@@ -4,7 +4,8 @@ export interface Usuario {
   _id: string
   email: string
   nombre: string
-  rol: 'comprador' | 'vendedor' | 'admin'
+  rol: 'comprador' | 'admin'
+  tieneVendedor?: boolean
   avatar: string
   direccion: string
   telefono: string

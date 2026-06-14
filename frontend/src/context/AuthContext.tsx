@@ -14,6 +14,7 @@ interface AuthContextType {
   refreshAccessToken: () => Promise<string | null>
   estaLogueado: boolean
   esVendedor: boolean
+  tieneVendedor: boolean
   esAdmin: boolean
 }
 
@@ -123,14 +124,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const estaLogueado = !!usuario
-  const esVendedor = usuario?.rol === 'vendedor'
+  const tieneVendedor = usuario?.tieneVendedor ?? false
+  const esVendedor = tieneVendedor || usuario?.rol === 'admin'
   const esAdmin = usuario?.rol === 'admin'
 
   return (
     <AuthContext.Provider value={{
       usuario, tienda, token, cargando,
       login, registro, logout, actualizarTienda, refreshAccessToken,
-      estaLogueado, esVendedor, esAdmin
+      estaLogueado, esVendedor, tieneVendedor, esAdmin
     }}>
       {children}
     </AuthContext.Provider>

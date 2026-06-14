@@ -22,8 +22,12 @@ const usuarioSchema = new mongoose.Schema({
   },
   rol: {
     type: String,
-    enum: ['comprador', 'vendedor', 'admin'],
+    enum: ['comprador', 'admin'],
     default: 'comprador'
+  },
+  tieneVendedor: {
+    type: Boolean,
+    default: false
   },
   avatar: {
     type: String,
