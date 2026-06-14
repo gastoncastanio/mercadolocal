@@ -1,5 +1,6 @@
 import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
+import { enviarPush } from './pushService.js'
 
 let io = null
 
@@ -72,14 +73,23 @@ export function getIO() {
  * Notifica a un usuario específico que tiene una nueva notificación
  */
 export function emitNotificacion(usuarioId, notificacion) {
-  if (!io) return
-  io.to(`user:${usuarioId}`).emit('notificacion', {
+  // 1. Tiempo real para pestañas abiertas (WebSocket)
+  if (io) {
+    io.to(`user:${usuarioId}`).emit('notificacion', {
+      tipo: notificacion.tipo,
+      titulo: notificacion.titulo,
+      mensaje: notificacion.mensaje,
+      enlace: notificacion.enlace,
+      timestamp: new Date()
+    })
+  }
+  // 2. Web Push para cuando la app está cerrada (fire-and-forget)
+  enviarPush(usuarioId, {
     tipo: notificacion.tipo,
     titulo: notificacion.titulo,
     mensaje: notificacion.mensaje,
-    enlace: notificacion.enlace,
-    timestamp: new Date()
-  })
+    enlace: notificacion.enlace
+  }).catch(() => {})
 }
 
 /**

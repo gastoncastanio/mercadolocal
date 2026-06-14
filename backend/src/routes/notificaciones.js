@@ -1,8 +1,38 @@
 import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import Notificacion from '../models/Notificacion.js'
+import { getVapidPublicKey, guardarSuscripcion, eliminarSuscripcion } from '../services/pushService.js'
 
 const router = Router()
+
+// ===== WEB PUSH (notificaciones con la app cerrada) =====
+
+// GET /api/notificaciones/push/clave-publica - VAPID public key para suscribirse
+router.get('/push/clave-publica', (req, res) => {
+  const clave = getVapidPublicKey()
+  if (!clave) return res.status(503).json({ error: 'Push no configurado en el servidor' })
+  res.json({ clave })
+})
+
+// POST /api/notificaciones/push/suscribir - Registrar la suscripción del dispositivo
+router.post('/push/suscribir', verificarToken, async (req, res) => {
+  try {
+    await guardarSuscripcion(req.usuario.id, req.body.suscripcion)
+    res.json({ ok: true })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/notificaciones/push/desuscribir - Quitar la suscripción del dispositivo
+router.post('/push/desuscribir', verificarToken, async (req, res) => {
+  try {
+    await eliminarSuscripcion(req.body.endpoint)
+    res.json({ ok: true })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
 
 // GET /api/notificaciones - Listar mis notificaciones
 router.get('/', verificarToken, async (req, res) => {

@@ -222,13 +222,15 @@ router.post('/webhook', async (req, res) => {
         try {
           const comprador = await Usuario.findById(ordenActualizada.compradorId)
           if (comprador) {
-            await new Notificacion({
+            const notifCompra = await new Notificacion({
               usuarioId: comprador._id,
               tipo: 'compra',
               titulo: 'Pago confirmado',
               mensaje: `Tu pago de $${ordenActualizada.total.toLocaleString('es-AR')} fue aprobado. El vendedor preparará tu pedido.`,
               enlace: '/mis-ordenes'
             }).save()
+            // Tiempo real + push (app cerrada) al comprador
+            emitNotificacion(comprador._id.toString(), notifCompra)
             await enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
           }
 
