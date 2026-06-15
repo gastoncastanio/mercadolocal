@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { validarDNI, obtenerErrorDNI } from '../utils/dniValidator'
+import { obtenerErrorDNI } from '../utils/dniValidator'
 
 export default function Registro() {
   const navigate = useNavigate()

@@ -51,7 +51,7 @@ const usuarioSchema = new mongoose.Schema({
         if (!v) return true
         return validarDNI(v)
       },
-      message: 'El DNI debe tener 8 dígitos válidos (no repetidos, con dígito verificador correcto)'
+      message: 'El DNI debe tener 7 u 8 dígitos'
     }
   },
   telefono: {
