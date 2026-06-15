@@ -104,7 +104,7 @@ export default function Navbar() {
       {/* ===== TOP BAR ===== */}
       <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Hamburger mobile */}
             <button
               onClick={() => setMenuMobile(!menuMobile)}
@@ -121,13 +121,13 @@ export default function Navbar() {
             </button>
 
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center">
+            <Link to="/" className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">MercadoLocal</span>
+              <span className="text-base sm:text-lg font-bold text-white tracking-tight truncate">MercadoLocal</span>
             </Link>
 
             {/* Buscador */}
@@ -149,7 +149,7 @@ export default function Navbar() {
             </form>
 
             {/* Acciones derecha */}
-            <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+            <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
               {estaLogueado ? (
                 <>
                   <Link to="/notificaciones" className="relative text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Notificaciones">
@@ -250,10 +250,10 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-white border border-white/40 hover:bg-white/10 text-sm font-medium px-3 sm:px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                  <Link to="/login" className="text-white border border-white/40 hover:bg-white/10 text-[13px] sm:text-sm font-medium px-2.5 sm:px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
                     Iniciar sesión
                   </Link>
-                  <Link to="/registro" className="bg-white text-indigo-700 text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap">
+                  <Link to="/registro" className="bg-white text-indigo-700 text-[13px] sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap">
                     Creá tu cuenta
                   </Link>
                 </>
