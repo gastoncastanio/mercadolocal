@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
 import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
@@ -80,7 +80,7 @@ router.get('/', async (req, res) => {
 
 // GET /api/productos/mis-productos - Productos del vendedor logueado (sin filtro de MP)
 // IMPORTANTE: debe ir ANTES de /:id para que no choque con esa ruta
-router.get('/mis-productos', verificarToken, soloVendedor, async (req, res) => {
+router.get('/mis-productos', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -104,7 +104,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/productos - Crear (solo vendedor)
-router.post('/', verificarToken, soloVendedor, async (req, res) => {
+router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -153,7 +153,7 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
 // PUT /api/productos/:id - Actualizar (solo dueño)
 // Permite editar productos existentes aunque no esté MP vinculado.
 // Los productos quedan ocultos del catálogo público vía listarProductos hasta que vincule.
-router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
+router.put('/:id', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
@@ -188,7 +188,7 @@ router.put('/:id', verificarToken, soloVendedor, async (req, res) => {
 })
 
 // DELETE /api/productos/:id - Eliminar (solo dueño)
-router.delete('/:id', verificarToken, soloVendedor, async (req, res) => {
+router.delete('/:id', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {

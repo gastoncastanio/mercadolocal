@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
+import { pushSoportado, estadoPermiso, yaSuscripto, activarPush, desactivarPush } from '../utils/pushNotifications'
 
 interface Notificacion {
   _id: string
@@ -26,10 +27,39 @@ const ICONOS: Record<string, string> = {
 export default function Notificaciones() {
   const [items, setItems] = useState<Notificacion[]>([])
   const [cargando, setCargando] = useState(true)
+  const [pushActivo, setPushActivo] = useState(false)
+  const [pushProcesando, setPushProcesando] = useState(false)
+  const [pushError, setPushError] = useState('')
 
   useEffect(() => {
     cargar()
+    yaSuscripto().then(setPushActivo)
   }, [])
+
+  async function togglePush() {
+    setPushError('')
+    setPushProcesando(true)
+    try {
+      if (pushActivo) {
+        await desactivarPush()
+        setPushActivo(false)
+      } else {
+        const ok = await activarPush()
+        setPushActivo(ok)
+        if (!ok) {
+          setPushError(
+            estadoPermiso() === 'denied'
+              ? 'Bloqueaste las notificaciones. Habilitalas en los ajustes del navegador.'
+              : 'No se pudo activar. Probá de nuevo.'
+          )
+        }
+      }
+    } catch (err: any) {
+      setPushError(err?.response?.data?.error || err?.message || 'No se pudo cambiar la configuración')
+    } finally {
+      setPushProcesando(false)
+    }
+  }
 
   async function cargar() {
     try {
@@ -100,6 +130,32 @@ export default function Notificaciones() {
             </button>
           )}
         </div>
+
+        {/* Activar notificaciones push (avisos con la app cerrada) */}
+        {pushSoportado() && (
+          <div className="mb-6 flex items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+            <div className="min-w-0">
+              <p className="font-semibold text-gray-800 flex items-center gap-2">
+                <span>&#x1F514;</span> Notificaciones en tu celular
+              </p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Recib&iacute; avisos de ventas, pagos y mensajes aunque tengas la app cerrada.
+              </p>
+              {pushError && <p className="text-xs text-red-500 mt-1">{pushError}</p>}
+            </div>
+            <button
+              onClick={togglePush}
+              disabled={pushProcesando}
+              className={`shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
+                pushActivo
+                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {pushProcesando ? '...' : pushActivo ? 'Desactivar' : 'Activar'}
+            </button>
+          </div>
+        )}
 
         {cargando ? (
           <div className="text-center py-16">

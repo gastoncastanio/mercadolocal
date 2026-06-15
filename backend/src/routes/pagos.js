@@ -48,7 +48,11 @@ function verificarFirmaWebhook(req) {
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
   const hmac = crypto.createHmac('sha256', webhookSecret).update(manifest).digest('hex')
 
-  return hmac === v1
+  // Comparación en tiempo constante (evita timing attacks al comparar el hash)
+  const hmacBuf = Buffer.from(hmac, 'hex')
+  const v1Buf = Buffer.from(v1, 'hex')
+  if (hmacBuf.length !== v1Buf.length) return false
+  return crypto.timingSafeEqual(hmacBuf, v1Buf)
 }
 
 // POST /api/pagos/crear-preferencia - Crear preferencia de MP con Split
@@ -218,13 +222,15 @@ router.post('/webhook', async (req, res) => {
         try {
           const comprador = await Usuario.findById(ordenActualizada.compradorId)
           if (comprador) {
-            await new Notificacion({
+            const notifCompra = await new Notificacion({
               usuarioId: comprador._id,
               tipo: 'compra',
               titulo: 'Pago confirmado',
               mensaje: `Tu pago de $${ordenActualizada.total.toLocaleString('es-AR')} fue aprobado. El vendedor preparará tu pedido.`,
               enlace: '/mis-ordenes'
             }).save()
+            // Tiempo real + push (app cerrada) al comprador
+            emitNotificacion(comprador._id.toString(), notifCompra)
             await enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
           }
 
@@ -367,7 +373,7 @@ router.get('/estado/:ordenId', verificarToken, async (req, res) => {
       item => item.tiendaId && item.tiendaId.toString()
     )
     let esVendedorAutorizado = false
-    if (!esComprador && req.usuario.rol === 'vendedor') {
+    if (!esComprador && (req.usuario.tieneVendedor || req.usuario.rol === 'vendedor')) {
       const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })
       if (tienda) {
         esVendedorAutorizado = orden.items.some(

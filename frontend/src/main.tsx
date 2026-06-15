@@ -12,22 +12,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-// ===== DESREGISTRAR Service Workers viejos =====
-// El SW de la PWA estaba cacheando JavaScript viejo y rompiendo deploys.
-// Hasta que lo rediseñemos correctamente, lo desinstalamos en todos los
-// navegadores que lo tengan instalado.
+// ===== Service Worker SOLO para Web Push =====
+// El SW de push (/push-sw.js) NO cachea assets, así que NO reintroduce el bug
+// histórico de servir JavaScript viejo. Solo escucha eventos de push.
+// Reemplaza al kill-switch anterior (que se autodesinstalaba).
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(regs => {
-    for (const reg of regs) {
-      reg.unregister().then(ok => {
-        if (ok) console.log('🧹 Service Worker viejo desinstalado:', reg.scope)
-      })
-    }
-  })
-  // Limpiar también los caches del SW
-  if ('caches' in window) {
-    caches.keys().then(names => {
-      names.forEach(name => caches.delete(name))
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/push-sw.js').catch(err => {
+      console.warn('No se pudo registrar el SW de push:', err)
     })
-  }
+  })
 }

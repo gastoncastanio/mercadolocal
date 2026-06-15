@@ -36,21 +36,23 @@ export function useSocket(userId?: string) {
       })
     }
 
-    // Si tenemos userId, unirnos a la sala personal
-    if (userId && socketInstance.connected) {
-      socketInstance.emit('auth', userId)
-    }
-
-    // Si se conecta despues, enviar auth
-    const handleConnect = () => {
-      if (userId) {
-        socketInstance?.emit('auth', userId)
+    // Para unirnos a la sala personal mandamos el JWT (el server lo verifica
+    // y extrae el userId). Nunca el userId crudo: eso permitiría espiar la
+    // sala de otro usuario.
+    const enviarAuth = () => {
+      const token = localStorage.getItem('token')
+      if (userId && token) {
+        socketInstance?.emit('auth', token)
       }
     }
-    socketInstance.on('connect', handleConnect)
+
+    if (socketInstance.connected) enviarAuth()
+
+    // Si se conecta (o reconecta) después, reenviar auth
+    socketInstance.on('connect', enviarAuth)
 
     return () => {
-      socketInstance?.off('connect', handleConnect)
+      socketInstance?.off('connect', enviarAuth)
     }
   }, [userId])
 

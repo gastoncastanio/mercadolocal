@@ -113,6 +113,10 @@ usuarioSchema.methods.toJSON = function() {
   delete usuario.refreshTokens
   delete usuario.resetToken
   delete usuario.resetTokenExpira
+  // DNI es PII: no se envía al cliente en respuestas normales ni en populates.
+  // Si en el futuro el admin necesita verlo, usar un endpoint dedicado que lo
+  // seleccione explícitamente (defensa en profundidad / minimización de datos).
+  delete usuario.dni
   return usuario
 }
 

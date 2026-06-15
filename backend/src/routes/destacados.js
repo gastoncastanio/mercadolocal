@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { verificarToken, soloVendedor, soloAdmin } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor, soloAdmin } from '../middleware/auth.js'
 import Destacado from '../models/Destacado.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
@@ -81,7 +81,7 @@ router.post('/click/:id', async (req, res) => {
 })
 
 // GET /api/destacados/mis-promociones - Promociones del vendedor
-router.get('/mis-promociones', verificarToken, soloVendedor, async (req, res) => {
+router.get('/mis-promociones', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })
     if (!tienda) return res.status(404).json({ error: 'Tienda no encontrada' })
@@ -97,7 +97,7 @@ router.get('/mis-promociones', verificarToken, soloVendedor, async (req, res) =>
 })
 
 // POST /api/destacados - Crear promoci\u00f3n
-router.post('/', verificarToken, soloVendedor, async (req, res) => {
+router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const { productoId, plan, duracionDias } = req.body
 
@@ -183,7 +183,7 @@ router.post('/', verificarToken, soloVendedor, async (req, res) => {
 })
 
 // DELETE /api/destacados/:id - Cancelar promoci\u00f3n (no reembolsa)
-router.delete('/:id', verificarToken, soloVendedor, async (req, res) => {
+router.delete('/:id', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const destacado = await Destacado.findById(req.params.id)
     if (!destacado) return res.status(404).json({ error: 'Promoci\u00f3n no encontrada' })

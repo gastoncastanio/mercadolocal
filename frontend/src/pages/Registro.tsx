@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { validarDNI } from '../utils/dniValidator'
 
 export default function Registro() {
   const navigate = useNavigate()
   const { registro } = useAuth()
+  const [searchParams] = useSearchParams()
 
   // Cuenta unificada: todos se registran igual. La capacidad de vender
-  // se activa luego desde la cuenta abriendo una tienda (sin re-loguearse).
+  // se activa abriendo una tienda — opcionalmente ya en el registro
+  // (cuando llegan desde "Crear mi tienda gratis" con ?rol=vendedor).
   const [form, setForm] = useState({
     nombre: '',
     email: '',
@@ -17,6 +19,15 @@ export default function Registro() {
     confirmarContraseña: '',
     telefono: '',
     direccion: ''
+  })
+
+  // Apertura de tienda opcional en el registro
+  const [quiereTienda, setQuiereTienda] = useState(searchParams.get('rol') === 'vendedor')
+  const [tiendaForm, setTiendaForm] = useState({
+    nombreTienda: '',
+    descripcionTienda: '',
+    ciudad: '',
+    tipoTienda: 'online'
   })
 
   const [mayorDeEdad, setMayorDeEdad] = useState(false)
@@ -43,25 +54,30 @@ export default function Registro() {
       return
     }
 
-    if (form.contraseña.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+    if (form.contraseña.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres')
       return
     }
 
-    if (!mayorDeEdad) {
-      setError('Debés declarar que sos mayor de 18 años para registrarte')
+    if (quiereTienda && !tiendaForm.nombreTienda.trim()) {
+      setError('El nombre de la tienda es obligatorio')
       return
     }
 
-    if (!aceptaTerminos) {
-      setError('Debés aceptar los Términos y Condiciones')
+    if (quiereTienda && !tiendaForm.ciudad.trim()) {
+      setError('La ciudad es obligatoria')
       return
     }
 
     setCargando(true)
 
     try {
-      await registro({ ...form, mayorDeEdad, aceptaTerminos })
+      await registro({
+        ...form,
+        ...tiendaForm,
+        mayorDeEdad,
+        aceptaTerminos
+      })
       navigate('/catalogo')
     } catch (err: any) {
       if (!err.response && (err.code === 'ECONNABORTED' || err.message?.includes('Network Error'))) {
@@ -178,7 +194,7 @@ export default function Registro() {
               value={form.contraseña}
               onChange={handleChange}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
           </div>
 
@@ -194,6 +210,73 @@ export default function Registro() {
               placeholder="Repetir contraseña"
             />
           </div>
+
+          {/* Apertura de tienda opcional (cuenta unificada) */}
+          <div className="border-t pt-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={quiereTienda}
+                onChange={(e) => { setQuiereTienda(e.target.checked); setError('') }}
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+              />
+              <span className="text-sm text-gray-600">
+                Quiero <strong>abrir mi tienda ya</strong> para empezar a vender (opcional)
+              </span>
+            </label>
+          </div>
+
+          {quiereTienda && (
+            <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <h3 className="font-semibold text-gray-800 text-sm">Datos de tu tienda</h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
+                <input
+                  type="text"
+                  value={tiendaForm.nombreTienda}
+                  onChange={(e) => setTiendaForm({ ...tiendaForm, nombreTienda: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Ej: Ropa Vintage Ana"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
+                <textarea
+                  value={tiendaForm.descripcionTienda}
+                  onChange={(e) => setTiendaForm({ ...tiendaForm, descripcionTienda: e.target.value })}
+                  rows={2}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                  placeholder="Qué vendés, en qué te especializás..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                <input
+                  type="text"
+                  value={tiendaForm.ciudad}
+                  onChange={(e) => setTiendaForm({ ...tiendaForm, ciudad: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Ej: Buenos Aires"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de tienda</label>
+                <select
+                  value={tiendaForm.tipoTienda}
+                  onChange={(e) => setTiendaForm({ ...tiendaForm, tipoTienda: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  <option value="online">Solo en línea</option>
+                  <option value="fisica">Solo física</option>
+                  <option value="ambas">Física + en línea</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           {/* Declaraciones legales */}
           <div className="space-y-3 pt-2">

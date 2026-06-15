@@ -1,4 +1,6 @@
 import { Server } from 'socket.io'
+import jwt from 'jsonwebtoken'
+import { enviarPush } from './pushService.js'
 
 let io = null
 
@@ -19,11 +21,18 @@ export function initSocket(httpServer, corsOrigins) {
   io.on('connection', (socket) => {
     console.log(`🔌 WebSocket conectado: ${socket.id}`)
 
-    // El cliente envía su userId para unirse a su sala personal
-    socket.on('auth', (userId) => {
-      if (userId) {
-        socket.join(`user:${userId}`)
-        console.log(`👤 Usuario ${userId} se unió a su sala`)
+    // El cliente envía su JWT (access token) para unirse a SU sala personal.
+    // SEGURIDAD: verificamos el token en vez de confiar en un userId crudo,
+    // así nadie puede suscribirse a la sala de otro usuario y espiar sus
+    // eventos de pago/órdenes/notificaciones.
+    socket.on('auth', (token) => {
+      if (!token) return
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        socket.join(`user:${decoded.id}`)
+        console.log(`👤 Usuario ${decoded.id} se unió a su sala (token verificado)`)
+      } catch {
+        console.warn('🚨 Socket auth rechazado: token inválido')
       }
     })
 
@@ -64,14 +73,23 @@ export function getIO() {
  * Notifica a un usuario específico que tiene una nueva notificación
  */
 export function emitNotificacion(usuarioId, notificacion) {
-  if (!io) return
-  io.to(`user:${usuarioId}`).emit('notificacion', {
+  // 1. Tiempo real para pestañas abiertas (WebSocket)
+  if (io) {
+    io.to(`user:${usuarioId}`).emit('notificacion', {
+      tipo: notificacion.tipo,
+      titulo: notificacion.titulo,
+      mensaje: notificacion.mensaje,
+      enlace: notificacion.enlace,
+      timestamp: new Date()
+    })
+  }
+  // 2. Web Push para cuando la app está cerrada (fire-and-forget)
+  enviarPush(usuarioId, {
     tipo: notificacion.tipo,
     titulo: notificacion.titulo,
     mensaje: notificacion.mensaje,
-    enlace: notificacion.enlace,
-    timestamp: new Date()
-  })
+    enlace: notificacion.enlace
+  }).catch(() => {})
 }
 
 /**
