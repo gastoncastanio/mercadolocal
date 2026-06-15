@@ -1,31 +1,27 @@
+// Validación de DNI argentino.
+//
+// IMPORTANTE: el DNI argentino NO tiene dígito verificador. Es un número
+// secuencial de 7 u 8 dígitos asignado por el RENAPER. El algoritmo de
+// módulo 11 que se usaba antes pertenece al CUIL/CUIT (ej: 20-42949528-3),
+// NO al DNI suelto, y rechazaba la mayoría de los DNIs reales.
+// Acá solo validamos longitud y que no sea basura obvia.
+
 export function validarDNI(dni: string | number): boolean {
+  return obtenerErrorDNI(dni) === null
+}
+
+// Devuelve un mensaje específico si el DNI no es válido, o null si está OK
+export function obtenerErrorDNI(dni: string | number): string | null {
   const dniLimpio = String(dni).replace(/\D/g, '')
 
-  // Debe tener exactamente 8 dígitos
-  if (dniLimpio.length !== 8) {
-    return false
+  if (dniLimpio.length < 7 || dniLimpio.length > 8) {
+    return 'El DNI debe tener 7 u 8 dígitos'
   }
 
-  // Rechazar secuencias repetidas (00000000, 11111111, etc.)
-  if (/^(\d)\1{7}$/.test(dniLimpio)) {
-    return false
+  // Rechazar todos los dígitos iguales (00000000, 11111111, etc.): nunca es real
+  if (/^(\d)\1+$/.test(dniLimpio)) {
+    return 'El DNI no puede tener todos los dígitos iguales'
   }
 
-  // Validar con módulo 11 (solo primeros 7 dígitos)
-  const multiplicadores = [2, 3, 4, 5, 6, 7, 8]
-  let suma = 0
-
-  for (let i = 0; i < 7; i++) {
-    suma += parseInt(dniLimpio[i]) * multiplicadores[i]
-  }
-
-  const resto = suma % 11
-  const digitoVerificador = 11 - resto
-
-  // Si el resultado es 11, es 0; si es 10, es 9
-  const digitoValido =
-    digitoVerificador === 11 ? 0 : digitoVerificador === 10 ? 9 : digitoVerificador
-
-  // El 8vo dígito debe coincidir con el dígito verificador calculado
-  return parseInt(dniLimpio[7]) === digitoValido
+  return null
 }
