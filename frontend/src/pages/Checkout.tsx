@@ -27,6 +27,22 @@ export default function Checkout() {
     }
   }
 
+  // Cantidad de vendedores distintos en el carrito (cada uno = un pago aparte)
+  const cantidadVendedores = new Set(
+    items.map((i: any) => String(i.tiendaId?._id || i.tiendaId))
+  ).size
+
+  // Crear la preferencia de una orden y redirigir a Mercado Pago.
+  async function iniciarPagoOrden(ordenId: string) {
+    const resPago = await api.post('/pagos/crear-preferencia', { ordenId })
+    const mpUrl = resPago.data.initPoint
+    if (mpUrl && mpUrl.startsWith('https://') && mpUrl.includes('mercadopago.com')) {
+      window.location.href = mpUrl
+    } else {
+      throw new Error('URL de pago inválida. Intentá de nuevo.')
+    }
+  }
+
   async function crearOrdenYPagar(e: React.FormEvent) {
     e.preventDefault()
     if (!direccion.trim()) {
@@ -38,24 +54,34 @@ export default function Checkout() {
     setError('')
 
     try {
-      // 1. Crear la orden
+      // 1. Crear la(s) orden(es). El backend separa el carrito por vendedor,
+      //    así que puede devolver varias órdenes (una por vendedor).
       const resOrden = await api.post('/ordenes/crear', { direccion, nombre, telefono, notas })
-      const orden = resOrden.data
+      const ordenes: any[] = resOrden.data?.ordenes || []
 
-      // 2. Crear preferencia de Mercado Pago
-      const resPago = await api.post('/pagos/crear-preferencia', { ordenId: orden._id })
-
-      // 3. Redirigir a Mercado Pago (validar origen)
-      const mpUrl = resPago.data.initPoint
-      if (mpUrl && mpUrl.startsWith('https://') && mpUrl.includes('mercadopago.com')) {
-        window.location.href = mpUrl
-      } else {
-        setError('URL de pago inválida. Intentá de nuevo.')
+      if (ordenes.length === 0) {
+        setError('No se pudo crear la orden. Intentá de nuevo.')
         setProcesando(false)
+        return
       }
 
+      // Limpiar cualquier cola de pagos vieja (de un checkout abandonado)
+      localStorage.removeItem('ml_cola_pagos')
+
+      // 2. Si hay varios vendedores, guardamos una "cola de pagos" para ir
+      //    pagando uno por uno. La página de pago-exitoso continúa la cola.
+      if (ordenes.length > 1) {
+        localStorage.setItem('ml_cola_pagos', JSON.stringify({
+          ordenes: ordenes.map(o => ({ ordenId: o._id, total: o.total, tienda: o.tiendaNombre })),
+          pagados: []
+        }))
+      }
+
+      // 3. Empezar a pagar por la primera orden (redirige a Mercado Pago)
+      await iniciarPagoOrden(ordenes[0]._id)
+
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al procesar el pago')
+      setError(err.response?.data?.error || err.message || 'Error al procesar el pago')
       setProcesando(false)
     }
   }
@@ -72,6 +98,17 @@ export default function Checkout() {
               <h2 className="text-lg font-semibold text-gray-800 mb-2">Datos de Entrega</h2>
 
               {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+
+              {/* Aviso multi-vendedor: cada vendedor cobra por separado */}
+              {cantidadVendedores > 1 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-xs text-blue-900 leading-relaxed">
+                    <span className="font-semibold">🛒 Tu carrito tiene productos de {cantidadVendedores} vendedores.</span>{' '}
+                    Como cada uno cobra por separado, vas a hacer <strong>{cantidadVendedores} pagos seguidos</strong> (uno por vendedor).
+                    Te vamos guiando paso a paso después de cada pago.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>

@@ -5,6 +5,7 @@ import { obtenerMiTienda } from '../services/tiendaService.js'
 import { enviarRecordatorioCompra } from '../services/emailService.js'
 import Usuario from '../models/Usuario.js'
 import Orden from '../models/Orden.js'
+import Tienda from '../models/Tienda.js'
 import { emitOrdenEstado } from '../services/socketService.js'
 
 const router = Router()
@@ -16,8 +17,22 @@ router.post('/crear', verificarToken, async (req, res) => {
     if (!direccion) {
       return res.status(400).json({ error: 'La dirección de entrega es obligatoria' })
     }
-    const orden = await crearOrden(req.usuario.id, { direccion, notas, nombre, telefono })
-    res.status(201).json(orden)
+    // crearOrden devuelve un array de órdenes: una por vendedor del carrito.
+    const ordenes = await crearOrden(req.usuario.id, { direccion, notas, nombre, telefono })
+
+    // Adjuntar el nombre de la tienda a cada orden para que el frontend pueda
+    // mostrar "Pagando a [vendedor]" en la cola de pagos multi-vendedor.
+    const tiendaIds = ordenes.map(o => o.items[0].tiendaId)
+    const tiendas = await Tienda.find({ _id: { $in: tiendaIds } }).select('nombre')
+    const nombrePorId = new Map(tiendas.map(t => [t._id.toString(), t.nombre]))
+
+    res.status(201).json({
+      ordenes: ordenes.map(o => ({
+        _id: o._id,
+        total: o.total,
+        tiendaNombre: nombrePorId.get(o.items[0].tiendaId.toString()) || 'Vendedor'
+      }))
+    })
   } catch (error) {
     res.status(400).json({ error: error.message })
   }

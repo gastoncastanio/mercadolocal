@@ -3,7 +3,6 @@ import Carrito from '../models/Carrito.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
-import { calcularTotal } from './carritoService.js'
 
 const PORCENTAJE_COMISION = 10 // 10%
 
@@ -36,61 +35,72 @@ export async function crearOrden(usuarioId, datosEntrega) {
     }
   }
 
-  // Crear items de la orden con precios verificados
-  const items = carrito.items.map(item => ({
-    productoId: item.productoId,
-    tiendaId: item.tiendaId,
-    nombre: item.nombre,
-    cantidad: item.cantidad,
-    precioUnitario: item.precio,
-    subtotal: item.precio * item.cantidad
-  }))
+  // Agrupar los items por tienda: una orden (y un pago) por vendedor.
+  const gruposPorTienda = new Map() // tiendaId -> items[]
+  for (const item of carrito.items) {
+    const key = item.tiendaId.toString()
+    if (!gruposPorTienda.has(key)) gruposPorTienda.set(key, [])
+    gruposPorTienda.get(key).push({
+      productoId: item.productoId,
+      tiendaId: item.tiendaId,
+      nombre: item.nombre,
+      cantidad: item.cantidad,
+      precioUnitario: item.precio,
+      subtotal: item.precio * item.cantidad
+    })
+  }
 
-  const total = calcularTotal(carrito)
-  const comision = Math.round(total * PORCENTAJE_COMISION / 100 * 100) / 100
-  const gananciaVendedor = total - comision
+  // Crear una orden por cada vendedor, con su propio total y comisión.
+  const ordenesCreadas = []
+  for (const items of gruposPorTienda.values()) {
+    const total = items.reduce((sum, i) => sum + i.subtotal, 0)
+    const comision = Math.round(total * PORCENTAJE_COMISION / 100 * 100) / 100
+    const gananciaVendedor = total - comision
 
-  const orden = new Orden({
-    compradorId: usuarioId,
-    items,
-    total,
-    comision,
-    porcentajeComision: PORCENTAJE_COMISION,
-    gananciaVendedor,
-    estado: 'pendiente',
-    direccionEntrega: datosEntrega.direccion,
-    notasComprador: datosEntrega.notas || '',
-    nombreComprador: datosEntrega.nombre || '',
-    telefonoComprador: datosEntrega.telefono || ''
-  })
-
-  await orden.save()
+    const orden = new Orden({
+      compradorId: usuarioId,
+      items,
+      total,
+      comision,
+      porcentajeComision: PORCENTAJE_COMISION,
+      gananciaVendedor,
+      estado: 'pendiente',
+      direccionEntrega: datosEntrega.direccion,
+      notasComprador: datosEntrega.notas || '',
+      nombreComprador: datosEntrega.nombre || '',
+      telefonoComprador: datosEntrega.telefono || ''
+    })
+    await orden.save()
+    ordenesCreadas.push(orden)
+  }
 
   // Stock y stats de tienda se actualizan cuando el pago se aprueba (webhook)
   // NO descontar stock aquí porque el pago aún no se realizó
 
-  const tiendaIds = [...new Set(items.map(i => i.tiendaId.toString()))]
+  const totalCombinado = ordenesCreadas.reduce((sum, o) => sum + o.total, 0)
+  const esMultiple = ordenesCreadas.length > 1
 
-  // NO vaciar el carrito ac\u00e1: se vac\u00eda solo cuando el pago es confirmado por el webhook.
-  // Si el usuario abandona el checkout, su carrito sigue intacto para retomar.
+  console.log(`OK ${ordenesCreadas.length} orden(es) creada(s) (pendiente de pago): $${totalCombinado}`)
 
-  console.log(`\u2705 Orden creada (pendiente de pago): $${total}`)
-
-  // Solo notificar al comprador que debe completar el pago
-  // NO notificar al vendedor ni al admin hasta que el pago sea aprobado
+  // Notificar al comprador que debe completar el/los pago(s)
   try {
     await new Notificacion({
       usuarioId,
       tipo: 'compra',
-      titulo: 'Orden creada - Completá el pago',
-      mensaje: `Tu orden por $${total.toLocaleString('es-AR')} fue creada. Completá el pago para confirmarla.`,
+      titulo: esMultiple
+        ? `Compra creada (${ordenesCreadas.length} vendedores) - Completá los pagos`
+        : 'Orden creada - Completá el pago',
+      mensaje: esMultiple
+        ? `Tu compra por $${totalCombinado.toLocaleString('es-AR')} se divide en ${ordenesCreadas.length} pagos, uno por vendedor. Completá cada pago para confirmarla.`
+        : `Tu orden por $${totalCombinado.toLocaleString('es-AR')} fue creada. Completá el pago para confirmarla.`,
       enlace: '/mis-ordenes'
     }).save()
   } catch (e) {
     console.error('Error notificación compra:', e.message)
   }
 
-  return orden
+  // Devolver SIEMPRE un array (1 elemento si es un solo vendedor).
+  return ordenesCreadas
 }
 
 // Obtener órdenes del comprador.
