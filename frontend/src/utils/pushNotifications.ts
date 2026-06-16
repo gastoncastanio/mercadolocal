@@ -57,6 +57,12 @@ export async function activarPush(): Promise<boolean> {
   }
 
   await api.post('/notificaciones/push/suscribir', { suscripcion: sub })
+
+  // Pedir al servidor que envíe un push de bienvenida. Esto verifica el flujo
+  // completo end-to-end (VAPID → push service → este dispositivo). Es
+  // fire-and-forget: si falla, la suscripción igual quedó guardada.
+  api.post('/notificaciones/push/test').catch(() => {})
+
   return true
 }
 
