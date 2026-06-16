@@ -335,22 +335,22 @@ router.post('/recuperar', async (req, res) => {
 
     res.json(respuesta)
   } catch (error) {
-    console.error('Error en recuperaci\u00f3n:', error.message)
+    console.error('Error en recuperación:', error.message)
     res.status(500).json({ error: 'Error al procesar la solicitud' })
   }
 })
 
-// POST /api/auth/reset - Restablecer contrase\u00f1a con token
+// POST /api/auth/reset - Restablecer contraseña con token
 router.post('/reset', async (req, res) => {
   try {
     const { email, token, nuevaContraseña } = req.body
 
     if (!email || !token || !nuevaContraseña) {
-      return res.status(400).json({ error: 'Email, c\u00f3digo y nueva contrase\u00f1a son obligatorios' })
+      return res.status(400).json({ error: 'Email, código y nueva contraseña son obligatorios' })
     }
 
     if (!contraseñaFuerte(nuevaContraseña)) {
-      return res.status(400).json({ error: 'La contrase\u00f1a debe tener al menos 8 caracteres y un n\u00famero' })
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres y un número' })
     }
 
     const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex')
@@ -361,20 +361,21 @@ router.post('/reset', async (req, res) => {
     })
 
     if (!usuario) {
-      return res.status(400).json({ error: 'C\u00f3digo inv\u00e1lido o expirado. Solicit\u00e1 uno nuevo.' })
+      return res.status(400).json({ error: 'Código inválido o expirado. Solicitá uno nuevo.' })
     }
 
-    usuario.contrase\u00f1a = nuevaContraseña
+    // Actualizar contraseña. El pre-save hook de Usuario.js la hashea automáticamente.
+    usuario.contraseña = nuevaContraseña
     usuario.resetToken = null
     usuario.resetTokenExpira = null
     await usuario.save()
 
-    console.log(`\u2705 Contrase\u00f1a restablecida para ${email}`)
+    console.log(`✅ Contraseña restablecida para ${email}`)
 
-    res.json({ mensaje: 'Contrase\u00f1a actualizada con \u00e9xito. Ya pod\u00e9s iniciar sesi\u00f3n.' })
+    res.json({ mensaje: 'Contraseña actualizada con éxito. Ya podés iniciar sesión.' })
   } catch (error) {
     console.error('Error en reset:', error.message)
-    res.status(500).json({ error: 'Error al restablecer la contrase\u00f1a' })
+    res.status(500).json({ error: 'Error al restablecer la contraseña' })
   }
 })
 
