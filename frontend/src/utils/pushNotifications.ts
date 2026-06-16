@@ -20,13 +20,14 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return arr
 }
 
-// ¿Este dispositivo ya está suscripto?
+// ¿Este usuario está suscripto? (chequea en el backend, no solo el navegador)
+// Importante para múltiples cuentas en el mismo dispositivo: verifica que la
+// suscripción pertenezca al usuario logueado, no a una cuenta vieja.
 export async function yaSuscripto(): Promise<boolean> {
   if (!pushSoportado()) return false
   try {
-    const reg = await navigator.serviceWorker.ready
-    const sub = await reg.pushManager.getSubscription()
-    return !!sub
+    const { data } = await api.get('/notificaciones/push/estado')
+    return data.suscripto === true
   } catch {
     return false
   }
@@ -43,18 +44,27 @@ export async function activarPush(): Promise<boolean> {
 
   const reg = await navigator.serviceWorker.ready
 
+  // Desuscribir cualquier suscripción anterior (importante para múltiples cuentas)
+  try {
+    const subVieja = await reg.pushManager.getSubscription()
+    if (subVieja) {
+      await api.post('/notificaciones/push/desuscribir', { endpoint: subVieja.endpoint }).catch(() => {})
+      await subVieja.unsubscribe().catch(() => {})
+    }
+  } catch (err) {
+    console.warn('Error desuscribiendo push anterior:', err)
+  }
+
   // Clave pública VAPID del backend
   const { data } = await api.get('/notificaciones/push/clave-publica')
   const clavePublica = data.clave
   if (!clavePublica) throw new Error('El servidor no tiene push configurado')
 
-  let sub = await reg.pushManager.getSubscription()
-  if (!sub) {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(clavePublica) as BufferSource
-    })
-  }
+  // Crear nueva suscripción para este usuario
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(clavePublica) as BufferSource
+  })
 
   await api.post('/notificaciones/push/suscribir', { suscripcion: sub })
 

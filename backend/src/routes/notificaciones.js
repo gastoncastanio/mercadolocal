@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import Notificacion from '../models/Notificacion.js'
+import PushSubscription from '../models/PushSubscription.js'
 import { getVapidPublicKey, guardarSuscripcion, eliminarSuscripcion, enviarPush } from '../services/pushService.js'
 
 const router = Router()
@@ -12,6 +13,18 @@ router.get('/push/clave-publica', (req, res) => {
   const clave = getVapidPublicKey()
   if (!clave) return res.status(503).json({ error: 'Push no configurado en el servidor' })
   res.json({ clave })
+})
+
+// GET /api/notificaciones/push/estado - Chequear si el usuario actual está suscripto
+// Importante: verifica en la BD, no solo en el navegador. Previene bugs con
+// múltiples cuentas en el mismo dispositivo.
+router.get('/push/estado', verificarToken, async (req, res) => {
+  try {
+    const sub = await PushSubscription.findOne({ usuarioId: req.usuario.id })
+    res.json({ suscripto: !!sub })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
 })
 
 // POST /api/notificaciones/push/suscribir - Registrar la suscripción del dispositivo
