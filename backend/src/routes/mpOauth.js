@@ -10,6 +10,31 @@ const MP_CLIENT_SECRET = process.env.MP_CLIENT_SECRET
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173'
 
+// Valida que un origen sea un frontend legítimo de MercadoLocal.
+// Mismo criterio que el CORS de server.js: FRONTEND_URL explícito,
+// cualquier deploy de Vercel del proyecto, o localhost en desarrollo.
+function esOrigenFrontendValido(origin) {
+  if (!origin || typeof origin !== 'string') return false
+  const permitidos = (process.env.FRONTEND_URL || '')
+    .split(',').map(u => u.trim()).filter(Boolean)
+  if (permitidos.includes(origin)) return true
+  if (/^https:\/\/mercadolocal[a-z0-9-]*\.vercel\.app$/i.test(origin)) return true
+  if (/^http:\/\/localhost(:[0-9]+)?$/.test(origin)) return true
+  return false
+}
+
+// Resuelve la base del frontend a la que redirigir tras el OAuth.
+// Prioriza el origen real desde el que arrancó el vendedor (viaja en el state),
+// así no dependemos de que FRONTEND_URL esté bien seteado en Railway y funciona
+// también en los previews de Vercel. Si no hay origen válido, cae al primer
+// FRONTEND_URL configurado.
+function resolverFrontendBase(origenCandidato) {
+  if (esOrigenFrontendValido(origenCandidato)) return origenCandidato
+  const primero = (process.env.FRONTEND_URL || '')
+    .split(',').map(u => u.trim()).filter(Boolean)[0]
+  return primero || FRONTEND_URL
+}
+
 // GET /api/mp/auth-url - Obtener URL de autorización para vincular MP
 router.get('/auth-url', verificarToken, async (req, res) => {
   try {
@@ -31,10 +56,15 @@ router.get('/auth-url', verificarToken, async (req, res) => {
     tienda.mpCsrfToken = csrfToken
     await tienda.save()
 
+    // Guardamos el origen del frontend desde el que arranca el flujo para
+    // redirigir de vuelta ahí en el callback (independiente de FRONTEND_URL).
+    const origenFrontend = esOrigenFrontendValido(req.query.origin) ? req.query.origin : null
+
     const statePayload = JSON.stringify({
       tiendaId: tienda._id.toString(),
       usuarioId: req.usuario.id.toString(),
-      csrfToken
+      csrfToken,
+      fo: origenFrontend
     })
     const state = Buffer.from(statePayload).toString('base64url')
 
@@ -49,14 +79,23 @@ router.get('/auth-url', verificarToken, async (req, res) => {
 
 // GET /api/mp/callback - Callback de OAuth (MP redirige acá)
 router.get('/callback', async (req, res) => {
+  // Base del frontend a la que redirigir. Arranca con el default y se ajusta
+  // al origen real apenas decodifiquemos el state. Así nunca redirigimos a
+  // localhost en producción aunque FRONTEND_URL no esté seteado en Railway.
+  let frontendBase = resolverFrontendBase(null)
+
   try {
+    console.log(`📍 Callback MP iniciado. frontendBase inicial: ${frontendBase}`)
     const { code, state } = req.query
 
     if (!code || !state) {
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=parametros_invalidos`)
+      console.warn('⚠️ Falta code o state en callback')
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=parametros_invalidos`)
     }
 
-    // Decodificar state y extraer tiendaId, usuarioId y csrfToken
+    console.log('✓ Code y state recibidos')
+
+    // Decodificar state y extraer tiendaId, usuarioId, csrfToken y origen frontend
     let tiendaId, usuarioId, csrfToken
     try {
       const decoded = Buffer.from(state, 'base64url').toString()
@@ -64,42 +103,61 @@ router.get('/callback', async (req, res) => {
       tiendaId = payload.tiendaId
       usuarioId = payload.usuarioId
       csrfToken = payload.csrfToken
+      // Ajustar la base de redirect al origen real desde donde arrancó el vendedor
+      frontendBase = resolverFrontendBase(payload.fo)
       if (!tiendaId || !usuarioId || !csrfToken) throw new Error('State incompleto')
     } catch {
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=state_invalido`)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=state_invalido`)
     }
+
+    console.log(`🎯 Redirigiré al frontend: ${frontendBase}`)
 
     // Buscar la tienda y validar el csrfToken almacenado
     const tienda = await Tienda.findById(tiendaId)
     if (!tienda || tienda.usuarioId.toString() !== usuarioId) {
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=tienda_no_encontrada`)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=tienda_no_encontrada`)
     }
 
     // Validación CSRF: el token del state debe coincidir con el guardado en la tienda
     if (!tienda.mpCsrfToken || tienda.mpCsrfToken !== csrfToken) {
       console.warn(`🚨 Intento de OAuth MP con CSRF inválido para tienda ${tiendaId}`)
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=csrf_invalido`)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=csrf_invalido`)
     }
 
-    // Intercambiar code por access_token
-    const response = await fetch('https://api.mercadopago.com/oauth/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: MP_APP_ID,
-        client_secret: MP_CLIENT_SECRET,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: `${BACKEND_URL}/api/mp/callback`
-      })
-    })
+    // Intercambiar code por access_token con timeout
+    console.log('🔄 Intercambiando code por token en MP API...')
+    let response, data
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundo timeout
 
-    const data = await response.json()
+      response = await fetch('https://api.mercadopago.com/oauth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          client_id: MP_APP_ID,
+          client_secret: MP_CLIENT_SECRET,
+          code,
+          grant_type: 'authorization_code',
+          redirect_uri: `${BACKEND_URL}/api/mp/callback`
+        }),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId)
+      data = await response.json()
+      console.log(`📨 Respuesta de MP:`, { ok: response.ok, hasToken: !!data.access_token })
+    } catch (fetchError) {
+      console.error('❌ Error en fetch a MP:', fetchError.message)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=mp_timeout`)
+    }
 
     if (!response.ok || !data.access_token) {
-      console.error('Error OAuth MP:', data)
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=token_invalido`)
+      console.error('❌ Error OAuth MP:', data)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=token_invalido`)
     }
+
+    console.log('✅ Token obtenido exitosamente')
 
     tienda.mpAccessToken = data.access_token
     tienda.mpRefreshToken = data.refresh_token
@@ -112,14 +170,14 @@ router.get('/callback', async (req, res) => {
     try {
       await tienda.save()
       console.log(`✅ Vendedor vinculó MP: tienda ${tienda.nombre} (MP user: ${data.user_id})`)
-      res.redirect(`${FRONTEND_URL}/central-vendedor?mp=ok`)
+      res.redirect(`${frontendBase}/central-vendedor?mp=ok`)
     } catch (saveError) {
       console.error('❌ Error guardando tienda con tokens MP:', saveError.message)
-      return res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=error_guardar`)
+      return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=error_guardar`)
     }
   } catch (error) {
     console.error('Error en callback MP:', error)
-    res.redirect(`${FRONTEND_URL}/central-vendedor?mp=error&msg=error_servidor`)
+    res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=error_servidor`)
   }
 })
 
