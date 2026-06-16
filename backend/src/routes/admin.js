@@ -127,4 +127,115 @@ router.put('/ordenes/:id/estado', verificarToken, soloAdmin, async (req, res) =>
   }
 })
 
+// GET /api/admin/ordenes-limpieza/preview
+// Muestra qué orden se conservaría (la más reciente) y cuántas se borrarían.
+// Es de solo lectura: no toca nada. Sirve para confirmar antes de ejecutar.
+router.get('/ordenes-limpieza/preview', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const { default: Orden } = await import('../models/Orden.js')
+    const total = await Orden.countDocuments()
+    // La que se conserva: la más reciente por fecha de creación
+    const masReciente = await Orden.findOne().sort({ createdAt: -1 })
+
+    res.json({
+      totalOrdenes: total,
+      seBorraran: Math.max(0, total - (masReciente ? 1 : 0)),
+      seConserva: masReciente ? {
+        id: masReciente._id,
+        total: masReciente.total,
+        estado: masReciente.estado,
+        nombreComprador: masReciente.nombreComprador,
+        fecha: masReciente.createdAt
+      } : null
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/admin/ordenes-limpieza/ejecutar
+// Borra TODAS las órdenes menos la más reciente (o la indicada en mantenerOrdenId)
+// y recalcula los contadores denormalizados para que ningún número quede inflado.
+// Requiere { confirmar: true } para evitar ejecuciones accidentales.
+// NO toca el stock de productos (se verifica manualmente).
+router.post('/ordenes-limpieza/ejecutar', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    if (req.body?.confirmar !== true) {
+      return res.status(400).json({ error: 'Falta confirmación explícita (confirmar: true)' })
+    }
+
+    const { default: Orden } = await import('../models/Orden.js')
+    const { default: Tienda } = await import('../models/Tienda.js')
+    const { default: AuditoriaFinanciera } = await import('../models/AuditoriaFinanciera.js')
+
+    // Determinar la orden a conservar: la indicada, o la más reciente
+    let ordenAConservar
+    if (req.body.mantenerOrdenId) {
+      ordenAConservar = await Orden.findById(req.body.mantenerOrdenId)
+      if (!ordenAConservar) {
+        return res.status(404).json({ error: 'La orden a conservar no existe' })
+      }
+    } else {
+      ordenAConservar = await Orden.findOne().sort({ createdAt: -1 })
+    }
+
+    if (!ordenAConservar) {
+      return res.json({ mensaje: 'No hay órdenes para limpiar', borradas: 0, conservada: null })
+    }
+
+    const idConservar = ordenAConservar._id.toString()
+
+    // 1. Borrar todas las órdenes excepto la conservada
+    const resultadoBorrado = await Orden.deleteMany({ _id: { $ne: ordenAConservar._id } })
+
+    // 2. Limpiar auditoría financiera de las órdenes borradas
+    await AuditoriaFinanciera.deleteMany({ ordenId: { $ne: ordenAConservar._id } }).catch(() => {})
+
+    // 3. Recalcular contadores denormalizados desde las órdenes que quedan.
+    //    Reseteamos a 0 y reaplicamos solo desde las órdenes pagadas restantes.
+    await Tienda.updateMany({}, { $set: { totalVentas: 0, ganancias: 0 } })
+    await Producto.updateMany({}, { $set: { totalVentas: 0 } })
+
+    const ordenesRestantes = await Orden.find({
+      estado: { $in: ['pagada', 'enviada', 'completada'] }
+    })
+
+    for (const orden of ordenesRestantes) {
+      // Por tienda: +1 venta y +ganancia del subtotal de esa tienda (comisión 10%)
+      const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]
+      for (const tiendaId of tiendaIds) {
+        const itemsTienda = orden.items.filter(i => i.tiendaId.toString() === tiendaId)
+        const subtotalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
+        const comisionTienda = Math.round(subtotalTienda * 0.10 * 100) / 100
+        const gananciaTienda = subtotalTienda - comisionTienda
+        await Tienda.findByIdAndUpdate(tiendaId, {
+          $inc: { totalVentas: 1, ganancias: gananciaTienda }
+        })
+      }
+      // Por producto: +cantidad vendida
+      for (const item of orden.items) {
+        await Producto.findByIdAndUpdate(item.productoId, {
+          $inc: { totalVentas: item.cantidad }
+        })
+      }
+    }
+
+    res.json({
+      mensaje: 'Historial limpiado correctamente',
+      borradas: resultadoBorrado.deletedCount,
+      conservada: {
+        id: idConservar,
+        total: ordenAConservar.total,
+        estado: ordenAConservar.estado,
+        nombreComprador: ordenAConservar.nombreComprador,
+        fecha: ordenAConservar.createdAt
+      },
+      nota: 'El stock de productos no se modificó. Verificalo manualmente si hace falta.'
+    })
+  } catch (error) {
+    console.error('Error limpiando órdenes:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 export default router
