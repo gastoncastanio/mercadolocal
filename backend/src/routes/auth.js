@@ -312,15 +312,28 @@ router.post('/recuperar', async (req, res) => {
     // Enviar email con el código (si Resend está configurado)
     const emailResult = await enviarCodigoRecuperacion(email, usuario.nombre, token)
 
-    // En dev, loguear token solo si no hay servicio de email
-    if (!emailResult.enviado && process.env.NODE_ENV !== 'production') {
-      console.log(`🔑 [DEV] Token de recuperación: ${token}`)
+    // Si el email NO se pudo enviar (Resend mal configurado, dominio sin
+    // verificar, etc.), dejarlo MUY visible en los logs para poder diagnosticar.
+    if (!emailResult.enviado) {
+      console.error(
+        `⚠️  RECUPERACIÓN: no se pudo enviar el email a ${email}. ` +
+        `Motivo: ${emailResult.motivo || 'desconocido'}. ` +
+        `Revisá RESEND_API_KEY y EMAIL_FROM (el dominio debe estar verificado en Resend).`
+      )
     }
 
-    res.json({
+    // En desarrollo devolvemos el código en la respuesta para poder testear el
+    // flujo sin un servicio de email real. NUNCA en producción.
+    const respuesta = {
       mensaje: 'Si el email está registrado, recibirás instrucciones para restablecer tu contraseña.',
       emailEnviado: emailResult.enviado
-    })
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🔑 [DEV] Código de recuperación para ${email}: ${token}`)
+      respuesta._devToken = token
+    }
+
+    res.json(respuesta)
   } catch (error) {
     console.error('Error en recuperaci\u00f3n:', error.message)
     res.status(500).json({ error: 'Error al procesar la solicitud' })

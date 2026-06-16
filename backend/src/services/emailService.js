@@ -342,10 +342,38 @@ async function enviarEmail({ to, subject, html }) {
       html
     })
 
+    // Resend puede responder 200 con un objeto de error adentro (ej: dominio
+    // sin verificar). Tratamos ese caso como fallo para no fingir \u00E9xito.
+    if (result?.error) {
+      const motivo = result.error.message || JSON.stringify(result.error)
+      console.error(`\u274C Resend rechaz\u00F3 el email a ${to}: ${motivo}`)
+      avisarSiDominioPrueba(motivo)
+      return { enviado: false, motivo }
+    }
+
     console.log(`\u2709\uFE0F Email enviado a ${to}: ${subject}`)
     return { enviado: true, id: result.data?.id }
   } catch (error) {
     console.error(`\u274C Error enviando email a ${to}:`, error.message)
+    avisarSiDominioPrueba(error.message)
     return { enviado: false, motivo: error.message }
+  }
+}
+
+/**
+ * El dominio de prueba de Resend (onboarding@resend.dev) SOLO permite enviar
+ * emails a la casilla con la que te registraste en Resend. Cualquier otro
+ * destinatario es rechazado. Esto rompe la recuperaci\u00F3n de contrase\u00F1a de los
+ * clientes reales. Si detectamos ese error, dejamos una pista clara en los logs.
+ */
+function avisarSiDominioPrueba(motivo = '') {
+  const m = String(motivo).toLowerCase()
+  if (m.includes('testing') || m.includes('verify a domain') || m.includes('own email')) {
+    console.error(
+      '\u26A0\uFE0F  Est\u00E1s usando el dominio de PRUEBA de Resend (onboarding@resend.dev), ' +
+      'que solo env\u00EDa a tu propia casilla. Para enviar a cualquier cliente: ' +
+      '1) verific\u00E1 tu dominio en resend.com/domains y ' +
+      '2) pon\u00E9 EMAIL_FROM con una direcci\u00F3n de ese dominio (ej: "MercadoLocal <noreply@tudominio.com>").'
+    )
   }
 }

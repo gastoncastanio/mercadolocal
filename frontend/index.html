@@ -9,7 +9,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="MercadoLocal" />
     <meta name="mobile-web-app-capable" content="yes" />
     <title>MercadoLocal - Compra y vende en tu ciudad con pago protegido</title>
@@ -35,8 +35,89 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://res.cloudinary.com" />
     <link rel="dns-prefetch" href="https://api.mercadopago.com" />
+
+    <!-- ===== Splash screen (pantalla de carga con marca MercadoLocal) =====
+         Se pinta INSTANTÁNEAMENTE, antes de descargar el JS de la app, así
+         no se ve el fondo blanco vacío al abrir. Usa el gradiente y el carrito
+         de nuestra marca. El logo va embebido como SVG inline (sin pedidos de
+         red extra). main.tsx lo oculta con un fade apenas la app está montada. -->
+    <style>
+      #splash-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        /* Gradiente de marca MercadoLocal (azul -> violeta) */
+        background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+        padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+        opacity: 1;
+        transition: opacity .45s ease;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #splash-screen.splash-oculto {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash-screen .splash-logo {
+        width: 132px;
+        height: 132px;
+        animation: splash-latido 1.6s ease-in-out infinite;
+        filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .22));
+      }
+      #splash-screen .splash-nombre {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -.5px;
+        color: #ffffff;
+        margin: 0;
+        animation: splash-aparecer .5s ease .08s both;
+      }
+      #splash-screen .splash-spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid rgba(255, 255, 255, .35);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: splash-girar .7s linear infinite;
+      }
+      @keyframes splash-girar { to { transform: rotate(360deg); } }
+      @keyframes splash-latido {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.06); }
+      }
+      @keyframes splash-aparecer {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #splash-screen .splash-logo,
+        #splash-screen .splash-nombre { animation: none; }
+        #splash-screen .splash-spinner { animation-duration: 1.4s; }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash-screen" role="status" aria-label="Cargando MercadoLocal">
+      <!-- Carrito blanco de la marca, directo sobre el gradiente -->
+      <svg class="splash-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <g stroke="#ffffff" stroke-width="22" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M 118 160 L 158 160 L 192 312 L 364 312 L 396 204 L 174 204"/>
+          <line x1="228" y1="228" x2="236" y2="296"/>
+          <line x1="284" y1="228" x2="286" y2="296"/>
+          <line x1="340" y1="228" x2="332" y2="296"/>
+          <line x1="186" y1="260" x2="380" y2="260"/>
+        </g>
+        <circle cx="222" cy="368" r="26" fill="#ffffff"/>
+        <circle cx="346" cy="368" r="26" fill="#ffffff"/>
+      </svg>
+      <p class="splash-nombre">MercadoLocal</p>
+      <div class="splash-spinner" aria-hidden="true"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
