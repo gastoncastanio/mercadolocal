@@ -34,7 +34,8 @@ export default function CentralVendedor() {
       setMpMensaje('Mercado Pago vinculado exitosamente')
       setMpEstado({ vinculado: true })
     } else if (mpResult === 'error') {
-      setMpMensaje('Error al vincular Mercado Pago. Intentá de nuevo.')
+      const msg = searchParams.get('msg')
+      setMpMensaje(`Error al vincular Mercado Pago${msg ? ` (${msg})` : ''}. Intentá de nuevo.`)
     }
   }, [tienda])
 
@@ -50,7 +51,10 @@ export default function CentralVendedor() {
   async function vincularMp() {
     setVinculandoMp(true)
     try {
-      const res = await api.get('/mp/auth-url')
+      // Pasamos nuestro origen para que el callback del backend nos redirija
+      // de vuelta exactamente acá (no depende de FRONTEND_URL en el server).
+      const origin = encodeURIComponent(window.location.origin)
+      const res = await api.get(`/mp/auth-url?origin=${origin}`)
       window.location.href = res.data.authUrl
     } catch (err: any) {
       setMpMensaje(err.response?.data?.error || 'Error al generar enlace')
