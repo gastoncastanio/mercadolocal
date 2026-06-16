@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy as lazyReact, Suspense, ComponentType } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
@@ -9,6 +9,33 @@ import { BannerFlotanteInstalar } from './components/InstalarApp'
 
 // Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
+
+// Auto-recuperación de chunks viejos tras un deploy nuevo.
+// Cuando se publica una versión nueva en Vercel, los archivos .js de cada
+// página cambian de nombre (hash). Si un usuario tenía la app abierta con la
+// versión vieja y navega a una página que se carga "lazy", el navegador busca
+// el chunk viejo (que ya no existe) y el import falla con un error tipo
+// "NotFoundError / The object can not be found here". Para evitar la pantalla
+// de error, ante un fallo de import forzamos UN reload completo que trae el
+// index.html y los chunks frescos. El flag en sessionStorage evita un loop
+// infinito de recargas si el problema fuese otro.
+function lazy<T extends ComponentType<any>>(factory: () => Promise<{ default: T }>) {
+  return lazyReact(async () => {
+    try {
+      const mod = await factory()
+      sessionStorage.removeItem('ml_chunk_reload') // carga OK: resetear el flag
+      return mod
+    } catch (err) {
+      if (!sessionStorage.getItem('ml_chunk_reload')) {
+        sessionStorage.setItem('ml_chunk_reload', '1')
+        window.location.reload()
+        // Devolver una promesa que nunca resuelve: la página se va a recargar.
+        return new Promise<{ default: T }>(() => {})
+      }
+      throw err
+    }
+  })
+}
 
 // Todas las demas paginas se cargan lazy
 const Registro = lazy(() => import('./pages/Registro'))
