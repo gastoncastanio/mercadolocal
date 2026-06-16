@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo con gradiente de marca, esquinas redondeadas -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Carrito de compras blanco, centrado en zona segura -->
+  <g stroke="#ffffff" stroke-width="20" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Manija: desde arriba-izquierda bajando hacia el cesto -->
+    <path d="M 118 160 L 158 160 L 192 312 L 364 312 L 396 204 L 174 204"/>
+    <!-- Líneas verticales del cesto -->
+    <line x1="228" y1="228" x2="236" y2="296"/>
+    <line x1="284" y1="228" x2="286" y2="296"/>
+    <line x1="340" y1="228" x2="332" y2="296"/>
+    <!-- Línea horizontal media del cesto -->
+    <line x1="186" y1="260" x2="380" y2="260"/>
+  </g>
+
+  <!-- Ruedas -->
+  <circle cx="222" cy="368" r="24" fill="#ffffff"/>
+  <circle cx="346" cy="368" r="24" fill="#ffffff"/>
+</svg>
