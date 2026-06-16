@@ -24,6 +24,7 @@
     "@sentry/node": "^10.52.0",
     "axios": "^1.6.2",
     "bcrypt": "^6.0.0",
+    "brevo": "^1.0.0",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
