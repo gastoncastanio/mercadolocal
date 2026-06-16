@@ -34,6 +34,15 @@ export async function yaSuscripto(): Promise<boolean> {
 }
 
 // Activar push en este dispositivo. Devuelve true si quedó suscripto.
+//
+// IMPORTANTE: en un mismo dispositivo solo puede existir UNA suscripción push
+// (una por service worker). No se puede tener dos cuentas recibiendo push a la
+// vez en el mismo teléfono. Al activar, reasignamos la suscripción del
+// dispositivo al usuario logueado: la última cuenta que activa es la que recibe.
+//
+// NO desuscribimos/re-suscribimos: en iOS eso devuelve un endpoint que Apple
+// rechaza (410 Gone) y la notificación nunca llega. Reutilizamos la suscripción
+// existente y solo la reasignamos en el backend.
 export async function activarPush(): Promise<boolean> {
   if (!pushSoportado()) {
     throw new Error('Tu navegador no soporta notificaciones push')
@@ -44,28 +53,23 @@ export async function activarPush(): Promise<boolean> {
 
   const reg = await navigator.serviceWorker.ready
 
-  // Desuscribir cualquier suscripción anterior (importante para múltiples cuentas)
-  try {
-    const subVieja = await reg.pushManager.getSubscription()
-    if (subVieja) {
-      await api.post('/notificaciones/push/desuscribir', { endpoint: subVieja.endpoint }).catch(() => {})
-      await subVieja.unsubscribe().catch(() => {})
-    }
-  } catch (err) {
-    console.warn('Error desuscribiendo push anterior:', err)
-  }
-
   // Clave pública VAPID del backend
   const { data } = await api.get('/notificaciones/push/clave-publica')
   const clavePublica = data.clave
   if (!clavePublica) throw new Error('El servidor no tiene push configurado')
 
-  // Crear nueva suscripción para este usuario
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(clavePublica) as BufferSource
-  })
+  // Reutilizar la suscripción del dispositivo si ya existe; si no, crearla.
+  let sub = await reg.pushManager.getSubscription()
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(clavePublica) as BufferSource
+    })
+  }
 
+  // Guardar/reasignar esta suscripción al usuario logueado. El backend la
+  // mueve al usuario actual (findOneAndUpdate por endpoint), así la cuenta
+  // anterior deja de recibir y la nueva empieza a recibir.
   await api.post('/notificaciones/push/suscribir', { suscripcion: sub })
 
   // Pedir al servidor que envíe un push de bienvenida. Esto verifica el flujo
