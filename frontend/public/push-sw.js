@@ -34,7 +34,7 @@ self.addEventListener('push', (event) => {
   const opciones = {
     body: data.mensaje || '',
     icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
+    badge: '/icons/badge-192x192.png',
     data: { enlace: data.enlace || '/' },
     tag: data.tipo || 'mercadolocal',
     renotify: false

@@ -1,0 +1,22 @@
+<svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo transparente -->
+  <rect width="192" height="192" fill="none"/>
+
+  <!-- Carrito de compras simplificado -->
+  <g stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Manija/handle superior -->
+    <path d="M 45 50 Q 96 20 147 50" />
+
+    <!-- Cesto principal -->
+    <path d="M 50 60 L 60 130 L 132 130 L 142 60 Z" />
+
+    <!-- Líneas decorativas en el cesto -->
+    <line x1="70" y1="70" x2="70" y2="120" />
+    <line x1="96" y1="70" x2="96" y2="120" />
+    <line x1="122" y1="70" x2="122" y2="120" />
+  </g>
+
+  <!-- Ruedas -->
+  <circle cx="70" cy="145" r="10" stroke="white" stroke-width="7" fill="none"/>
+  <circle cx="122" cy="145" r="10" stroke="white" stroke-width="7" fill="none"/>
+</svg>
