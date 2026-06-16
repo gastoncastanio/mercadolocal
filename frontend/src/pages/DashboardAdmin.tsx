@@ -110,7 +110,7 @@ export default function DashboardAdmin() {
       )}
 
       {/* Content */}
-      <main className="flex-1 md:p-8 p-4 pt-16 md:pt-8 overflow-auto">
+      <main className="flex-1 md:p-8 p-4 overflow-auto" style={{ paddingTop: 'calc(1rem + max(env(safe-area-inset-top), 0px))', paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}>
         {seccion === 'inicio' && <SeccionInicio />}
         {seccion === 'usuarios' && <SeccionUsuarios />}
         {seccion === 'vendedores' && <SeccionVendedores />}
