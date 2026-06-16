@@ -13,16 +13,23 @@ export default function RecuperarPassword() {
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const [devToken, setDevToken] = useState('')
+  const [avisoEmail, setAvisoEmail] = useState('')
 
   async function solicitarCodigo(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setAvisoEmail('')
     setCargando(true)
     try {
       const res = await api.post('/auth/recuperar', { email })
       // En dev, la API devuelve el token para testing
       if (res.data._devToken) {
         setDevToken(res.data._devToken)
+      }
+      // Si el backend no pudo enviar el email, avisamos para que el usuario no
+      // espere indefinidamente un código que no va a llegar.
+      if (res.data.emailEnviado === false && !res.data._devToken) {
+        setAvisoEmail('No pudimos enviar el email en este momento. Esperá unos minutos y volvé a intentar, o escribinos si el problema sigue.')
       }
       setPaso('codigo')
     } catch (err: any) {
@@ -112,6 +119,12 @@ export default function RecuperarPassword() {
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-700">
                 <strong>Modo desarrollo</strong> — Tu código es: <code className="font-bold text-lg">{devToken}</code>
                 <p className="mt-1 text-[10px] text-yellow-600">En producción esto se envía por email.</p>
+              </div>
+            )}
+
+            {avisoEmail && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                {avisoEmail}
               </div>
             )}
 

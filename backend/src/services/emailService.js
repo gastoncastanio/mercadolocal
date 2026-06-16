@@ -2,25 +2,44 @@ import { Resend } from 'resend'
 
 /**
  * Servicio de email para MercadoLocal.
- * Usa Resend (resend.com) como proveedor principal.
- * Plan gratuito: 100 emails/d\u00eda, 3000/mes.
+ * Soporta dos proveedores, se auto-detecta según qué clave esté configurada:
  *
- * Variables de entorno requeridas:
- *   RESEND_API_KEY  - API key de Resend
- *   EMAIL_FROM      - Email remitente (ej: "MercadoLocal <noreply@tudominio.com>")
- *                     Si us\u00e1s el dominio de prueba de Resend: "MercadoLocal <onboarding@resend.dev>"
+ * 1. BREVO (recomendado temporalmente, sin dominio):
+ *    - Gratis hasta 300 emails/día.
+ *    - No requiere dominio verificado.
+ *    - Email FROM debe ser verificado en Brevo (clic en un link de confirmación).
+ *    - Variables: BREVO_API_KEY, EMAIL_FROM
+ *    - Usa la API REST de Brevo directamente (sin SDK) vía fetch nativo.
+ *
+ * 2. RESEND (cuando compres dominio mercadolocal.com.ar):
+ *    - 100 emails/día gratis.
+ *    - Requiere dominio verificado.
+ *    - Variables: RESEND_API_KEY, EMAIL_FROM
  */
 
-let resend = null
+let resendClient = null
 
 function getResend() {
-  if (!resend && process.env.RESEND_API_KEY) {
-    resend = new Resend(process.env.RESEND_API_KEY)
+  if (!resendClient && process.env.RESEND_API_KEY) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
   }
-  return resend
+  return resendClient
 }
 
-const EMAIL_FROM = () => process.env.EMAIL_FROM || 'MercadoLocal <onboarding@resend.dev>'
+const EMAIL_FROM = () => process.env.EMAIL_FROM || 'MercadoLocal <admmercadolocal@gmail.com>'
+
+// Extrae el email puro de un string tipo "Nombre <email@dominio.com>"
+function extraerEmail(from) {
+  const match = String(from).match(/<([^>]+)>/)
+  return match ? match[1].trim() : String(from).trim()
+}
+
+// Detectar qué proveedor usar (Brevo si está configurado, sino Resend)
+function proveedorActivo() {
+  if (process.env.BREVO_API_KEY) return 'brevo'
+  if (process.env.RESEND_API_KEY) return 'resend'
+  return null
+}
 
 // ==================== TEMPLATES ====================
 
@@ -50,13 +69,13 @@ function templateBase(contenido) {
   <div class="container">
     <div class="card">
       <div class="logo">
-        <span>\u{1F6D2} MercadoLocal</span>
+        <span>🛒 MercadoLocal</span>
       </div>
       ${contenido}
     </div>
     <div class="footer">
       <p>&copy; ${new Date().getFullYear()} MercadoLocal - El marketplace de tu ciudad</p>
-      <p>Este email fue enviado autom\u00e1ticamente. No respondas a este mensaje.</p>
+      <p>Este email fue enviado automáticamente. No respondas a este mensaje.</p>
     </div>
   </div>
 </body>
@@ -66,25 +85,25 @@ function templateBase(contenido) {
 // ==================== EMAILS ====================
 
 /**
- * Email de recuperaci\u00f3n de contrase\u00f1a con c\u00f3digo de 6 d\u00edgitos.
+ * Email de recuperación de contraseña con código de 6 dígitos.
  */
 export async function enviarCodigoRecuperacion(email, nombre, codigo) {
   const html = templateBase(`
-    <h1>Recuper\u00e1 tu contrase\u00f1a</h1>
+    <h1>Recuperá tu contraseña</h1>
     <p>Hola${nombre ? ' ' + nombre : ''},</p>
-    <p>Recibimos una solicitud para restablecer tu contrase\u00f1a en MercadoLocal. Us\u00e1 este c\u00f3digo:</p>
+    <p>Recibimos una solicitud para restablecer tu contraseña en MercadoLocal. Usá este código:</p>
     <div class="code">
       <span>${codigo}</span>
     </div>
-    <p>El c\u00f3digo expira en <strong>30 minutos</strong>.</p>
+    <p>El código expira en <strong>30 minutos</strong>.</p>
     <div class="warning">
-      \u26A0\uFE0F Si no solicitaste este cambio, ignor\u00e1 este email. Tu contrase\u00f1a no ser\u00e1 modificada.
+      ⚠️ Si no solicitaste este cambio, ignorá este email. Tu contraseña no será modificada.
     </div>
   `)
 
   return enviarEmail({
     to: email,
-    subject: `${codigo} es tu c\u00f3digo de MercadoLocal`,
+    subject: `${codigo} es tu código de MercadoLocal`,
     html
   })
 }
@@ -95,16 +114,16 @@ export async function enviarCodigoRecuperacion(email, nombre, codigo) {
 export async function enviarBienvenida(email, nombre, rol) {
   const esVendedor = rol === 'vendedor'
   const html = templateBase(`
-    <h1>\u00a1Bienvenido a MercadoLocal!</h1>
+    <h1>¡Bienvenido a MercadoLocal!</h1>
     <p>Hola <strong>${nombre}</strong>,</p>
-    <p>Tu cuenta fue creada con \u00e9xito como <strong>${esVendedor ? 'vendedor' : 'comprador'}</strong>.</p>
+    <p>Tu cuenta fue creada con éxito como <strong>${esVendedor ? 'vendedor' : 'comprador'}</strong>.</p>
     ${esVendedor
-      ? '<p>\u{1F3EA} Ya pod\u00e9s configurar tu tienda, subir productos y empezar a vender.</p>'
-      : '<p>\u{1F6D2} Explor\u00e1 el cat\u00e1logo y encontr\u00e1 productos de tiendas locales.</p>'
+      ? '<p>🏪 Ya podés configurar tu tienda, subir productos y empezar a vender.</p>'
+      : '<p>🛒 Explorá el catálogo y encontrá productos de tiendas locales.</p>'
     }
     <div style="text-align: center; margin: 24px 0;">
       <a href="${process.env.FRONTEND_URL || 'https://mercadolocal-nu.vercel.app'}/catalogo" class="btn">
-        ${esVendedor ? 'Configurar mi tienda' : 'Explorar cat\u00e1logo'}
+        ${esVendedor ? 'Configurar mi tienda' : 'Explorar catálogo'}
       </a>
     </div>
     <p style="font-size: 13px; color: #6b7280;">
@@ -114,13 +133,13 @@ export async function enviarBienvenida(email, nombre, rol) {
 
   return enviarEmail({
     to: email,
-    subject: `\u00a1Bienvenido a MercadoLocal, ${nombre}!`,
+    subject: `¡Bienvenido a MercadoLocal, ${nombre}!`,
     html
   })
 }
 
 /**
- * Email de confirmaci\u00f3n de compra.
+ * Email de confirmación de compra.
  */
 export async function enviarConfirmacionCompra(email, nombre, orden) {
   const itemsHtml = orden.items.map(i =>
@@ -134,7 +153,7 @@ export async function enviarConfirmacionCompra(email, nombre, orden) {
   const html = templateBase(`
     <h1>Orden confirmada</h1>
     <p>Hola <strong>${nombre}</strong>,</p>
-    <p>Tu compra fue registrada correctamente. Ac\u00e1 ten\u00e9s el detalle:</p>
+    <p>Tu compra fue registrada correctamente. Acá tenés el detalle:</p>
     <table style="width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;">
       <thead>
         <tr style="background: #f9fafb;">
@@ -151,7 +170,7 @@ export async function enviarConfirmacionCompra(email, nombre, orden) {
         </tr>
       </tfoot>
     </table>
-    <p>\u{1F6E1}\uFE0F Tu dinero queda retenido hasta que confirmes la entrega.</p>
+    <p>🛡️ Tu dinero queda retenido hasta que confirmes la entrega.</p>
     <div style="text-align: center; margin: 24px 0;">
       <a href="${process.env.FRONTEND_URL || 'https://mercadolocal-nu.vercel.app'}/mis-ordenes" class="btn">
         Ver mis pedidos
@@ -167,14 +186,14 @@ export async function enviarConfirmacionCompra(email, nombre, orden) {
 }
 
 /**
- * Notificaci\u00f3n al vendedor de nueva venta.
+ * Notificación al vendedor de nueva venta.
  */
 export async function enviarNotificacionVenta(email, nombreVendedor, total, cantidadItems) {
   const html = templateBase(`
-    <h1>\u{1F389} \u00a1Nueva venta!</h1>
+    <h1>🎉 ¡Nueva venta!</h1>
     <p>Hola <strong>${nombreVendedor}</strong>,</p>
     <p>Recibiste una nueva venta por <strong style="color: #059669; font-size: 20px;">$${total.toLocaleString('es-AR')}</strong></p>
-    <p>${cantidadItems} ${cantidadItems === 1 ? 'producto' : 'productos'} vendidos. Prepar\u00e1 el env\u00edo lo antes posible.</p>
+    <p>${cantidadItems} ${cantidadItems === 1 ? 'producto' : 'productos'} vendidos. Preparálos para el envío lo antes posible.</p>
     <div style="text-align: center; margin: 24px 0;">
       <a href="${process.env.FRONTEND_URL || 'https://mercadolocal-nu.vercel.app'}/pedidos-vendedor" class="btn">
         Ver pedidos
@@ -184,7 +203,7 @@ export async function enviarNotificacionVenta(email, nombreVendedor, total, cant
 
   return enviarEmail({
     to: email,
-    subject: `\u00a1Venta nueva! $${total.toLocaleString('es-AR')}`,
+    subject: `¡Venta nueva! $${total.toLocaleString('es-AR')}`,
     html
   })
 }
@@ -238,15 +257,8 @@ export async function enviarRecordatorioCompra(email, nombre, orden) {
   })
 }
 
-// ==================== REPORTE DIARIO DEL CEO ====================
-
 /**
- * Env\u00eda el reporte diario del CEO Diego al fundador.
- *
- * @param {string} email - email del fundador
- * @param {string} nombreAdmin - nombre del fundador
- * @param {string} cuerpoReporte - texto del reporte (markdown ligero)
- * @param {object} metricas - m\u00e9tricas crudas del d\u00eda (opcional)
+ * Envía el reporte diario del CEO Diego al fundador.
  */
 export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metricas = {}) {
   const fecha = new Date().toLocaleDateString('es-AR', {
@@ -256,7 +268,6 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
     year: 'numeric'
   })
 
-  // Convertir saltos de l\u00ednea simples a <br> y dobles a <p>
   const cuerpoHtml = (cuerpoReporte || '')
     .split(/\n\n+/)
     .map(parrafo => `<p style="margin: 0 0 14px; color: #374151; font-size: 14px; line-height: 1.7;">${
@@ -264,13 +275,12 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
     }</p>`)
     .join('')
 
-  // Tarjetas de m\u00e9tricas (si hay datos)
   let tarjetasMetricas = ''
   if (metricas && Object.keys(metricas).length > 0) {
     const items = []
     if (metricas.ventas != null) items.push({ l: 'Ventas', v: '$' + (metricas.ventas || 0).toLocaleString('es-AR'), c: '#059669' })
     if (metricas.comisiones != null) items.push({ l: 'Comisiones', v: '$' + (metricas.comisiones || 0).toLocaleString('es-AR'), c: '#2563eb' })
-    if (metricas.ordenes != null) items.push({ l: '\u00d3rdenes', v: String(metricas.ordenes), c: '#7c3aed' })
+    if (metricas.ordenes != null) items.push({ l: 'Órdenes', v: String(metricas.ordenes), c: '#7c3aed' })
     if (metricas.productosNuevos != null) items.push({ l: 'Productos nuevos', v: String(metricas.productosNuevos), c: '#ea580c' })
 
     if (items.length) {
@@ -291,10 +301,10 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
 
   const contenido = `
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-      <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, #7c3aed); display: inline-flex; align-items: center; justify-content: center; font-size: 24px;">\ud83c\udfa9</div>
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1e40af, #7c3aed); display: inline-flex; align-items: center; justify-content: center; font-size: 24px;">🎩</div>
       <div style="display: inline-block; vertical-align: middle; margin-left: 12px;">
-        <div style="font-weight: 700; color: #1f2937; font-size: 15px;">Diego \u2014 CEO MercadoLocal</div>
-        <div style="font-size: 12px; color: #6b7280;">Reporte ejecutivo \u00b7 ${fecha}</div>
+        <div style="font-weight: 700; color: #1f2937; font-size: 15px;">Diego — CEO MercadoLocal</div>
+        <div style="font-size: 12px; color: #6b7280;">Reporte ejecutivo · ${fecha}</div>
       </div>
     </div>
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 16px 0 20px;">
@@ -302,8 +312,8 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
     ${cuerpoHtml}
     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0 16px;">
     <p style="font-size: 12px; color: #6b7280; margin: 0;">
-      Hola ${nombreAdmin}, este reporte se genera autom\u00e1ticamente cada d\u00eda con datos reales del marketplace.
-      Para ver el chat en vivo del equipo IA, ingres\u00e1 al panel de admin.
+      Hola ${nombreAdmin}, este reporte se genera automáticamente cada día con datos reales del marketplace.
+      Para ver el chat en vivo del equipo IA, ingresá al panel de admin.
     </p>
     <div style="text-align: center; margin-top: 16px;">
       <a href="${process.env.FRONTEND_URL?.split(',')[0]?.trim() || 'https://mercadolocal.com.ar'}/admin/cerebro" class="btn">Ir al panel del equipo</a>
@@ -312,7 +322,7 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
 
   return enviarEmail({
     to: email,
-    subject: `\ud83d\udcca Reporte diario \u00b7 ${fecha}`,
+    subject: `📊 Reporte diario · ${fecha}`,
     html: templateBase(contenido)
   })
 }
@@ -320,18 +330,77 @@ export async function enviarReporteCEO(email, nombreAdmin, cuerpoReporte, metric
 // ==================== CORE ====================
 
 /**
- * Env\u00eda un email usando Resend.
- * Si RESEND_API_KEY no est\u00e1 configurada, loguea a consola y no falla.
+ * Envía un email usando Brevo o Resend según cuál esté configurado.
  */
 async function enviarEmail({ to, subject, html }) {
-  const client = getResend()
+  const proveedor = proveedorActivo()
 
-  if (!client) {
-    console.log(`\u{1F4E7} [EMAIL NO ENVIADO - sin RESEND_API_KEY]`)
+  if (!proveedor) {
+    console.log(`📧 [EMAIL NO ENVIADO - sin BREVO_API_KEY ni RESEND_API_KEY]`)
     console.log(`   Para: ${to}`)
     console.log(`   Asunto: ${subject}`)
-    console.log(`   Configur\u00e1 RESEND_API_KEY en las variables de entorno para habilitar emails.`)
-    return { enviado: false, motivo: 'RESEND_API_KEY no configurada' }
+    console.log(`   Configura BREVO_API_KEY (o RESEND_API_KEY) en Railway para habilitar emails.`)
+    return { enviado: false, motivo: 'Sin API key de email' }
+  }
+
+  if (proveedor === 'brevo') {
+    return enviarConBrevo({ to, subject, html })
+  } else {
+    return enviarConResend({ to, subject, html })
+  }
+}
+
+async function enviarConBrevo({ to, subject, html }) {
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) {
+    return { enviado: false, motivo: 'BREVO_API_KEY no configurada' }
+  }
+
+  try {
+    const from = extraerEmail(EMAIL_FROM())
+
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        sender: { name: 'MercadoLocal', email: from },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      })
+    })
+
+    if (!resp.ok) {
+      // Brevo devuelve JSON con { code, message } en los errores
+      let detalle = `HTTP ${resp.status}`
+      try {
+        const err = await resp.json()
+        detalle = err.message || JSON.stringify(err)
+      } catch { /* respuesta sin body JSON */ }
+      console.error(`❌ Brevo rechazó el email a ${to}: ${detalle}`)
+      avisarSiBrevoNoVerificado(detalle)
+      return { enviado: false, motivo: detalle }
+    }
+
+    const data = await resp.json().catch(() => ({}))
+    console.log(`✉️ Email enviado a ${to} vía Brevo: ${subject}`)
+    return { enviado: true, id: data.messageId }
+  } catch (error) {
+    const motivo = error.message || String(error)
+    console.error(`❌ Error en Brevo enviando a ${to}:`, motivo)
+    avisarSiBrevoNoVerificado(motivo)
+    return { enviado: false, motivo }
+  }
+}
+
+async function enviarConResend({ to, subject, html }) {
+  const client = getResend()
+  if (!client) {
+    return { enviado: false, motivo: 'Resend no inicializado' }
   }
 
   try {
@@ -342,10 +411,43 @@ async function enviarEmail({ to, subject, html }) {
       html
     })
 
-    console.log(`\u2709\uFE0F Email enviado a ${to}: ${subject}`)
+    if (result?.error) {
+      const motivo = result.error.message || JSON.stringify(result.error)
+      console.error(`❌ Resend rechazó el email a ${to}: ${motivo}`)
+      avisarSiDominioNoVerificado(motivo)
+      return { enviado: false, motivo }
+    }
+
+    console.log(`✉️ Email enviado a ${to} vía Resend: ${subject}`)
     return { enviado: true, id: result.data?.id }
   } catch (error) {
-    console.error(`\u274C Error enviando email a ${to}:`, error.message)
-    return { enviado: false, motivo: error.message }
+    const motivo = error.message || String(error)
+    console.error(`❌ Error en Resend enviando a ${to}:`, motivo)
+    avisarSiDominioNoVerificado(motivo)
+    return { enviado: false, motivo }
+  }
+}
+
+function avisarSiBrevoNoVerificado(motivo = '') {
+  const m = String(motivo).toLowerCase()
+  if (m.includes('not verified') || m.includes('sender')) {
+    console.error(
+      '⚠️ El email FROM en Brevo no está verificado. Necesitas: ' +
+      '1) Ir a https://app.brevo.com/sender-management (Senders) ' +
+      '2) Clickear en el email que usas en EMAIL_FROM y confirmar el link que recibas en tu inbox. ' +
+      '3) Esperá a que figure "Verified".'
+    )
+  }
+}
+
+function avisarSiDominioNoVerificado(motivo = '') {
+  const m = String(motivo).toLowerCase()
+  if (m.includes('testing') || m.includes('verify a domain') || m.includes('own email')) {
+    console.error(
+      '⚠️ Estás usando el dominio de PRUEBA de Resend (onboarding@resend.dev), ' +
+      'que solo envía a tu propia casilla. Para enviar a cualquier cliente: ' +
+      '1) verificá tu dominio en resend.com/domains y ' +
+      '2) poné EMAIL_FROM con una dirección de ese dominio (ej: "MercadoLocal <noreply@mercadolocal.com.ar>").'
+    )
   }
 }
