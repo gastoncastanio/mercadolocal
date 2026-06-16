@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import Notificacion from '../models/Notificacion.js'
-import { getVapidPublicKey, guardarSuscripcion, eliminarSuscripcion } from '../services/pushService.js'
+import { getVapidPublicKey, guardarSuscripcion, eliminarSuscripcion, enviarPush } from '../services/pushService.js'
 
 const router = Router()
 
@@ -28,6 +28,23 @@ router.post('/push/suscribir', verificarToken, async (req, res) => {
 router.post('/push/desuscribir', verificarToken, async (req, res) => {
   try {
     await eliminarSuscripcion(req.body.endpoint)
+    res.json({ ok: true })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/notificaciones/push/test - Push de bienvenida tras activar
+// Verifica el flujo completo (VAPID → push service → dispositivo). Lo dispara
+// el frontend apenas el usuario se suscribe. enviarPush es fire-and-forget.
+router.post('/push/test', verificarToken, async (req, res) => {
+  try {
+    await enviarPush(req.usuario.id, {
+      tipo: 'sistema',
+      titulo: '\u{1F514} ¡Notificaciones activadas!',
+      mensaje: 'Activaste correctamente tus notificaciones de MercadoLocal. Te avisaremos de tus ventas, pagos y mensajes.',
+      enlace: '/notificaciones'
+    })
     res.json({ ok: true })
   } catch (error) {
     res.status(400).json({ error: error.message })
