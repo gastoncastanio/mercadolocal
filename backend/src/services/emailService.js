@@ -1,5 +1,4 @@
 import { Resend } from 'resend'
-import * as Brevo from 'brevo'
 
 /**
  * Servicio de email para MercadoLocal.
@@ -10,6 +9,7 @@ import * as Brevo from 'brevo'
  *    - No requiere dominio verificado.
  *    - Email FROM debe ser verificado en Brevo (clic en un link de confirmación).
  *    - Variables: BREVO_API_KEY, EMAIL_FROM
+ *    - Usa la API REST de Brevo directamente (sin SDK) vía fetch nativo.
  *
  * 2. RESEND (cuando compres dominio mercadolocal.com.ar):
  *    - 100 emails/día gratis.
@@ -18,7 +18,6 @@ import * as Brevo from 'brevo'
  */
 
 let resendClient = null
-let brevoClient = null
 
 function getResend() {
   if (!resendClient && process.env.RESEND_API_KEY) {
@@ -27,16 +26,13 @@ function getResend() {
   return resendClient
 }
 
-function getBrevo() {
-  if (!brevoClient && process.env.BREVO_API_KEY) {
-    brevoClient = new Brevo.TransactionalEmailsApi()
-    // Autenticar con API key de Brevo
-    brevoClient.setApiKey(Brevo.ApiClient.instance.authentications['api-key'], process.env.BREVO_API_KEY)
-  }
-  return brevoClient
-}
-
 const EMAIL_FROM = () => process.env.EMAIL_FROM || 'MercadoLocal <admmercadolocal@gmail.com>'
+
+// Extrae el email puro de un string tipo "Nombre <email@dominio.com>"
+function extraerEmail(from) {
+  const match = String(from).match(/<([^>]+)>/)
+  return match ? match[1].trim() : String(from).trim()
+}
 
 // Detectar qué proveedor usar (Brevo si está configurado, sino Resend)
 function proveedorActivo() {
@@ -355,26 +351,44 @@ async function enviarEmail({ to, subject, html }) {
 }
 
 async function enviarConBrevo({ to, subject, html }) {
-  const client = getBrevo()
-  if (!client) {
-    return { enviado: false, motivo: 'Brevo no inicializado' }
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) {
+    return { enviado: false, motivo: 'BREVO_API_KEY no configurada' }
   }
 
   try {
-    const emailFrom = EMAIL_FROM()
-    // EMAIL_FROM puede ser "nombre <email@dominio.com>" — Brevo necesita extraerlo
-    const matchEmail = emailFrom.match(/<([^>]+)>/)
-    const from = matchEmail ? matchEmail[1] : emailFrom
+    const from = extraerEmail(EMAIL_FROM())
 
-    const sendSmtpEmail = new Brevo.SendSmtpEmail()
-    sendSmtpEmail.subject = subject
-    sendSmtpEmail.htmlContent = html
-    sendSmtpEmail.sender = { name: 'MercadoLocal', email: from }
-    sendSmtpEmail.to = [{ email: to }]
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey
+      },
+      body: JSON.stringify({
+        sender: { name: 'MercadoLocal', email: from },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html
+      })
+    })
 
-    const result = await client.sendTransacEmail(sendSmtpEmail)
+    if (!resp.ok) {
+      // Brevo devuelve JSON con { code, message } en los errores
+      let detalle = `HTTP ${resp.status}`
+      try {
+        const err = await resp.json()
+        detalle = err.message || JSON.stringify(err)
+      } catch { /* respuesta sin body JSON */ }
+      console.error(`❌ Brevo rechazó el email a ${to}: ${detalle}`)
+      avisarSiBrevoNoVerificado(detalle)
+      return { enviado: false, motivo: detalle }
+    }
+
+    const data = await resp.json().catch(() => ({}))
     console.log(`✉️ Email enviado a ${to} vía Brevo: ${subject}`)
-    return { enviado: true, id: result?.id }
+    return { enviado: true, id: data.messageId }
   } catch (error) {
     const motivo = error.message || String(error)
     console.error(`❌ Error en Brevo enviando a ${to}:`, motivo)
