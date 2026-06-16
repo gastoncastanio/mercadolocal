@@ -470,10 +470,51 @@ function SeccionProductos() {
 function SeccionOrdenes() {
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [cargando, setCargando] = useState(true)
+  const [limpiando, setLimpiando] = useState(false)
+  const [msgLimpieza, setMsgLimpieza] = useState('')
 
   useEffect(() => {
     api.get('/admin/transacciones').then(r => setOrdenes(r.data)).catch(console.error).finally(() => setCargando(false))
   }, [])
+
+  async function limpiarHistorial() {
+    setMsgLimpieza('')
+    // Preview primero: cuántas se borran y cuál se conserva
+    let preview
+    try {
+      const res = await api.get('/admin/ordenes-limpieza/preview')
+      preview = res.data
+    } catch (err: any) {
+      setMsgLimpieza('Error obteniendo el resumen: ' + (err.response?.data?.error || err.message))
+      return
+    }
+
+    if (!preview.seConserva) {
+      setMsgLimpieza('No hay órdenes para limpiar.')
+      return
+    }
+
+    const conf = window.confirm(
+      `Se borrarán ${preview.seBorraran} órdenes y se conservará SOLO la más reciente:\n\n` +
+      `• $${preview.seConserva.total?.toLocaleString()} — ${preview.seConserva.estado}\n` +
+      `• ${preview.seConserva.nombreComprador || 'sin nombre'}\n` +
+      `• ${new Date(preview.seConserva.fecha).toLocaleString('es-AR')}\n\n` +
+      `Esta acción NO se puede deshacer. ¿Continuar?`
+    )
+    if (!conf) return
+
+    setLimpiando(true)
+    try {
+      const res = await api.post('/admin/ordenes-limpieza/ejecutar', { confirmar: true })
+      setMsgLimpieza(`✅ ${res.data.borradas} órdenes borradas. Quedó 1 venta. Recargando...`)
+      const r = await api.get('/admin/transacciones')
+      setOrdenes(r.data)
+    } catch (err: any) {
+      setMsgLimpieza('Error: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setLimpiando(false)
+    }
+  }
 
   const ESTADOS: Record<string, { color: string; texto: string }> = {
     pendiente: { color: 'bg-yellow-100 text-yellow-700', texto: 'Pendiente' },
@@ -494,7 +535,21 @@ function SeccionOrdenes() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Órdenes ({ordenes.length})</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Órdenes ({ordenes.length})</h1>
+        <button
+          onClick={limpiarHistorial}
+          disabled={limpiando}
+          className="shrink-0 px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
+        >
+          {limpiando ? 'Limpiando...' : '🧹 Limpiar órdenes de prueba (dejar solo la última)'}
+        </button>
+      </div>
+      {msgLimpieza && (
+        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+          {msgLimpieza}
+        </div>
+      )}
 
       {ordenes.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
