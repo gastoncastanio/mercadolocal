@@ -81,8 +81,8 @@ export default function DashboardAdmin() {
         </div>
       </aside>
 
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50 px-4 py-3 flex items-center justify-between">
+      {/* Mobile header — pt incluye el safe-area del notch/Dynamic Island */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50 px-4 pb-3 pt-[calc(0.75rem_+_env(safe-area-inset-top))] flex items-center justify-between">
         <button onClick={() => setMenuAbierto(!menuAbierto)} className="text-2xl">&#9776;</button>
         <span className="font-bold text-gray-800">👑 Admin</span>
         <span className="text-lg">{SECCIONES.find(s => s.id === seccion)?.icono}</span>
@@ -91,7 +91,7 @@ export default function DashboardAdmin() {
       {/* Mobile menu overlay */}
       {menuAbierto && (
         <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMenuAbierto(false)}>
-          <div className="w-64 bg-white h-full p-4 space-y-1" onClick={e => e.stopPropagation()}>
+          <div className="w-64 bg-white h-full p-4 pt-[calc(1rem_+_env(safe-area-inset-top))] space-y-1" onClick={e => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-gray-800 mb-4 px-4">👑 Admin Panel</h2>
             {SECCIONES.map(s => (
               <button
@@ -109,8 +109,8 @@ export default function DashboardAdmin() {
         </div>
       )}
 
-      {/* Content */}
-      <main className="flex-1 md:p-8 p-4 overflow-auto" style={{ paddingTop: 'calc(1rem + max(env(safe-area-inset-top), 0px))', paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}>
+      {/* Content — pt limpia la barra fija (4rem) + el safe-area del notch */}
+      <main className="flex-1 p-4 pt-[calc(4rem_+_env(safe-area-inset-top))] md:p-8 md:pt-8 overflow-auto">
         {seccion === 'inicio' && <SeccionInicio />}
         {seccion === 'usuarios' && <SeccionUsuarios />}
         {seccion === 'vendedores' && <SeccionVendedores />}
