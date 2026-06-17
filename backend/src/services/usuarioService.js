@@ -97,6 +97,10 @@ export async function registrarUsuario(datos) {
 export async function loginUsuario(email, contraseña) {
   const usuario = await Usuario.findOne({ email })
   if (!usuario) {
+    // Diagnóstico (solo en logs del server, no se expone al cliente): el email
+    // no corresponde a ninguna cuenta. Suele ser un typo o un email distinto al
+    // que se usó para registrarse/resetear.
+    console.warn(`🔍 Login: NO existe ninguna cuenta con el email "${email}"`)
     throw new Error('Email o contraseña incorrectos')
   }
 
@@ -106,6 +110,10 @@ export async function loginUsuario(email, contraseña) {
 
   const contraseñaValida = await usuario.compararContraseña(contraseña)
   if (!contraseñaValida) {
+    // Diagnóstico (solo logs): la cuenta SÍ existe pero la contraseña no
+    // coincide con el hash guardado. Si esto pasa justo después de un reset
+    // "exitoso", el problema está en el guardado de la contraseña, no acá.
+    console.warn(`🔍 Login: la cuenta "${email}" existe pero la contraseña NO coincide con el hash guardado`)
     throw new Error('Email o contraseña incorrectos')
   }
 
