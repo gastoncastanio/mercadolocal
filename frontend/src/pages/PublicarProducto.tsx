@@ -212,9 +212,9 @@ export default function PublicarProducto() {
   return (
     <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-lg mx-auto px-4">
-        <h1 className="text-3xl font-bold text-ml-ink mb-8">Publicar Producto</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">Publicar Producto</h1>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm whitespace-pre-line">
               {error}
@@ -240,7 +240,7 @@ export default function PublicarProducto() {
                     className="w-full h-full object-cover rounded-xl border border-ml-line"
                   />
                   {idx === 0 && (
-                    <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
+                    <span className="absolute bottom-1 left-1 ml-grad text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow">
                       PRINCIPAL
                     </span>
                   )}
