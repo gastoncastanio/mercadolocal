@@ -135,7 +135,7 @@ export default function Chat() {
                 <button
                   key={conv._id}
                   onClick={() => setConversacionActiva(conv._id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                  className={`w-full text-left px-4 py-3 border-b border-ml-line2 hover:bg-ml-bg transition-colors ${
                     conversacionActiva === conv._id ? 'bg-blue-50' : ''
                   }`}
                 >
@@ -145,7 +145,7 @@ export default function Chat() {
                     </span>
                     <div className="flex items-center gap-2">
                       {conv.noLeidos > 0 && (
-                        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                        <span className="w-2.5 h-2.5 bg-ml-blue rounded-full" />
                       )}
                       <span className="text-xs text-ml-muted">
                         {new Date(conv.updatedAt).toLocaleDateString()}
@@ -207,7 +207,7 @@ export default function Chat() {
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl ${
                         esMio
-                          ? 'bg-blue-500 text-white rounded-br-md'
+                          ? 'bg-ml-blue text-white rounded-br-md'
                           : 'bg-ml-bg text-ml-ink rounded-bl-md'
                       }`}
                     >
@@ -252,7 +252,7 @@ export default function Chat() {
                 <button
                   type="submit"
                   disabled={enviando || !nuevoMensaje.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium  disabled:opacity-50"
+                  className="px-6 py-3 mlbtn ml-grad text-white rounded-xl font-medium disabled:opacity-50"
                 >
                   {enviando ? '...' : 'Enviar'}
                 </button>
