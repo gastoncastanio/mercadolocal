@@ -70,7 +70,7 @@ export default function Ayuda() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-ml-ink">Centro de Ayuda</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Centro de Ayuda</h1>
           <p className="text-ml-muted mt-2">Encontra respuestas a las preguntas mas frecuentes</p>
         </div>
 
@@ -82,8 +82,8 @@ export default function Ayuda() {
               onClick={() => { setCategoriaActiva(i); setPreguntaAbierta(null) }}
               className={`p-4 rounded-2xl text-center transition-all ${
                 categoriaActiva === i
-                  ? 'bg-blue-600 text-white shadow-lg scale-105'
-                  : 'bg-white text-ml-ink shadow-sm hover:shadow-md'
+                  ? 'mlbtn ml-grad text-white shadow-lg scale-105'
+                  : 'bg-white text-ml-ink shadow-sm border border-ml-line hover:shadow-md'
               }`}
             >
               <span className="text-2xl block mb-1">{cat.icono}</span>
@@ -93,8 +93,8 @@ export default function Ayuda() {
         </div>
 
         {/* Preguntas */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
+          <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-ml-line">
             <h2 className="text-xl font-bold text-ml-ink flex items-center gap-2">
               <span>{categorias[categoriaActiva].icono}</span>
               {categorias[categoriaActiva].titulo}
