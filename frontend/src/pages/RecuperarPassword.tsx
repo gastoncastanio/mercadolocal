@@ -10,6 +10,7 @@ export default function RecuperarPassword() {
   const [token, setToken] = useState('')
   const [nuevaContraseña, setNuevaContraseña] = useState('')
   const [confirmar, setConfirmar] = useState('')
+  const [verContraseña, setVerContraseña] = useState(false)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
   const [devToken, setDevToken] = useState('')
@@ -143,21 +144,34 @@ export default function RecuperarPassword() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
-              <input
-                type="password"
-                required
-                value={nuevaContraseña}
-                onChange={e => { setNuevaContraseña(e.target.value); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                placeholder="Mínimo 8 caracteres y un número"
-              />
+              <div className="relative">
+                <input
+                  type={verContraseña ? 'text' : 'password'}
+                  required
+                  autoComplete="new-password"
+                  value={nuevaContraseña}
+                  onChange={e => { setNuevaContraseña(e.target.value); setError('') }}
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Mínimo 8 caracteres y un número"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVerContraseña(v => !v)}
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                  aria-label={verContraseña ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  tabIndex={-1}
+                >
+                  {verContraseña ? '🙈' : '👁'}
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
               <input
-                type="password"
+                type={verContraseña ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 value={confirmar}
                 onChange={e => { setConfirmar(e.target.value); setError('') }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"

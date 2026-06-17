@@ -44,6 +44,11 @@ import { iniciarCronCerebro } from './services/cronCerebro.js'
 import { inicializarConfig } from './services/configService.js'
 
 const app = express()
+// Railway (y la mayoría de los PaaS) ponen un proxy adelante que agrega el
+// header X-Forwarded-For con la IP real del cliente. Sin esto, express-rate-limit
+// no puede identificar al cliente y tira ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+// Confiamos en 1 solo proxy (el de Railway), no en cualquiera, por seguridad.
+app.set('trust proxy', 1)
 const httpServer = http.createServer(app)
 const PORT = process.env.PORT || 3001
 

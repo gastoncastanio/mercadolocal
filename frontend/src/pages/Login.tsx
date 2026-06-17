@@ -8,6 +8,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('')
   const [contraseña, setContraseña] = useState('')
+  const [verContraseña, setVerContraseña] = useState(false)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
 
@@ -61,14 +62,25 @@ export default function Login() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-            <input
-              type="password"
-              required
-              value={contraseña}
-              onChange={(e) => { setContraseña(e.target.value); setError('') }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder="Tu contraseña"
-            />
+            <div className="relative">
+              <input
+                type={verContraseña ? 'text' : 'password'}
+                required
+                value={contraseña}
+                onChange={(e) => { setContraseña(e.target.value); setError('') }}
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Tu contraseña"
+              />
+              <button
+                type="button"
+                onClick={() => setVerContraseña(v => !v)}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                aria-label={verContraseña ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                tabIndex={-1}
+              >
+                {verContraseña ? '🙈' : '👁'}
+              </button>
+            </div>
           </div>
 
           <button
