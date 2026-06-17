@@ -104,6 +104,19 @@ export async function loginUsuario(email, contraseña) {
     throw new Error('Email o contraseña incorrectos')
   }
 
+  // Diagnóstico clave: si hay MÁS de un documento con el mismo email, el login
+  // lee uno y el reset puede haber actualizado otro -> "la contraseña vieja
+  // sigue funcionando". Logueamos el _id leído y el prefijo del hash para
+  // poder cruzarlo con lo que guardó el /reset.
+  const cuentasConEseEmail = await Usuario.countDocuments({ email })
+  console.log(
+    `🔍 Login: email="${email}" -> doc _id=${usuario._id} | ` +
+    `cuentas con ese email=${cuentasConEseEmail} | hash=${String(usuario.contraseña).slice(0, 12)}…`
+  )
+  if (cuentasConEseEmail > 1) {
+    console.warn(`🚨 Login: hay ${cuentasConEseEmail} cuentas DUPLICADAS con el email "${email}". El reset y el login pueden estar tocando documentos distintos.`)
+  }
+
   if (!usuario.activo) {
     throw new Error('Cuenta desactivada. Contacta al administrador.')
   }
@@ -113,7 +126,7 @@ export async function loginUsuario(email, contraseña) {
     // Diagnóstico (solo logs): la cuenta SÍ existe pero la contraseña no
     // coincide con el hash guardado. Si esto pasa justo después de un reset
     // "exitoso", el problema está en el guardado de la contraseña, no acá.
-    console.warn(`🔍 Login: la cuenta "${email}" existe pero la contraseña NO coincide con el hash guardado`)
+    console.warn(`🔍 Login: la cuenta "${email}" (_id=${usuario._id}) existe pero la contraseña NO coincide con el hash guardado`)
     throw new Error('Email o contraseña incorrectos')
   }
 
