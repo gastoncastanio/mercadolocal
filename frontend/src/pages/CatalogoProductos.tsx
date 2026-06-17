@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import api from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 
 export default function CatalogoProductos() {
+  // La búsqueda y la categoría vienen de la URL (?busqueda= / ?categoria=).
+  // Así el buscador global del navbar y las categorías de la landing filtran
+  // de verdad al entrar al catálogo.
+  const [searchParams] = useSearchParams()
   const [productos, setProductos] = useState<Producto[]>([])
-  const [busqueda, setBusqueda] = useState('')
-  const [categoria, setCategoria] = useState('')
+  const [busqueda, setBusqueda] = useState(searchParams.get('busqueda') || '')
+  const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
   const [precioMin, setPrecioMin] = useState('')
   const [precioMax, setPrecioMax] = useState('')
   const [ciudad, setCiudad] = useState('')
@@ -18,7 +22,16 @@ export default function CatalogoProductos() {
 
   useEffect(() => {
     cargarProductos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoria, ordenar])
+
+  // Sincronizar con la URL: si el usuario ya está en /catalogo y navega a otra
+  // categoría/búsqueda (desde el navbar o la landing), reflejamos el cambio.
+  useEffect(() => {
+    setBusqueda(searchParams.get('busqueda') || '')
+    setCategoria(searchParams.get('categoria') || '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   // Sincronizacion en tiempo real con Socket.IO
   useEffect(() => {
@@ -81,11 +94,6 @@ export default function CatalogoProductos() {
     }
   }
 
-  function handleBuscar(e: React.FormEvent) {
-    e.preventDefault()
-    cargarProductos()
-  }
-
   function limpiarFiltros() {
     setPrecioMin('')
     setPrecioMax('')
@@ -107,31 +115,28 @@ export default function CatalogoProductos() {
           <p className="text-gray-500 mt-1">Encuentra lo que buscas de tiendas locales</p>
         </div>
 
-        {/* Barra de búsqueda */}
-        <form onSubmit={handleBuscar} className="flex gap-3 mb-4">
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar productos..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-          />
-          <button
-            type="submit"
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-          >
-            Buscar
-          </button>
+        {/* Toolbar: contexto de búsqueda + filtros.
+            La búsqueda de texto vive en el buscador global del navbar (evita el
+            doble buscador). Acá mostramos el término activo y el toggle de filtros. */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 text-sm text-gray-500 min-w-0 truncate">
+            {busqueda
+              ? <>Resultados para <span className="font-semibold text-gray-800">&ldquo;{busqueda}&rdquo;</span></>
+              : categoria
+                ? <>Categoría <span className="font-semibold text-gray-800">{categoria}</span></>
+                : 'Explorá todo el catálogo de tiendas locales'}
+          </div>
           <button
             type="button"
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
-            className={`px-4 py-3 rounded-xl font-semibold transition-colors ${
+            className={`shrink-0 px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 ${
               mostrarFiltros ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
             }`}
           >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M6 12h12M10 20h4" /></svg>
             Filtros
           </button>
-        </form>
+        </div>
 
         {/* Filtros avanzados */}
         {mostrarFiltros && (
