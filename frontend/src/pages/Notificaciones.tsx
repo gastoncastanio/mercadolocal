@@ -117,7 +117,7 @@ export default function Notificaciones() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <span className="text-3xl">&#x1F514;</span>
-            <h1 className="text-3xl font-bold text-ml-ink">Notificaciones</h1>
+            <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Notificaciones</h1>
             {noLeidas > 0 && (
               <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
                 {noLeidas} sin leer
@@ -148,8 +148,8 @@ export default function Notificaciones() {
               disabled={pushProcesando}
               className={`shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
                 pushActivo
-                  ? 'bg-gray-100 text-ml-ink hover:bg-ml-bg'
-                  : 'bg-blue-600 text-white '
+                  ? 'bg-ml-bg border border-ml-line text-ml-ink'
+                  : 'mlbtn ml-grad text-white'
               }`}
             >
               {pushProcesando ? '...' : pushActivo ? 'Desactivar' : 'Activar'}
@@ -162,7 +162,7 @@ export default function Notificaciones() {
             <div className="animate-spin text-4xl">&#x1F504;</div>
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-ml-line">
             <p className="text-6xl mb-4">&#x1F515;</p>
             <h2 className="text-xl font-semibold text-ml-ink mb-2">No tienes notificaciones</h2>
             <p className="text-ml-muted">Te avisaremos cuando pase algo importante.</p>
@@ -182,7 +182,7 @@ export default function Notificaciones() {
                     </div>
                     {n.mensaje && <p className="text-sm text-ml-soft mt-1">{n.mensaje}</p>}
                     {!n.leida && (
-                      <span className="inline-block mt-2 w-2 h-2 rounded-full bg-blue-500"></span>
+                      <span className="inline-block mt-2 w-2 h-2 rounded-full bg-ml-blue"></span>
                     )}
                   </div>
                   <button

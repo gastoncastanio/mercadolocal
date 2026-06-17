@@ -114,7 +114,7 @@ export default function TiendaPublica() {
 
       {/* Stats reputación */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 -mt-6 relative z-10">
-        <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-ml-line p-4 sm:p-6">
           <h2 className="text-lg font-bold text-ml-ink mb-4 flex items-center gap-2">
             <span>&#x1F4CA;</span> Reputaci&oacute;n e historial
           </h2>
@@ -150,7 +150,7 @@ export default function TiendaPublica() {
                 return (
                   <div key={estrellas} className="flex items-center gap-2 text-xs">
                     <span className="w-8 text-ml-soft">{estrellas} &#x2605;</span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2 bg-ml-bg rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full"
                         style={{ width: `${porcentaje}%` }}

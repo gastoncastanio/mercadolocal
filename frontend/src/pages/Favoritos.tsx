@@ -37,7 +37,7 @@ export default function Favoritos() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-3 mb-6">
           <span className="text-3xl">&#x2764;&#xFE0F;</span>
-          <h1 className="text-3xl font-bold text-ml-ink">Mis Favoritos</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Mis Favoritos</h1>
         </div>
 
         {cargando ? (
@@ -45,7 +45,7 @@ export default function Favoritos() {
             <div className="animate-spin text-4xl">&#x1F504;</div>
           </div>
         ) : productos.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-ml-line">
             <p className="text-6xl mb-4">&#x1F494;</p>
             <h2 className="text-2xl font-semibold text-ml-ink mb-2">A&uacute;n no tienes favoritos</h2>
             <p className="text-ml-muted mb-6">Guard&aacute; productos tocando el coraz&oacute;n en cada publicaci&oacute;n.</p>
