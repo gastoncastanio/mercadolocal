@@ -33,12 +33,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl border border-ml-line shadow-[0_30px_60px_-40px_rgba(20,20,45,.35)] p-8">
         <div className="text-center mb-8">
-          <span className="text-4xl">🛒</span>
-          <h1 className="text-3xl font-bold text-gray-800 mt-2">Iniciar Sesión</h1>
-          <p className="text-gray-500 mt-2">Bienvenido de nuevo a MercadoLocal</p>
+          <span className="inline-flex w-12 h-12 ml-grad rounded-[14px] items-center justify-center shadow-sm">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+          </span>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink mt-3">Iniciar sesión</h1>
+          <p className="text-ml-muted mt-1.5">Bienvenido de nuevo a MercadoLocal</p>
         </div>
 
         {error && (
@@ -49,26 +51,26 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError('') }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="tu@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Contraseña</label>
             <div className="relative">
               <input
                 type={verContraseña ? 'text' : 'password'}
                 required
                 value={contraseña}
                 onChange={(e) => { setContraseña(e.target.value); setError('') }}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 pr-12 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
                 placeholder="Tu contraseña"
               />
               <button
@@ -86,21 +88,21 @@ export default function Login() {
           <button
             type="submit"
             disabled={cargando}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+            className="w-full py-3 mlbtn ml-grad text-white rounded-xl font-bold transition-all disabled:opacity-50"
           >
             {cargando ? 'Ingresando...' : 'Iniciar Sesi\u00f3n'}
           </button>
         </form>
 
         <div className="text-center mt-4">
-          <Link to="/recuperar" className="text-sm text-blue-600 hover:underline">
+          <Link to="/recuperar" className="text-sm text-ml-blue font-semibold hover:underline">
             &iquest;Olvidaste tu contrase&ntilde;a?
           </Link>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-4">
           &iquest;No ten&eacute;s cuenta?{' '}
-          <Link to="/registro" className="text-blue-600 font-medium hover:underline">
+          <Link to="/registro" className="text-ml-blue font-bold hover:underline">
             Registrarse
           </Link>
         </p>

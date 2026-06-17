@@ -94,18 +94,21 @@ export default function Registro() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center py-12 px-4">
+      <div className="max-w-md w-full bg-white rounded-2xl border border-ml-line shadow-[0_30px_60px_-40px_rgba(20,20,45,.35)] p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Crear Cuenta</h1>
-          <p className="text-gray-500 mt-2">
-            Únete a MercadoLocal
+          <span className="inline-flex w-12 h-12 ml-grad rounded-[14px] items-center justify-center shadow-sm mb-3">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+          </span>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Crear cuenta</h1>
+          <p className="text-ml-muted mt-1.5">
+            Sumate a MercadoLocal
           </p>
         </div>
 
         {/* Cuenta unificada: comprás y vendés con la misma cuenta */}
-        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-          <p className="text-sm text-gray-700 text-center">
+        <div className="mb-6 p-4 bg-[#f6f3ff] rounded-xl border border-[#e7dcff]">
+          <p className="text-sm text-ml-slate text-center">
             <span className="font-semibold">Una sola cuenta para todo.</span> Comprá desde ya y,
             cuando quieras, abrí tu tienda para vender — sin crear otra cuenta.
           </p>
@@ -119,33 +122,33 @@ export default function Registro() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Nombre completo</label>
             <input
               name="nombre"
               type="text"
               required
               value={form.nombre}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Tu nombre"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Email</label>
             <input
               name="email"
               type="email"
               required
               value={form.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="tu@email.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">DNI</label>
             <input
               name="dni"
               type="text"
@@ -158,58 +161,58 @@ export default function Registro() {
                 setForm({ ...form, dni: val })
                 setError('')
               }}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Ej: 35.123.456"
             />
             <p className="text-xs text-gray-400 mt-1">Requerido para verificar tu identidad. No se comparte públicamente.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Teléfono</label>
             <input
               name="telefono"
               type="text"
               value={form.telefono}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Tu teléfono"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Dirección</label>
             <input
               name="direccion"
               type="text"
               value={form.direccion}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Tu dirección"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Contraseña</label>
             <input
               name="contraseña"
               type="password"
               required
               value={form.contraseña}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Mínimo 8 caracteres"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
+            <label className="block text-sm font-semibold text-ml-slate mb-1">Confirmar contraseña</label>
             <input
               name="confirmarContraseña"
               type="password"
               required
               value={form.confirmarContraseña}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Repetir contraseña"
             />
           </div>
@@ -221,7 +224,7 @@ export default function Registro() {
                 type="checkbox"
                 checked={quiereTienda}
                 onChange={(e) => { setQuiereTienda(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
               <span className="text-sm text-gray-600">
                 Quiero <strong>abrir mi tienda ya</strong> para empezar a vender (opcional)
@@ -230,48 +233,48 @@ export default function Registro() {
           </div>
 
           {quiereTienda && (
-            <div className="space-y-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <div className="space-y-4 p-4 bg-[#f6f3ff] rounded-xl border border-[#e7dcff]">
               <h3 className="font-semibold text-gray-800 text-sm">Datos de tu tienda</h3>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
+                <label className="block text-sm font-semibold text-ml-slate mb-1">Nombre de la tienda</label>
                 <input
                   type="text"
                   value={tiendaForm.nombreTienda}
                   onChange={(e) => setTiendaForm({ ...tiendaForm, nombreTienda: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
                   placeholder="Ej: Ropa Vintage Ana"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
+                <label className="block text-sm font-semibold text-ml-slate mb-1">Descripción (opcional)</label>
                 <textarea
                   value={tiendaForm.descripcionTienda}
                   onChange={(e) => setTiendaForm({ ...tiendaForm, descripcionTienda: e.target.value })}
                   rows={2}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none resize-none"
                   placeholder="Qué vendés, en qué te especializás..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                <label className="block text-sm font-semibold text-ml-slate mb-1">Ciudad</label>
                 <input
                   type="text"
                   value={tiendaForm.ciudad}
                   onChange={(e) => setTiendaForm({ ...tiendaForm, ciudad: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
                   placeholder="Ej: Buenos Aires"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de tienda</label>
+                <label className="block text-sm font-semibold text-ml-slate mb-1">Tipo de tienda</label>
                 <select
                   value={tiendaForm.tipoTienda}
                   onChange={(e) => setTiendaForm({ ...tiendaForm, tipoTienda: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
                 >
                   <option value="online">Solo en línea</option>
                   <option value="fisica">Solo física</option>
@@ -288,7 +291,7 @@ export default function Registro() {
                 type="checkbox"
                 checked={mayorDeEdad}
                 onChange={(e) => { setMayorDeEdad(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
               <span className="text-sm text-gray-600">
                 Declaro bajo juramento ser <strong>mayor de 18 años</strong>. Entiendo que proporcionar información falsa puede resultar en la suspensión de mi cuenta.
@@ -300,13 +303,13 @@ export default function Registro() {
                 type="checkbox"
                 checked={aceptaTerminos}
                 onChange={(e) => { setAceptaTerminos(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
               <span className="text-sm text-gray-600">
                 Acepto los{' '}
-                <Link to="/terminos" target="_blank" className="text-blue-600 hover:underline font-medium">Términos y Condiciones</Link>
+                <Link to="/terminos" target="_blank" className="text-ml-blue hover:underline font-bold">Términos y Condiciones</Link>
                 {' '}y la{' '}
-                <Link to="/privacidad" target="_blank" className="text-blue-600 hover:underline font-medium">Política de Privacidad</Link>
+                <Link to="/privacidad" target="_blank" className="text-ml-blue hover:underline font-bold">Política de Privacidad</Link>
               </span>
             </label>
           </div>
@@ -314,7 +317,7 @@ export default function Registro() {
           <button
             type="submit"
             disabled={cargando || !mayorDeEdad || !aceptaTerminos}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+            className="w-full py-3 mlbtn ml-grad text-white rounded-xl font-bold transition-all disabled:opacity-50"
           >
             {cargando ? 'Creando cuenta...' : 'Crear Cuenta'}
           </button>
@@ -322,7 +325,7 @@ export default function Registro() {
 
         <p className="text-center text-sm text-gray-500 mt-6">
           ¿Ya tienes cuenta?{' '}
-          <Link to="/login" className="text-blue-600 font-medium hover:underline">
+          <Link to="/login" className="text-ml-blue font-bold hover:underline">
             Iniciar Sesión
           </Link>
         </p>
