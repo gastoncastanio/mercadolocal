@@ -69,7 +69,7 @@ export default function RecuperarPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <span className="text-4xl">{paso === 'listo' ? '✅' : '🔑'}</span>
@@ -100,14 +100,14 @@ export default function RecuperarPassword() {
                 required
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                 placeholder="tu@email.com"
               />
             </div>
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
             >
               {cargando ? 'Enviando...' : 'Enviar código'}
             </button>
@@ -137,7 +137,7 @@ export default function RecuperarPassword() {
                 maxLength={6}
                 value={token}
                 onChange={e => { setToken(e.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-center text-2xl tracking-[0.5em] font-bold"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none text-center text-2xl tracking-[0.5em] font-bold"
                 placeholder="000000"
               />
             </div>
@@ -151,7 +151,7 @@ export default function RecuperarPassword() {
                   autoComplete="new-password"
                   value={nuevaContraseña}
                   onChange={e => { setNuevaContraseña(e.target.value); setError('') }}
-                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                   placeholder="Mínimo 8 caracteres y un número"
                 />
                 <button
@@ -174,7 +174,7 @@ export default function RecuperarPassword() {
                 autoComplete="new-password"
                 value={confirmar}
                 onChange={e => { setConfirmar(e.target.value); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                 placeholder="Repetir contraseña"
               />
             </div>
@@ -182,7 +182,7 @@ export default function RecuperarPassword() {
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
             >
               {cargando ? 'Restableciendo...' : 'Restablecer contraseña'}
             </button>
@@ -202,7 +202,7 @@ export default function RecuperarPassword() {
             <p className="text-green-600 font-medium mb-6">Tu contraseña fue actualizada correctamente.</p>
             <Link
               to="/login"
-              className="inline-block w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all text-center"
+              className="inline-block w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all text-center"
             >
               Iniciar sesión
             </Link>

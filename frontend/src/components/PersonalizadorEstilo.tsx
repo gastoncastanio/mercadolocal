@@ -133,7 +133,7 @@ export default function PersonalizadorEstilo({
           onChange={(e) =>
             setParametros({ ...parametros, tipografia: e.target.value })
           }
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ml-purple/30"
         >
           {TIPOGRAFIAS.map((tip) => (
             <option key={tip} value={tip}>

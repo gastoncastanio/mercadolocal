@@ -38,7 +38,7 @@ export default function DashboardVendedor() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
@@ -46,7 +46,7 @@ export default function DashboardVendedor() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <p>Error cargando dashboard</p>
       </div>
     )
@@ -102,7 +102,7 @@ export default function DashboardVendedor() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">
           🏪 Dashboard - {tienda?.nombre || stats.nombre}

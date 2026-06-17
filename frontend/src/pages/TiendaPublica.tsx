@@ -39,7 +39,7 @@ export default function TiendaPublica() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">&#x1F504;</div>
       </div>
     )
@@ -47,7 +47,7 @@ export default function TiendaPublica() {
 
   if (!tienda) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <p className="text-6xl mb-4">&#x1F3EA;</p>
           <h2 className="text-xl font-bold text-gray-800">Tienda no encontrada</h2>
@@ -68,7 +68,7 @@ export default function TiendaPublica() {
   const mediaEstrella = calif - estrellasLlenas >= 0.5
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-10">
+    <div className="min-h-screen bg-ml-bg pb-10">
       {/* Header tienda */}
       <div className={`bg-gradient-to-br ${nivel.color} text-white`}>
         <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10">

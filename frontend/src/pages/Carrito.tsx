@@ -43,10 +43,10 @@ export default function Carrito() {
     }
   }
 
-  if (cargando) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
+  if (cargando) return <div className="min-h-screen bg-ml-bg flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">🛒 Mi Carrito</h1>
 
@@ -101,7 +101,7 @@ export default function Carrito() {
               </div>
               <button
                 onClick={() => navigate('/checkout')}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all"
+                className="w-full py-4 ml-grad text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all"
               >
                 Ir al Checkout
               </button>

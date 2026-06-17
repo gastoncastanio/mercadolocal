@@ -311,7 +311,7 @@ function ModalDetalle({
         </button>
 
         {/* Header */}
-        <div className="px-6 py-4 pr-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="px-6 py-4 pr-14 ml-grad text-white">
           <div className="flex items-center gap-2 mb-1 flex-wrap text-xs">
             <span className={`px-2 py-0.5 rounded-full ${COLOR_PRIORIDAD[propuesta.prioridad]} text-gray-900`}>
               {propuesta.prioridad}
@@ -414,7 +414,7 @@ function ModalDetalle({
                 onChange={e => onChangeComentario(e.target.value)}
                 placeholder="Ej: Buena idea pero esperá a Q2; o: No coincido, mirá X dato..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-ml-purple/30"
               />
 
               <div className="flex gap-2 mt-4 flex-wrap">

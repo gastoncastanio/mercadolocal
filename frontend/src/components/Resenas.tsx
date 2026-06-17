@@ -132,7 +132,7 @@ export default function Resenas({ productoId, puedeResenar, ordenId }: ResenasPr
               onChange={(e) => setComentario(e.target.value)}
               placeholder="Escribe tu comentario..."
               rows={3}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
             />
           </div>
           <button

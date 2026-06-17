@@ -111,7 +111,7 @@ export default function CentralVendedor() {
 
   if (!tienda) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
           <p className="text-6xl mb-4">&#x1F3EA;</p>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Necesit&aacute;s una tienda</h2>
@@ -125,7 +125,7 @@ export default function CentralVendedor() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header con bienvenida + reputación */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">

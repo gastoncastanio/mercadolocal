@@ -130,7 +130,7 @@ export default function SoporteAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-5">
           <h1 className="text-3xl font-bold text-gray-800">Centro de Soporte · Admin</h1>
@@ -345,7 +345,7 @@ export default function SoporteAdmin() {
                       disabled={enviando}
                       rows={3}
                       maxLength={4000}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
                     />
                     <div className="flex items-center justify-between mt-2">
                       <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">

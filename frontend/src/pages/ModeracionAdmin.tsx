@@ -523,7 +523,7 @@ export default function ModeracionAdmin() {
                   onChange={e => setMotivoRechazo(e.target.value)}
                   placeholder="Ej: las imágenes están borrosas, el precio es sospechoso, etc."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500"
                 />
               </div>
             </div>

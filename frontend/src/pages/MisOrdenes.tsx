@@ -194,7 +194,7 @@ export default function MisOrdenes() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-3">🔄</div>
           <p className="text-gray-500 text-sm">Cargando tus pedidos...</p>
@@ -204,7 +204,7 @@ export default function MisOrdenes() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Mis pedidos</h1>

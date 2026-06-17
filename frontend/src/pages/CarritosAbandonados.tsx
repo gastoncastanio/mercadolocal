@@ -51,10 +51,10 @@ export default function CarritosAbandonados() {
     return `Hace ${dias} dia${dias !== 1 ? 's' : ''}`
   }
 
-  if (cargando) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
+  if (cargando) return <div className="min-h-screen bg-ml-bg flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>

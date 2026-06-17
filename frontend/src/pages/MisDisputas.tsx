@@ -98,14 +98,14 @@ export default function MisDisputas() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-800">⚖️ Mis Disputas</h1>
@@ -143,7 +143,7 @@ export default function MisDisputas() {
                   <select
                     value={ordenId}
                     onChange={(e) => setOrdenId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="">Selecciona una orden</option>
                     {ordenes.map((o) => (
@@ -159,7 +159,7 @@ export default function MisDisputas() {
                   <select
                     value={motivo}
                     onChange={(e) => setMotivo(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="">Selecciona un motivo</option>
                     <option value="producto_dañado">Producto danado</option>
@@ -176,7 +176,7 @@ export default function MisDisputas() {
                     onChange={(e) => setDescripcion(e.target.value)}
                     placeholder="Describe tu problema en detalle..."
                     rows={4}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
                   />
                 </div>
 

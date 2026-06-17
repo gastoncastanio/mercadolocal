@@ -112,7 +112,7 @@ export default function Notificaciones() {
   const noLeidas = items.filter(n => !n.leida).length
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-3xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

@@ -51,7 +51,7 @@ export default function DashboardAdmin() {
   const [menuAbierto, setMenuAbierto] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-ml-bg flex">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 min-h-screen">
         <div className="p-6 border-b border-gray-100">
@@ -273,7 +273,7 @@ function SeccionUsuarios() {
         placeholder="Buscar por nombre, email o rol..."
         value={filtro}
         onChange={e => setFiltro(e.target.value)}
-        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30"
       />
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -417,7 +417,7 @@ function SeccionProductos() {
         placeholder="Buscar producto..."
         value={filtro}
         onChange={e => setFiltro(e.target.value)}
-        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30"
       />
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -586,7 +586,7 @@ function SeccionOrdenes() {
                   <select
                     value={o.estado}
                     onChange={e => cambiarEstado(o._id, e.target.value)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="pagada">Pagada</option>
@@ -694,7 +694,7 @@ function SeccionPublicidad() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-5 text-white">
+      <div className="ml-grad rounded-xl p-5 text-white">
         <h3 className="font-bold text-lg mb-2">&#x1F4B0; Resumen financiero</h3>
         <p className="text-white/80 text-sm">
           Los ingresos por publicidad se generan cuando los vendedores promocionan sus productos.
@@ -828,20 +828,20 @@ function SeccionConfig() {
                 <input type="color" value={getValor(config) || '#000000'} onChange={e => handleChange(config.clave, e.target.value)}
                   className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer" />
                 <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-ml-purple/30" />
               </div>
             ) : config.tipo === 'numero' ? (
               <input type="number" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" />
             ) : config.tipo === 'imagen' ? (
               <div className="space-y-2">
                 <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="URL de la imagen" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" placeholder="URL de la imagen" />
                 {getValor(config) && <img src={getValor(config)} alt="Preview" className="h-16 rounded-lg object-cover" />}
               </div>
             ) : (
               <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder={config.descripcion} />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" placeholder={config.descripcion} />
             )}
 
             {cambios[config.clave] !== undefined && (

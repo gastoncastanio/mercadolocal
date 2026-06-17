@@ -87,7 +87,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Checkout</h1>
 
@@ -113,25 +113,25 @@ export default function Checkout() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
                 <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tu nombre" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Tu nombre" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Dirección de entrega</label>
                 <input type="text" value={direccion} onChange={e => setDireccion(e.target.value)} required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Calle, número, ciudad" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Calle, número, ciudad" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
                 <input type="text" value={telefono} onChange={e => setTelefono(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tu teléfono" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Tu teléfono" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
                 <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Instrucciones especiales..." />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" placeholder="Instrucciones especiales..." />
               </div>
 
               {/* Aviso sobre envío — el costo se coordina aparte */}

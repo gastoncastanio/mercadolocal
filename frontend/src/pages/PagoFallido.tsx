@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 export default function PagoFallido() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center">
       <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
         <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <span className="text-4xl">&#10007;</span>

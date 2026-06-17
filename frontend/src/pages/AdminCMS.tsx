@@ -92,7 +92,7 @@ export default function AdminCMS() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4">&#x2699;&#xFE0F;</div>
           <p className="text-gray-500">Cargando configuraciones...</p>
@@ -102,7 +102,7 @@ export default function AdminCMS() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -216,7 +216,7 @@ export default function AdminCMS() {
                           type="text"
                           value={getValor(config)}
                           onChange={e => handleChange(config.clave, e.target.value)}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
                           placeholder="#000000"
                         />
                       </div>
@@ -225,7 +225,7 @@ export default function AdminCMS() {
                         type="number"
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                       />
                     ) : config.tipo === 'imagen' ? (
                       <div className="space-y-2">
@@ -233,7 +233,7 @@ export default function AdminCMS() {
                           type="text"
                           value={getValor(config)}
                           onChange={e => handleChange(config.clave, e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                           placeholder="URL de la imagen"
                         />
                         {getValor(config) && (
@@ -245,7 +245,7 @@ export default function AdminCMS() {
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
                         rows={5}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none font-mono text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none font-mono text-sm"
                         placeholder="HTML content..."
                       />
                     ) : (
@@ -253,7 +253,7 @@ export default function AdminCMS() {
                         type="text"
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                         placeholder={config.descripcion}
                       />
                     )}

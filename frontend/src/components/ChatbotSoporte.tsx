@@ -102,7 +102,7 @@ export default function ChatbotSoporte() {
       {/* Boton flotante */}
       <button
         onClick={() => setAbierto(!abierto)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all z-50 flex items-center justify-center text-2xl"
+        className="fixed bottom-6 right-6 w-14 h-14 ml-grad text-white rounded-full shadow-lg hover:shadow-xl transition-all z-50 flex items-center justify-center text-2xl"
         aria-label="Abrir chat de ayuda"
       >
         {abierto ? '\u2715' : '\u{1F4AC}'}
@@ -112,7 +112,7 @@ export default function ChatbotSoporte() {
       {abierto && (
         <div className="fixed bottom-24 right-6 w-[360px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden" style={{ height: '500px' }}>
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 shrink-0">
+          <div className="ml-grad text-white p-4 shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
                 🤖

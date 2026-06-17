@@ -43,7 +43,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                   this.setState({ hasError: false, error: null })
                   window.location.reload()
                 }}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
                 Recargar la pagina
               </button>

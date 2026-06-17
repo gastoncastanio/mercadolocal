@@ -144,7 +144,7 @@ export default function PagoExitoso() {
   // ===== Pantalla de "continuar pago" (carrito con varios vendedores) =====
   if (colaSiguiente) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center px-4">
         <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ export default function PagoExitoso() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center px-4">
       <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full">
         {estado === 'verificando' && (
           <>

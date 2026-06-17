@@ -103,7 +103,7 @@ export default function InstalarApp() {
 
   return (
     <section id="instalar-app-section" className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-6 sm:p-8">
+      <div className="relative overflow-hidden ml-grad rounded-2xl p-6 sm:p-8">
         {/* Decoración */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full" />

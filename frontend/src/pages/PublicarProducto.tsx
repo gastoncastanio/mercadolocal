@@ -174,7 +174,7 @@ export default function PublicarProducto() {
   // (los pagos caerían en cuenta admin sin trazabilidad del vendedor)
   if (tienda && !tienda.mpVinculado) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="min-h-screen bg-ml-bg py-12 px-4">
         <div className="max-w-lg mx-auto">
           <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-orange-300 rounded-2xl shadow-lg p-8 text-center">
             <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -210,7 +210,7 @@ export default function PublicarProducto() {
   const subiendoActivo = progresoImagen !== null
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-lg mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Publicar Producto</h1>
 
@@ -327,7 +327,7 @@ export default function PublicarProducto() {
               required
               value={form.nombre}
               onChange={e => setForm({...form, nombre: e.target.value})}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
               placeholder="Nombre del producto"
             />
           </div>
@@ -338,7 +338,7 @@ export default function PublicarProducto() {
               value={form.descripcion}
               onChange={e => setForm({...form, descripcion: e.target.value})}
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none"
               placeholder="Describe tu producto..."
             />
           </div>
@@ -353,7 +353,7 @@ export default function PublicarProducto() {
                 step="0.01"
                 value={form.precio}
                 onChange={e => setForm({...form, precio: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                 placeholder="0.00"
               />
             </div>
@@ -364,7 +364,7 @@ export default function PublicarProducto() {
                 min="0"
                 value={form.stock}
                 onChange={e => setForm({...form, stock: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                 placeholder="1"
               />
             </div>
@@ -432,7 +432,7 @@ export default function PublicarProducto() {
                 maxLength={80}
                 value={form.marca}
                 onChange={e => setForm({ ...form, marca: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                 placeholder="Ej: Samsung, Apple, Genérico"
               />
             </div>
@@ -451,7 +451,7 @@ export default function PublicarProducto() {
                 maxLength={14}
                 value={form.codigoBarras}
                 onChange={e => setForm({ ...form, codigoBarras: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none font-mono"
                 placeholder="Ej: 7790070451095"
               />
             </div>
@@ -490,7 +490,7 @@ export default function PublicarProducto() {
           <button
             type="submit"
             disabled={cargando || subiendoActivo}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+            className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
           >
             {cargando ? 'Publicando...' : subiendoActivo ? 'Esperá que terminen las fotos...' : 'Publicar Producto'}
           </button>

@@ -172,7 +172,7 @@ export default function Soporte() {
   // Si no está logueado, redirigir mensaje
   if (!usuario) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <p className="text-5xl mb-4">🔒</p>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Iniciá sesión para usar el soporte</h2>
@@ -186,7 +186,7 @@ export default function Soporte() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="mb-5">
           <h1 className="text-3xl font-bold text-gray-800">Soporte</h1>
@@ -362,7 +362,7 @@ export default function Soporte() {
                       placeholder={enviando ? 'Esperando respuesta...' : 'Escribí tu consulta...'}
                       disabled={enviando}
                       maxLength={2000}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 disabled:bg-gray-50"
                     />
                     <button
                       type="submit"

@@ -333,7 +333,7 @@ export default function MiTienda() {
   // ===== RENDER: Sin tienda =====
   if (!tienda && !editando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
           <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <svg className="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -355,7 +355,7 @@ export default function MiTienda() {
   if (editando) {
     const logoSrc = previewLogo || form.logo
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-ml-bg py-8">
         <div className="max-w-lg mx-auto px-4">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">{tienda ? 'Editar' : 'Crear'} Tienda</h1>
           <form onSubmit={guardarTienda} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
@@ -396,27 +396,27 @@ export default function MiTienda() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
               <input type="text" required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
               <input type="text" required value={form.ciudad} onChange={e => setForm({...form, ciudad: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
               <textarea value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
               <input type="text" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: +54 11 1234-5678" />
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Ej: +54 11 1234-5678" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
               <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value as 'online' | 'fisica' | 'ambas'})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none">
                 <option value="online">Solo Online</option>
                 <option value="fisica">Tienda Fisica</option>
                 <option value="ambas">Ambas</option>
@@ -437,7 +437,7 @@ export default function MiTienda() {
   const logoUrl = tienda?.logo
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Info tienda */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
@@ -765,25 +765,25 @@ export default function MiTienda() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                 <input type="text" required value={editForm.nombre} onChange={e => setEditForm({...editForm, nombre: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
                 <textarea value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Precio *</label>
                   <input type="number" required min="0" step="0.01" value={editForm.precio} onChange={e => setEditForm({...editForm, precio: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
                   <input type="number" min="0" value={editForm.stock} onChange={e => setEditForm({...editForm, stock: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
                 </div>
               </div>
 
@@ -834,7 +834,7 @@ export default function MiTienda() {
                     maxLength={80}
                     value={editForm.marca}
                     onChange={e => setEditForm({ ...editForm, marca: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                     placeholder="Ej: Samsung, Genérico"
                   />
                 </div>
@@ -853,7 +853,7 @@ export default function MiTienda() {
                     maxLength={14}
                     value={editForm.codigoBarras}
                     onChange={e => setEditForm({ ...editForm, codigoBarras: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none font-mono"
                     placeholder="Ej: 7790070451095"
                   />
                 </div>

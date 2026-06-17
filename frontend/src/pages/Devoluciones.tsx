@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 export default function Devoluciones() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 px-3 sm:px-4">
+    <div className="min-h-screen bg-ml-bg py-8 sm:py-12 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-5 sm:p-8 md:p-12">
         <div className="text-center mb-8 sm:mb-10">
           <div className="inline-block text-5xl mb-3">&#x1F504;</div>

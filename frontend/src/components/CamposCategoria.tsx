@@ -73,7 +73,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               id={`campo-${campo.id}`}
               value={valor}
               onChange={e => setValor(campo.id, e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
             >
               <option value="">Elegí una opción...</option>
               {campo.opciones?.map(opt => (
@@ -126,7 +126,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               min={campo.min}
               max={campo.max}
               placeholder={campo.placeholder}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>
@@ -141,7 +141,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               type="date"
               value={valor}
               onChange={e => setValor(campo.id, e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>
@@ -158,7 +158,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               maxLength={campo.maxLength}
               placeholder={campo.placeholder}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none"
             />
             {ayuda}
           </div>
@@ -176,7 +176,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               onChange={e => setValor(campo.id, e.target.value)}
               maxLength={campo.maxLength}
               placeholder={campo.placeholder}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>

@@ -498,7 +498,7 @@ export default function Cerebro() {
                 onKeyDown={e => e.key === 'Enter' && enviarMensaje()}
                 placeholder="Hablale al equipo... probá @diego, @sofia, @tomas o @todos"
                 disabled={enviando}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500 disabled:opacity-50"
               />
               <button
                 onClick={enviarMensaje}
@@ -812,7 +812,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
   if (mensaje.tipo === 'reporte_diario') {
     return (
       <div className="bg-white border-2 border-blue-200 rounded-xl shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-2 text-white">
+        <div className="ml-grad px-3 py-2 text-white">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <span className="text-lg">🎩</span>
             <span>Reporte diario de Diego</span>
@@ -965,7 +965,7 @@ function ChatPrivadoCEO({
               onKeyDown={e => e.key === 'Enter' && onSend()}
               placeholder="Hablale a Diego..."
               disabled={enviando}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500 disabled:opacity-50"
             />
             <button
               onClick={onSend}

@@ -23,7 +23,7 @@ export default function MasVendidos() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-7xl mx-auto px-4">
         <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-8 mb-8 text-white shadow-lg">
           <div className="flex items-center gap-4">

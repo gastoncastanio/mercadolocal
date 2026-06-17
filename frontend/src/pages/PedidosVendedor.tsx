@@ -163,7 +163,7 @@ export default function PedidosVendedor() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-3">🔄</div>
           <p className="text-gray-500 text-sm">Cargando tus pedidos...</p>
@@ -173,7 +173,7 @@ export default function PedidosVendedor() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -471,7 +471,7 @@ export default function PedidosVendedor() {
                 <select
                   value={empresaEnvio}
                   onChange={e => setEmpresaEnvio(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
                 >
                   <option value="">Elegir empresa...</option>
                   <option value="Andreani">Andreani</option>
@@ -494,7 +494,7 @@ export default function PedidosVendedor() {
                   onChange={e => setCodigoSeguimiento(e.target.value)}
                   placeholder="Ej: AND123456789"
                   maxLength={100}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   El comprador podrá usarlo para rastrear su pedido.

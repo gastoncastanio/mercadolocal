@@ -51,7 +51,7 @@ export default function FormularioMarca({ onSubmit, loading = false }: Formulari
           onChange={(e) => setNombreMarca(e.target.value)}
           placeholder="Ej: TechStart, MercadoHub"
           maxLength={50}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent"
           disabled={loading}
         />
       </div>
@@ -66,7 +66,7 @@ export default function FormularioMarca({ onSubmit, loading = false }: Formulari
           placeholder="Describe brevemente qué hace tu empresa, producto o servicio"
           rows={4}
           maxLength={500}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent"
           disabled={loading}
         />
         <p className="text-sm text-gray-500 mt-1">{descripcion.length}/500</p>
@@ -88,7 +88,7 @@ export default function FormularioMarca({ onSubmit, loading = false }: Formulari
                 onChange={(e) => handleCambiarValor(index, e.target.value)}
                 placeholder="Ej: Innovación"
                 maxLength={30}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent"
                 disabled={loading}
               />
               {valores.length > 1 && (

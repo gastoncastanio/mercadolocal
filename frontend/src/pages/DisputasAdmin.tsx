@@ -88,14 +88,14 @@ export default function DisputasAdmin() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">👑 Gestion de Disputas</h1>
 
@@ -175,7 +175,7 @@ export default function DisputasAdmin() {
                             onChange={(e) => setResolucion(e.target.value)}
                             placeholder="Escribe la resolucion..."
                             rows={3}
-                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none mb-3"
+                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none mb-3"
                           />
                           <div className="flex gap-3">
                             <button

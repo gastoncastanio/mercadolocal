@@ -254,6 +254,10 @@ body {
 /* Texto del cuerpo en Manrope (la app usa font-sans = Manrope ahora) */
 .font-display { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
 
+/* Todos los títulos de la app usan Plus Jakarta (unificación global).
+   Las páginas que ya ponen la clase font-display no cambian. */
+h1, h2 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; letter-spacing: -0.01em; }
+
 /* Gradiente de marca azul -> violeta */
 .ml-grad { background-image: linear-gradient(95deg, #2563eb, #7c3aed); }
 .ml-grad-text {

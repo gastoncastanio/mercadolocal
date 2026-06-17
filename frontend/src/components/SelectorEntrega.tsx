@@ -113,7 +113,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
                 }
                 maxLength={200}
                 placeholder="Ej: San Martín 123, Lobos"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
               />
             </div>
             <div>
@@ -131,7 +131,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
                 }
                 maxLength={200}
                 placeholder="Ej: Lunes a viernes 9-18 hs · Sábados 9-13 hs"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
               />
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
                 }
                 maxLength={300}
                 placeholder="Ej: Lobos centro y alrededores · Saladillo · Roque Pérez"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
               />
             </div>
             <div>
@@ -204,7 +204,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
                 }
                 maxLength={300}
                 placeholder="Ej: Entregas martes y jueves · Costo aprox $1.500 según zona"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
               />
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
                 }
                 maxLength={200}
                 placeholder="Ej: Andreani, OCA, Correo Argentino"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
               />
             </div>
             <p className="text-[11px] text-gray-500 italic">

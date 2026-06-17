@@ -55,7 +55,7 @@ export default function PortonPrivado({ children }: { children: React.ReactNode 
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
+            className="w-full ml-grad text-white font-semibold py-3 rounded-lg hover:opacity-90 transition"
           >
             Ingresar
           </button>

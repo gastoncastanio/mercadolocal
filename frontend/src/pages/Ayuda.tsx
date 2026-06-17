@@ -66,7 +66,7 @@ export default function Ayuda() {
   const [preguntaAbierta, setPreguntaAbierta] = useState<number | null>(null)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-10">

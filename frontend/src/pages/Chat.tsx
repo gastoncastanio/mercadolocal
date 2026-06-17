@@ -112,14 +112,14 @@ export default function Chat() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-ml-bg flex">
       {/* Sidebar de conversaciones */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-100">
@@ -247,7 +247,7 @@ export default function Chat() {
                   value={nuevoMensaje}
                   onChange={(e) => setNuevoMensaje(e.target.value)}
                   placeholder="Escribe un mensaje..."
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                 />
                 <button
                   type="submit"

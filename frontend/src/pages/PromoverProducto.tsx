@@ -97,7 +97,7 @@ export default function PromoverProducto() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -213,7 +213,7 @@ export default function PromoverProducto() {
             </div>
 
             {/* Resumen y confirmar */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 text-white">
+            <div className="ml-grad rounded-2xl p-5 text-white">
               <h2 className="font-bold text-lg mb-3">Resumen de tu promoci&oacute;n</h2>
               <div className="grid grid-cols-3 gap-4 mb-4 text-center">
                 <div>
