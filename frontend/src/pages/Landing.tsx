@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { Producto } from '../types'
@@ -8,22 +8,52 @@ import BannersRotativos from '../components/BannersRotativos'
 import EspaciosPublicitarios from '../components/EspaciosPublicitarios'
 import InstalarApp from '../components/InstalarApp'
 
+// ============================================================
+// Categorías: usan los slugs REALES del catálogo (las rutas
+// siguen funcionando) con el estilo de tiles del diseño Futuro.
+// ============================================================
 const CATEGORIAS = [
-  { nombre: 'Tecnolog\u00eda', icon: '\u{1F4F1}', slug: 'tecnologia', color: 'from-blue-500 to-indigo-600' },
-  { nombre: 'Hogar', icon: '\u{1F6CB}\uFE0F', slug: 'hogar', color: 'from-amber-400 to-orange-500' },
-  { nombre: 'Moda', icon: '\u{1F455}', slug: 'moda', color: 'from-pink-500 to-rose-600' },
-  { nombre: 'Deportes', icon: '\u26BD', slug: 'deportes', color: 'from-green-500 to-emerald-600' },
-  { nombre: 'Belleza', icon: '\u{1F484}', slug: 'belleza', color: 'from-fuchsia-500 to-purple-600' },
-  { nombre: 'Juguetes', icon: '\u{1F9F8}', slug: 'juguetes', color: 'from-yellow-400 to-amber-500' },
-  { nombre: 'Libros', icon: '\u{1F4DA}', slug: 'libros', color: 'from-teal-500 to-cyan-600' },
-  { nombre: 'Autos', icon: '\u{1F697}', slug: 'autos', color: 'from-slate-500 to-gray-700' }
+  {
+    nombre: 'Tecnología', slug: 'tecnologia', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    icon: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8" /></>
+  },
+  {
+    nombre: 'Hogar', slug: 'hogar', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9" /></>
+  },
+  {
+    nombre: 'Moda', slug: 'moda', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    icon: <><path d="M16 4l4 3-3 3-1-1v11H8V9L7 10 4 7l4-3 2 2h4l2-2Z" /></>
+  },
+  {
+    nombre: 'Deportes', slug: 'deportes', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><circle cx="5.5" cy="17" r="3" /><circle cx="18.5" cy="17" r="3" /><path d="M8 17h6l3-7-4-2-2 4H6" /></>
+  },
+  {
+    nombre: 'Belleza', slug: 'belleza', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    icon: <><path d="M12 3l1.8 4.7L18 9l-4.2 1.3L12 15l-1.8-4.7L6 9l4.2-1.3L12 3Z" /><path d="M5 18l1 3M19 18l-1 3" /></>
+  },
+  {
+    nombre: 'Juguetes', slug: 'juguetes', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><rect x="3" y="11" width="8" height="8" rx="2" /><circle cx="17" cy="7" r="4" /><path d="M14 17h6M17 14v6" /></>
+  },
+  {
+    nombre: 'Libros', slug: 'libros', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    icon: <><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" /><path d="M19 17H6" /></>
+  },
+  {
+    nombre: 'Autos', slug: 'autos', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><path d="M5 13 7 7h10l2 6" /><path d="M3 13h18v5H3z" /><circle cx="7.5" cy="18" r="1.5" /><circle cx="16.5" cy="18" r="1.5" /></>
+  }
 ]
 
 const TESTIMONIOS = [
-  { nombre: 'Camila R.', ciudad: 'C\u00f3rdoba', texto: 'Vend\u00ed m\u00e1s de 50 productos en el primer mes. La plataforma es s\u00faper intuitiva y el pago cae directo.', rol: 'Vendedora' },
-  { nombre: 'Mart\u00edn L.', ciudad: 'Rosario', texto: 'Compr\u00e9 un celular y lleg\u00f3 perfecto. Me gusta que la plata queda retenida hasta que confirmo.', rol: 'Comprador' },
-  { nombre: 'Luc\u00eda G.', ciudad: 'Buenos Aires', texto: 'Abr\u00ed mi tienda de ropa vintage y ya tengo clientes fieles. Cero complicaciones.', rol: 'Vendedora' }
+  { nombre: 'Camila R.', ciudad: 'Córdoba', texto: 'Vendí más de 50 productos en el primer mes. La plataforma es súper intuitiva y el pago cae directo.', rol: 'Vendedora' },
+  { nombre: 'Martín L.', ciudad: 'Rosario', texto: 'Compré un celular y llegó perfecto. Me gusta que la plata queda retenida hasta que confirmo.', rol: 'Comprador' },
+  { nombre: 'Lucía G.', ciudad: 'Buenos Aires', texto: 'Abrí mi tienda de ropa vintage y ya tengo clientes fieles. Cero complicaciones.', rol: 'Vendedora' }
 ]
+
+const TIENDAS_MARQUEE = ['TecnoStore', 'Mueblería Centro', 'AudioCenter', 'DeporLocal', 'Ferretería Norte', 'Bazar Lobos', 'Granja Don Pedro', 'Farmacia Central']
 
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLElement | null>(null)
@@ -40,7 +70,7 @@ function useInView(threshold = 0.15) {
   return { ref, visible }
 }
 
-function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string }) {
+function AnimatedCounter({ end, prefix = '', suffix = '' }: { end: number; prefix?: string; suffix?: string }) {
   const [count, setCount] = useState(0)
   const { ref, visible } = useInView(0.3)
   useEffect(() => {
@@ -54,18 +84,83 @@ function AnimatedCounter({ end, suffix = '' }: { end: number; suffix?: string })
     }, 30)
     return () => clearInterval(timer)
   }, [visible, end])
-  return <span ref={ref as any}>{count.toLocaleString('es-AR')}{suffix}</span>
+  return <span ref={ref as any}>{prefix}{count.toLocaleString('es-AR')}{suffix}</span>
+}
+
+/**
+ * Canvas de "red de ciudad": nodos que se mueven y se conectan.
+ * Es 100% autocontenido (no usa librerías externas) y limpia el
+ * requestAnimationFrame al desmontar. Respeta prefers-reduced-motion.
+ */
+function CityNetworkCanvas() {
+  const ref = useRef<HTMLCanvasElement | null>(null)
+  useEffect(() => {
+    const cv = ref.current
+    if (!cv) return
+    const ctx = cv.getContext('2d')
+    if (!ctx) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const DPR = Math.min(window.devicePixelRatio || 1, 2)
+    let w = 0, h = 0, raf = 0
+    const N = 44
+    const build = () => {
+      const r = cv.getBoundingClientRect()
+      w = cv.width = Math.max(1, r.width * DPR)
+      h = cv.height = Math.max(1, r.height * DPR)
+    }
+    build()
+    const onResize = () => build()
+    window.addEventListener('resize', onResize)
+    const nodes = Array.from({ length: N }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      vx: (Math.random() - .5) * .28 * DPR, vy: (Math.random() - .5) * .28 * DPR,
+      r: (Math.random() * 1.6 + 1) * DPR, hub: Math.random() < .18
+    }))
+    const max = 150 * DPR
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h)
+      for (const a of nodes) {
+        a.x += a.vx; a.y += a.vy
+        if (a.x < 0 || a.x > w) a.vx *= -1
+        if (a.y < 0 || a.y > h) a.vy *= -1
+      }
+      for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+        const a = nodes[i], b = nodes[j], dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy)
+        if (d < max) {
+          ctx.strokeStyle = 'rgba(150,130,255,' + (1 - d / max) * .42 + ')'
+          ctx.lineWidth = DPR
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke()
+        }
+      }
+      for (const a of nodes) {
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.hub ? a.r * 2.2 : a.r, 0, 6.2832)
+        if (a.hub) { ctx.shadowColor = 'rgba(124,58,237,.9)'; ctx.shadowBlur = 14 * DPR; ctx.fillStyle = 'rgba(167,139,250,.95)' }
+        else { ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)' }
+        ctx.fill(); ctx.shadowBlur = 0
+      }
+      if (!reduce) raf = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+  return <canvas ref={ref} className="absolute inset-0 w-full h-full block" />
 }
 
 export default function Landing() {
   const { estaLogueado } = useAuth()
+  const navigate = useNavigate()
   const [destacados, setDestacados] = useState<Producto[]>([])
   const [masVendidos, setMasVendidos] = useState<Producto[]>([])
   const [stats, setStats] = useState({ productosPublicados: 0, vendedoresActivos: 0, comprasRealizadas: 0, satisfaccion: 0 })
+  const [busqueda, setBusqueda] = useState('')
+
   const hero = useInView(0.2)
-  const beneficios = useInView(0.15)
-  const escrow = useInView(0.1)
+  const red = useInView(0.15)
   const cats = useInView(0.15)
+  const escrow = useInView(0.1)
   const testimonios = useInView(0.15)
 
   useEffect(() => { cargar() }, [])
@@ -87,459 +182,428 @@ export default function Landing() {
     }
   }
 
+  function buscar(e: React.FormEvent) {
+    e.preventDefault()
+    if (busqueda.trim()) navigate(`/catalogo?busqueda=${encodeURIComponent(busqueda)}`)
+    else navigate('/catalogo')
+  }
+
+  // Stats reales para el hero / sección de red (con fallback a claims de marca)
+  const nProductos = stats.productosPublicados || 1200
+  const nTiendas = stats.vendedoresActivos || 80
+  const pctAhorro = 17
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Banners rotativos */}
+    <div className="bg-white text-ml-ink overflow-x-hidden">
+      {/* ===== BARRA DE ANUNCIO ===== */}
+      <div className="ml-grad text-white text-center text-[13.5px] font-semibold py-2 px-5">
+        Una búsqueda&nbsp; ·&nbsp; toda la ciudad compite por tu compra&nbsp; ·&nbsp; vos pagás menos
+      </div>
+
+      {/* Banners rotativos (integración existente) */}
       <BannersRotativos />
 
-      {/* Espacios publicitarios */}
-      <EspaciosPublicitarios />
+      {/* ===== HERO ===== */}
+      <section ref={hero.ref as any} className="relative overflow-hidden">
+        {/* Glows decorativos */}
+        <div className="pointer-events-none absolute -top-32 -left-20 w-[540px] h-[540px] rounded-full ml-blob"
+          style={{ background: 'radial-gradient(circle,rgba(37,99,235,.22),transparent 64%)', filter: 'blur(8px)' }} />
+        <div className="pointer-events-none absolute -top-16 -right-16 w-[520px] h-[520px] rounded-full ml-blob-rev"
+          style={{ background: 'radial-gradient(circle,rgba(124,58,237,.26),transparent 62%)', filter: 'blur(8px)' }} />
 
-      {/* ========== PRUEBA SOCIAL ========== */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-4 mt-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 text-center">
-            {[
-              { valor: stats.productosPublicados, sufijo: '', label: 'Productos publicados', icon: '\u{1F4E6}' },
-              { valor: stats.vendedoresActivos, sufijo: '', label: 'Vendedores activos', icon: '\u{1F3EA}' },
-              { valor: stats.comprasRealizadas, sufijo: '', label: 'Compras realizadas', icon: '\u{1F6D2}' },
-              { valor: stats.satisfaccion, sufijo: '%', label: 'Compradores satisfechos', icon: '\u2B50' }
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <span className="text-2xl mb-1">{stat.icon}</span>
-                <p className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                  <AnimatedCounter end={stat.valor} suffix={stat.sufijo} />
-                </p>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ========== HERO PRINCIPAL ========== */}
-      <section
-        ref={hero.ref as any}
-        className="relative mt-8 sm:mt-10 mx-3 sm:mx-4 md:mx-6 rounded-3xl overflow-hidden shadow-2xl"
-      >
-        {/* Fondo con gradiente animado */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 animate-gradient" />
-
-        {/* Patron decorativo */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-          backgroundSize: '32px 32px'
-        }} />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-            {/* Texto */}
-            <div
-              className="text-center md:text-left transition-all duration-1000 ease-out"
-              style={{
-                transform: hero.visible ? 'translateX(0)' : 'translateX(-60px)',
-                opacity: hero.visible ? 1 : 0
-              }}
-            >
-              {stats.vendedoresActivos > 0 && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-sm text-white/90 mb-4">
-                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  +{stats.vendedoresActivos} vendedores ya venden ac&aacute;
-                </div>
-              )}
-
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.4rem] font-extrabold text-white mb-4 leading-[1.1] tracking-tight">
-                Lo que busc&aacute;s est&aacute; cerca.
-                <span className="block text-yellow-300 mt-1">Compralo seguro.</span>
-              </h1>
-
-              <p className="text-base sm:text-lg text-blue-100 mb-6 max-w-lg mx-auto md:mx-0 leading-relaxed">
-                El marketplace que conecta compradores y vendedores de tu ciudad. Pago protegido, env&iacute;os locales, y cero riesgo.
-              </p>
-
-              <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center md:justify-start">
-                <Link
-                  to="/catalogo"
-                  className="px-7 py-3.5 bg-yellow-400 text-gray-900 rounded-xl font-bold text-base hover:bg-yellow-300 hover:shadow-xl hover:scale-[1.03] transition-all pulse-glow"
-                >
-                  Explorar productos
-                </Link>
-                {!estaLogueado && (
-                  <Link
-                    to="/registro?rol=vendedor"
-                    className="px-7 py-3.5 bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white rounded-xl font-bold text-base hover:bg-white/20 hover:scale-[1.03] transition-all"
-                  >
-                    Crear mi tienda gratis
-                  </Link>
-                )}
-              </div>
-
-              {/* Trust badges inline */}
-              <div className="flex flex-wrap items-center gap-4 mt-6 justify-center md:justify-start text-white/70 text-xs">
-                <span className="flex items-center gap-1.5">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                  Pago protegido
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                  100% local
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                  Pagá en cuotas
-                </span>
-              </div>
-            </div>
-
-            {/* Ilustracion derecha */}
-            <div
-              className="hidden md:flex flex-col items-center justify-center transition-all duration-1000 ease-out delay-200"
-              style={{
-                transform: hero.visible ? 'translateX(0) scale(1)' : 'translateX(80px) scale(0.9)',
-                opacity: hero.visible ? 1 : 0
-              }}
-            >
-              <div className="relative">
-                <div className="w-48 h-48 lg:w-56 lg:h-56 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center animate-float">
-                  <span className="text-8xl lg:text-9xl drop-shadow-xl">&#x1F6D2;</span>
-                </div>
-                {/* Badges flotantes */}
-                <div className="absolute -top-3 -right-3 bg-green-400 text-green-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-float" style={{ animationDelay: '0.5s' }}>
-                  Pago seguro &#x2705;
-                </div>
-                <div className="absolute -bottom-2 -left-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg animate-float" style={{ animationDelay: '1s' }}>
-                  Env&iacute;o gratis &#x1F69A;
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========== CATEGORIAS ========== */}
-      <section ref={cats.ref as any} className="max-w-7xl mx-auto px-3 sm:px-4 mt-8 sm:mt-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">Explor&aacute; por categor&iacute;a</h2>
-          <Link to="/catalogo" className="text-blue-600 hover:underline text-xs sm:text-sm font-medium">Ver todas &rarr;</Link>
-        </div>
-        <div
-          className={`grid grid-cols-4 md:grid-cols-8 gap-2 sm:gap-3 ${cats.visible ? 'stagger-in' : ''}`}
-        >
-          {CATEGORIAS.map(cat => (
-            <Link
-              key={cat.slug}
-              to={`/catalogo?categoria=${cat.slug}`}
-              className="group flex flex-col items-center gap-2 p-3 sm:p-4 rounded-2xl bg-white border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all"
-            >
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br ${cat.color} flex items-center justify-center text-2xl sm:text-3xl shadow-sm group-hover:scale-110 group-hover:shadow-md transition-all`}>
-                {cat.icon}
-              </div>
-              <span className="text-[11px] sm:text-xs text-gray-700 font-medium text-center leading-tight">{cat.nombre}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ========== BENEFICIOS ========== */}
-      <section ref={beneficios.ref as any} className="max-w-7xl mx-auto px-3 sm:px-4 mt-8 sm:mt-10">
-        <div
-          className={`grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 ${beneficios.visible ? 'stagger-in' : ''}`}
-        >
-          {[
-            {
-              icon: (
-                <svg className="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-              ),
-              titulo: 'Pago protegido',
-              desc: 'Tu dinero queda retenido hasta que confirmes la entrega',
-              color: 'bg-blue-50 border-blue-100'
-            },
-            {
-              icon: (
-                <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              ),
-              titulo: '100% local',
-              desc: 'Vendedores reales de tu ciudad, cerca tuyo',
-              color: 'bg-emerald-50 border-emerald-100'
-            },
-            {
-              icon: (
-                <svg className="w-7 h-7 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-              ),
-              titulo: 'Confirm\u00e1 y listo',
-              desc: 'Revis\u00e1s el producto, aprob\u00e1s y se libera el pago',
-              color: 'bg-purple-50 border-purple-100'
-            },
-            {
-              icon: (
-                <svg className="w-7 h-7 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-              ),
-              titulo: 'Soporte directo',
-              desc: 'Chat directo con el vendedor y asistencia 24/7',
-              color: 'bg-orange-50 border-orange-100'
-            }
-          ].map(b => (
-            <div key={b.titulo} className={`${b.color} border rounded-2xl p-4 sm:p-5 hover-lift`}>
-              <div className="mb-3">{b.icon}</div>
-              <p className="font-bold text-gray-800 text-sm sm:text-base mb-1">{b.titulo}</p>
-              <p className="text-xs sm:text-sm text-gray-500 leading-relaxed">{b.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ========== COMO FUNCIONA - ESCROW ========== */}
-      <section ref={escrow.ref as any} className="max-w-7xl mx-auto px-3 sm:px-4 py-10 sm:py-14">
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 sm:p-8 md:p-12">
-          <div className="text-center mb-8 sm:mb-10">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wide mb-3">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-              Compra sin riesgo
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20 grid md:grid-cols-[1.05fr_.95fr] gap-12 items-center">
+          {/* Columna texto */}
+          <div
+            className="transition-all duration-1000 ease-out"
+            style={{ opacity: hero.visible ? 1 : 0, transform: hero.visible ? 'translateY(0)' : 'translateY(24px)' }}
+          >
+            <span className="inline-flex items-center gap-2 text-[13px] font-bold text-ml-violet bg-white/70 backdrop-blur-sm border border-[#e7dcff] px-4 py-2 rounded-full mb-6">
+              <span className="w-[7px] h-[7px] rounded-full bg-green-500 ring-4 ring-green-500/20" />
+              El marketplace que pone a competir a tu ciudad
             </span>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900">&iquest;C&oacute;mo funciona MercadoLocal?</h2>
-            <p className="text-sm sm:text-base text-gray-500 mt-3 max-w-2xl mx-auto leading-relaxed">
-              Tu plata est&aacute; protegida en cada paso. No le pagamos al vendedor hasta que confirmes que todo est&aacute; bien.
+
+            <h1 className="font-display font-extrabold text-[40px] sm:text-[54px] lg:text-[66px] leading-[1.02] tracking-[-0.025em] m-0">
+              <span className="block">Comprá una vez.</span>
+              <span className="block ml-grad-text">Que compita la ciudad.</span>
+            </h1>
+
+            <p className="text-[17px] sm:text-[19px] leading-[1.55] text-ml-soft max-w-[500px] mt-5">
+              El mismo producto, de todas las tiendas de tu zona, con todos los precios a la vista. Elegís el más barato, pagás con Mercado Pago y recibís hoy. Dejá de recorrer 10 negocios.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-4 relative">
-            {/* Linea conectora (solo desktop) */}
-            <div className="hidden md:block absolute top-10 left-[12%] right-[12%] h-0.5 bg-gradient-to-r from-blue-200 via-purple-200 to-blue-200" />
-
-            {[
-              { n: 1, icon: '\u{1F4B3}', titulo: 'Pag\u00e1s tu compra', desc: 'El dinero queda retenido en MercadoLocal de forma segura. El vendedor no lo recibe a\u00fan.', color: 'from-blue-500 to-blue-600' },
-              { n: 2, icon: '\u{1F4E6}', titulo: 'Recib\u00eds el producto', desc: 'El vendedor prepara y te env\u00eda el producto a tu direcci\u00f3n. Segu\u00ed el estado desde "Mis pedidos".', color: 'from-indigo-500 to-indigo-600' },
-              { n: 3, icon: '\u2705', titulo: 'Confirm\u00e1s la entrega', desc: 'Revis\u00e1s que sea lo que esperabas. Si algo no est\u00e1 bien, abr\u00eds un reclamo.', color: 'from-purple-500 to-purple-600' },
-              { n: 4, icon: '\u{1F4B0}', titulo: 'Se libera el pago', desc: 'A las 24hs de tu confirmaci\u00f3n, el vendedor recibe el dinero en su Mercado Pago.', color: 'from-green-500 to-emerald-600' }
-            ].map((paso) => (
-              <div
-                key={paso.n}
-                className="relative text-center transition-all duration-700 ease-out"
-                style={{
-                  transform: escrow.visible ? 'translateY(0)' : 'translateY(20px)',
-                  opacity: escrow.visible ? 1 : 0,
-                  transitionDelay: `${paso.n * 150}ms`
-                }}
-              >
-                <div className="relative inline-flex mb-4">
-                  <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${paso.color} text-white flex items-center justify-center text-3xl sm:text-4xl shadow-lg`}>
-                    {paso.icon}
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-yellow-400 text-gray-900 flex items-center justify-center font-extrabold text-sm shadow-md ring-2 ring-white">
-                    {paso.n}
-                  </div>
-                </div>
-                <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-2">{paso.titulo}</h3>
-                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed max-w-[220px] mx-auto">{paso.desc}</p>
+            {/* Buscador funcional */}
+            <form onSubmit={buscar} className="mt-8 flex items-center gap-2 bg-white border border-ml-line rounded-2xl p-2 max-w-[560px]"
+              style={{ boxShadow: '0 26px 50px -26px rgba(37,99,235,.45)' }}>
+              <div className="flex-1 flex items-center gap-2 text-ml-muted pl-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" /></svg>
+                <input
+                  value={busqueda}
+                  onChange={e => setBusqueda(e.target.value)}
+                  placeholder="Buscá un producto y compará precios…"
+                  className="w-full bg-transparent outline-none text-[15px] text-ml-ink placeholder-ml-muted py-1"
+                />
               </div>
-            ))}
+              <button type="submit" className="mlbtn ml-grad text-white font-display font-bold text-[15px] px-6 sm:px-8 py-3 rounded-xl shrink-0">
+                Comparar
+              </button>
+            </form>
+
+            {/* Stats reales */}
+            <div className="flex flex-wrap gap-8 mt-9">
+              <div>
+                <div className="font-display font-extrabold text-[28px]"><AnimatedCounter end={nProductos} prefix="+" /></div>
+                <div className="text-[13px] text-ml-muted font-semibold">productos</div>
+              </div>
+              <div className="w-px bg-ml-line self-stretch" />
+              <div>
+                <div className="font-display font-extrabold text-[28px]"><AnimatedCounter end={nTiendas} prefix="+" /></div>
+                <div className="text-[13px] text-ml-muted font-semibold">tiendas compitiendo</div>
+              </div>
+              <div className="w-px bg-ml-line self-stretch" />
+              <div>
+                <div className="font-display font-extrabold text-[28px] ml-grad-text">-{pctAhorro}%</div>
+                <div className="text-[13px] text-ml-muted font-semibold">precio promedio</div>
+              </div>
+            </div>
           </div>
 
-          <div className="mt-8 sm:mt-10 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-2xl shrink-0">&#x1F512;</div>
-            <div>
-              <p className="font-bold text-blue-900 text-sm sm:text-base">Tu dinero est&aacute; protegido al 100%</p>
-              <p className="text-xs sm:text-sm text-blue-700 mt-1 leading-relaxed">
-                Si el producto no llega, no coincide con lo publicado o tiene alg&uacute;n defecto, pod&eacute;s abrir un reclamo antes de confirmar la entrega y te devolvemos el total. Sin excusas, sin demoras.
-              </p>
+          {/* Columna collage flotante (decorativo, solo desktop) */}
+          <div className="relative h-[450px] hidden md:block">
+            <div className="absolute top-0 right-2 w-[250px] bg-white border border-[#eeeef3] rounded-[20px] p-3.5 ml-float"
+              style={{ boxShadow: '0 30px 60px -28px rgba(20,20,45,.42)' }}>
+              <div className="aspect-[4/3] rounded-[13px] overflow-hidden bg-[#f1f1f8] mb-3">
+                <img className="ph w-full h-full object-cover" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=460&q=70" alt="" />
+              </div>
+              <span className="text-[10px] font-bold text-white ml-grad px-2.5 py-1 rounded-full">Mejor precio</span>
+              <div className="font-display font-semibold text-sm mt-2">Notebook Lenovo i5</div>
+              <div className="font-display font-extrabold text-[18px]">$ 540.000</div>
+            </div>
+
+            <div className="absolute top-[158px] left-0 w-[230px] bg-white border border-[#eeeef3] rounded-[20px] p-3.5 ml-float2"
+              style={{ boxShadow: '0 30px 60px -28px rgba(20,20,45,.42)', animationDelay: '1s' }}>
+              <div className="aspect-[4/3] rounded-[13px] overflow-hidden bg-[#f1f1f8] mb-3">
+                <img className="ph w-full h-full object-cover" src="https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=460&q=70" alt="" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-display font-semibold text-sm">Bici MTB R29</div>
+                  <div className="font-display font-extrabold text-[18px]">$ 240.000</div>
+                </div>
+                <span className="text-[10px] font-bold text-ml-slate bg-[#f1f1f6] px-2.5 py-1 rounded-full">Usado</span>
+              </div>
+            </div>
+
+            <div className="absolute bottom-1.5 right-14 w-[212px] bg-white border border-[#eeeef3] rounded-[20px] p-3.5 ml-float"
+              style={{ boxShadow: '0 30px 60px -28px rgba(20,20,45,.42)', animationDelay: '.5s' }}>
+              <div className="aspect-[4/3] rounded-[13px] overflow-hidden bg-[#f1f1f8] mb-3">
+                <img className="ph w-full h-full object-cover" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=460&q=70" alt="" />
+              </div>
+              <div className="font-display font-semibold text-sm">Auriculares Sony</div>
+              <div className="font-display font-extrabold text-[18px]">$ 285.000</div>
+            </div>
+
+            <div className="absolute bottom-[70px] left-3.5 flex items-center gap-2.5 bg-white border border-[#eeeef3] rounded-[13px] px-4 py-2.5 ml-float2"
+              style={{ boxShadow: '0 24px 44px -24px rgba(0,158,227,.55)', animationDelay: '.3s' }}>
+              <span className="w-[30px] h-[30px] rounded-[9px] bg-ml-mp flex items-center justify-center">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20" /></svg>
+              </span>
+              <div>
+                <div className="text-[11px] text-ml-muted font-semibold leading-none">Pago protegido</div>
+                <div className="font-display font-bold text-[13px] text-ml-ink">Mercado Pago</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ========== MAS VENDIDOS ========== */}
-      {masVendidos.length > 0 && (
-        <section className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>&#x1F525;</span> Los m&aacute;s vendidos
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">Lo que m&aacute;s eligen los compradores esta semana</p>
-            </div>
-            <Link to="/mas-vendidos" className="text-blue-600 hover:text-blue-700 font-semibold text-xs sm:text-sm flex items-center gap-1">
-              Ver todos
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            {masVendidos.slice(0, 4).map(p => (
-              <TarjetaProducto key={p._id} producto={p} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ========== DESTACADOS ========== */}
-      {destacados.length > 0 && (
-        <section className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 flex items-center gap-2">
-                <span>&#x2B50;</span> Mejor calificados
-              </h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">Los productos con mejores rese&ntilde;as de la comunidad</p>
-            </div>
-            <Link to="/catalogo" className="text-blue-600 hover:text-blue-700 font-semibold text-xs sm:text-sm flex items-center gap-1">
-              Ver cat&aacute;logo
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-            {destacados.slice(0, 4).map(p => (
-              <TarjetaProducto key={p._id} producto={p} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* ========== TESTIMONIOS ========== */}
-      <section ref={testimonios.ref as any} className="max-w-7xl mx-auto px-3 sm:px-4 py-8 sm:py-10">
-        <div className="text-center mb-6">
-          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">Lo que dicen nuestros usuarios</h2>
-          <p className="text-sm text-gray-500 mt-1">Historias reales de compradores y vendedores</p>
+      {/* ===== MARQUEE DE TIENDAS ===== */}
+      <div className="border-y border-ml-line2 bg-ml-bg overflow-hidden py-[18px]">
+        <div className="ml-marq-track">
+          {[...TIENDAS_MARQUEE, ...TIENDAS_MARQUEE].map((t, i) => (
+            <span key={i} className="whitespace-nowrap font-display font-bold text-sm text-[#6b6b7b] bg-white border border-ml-line2 rounded-full px-[18px] py-2.5">{t}</span>
+          ))}
         </div>
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${testimonios.visible ? 'stagger-in' : ''}`}>
-          {TESTIMONIOS.map((t, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 hover-lift">
-              {/* Estrellas */}
-              <div className="flex gap-0.5 mb-3">
-                {[1,2,3,4,5].map(s => (
-                  <svg key={s} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                ))}
-              </div>
-              <p className="text-sm text-gray-700 leading-relaxed mb-4 italic">&ldquo;{t.texto}&rdquo;</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
-                  {t.nombre.charAt(0)}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">{t.nombre}</p>
-                  <p className="text-xs text-gray-500">{t.rol} &middot; {t.ciudad}</p>
-                </div>
-              </div>
+      </div>
+
+      {/* ===== RED DE CIUDAD (visión) ===== */}
+      <div ref={red.ref as any} className="relative mt-20 bg-ml-night overflow-hidden">
+        <CityNetworkCanvas />
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(700px 360px at 50% 18%,rgba(124,58,237,.28),transparent 70%)' }} />
+        <div className="relative max-w-7xl mx-auto px-8 py-[92px] text-center text-white">
+          <span className="inline-block text-[13px] font-bold text-[#c4b5fd] bg-white/10 border border-white/15 px-3.5 py-[7px] rounded-full mb-5">La visión</span>
+          <h2 className="font-display font-extrabold text-[34px] sm:text-[48px] leading-[1.06] tracking-[-0.02em] max-w-[820px] mx-auto">
+            El futuro de las ciudades<br className="hidden sm:block" /> compra local.
+          </h2>
+          <p className="text-[16px] sm:text-[18px] leading-[1.6] text-white/70 max-w-[640px] mx-auto mt-5">
+            Una red que conecta cada negocio y cada vecino. Hoy electro, hogar y usados. Mañana, también el supermercado: el mismo producto de todas las cadenas, compitiendo por darte el mejor precio.
+          </p>
+          <div className={`grid grid-cols-3 gap-6 max-w-[740px] mx-auto mt-12 ${red.visible ? 'stagger-in' : ''}`}>
+            <div>
+              <div className="font-display font-extrabold text-[28px] sm:text-[40px] text-white"><AnimatedCounter end={nProductos} prefix="+" /></div>
+              <div className="text-[12px] sm:text-[13.5px] text-white/60 font-semibold">productos en tu ciudad</div>
             </div>
+            <div>
+              <div className="font-display font-extrabold text-[28px] sm:text-[40px] text-white"><AnimatedCounter end={nTiendas} prefix="+" /></div>
+              <div className="text-[12px] sm:text-[13.5px] text-white/60 font-semibold">tiendas compitiendo</div>
+            </div>
+            <div>
+              <div className="font-display font-extrabold text-[28px] sm:text-[40px]" style={{ backgroundImage: 'linear-gradient(95deg,#60a5fa,#c4b5fd)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>
+                <AnimatedCounter end={pctAhorro} suffix="%" />
+              </div>
+              <div className="text-[12px] sm:text-[13.5px] text-white/60 font-semibold">de ahorro promedio</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== CATEGORÍAS ===== */}
+      <section ref={cats.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 sm:pt-18 pb-2">
+        <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em] mb-6">Explorá por categoría</h2>
+        <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-3.5 ${cats.visible ? 'stagger-in' : ''}`}>
+          {CATEGORIAS.map(cat => (
+            <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`}
+              className="mlt text-center px-2 py-5 border border-ml-line rounded-2xl bg-white">
+              <span className={`inline-flex w-[46px] h-[46px] rounded-[13px] ${cat.tint} items-center justify-center mb-2.5`}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={cat.stroke} strokeWidth={2}>{cat.icon}</svg>
+              </span>
+              <div className="text-[13px] font-semibold text-ml-slate">{cat.nombre}</div>
+            </Link>
           ))}
         </div>
       </section>
 
-      {/* ========== CTA VENDEDOR ========== */}
-      {!estaLogueado && (
-        <section className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-          <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-6 sm:p-8 md:p-12 text-white">
-            {/* Patron decorativo */}
-            <div className="absolute inset-0 opacity-10" style={{
-              backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
-              backgroundSize: '24px 24px'
-            }} />
+      {/* Espacios publicitarios (integración existente) */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 mt-10">
+        <EspaciosPublicitarios />
+      </div>
 
-            <div className="relative grid md:grid-cols-2 gap-6 items-center">
-              <div className="text-center md:text-left">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 leading-tight">
-                  &iquest;Ten&eacute;s productos para vender?
-                </h2>
-                <p className="text-base sm:text-lg text-blue-100 mb-4 leading-relaxed">
-                  Cre&aacute; tu tienda en menos de 5 minutos. Sin costo de apertura. Solo pag&aacute;s una comisi&oacute;n del 10% cuando vend&eacute;s.
-                </p>
-                <ul className="flex flex-col gap-2 mb-6 text-sm text-blue-100">
-                  {['Publicaciones ilimitadas', 'Cobr&aacute;s directo en tu Mercado Pago', 'Panel de vendedor con m&eacute;tricas'].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2" dangerouslySetInnerHTML={{
-                      __html: `<svg class="w-5 h-5 text-green-400 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg><span>${item}</span>`
-                    }} />
-                  ))}
-                </ul>
-                <Link
-                  to="/registro?rol=vendedor"
-                  className="inline-block px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl font-extrabold text-lg hover:bg-yellow-300 hover:shadow-xl hover:scale-[1.03] transition-all pulse-glow"
-                >
-                  Crear mi tienda gratis &rarr;
-                </Link>
-              </div>
-              <div className="hidden md:flex justify-center">
-                <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center animate-float">
-                  <span className="text-8xl lg:text-9xl drop-shadow-xl">&#x1F3EA;</span>
-                </div>
-              </div>
+      {/* ===== DESTACADOS (productos reales) ===== */}
+      {destacados.length > 0 && (
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-12 pb-4">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em]">Destacados cerca tuyo</h2>
+              <p className="mt-1.5 text-ml-muted text-[14.5px]">De tiendas verificadas y vecinos de tu ciudad</p>
             </div>
+            <Link to="/catalogo" className="mllink text-sm font-bold text-ml-blue whitespace-nowrap">Ver todo →</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5">
+            {destacados.slice(0, 8).map(p => <TarjetaProducto key={p._id} producto={p} />)}
           </div>
         </section>
       )}
 
-      {/* ========== BANNER COMUNIDAD ========== */}
-      <section className="max-w-7xl mx-auto px-3 sm:px-4 py-6">
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-6 sm:p-8 text-center">
-          <span className="text-4xl mb-3 block">&#x1F91D;</span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-gray-900 mb-2">Cada compra fortalece tu comunidad</h3>
-          <p className="text-sm text-gray-600 max-w-xl mx-auto leading-relaxed">
-            Cuando compr&aacute;s en MercadoLocal, apoy&aacute;s a emprendedores y comerciantes de tu ciudad. Cada transacci&oacute;n es un voto por la econom&iacute;a local.
+      {/* ===== MÁS VENDIDOS (productos reales) ===== */}
+      {masVendidos.length > 0 && (
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-8 pb-4">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em]">Los más vendidos</h2>
+              <p className="mt-1.5 text-ml-muted text-[14.5px]">Lo que más eligen los compradores esta semana</p>
+            </div>
+            <Link to="/mas-vendidos" className="mllink text-sm font-bold text-ml-blue whitespace-nowrap">Ver todos →</Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5">
+            {masVendidos.slice(0, 4).map(p => <TarjetaProducto key={p._id} producto={p} />)}
+          </div>
+        </section>
+      )}
+
+      {/* ===== TEASER SUPERMERCADO ===== */}
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-16">
+        <div className="border border-ml-line rounded-[24px] overflow-hidden" style={{ background: 'linear-gradient(160deg,#fafaff,#fff)' }}>
+          <div className="grid md:grid-cols-[1fr_1.05fr] items-center">
+            <div className="p-8 sm:p-12">
+              <span className="inline-block text-[12px] font-extrabold tracking-[0.06em] uppercase text-ml-mp bg-[#e7f6fd] border border-[#c5ecfa] px-3 py-1.5 rounded-full mb-4">Próximamente</span>
+              <h2 className="font-display font-extrabold text-[28px] sm:text-[36px] leading-[1.08] tracking-[-0.02em]">Tu supermercado,<br />en competencia.</h2>
+              <p className="text-[15px] sm:text-[16.5px] leading-[1.6] text-ml-soft mt-4 max-w-[440px]">
+                El mismo producto de todas las cadenas, lado a lado. Armás el changuito una vez y cada artículo se compra donde está más barato. Menos vueltas, más ahorro — y ese ahorro vuelve a tu ciudad.
+              </p>
+            </div>
+            <div className="p-6 sm:pr-12 sm:py-8 flex flex-col gap-3">
+              {[
+                { p: 'Leche entera 1 L', c: '6 cadenas compiten', precio: '$ 1.190', off: '-14%', tint: 'bg-[#f3edff]', stroke: '#7c3aed' },
+                { p: 'Arroz largo fino 1 kg', c: '5 cadenas compiten', precio: '$ 1.640', off: '-11%', tint: 'bg-[#eef2ff]', stroke: '#2563eb' },
+                { p: 'Yerba mate 1 kg', c: '7 cadenas compiten', precio: '$ 3.250', off: '-18%', tint: 'bg-[#f3edff]', stroke: '#7c3aed' }
+              ].map(item => (
+                <div key={item.p} className="flex items-center gap-3.5 bg-white border border-ml-line rounded-[15px] px-4 py-3.5"
+                  style={{ boxShadow: '0 12px 30px -22px rgba(20,20,45,.4)' }}>
+                  <span className={`shrink-0 w-10 h-10 rounded-[11px] ${item.tint} flex items-center justify-center`}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={item.stroke} strokeWidth={2}><path d="M4 4h2l1 12h11l2-8H7" /><circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" /></svg>
+                  </span>
+                  <div className="flex-1">
+                    <div className="font-display font-bold text-[14.5px]">{item.p}</div>
+                    <div className="text-[12px] text-ml-muted">{item.c}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-display font-extrabold text-[17px]">{item.precio}</div>
+                    <div className="text-[11px] font-bold text-[#0a7d34]">{item.off}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CÓMO FUNCIONA / ESCROW (sección de confianza conservada) ===== */}
+      <section ref={escrow.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
+        <div className="text-center mb-10">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#eef2ff] text-ml-blue rounded-full text-xs font-bold uppercase tracking-wide mb-3">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+            Compra sin riesgo
+          </span>
+          <h2 className="font-display font-extrabold text-[26px] sm:text-[36px] tracking-[-0.02em]">¿Cómo funciona MercadoLocal?</h2>
+          <p className="text-[15px] sm:text-base text-ml-soft mt-3 max-w-2xl mx-auto leading-relaxed">
+            Tu plata está protegida en cada paso. No le pagamos al vendedor hasta que confirmes que todo está bien.
           </p>
         </div>
+
+        <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 ${escrow.visible ? 'stagger-in' : ''}`}>
+          {[
+            { n: 1, icon: '\u{1F4B3}', titulo: 'Pagás tu compra', desc: 'El dinero queda retenido en MercadoLocal de forma segura. El vendedor no lo recibe aún.' },
+            { n: 2, icon: '\u{1F4E6}', titulo: 'Recibís el producto', desc: 'El vendedor prepara y te envía el producto. Seguí el estado desde "Mis pedidos".' },
+            { n: 3, icon: '✅', titulo: 'Confirmás la entrega', desc: 'Revisás que sea lo que esperabas. Si algo no está bien, abrís un reclamo.' },
+            { n: 4, icon: '\u{1F4B0}', titulo: 'Se libera el pago', desc: 'A las 24hs de tu confirmación, el vendedor recibe el dinero en su Mercado Pago.' }
+          ].map(paso => (
+            <div key={paso.n} className="text-center bg-white border border-ml-line rounded-[18px] p-6">
+              <div className="relative inline-flex mb-4">
+                <div className="w-16 h-16 rounded-2xl ml-grad text-white flex items-center justify-center text-3xl shadow-lg">{paso.icon}</div>
+                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white text-ml-violet border border-ml-line flex items-center justify-center font-extrabold text-sm shadow">{paso.n}</div>
+              </div>
+              <h3 className="font-display font-bold text-ml-ink text-base mb-2">{paso.titulo}</h3>
+              <p className="text-[13px] text-ml-soft leading-relaxed max-w-[220px] mx-auto">{paso.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 p-5 bg-[#fafaff] border border-ml-line rounded-2xl flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[#eef2ff] flex items-center justify-center text-2xl shrink-0">&#x1F512;</div>
+          <div>
+            <p className="font-display font-bold text-ml-ink text-sm sm:text-base">Tu dinero está protegido al 100%</p>
+            <p className="text-[13px] sm:text-sm text-ml-soft mt-1 leading-relaxed">
+              Si el producto no llega, no coincide con lo publicado o tiene algún defecto, podés abrir un reclamo antes de confirmar la entrega y te devolvemos el total. Sin excusas, sin demoras.
+            </p>
+          </div>
+        </div>
       </section>
 
-      {/* ========== DESCARGAR APP ========== */}
-      <InstalarApp />
-
-      {/* ========== FOOTER ========== */}
-      <footer className="bg-gray-900 text-gray-400 mt-8">
-        <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            {/* Columna 1 - Marca */}
-            <div className="col-span-2 md:col-span-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">&#x1F6D2;</span>
-                <span className="text-xl font-bold text-white">MercadoLocal</span>
+      {/* ===== TESTIMONIOS (sección de confianza conservada) ===== */}
+      <section ref={testimonios.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 pb-8">
+        <div className="text-center mb-8">
+          <h2 className="font-display font-extrabold text-[22px] sm:text-[27px] tracking-[-0.01em]">Lo que dicen nuestros usuarios</h2>
+          <p className="text-sm text-ml-muted mt-1.5">Historias reales de compradores y vendedores</p>
+        </div>
+        <div className={`grid grid-cols-1 md:grid-cols-3 gap-5 ${testimonios.visible ? 'stagger-in' : ''}`}>
+          {TESTIMONIOS.map((t, i) => (
+            <div key={i} className="bg-white border border-ml-line rounded-[18px] p-6 mlc">
+              <div className="flex gap-0.5 mb-3">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <svg key={s} className="w-4 h-4 text-[#f5b301]" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                ))}
               </div>
-              <p className="text-sm leading-relaxed">El marketplace que conecta compradores y vendedores de tu ciudad.</p>
+              <p className="text-sm text-ml-slate leading-relaxed mb-4 italic">&ldquo;{t.texto}&rdquo;</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full ml-grad flex items-center justify-center text-white font-bold text-sm">{t.nombre.charAt(0)}</div>
+                <div>
+                  <p className="font-semibold text-ml-ink text-sm">{t.nombre}</p>
+                  <p className="text-xs text-ml-muted">{t.rol} · {t.ciudad}</p>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+      </section>
 
-            {/* Columna 2 - Compradores */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-3">Compradores</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/catalogo" className="hover:text-white transition-colors">Cat&aacute;logo</Link></li>
-                <li><Link to="/mas-vendidos" className="hover:text-white transition-colors">M&aacute;s vendidos</Link></li>
-                <li><Link to="/ayuda" className="hover:text-white transition-colors">Centro de ayuda</Link></li>
-                <li><Link to="/devoluciones" className="hover:text-white transition-colors">Devoluciones</Link></li>
-              </ul>
-            </div>
-
-            {/* Columna 3 - Vendedores */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-3">Vendedores</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/registro?rol=vendedor" className="hover:text-white transition-colors">Crear tienda</Link></li>
-                <li><Link to="/ayuda" className="hover:text-white transition-colors">Gu&iacute;a para vendedores</Link></li>
-                <li><Link to="/ayuda" className="hover:text-white transition-colors">Comisiones</Link></li>
-                <li><Link to="/ayuda" className="hover:text-white transition-colors">Mercado Pago</Link></li>
-              </ul>
-            </div>
-
-            {/* Columna 4 - Legal */}
-            <div>
-              <h4 className="text-white font-semibold text-sm mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link to="/terminos" className="hover:text-white transition-colors">T&eacute;rminos y Condiciones</Link></li>
-                <li><Link to="/privacidad" className="hover:text-white transition-colors">Pol&iacute;tica de Privacidad</Link></li>
-                <li><Link to="/devoluciones" className="hover:text-white transition-colors">Pol&iacute;tica de Devoluciones</Link></li>
-                <li><a href="mailto:soporte@mercadolocal.com.ar" className="hover:text-white transition-colors">Contacto</a></li>
-              </ul>
+      {/* ===== CREAR TIENDA ===== */}
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
+        <div className="relative overflow-hidden rounded-[28px] p-8 sm:p-14 grid md:grid-cols-[1.2fr_.8fr] gap-10 items-center"
+          style={{ background: 'linear-gradient(125deg,#3b32d6 0%,#6d28d9 52%,#7c3aed 100%)' }}>
+          <div className="pointer-events-none absolute -top-24 -right-12 w-[360px] h-[360px] rounded-full" style={{ background: 'radial-gradient(circle,rgba(255,255,255,.16),transparent 70%)' }} />
+          <div className="relative">
+            <span className="inline-block text-[13px] font-semibold text-white bg-white/15 border border-white/25 px-3.5 py-1.5 rounded-full mb-4">Para comercios</span>
+            <h2 className="font-display font-extrabold text-[30px] sm:text-[40px] leading-[1.06] tracking-[-0.02em] text-white">Sumá tu negocio.<br />Competí y vendé más.</h2>
+            <p className="text-[16px] sm:text-[17px] leading-[1.55] text-white/90 max-w-[520px] mt-4 mb-7">
+              Publicás en minutos, cobrás con Mercado Pago y te ponés frente a todos los compradores de tu zona. Sin costos de alta.
+            </p>
+            <div className="flex flex-wrap gap-3 items-center">
+              <Link to={estaLogueado ? '/mi-tienda' : '/registro?rol=vendedor'} className="mlbtn font-display font-bold text-base text-ml-indigo bg-white px-7 py-3.5 rounded-xl">Crear mi tienda</Link>
+              <Link to="/ayuda" className="font-display font-bold text-[15px] text-white border border-white/40 px-6 py-3.5 rounded-xl hover:bg-white/10 transition-colors">Cómo funciona</Link>
             </div>
           </div>
-
-          {/* Separador */}
-          <div className="border-t border-gray-800 pt-6">
-            <div className="text-[11px] leading-relaxed text-gray-500 max-w-4xl mx-auto text-center">
-              <p className="mb-2">
-                <strong className="text-gray-300">MercadoLocal</strong> es una plataforma intermediaria que facilita la conexi&oacute;n entre compradores y vendedores independientes.
-                No somos propietarios, fabricantes, importadores ni distribuidores de los productos publicados.
-                La responsabilidad sobre los productos corresponde a cada vendedor.
-              </p>
-              <p className="mb-2">
-                Los pagos son procesados por <strong className="text-gray-300">Mercado Pago</strong> bajo sus propios t&eacute;rminos.
-                Las operaciones se rigen por la Ley 24.240 de Defensa del Consumidor y la Ley 25.326 de Protecci&oacute;n de Datos Personales.
-              </p>
-              <p className="text-gray-600">&copy; {new Date().getFullYear()} MercadoLocal. Todos los derechos reservados.</p>
+          <div className="relative flex flex-col gap-3.5">
+            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-3.5">
+              <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={2}><path d="M12 2v20M5 7l7-5 7 5" /></svg>
+              </span>
+              <div>
+                <div className="font-display font-bold text-base text-white">Publicá en 2 minutos</div>
+                <div className="text-[13px] text-white/80">Foto, precio y listo</div>
+              </div>
             </div>
+            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-3.5">
+              <span className="w-11 h-11 rounded-xl bg-ml-mp flex items-center justify-center">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20" /></svg>
+              </span>
+              <div>
+                <div className="font-display font-bold text-base text-white">Cobrás con Mercado Pago</div>
+                <div className="text-[13px] text-white/80">Acreditación protegida</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Descargar app (integración existente) */}
+      <InstalarApp />
+
+      {/* ===== FOOTER ===== */}
+      <footer className="bg-ml-dark text-white">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 pt-14 pb-7 grid grid-cols-2 md:grid-cols-[1.6fr_1fr_1fr_1fr] gap-10">
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="w-8 h-8 ml-grad rounded-[10px] flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
+              </span>
+              <span className="font-display font-extrabold text-lg text-white">MercadoLocal</span>
+            </div>
+            <p className="text-sm leading-relaxed text-white/60 max-w-[300px]">El marketplace que pone a competir a tu ciudad. Comprá y vendé cerca tuyo, al mejor precio.</p>
+          </div>
+          <div>
+            <div className="font-display font-bold text-sm mb-3.5">Comprar</div>
+            <div className="flex flex-col gap-2.5 text-[13.5px] text-white/60">
+              <Link to="/catalogo" className="mllink">Categorías</Link>
+              <Link to="/catalogo" className="mllink">Tiendas locales</Link>
+              <Link to="/catalogo" className="mllink">Usados</Link>
+              <Link to="/mas-vendidos" className="mllink">Más vendidos</Link>
+            </div>
+          </div>
+          <div>
+            <div className="font-display font-bold text-sm mb-3.5">Vender</div>
+            <div className="flex flex-col gap-2.5 text-[13.5px] text-white/60">
+              <Link to="/registro?rol=vendedor" className="mllink">Creá tu tienda</Link>
+              <Link to="/ayuda" className="mllink">Cómo vender</Link>
+              <Link to="/ayuda" className="mllink">Mercado Pago</Link>
+              <Link to="/ayuda" className="mllink">Comisiones</Link>
+            </div>
+          </div>
+          <div>
+            <div className="font-display font-bold text-sm mb-3.5">Ayuda</div>
+            <div className="flex flex-col gap-2.5 text-[13.5px] text-white/60">
+              <Link to="/ayuda" className="mllink">Centro de ayuda</Link>
+              <Link to="/devoluciones" className="mllink">Devoluciones</Link>
+              <Link to="/terminos" className="mllink">Términos</Link>
+              <Link to="/privacidad" className="mllink">Privacidad</Link>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-[12.5px] text-white/50">
+            <span>© {new Date().getFullYear()} MercadoLocal · Comprá y vendé en tu ciudad</span>
+            <span className="flex gap-4">
+              <Link to="/terminos" className="mllink">Términos</Link>
+              <Link to="/privacidad" className="mllink">Privacidad</Link>
+            </span>
           </div>
         </div>
       </footer>
