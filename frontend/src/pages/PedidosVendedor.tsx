@@ -177,7 +177,7 @@ export default function PedidosVendedor() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-ml-ink">Pedidos recibidos</h1>
+            <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Pedidos recibidos</h1>
             <p className="text-ml-muted text-sm mt-1">
               {tienda?.nombre || 'Tu tienda'} · {ordenes.length} pedido{ordenes.length === 1 ? '' : 's'} totales
             </p>
@@ -196,7 +196,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('todos')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
+              filtro === 'todos' ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Todos ({ordenes.length})
