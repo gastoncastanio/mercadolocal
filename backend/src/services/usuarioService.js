@@ -1,16 +1,8 @@
 import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
-import crypto from 'crypto'
-import bcrypt from 'bcrypt'
 import { generarAccessToken, generarRefreshToken } from '../middleware/auth.js'
 import { enviarBienvenida } from './emailService.js'
-
-// Huella no reversible de un texto, para comparar en logs si dos contraseñas
-// son idénticas a nivel bytes SIN exponer la contraseña. (Diagnóstico temporal.)
-function huella(txt) {
-  return crypto.createHash('sha256').update(String(txt)).digest('hex').slice(0, 16)
-}
 
 // Registrar nuevo usuario
 export async function registrarUsuario(datos) {
@@ -112,42 +104,19 @@ export async function loginUsuario(email, contraseña) {
     throw new Error('Email o contraseña incorrectos')
   }
 
-  // Diagnóstico clave: si hay MÁS de un documento con el mismo email, el login
-  // lee uno y el reset puede haber actualizado otro -> "la contraseña vieja
-  // sigue funcionando". Logueamos el _id leído y el prefijo del hash para
-  // poder cruzarlo con lo que guardó el /reset.
-  const cuentasConEseEmail = await Usuario.countDocuments({ email })
+  // Diagnóstico de confirmación: logueamos el _id y el prefijo del hash leído.
+  // Tras el fix de readPreference=primary, este hash DEBE coincidir con el que
+  // guardó el /reset. Antes el login leía una réplica atrasada con el hash viejo.
   console.log(
-    `🔍 Login: email="${email}" -> doc _id=${usuario._id} | ` +
-    `cuentas con ese email=${cuentasConEseEmail} | hash=${String(usuario.contraseña).slice(0, 12)}… | ` +
-    `pass(len=${contraseña.length} huella=${huella(contraseña)})`
+    `🔍 Login: email="${email}" -> _id=${usuario._id} | hash=${String(usuario.contraseña).slice(0, 12)}…`
   )
-  if (cuentasConEseEmail > 1) {
-    console.warn(`🚨 Login: hay ${cuentasConEseEmail} cuentas DUPLICADAS con el email "${email}". El reset y el login pueden estar tocando documentos distintos.`)
-  }
 
   if (!usuario.activo) {
     throw new Error('Cuenta desactivada. Contacta al administrador.')
   }
 
-  // Instrumentación temporal: capturamos si compare LANZA excepción (vs devolver
-  // false) y la forma exacta del hash guardado, para entender el fallo imposible.
-  let contraseñaValida = false
-  try {
-    const h = usuario.contraseña
-    console.log(`🔬 compare: typeof=${typeof h} len=${h?.length} ini="${String(h).slice(0,7)}" fin="${String(h).slice(-6)}"`)
-    contraseñaValida = await bcrypt.compare(contraseña, h)
-    console.log(`🔬 compare resultado directo: ${contraseñaValida}`)
-    const u2 = await Usuario.findById(usuario._id)
-    const r2 = await bcrypt.compare(contraseña, u2.contraseña)
-    console.log(`🔬 compare via findById: ${r2} | hash igual a findOne=${u2.contraseña === h} | len2=${u2.contraseña?.length}`)
-  } catch (e) {
-    console.error(`🚨 compare LANZÓ EXCEPCIÓN: ${e?.message} | stack: ${e?.stack?.split('\n')[1]?.trim()}`)
-  }
+  const contraseñaValida = await usuario.compararContraseña(contraseña)
   if (!contraseñaValida) {
-    // Diagnóstico (solo logs): la cuenta SÍ existe pero la contraseña no
-    // coincide con el hash guardado. Si esto pasa justo después de un reset
-    // "exitoso", el problema está en el guardado de la contraseña, no acá.
     console.warn(`🔍 Login: la cuenta "${email}" (_id=${usuario._id}) existe pero la contraseña NO coincide con el hash guardado`)
     throw new Error('Email o contraseña incorrectos')
   }

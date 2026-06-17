@@ -8,6 +8,23 @@ const RECONEXION_DELAY_MS = 5000
 // Configurar comportamiento global de Mongoose
 mongoose.set('strictQuery', false)
 
+// CRÍTICO (consistencia read-your-writes):
+// Forzamos que TODAS las lecturas vayan al PRIMARIO y que escrituras y lecturas
+// usen "majority". Sin esto, si la MONGODB_URI trae readPreference=secondary o
+// nearest, el login puede leer una réplica ATRASADA y ver el hash VIEJO de la
+// contraseña justo después de un reset exitoso. Síntoma exacto que tuvimos:
+// "el reset dice que cambió la contraseña, pero al loguear la vieja sigue
+// funcionando y la nueva no". Estas opciones a nivel de conexión sobrescriben
+// cualquier readPreference embebido en la URI.
+const OPCIONES_REMOTAS = {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+  family: 4, // IPv4 (evita problemas DNS)
+  readPreference: 'primary',
+  readConcern: { level: 'majority' },
+  writeConcern: { w: 'majority' }
+}
+
 // Configurar listeners de la conexión una sola vez
 mongoose.connection.on('connected', () => {
   console.log('✅ MongoDB: conexión establecida')
@@ -26,7 +43,7 @@ mongoose.connection.on('disconnected', () => {
       reconectandoTimer = null
       try {
         if (mongoose.connection.readyState === 0) {
-          await mongoose.connect(process.env.MONGODB_URI)
+          await mongoose.connect(process.env.MONGODB_URI, OPCIONES_REMOTAS)
         }
       } catch (err) {
         console.error('Reintento de conexión MongoDB falló:', err.message)
@@ -46,12 +63,9 @@ export async function connectDB() {
   try {
     if (mongoUri && !mongoUri.includes('localhost')) {
       // URI remota (Atlas, Railway, etc.) — la opción preferida en producción
-      await mongoose.connect(mongoUri, {
-        serverSelectionTimeoutMS: 10000,
-        socketTimeoutMS: 45000,
-        family: 4 // IPv4 (evita problemas DNS)
-      })
-      console.log('✅ MongoDB conectado (remoto)')
+      await mongoose.connect(mongoUri, OPCIONES_REMOTAS)
+      const rp = mongoose.connection.client?.options?.readPreference?.mode || 'primary'
+      console.log(`✅ MongoDB conectado (remoto) | readPreference efectivo=${rp} | host=${mongoose.connection.host}`)
       return
     }
 
