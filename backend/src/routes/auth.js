@@ -390,9 +390,11 @@ router.post('/reset', async (req, res) => {
     // sabemos si ambos tocan el MISMO documento (mismo _id y mismo hash).
     const emailNorm = sanitizar(email).toLowerCase()
     const cuentasConEseEmail = await Usuario.countDocuments({ email: emailNorm })
+    const huellaPass = crypto.createHash('sha256').update(String(nuevaContraseña)).digest('hex').slice(0, 16)
     console.log(
       `✅ Contraseña restablecida y verificada para ${emailNorm} -> doc _id=${usuario._id} | ` +
-      `cuentas con ese email=${cuentasConEseEmail} | hash=${String(verificacion.contraseña).slice(0, 12)}…`
+      `cuentas con ese email=${cuentasConEseEmail} | hash=${String(verificacion.contraseña).slice(0, 12)}… | ` +
+      `pass(len=${nuevaContraseña.length} huella=${huellaPass})`
     )
     if (cuentasConEseEmail > 1) {
       console.warn(`🚨 Reset: hay ${cuentasConEseEmail} cuentas DUPLICADAS con el email "${emailNorm}". El login puede leer otra distinta a la que acabás de actualizar.`)
