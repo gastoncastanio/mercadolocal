@@ -2,6 +2,7 @@ import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
 import crypto from 'crypto'
+import bcrypt from 'bcrypt'
 import { generarAccessToken, generarRefreshToken } from '../middleware/auth.js'
 import { enviarBienvenida } from './emailService.js'
 
@@ -129,7 +130,20 @@ export async function loginUsuario(email, contraseña) {
     throw new Error('Cuenta desactivada. Contacta al administrador.')
   }
 
-  const contraseñaValida = await usuario.compararContraseña(contraseña)
+  // Instrumentación temporal: capturamos si compare LANZA excepción (vs devolver
+  // false) y la forma exacta del hash guardado, para entender el fallo imposible.
+  let contraseñaValida = false
+  try {
+    const h = usuario.contraseña
+    console.log(`🔬 compare: typeof=${typeof h} len=${h?.length} ini="${String(h).slice(0,7)}" fin="${String(h).slice(-6)}"`)
+    contraseñaValida = await bcrypt.compare(contraseña, h)
+    console.log(`🔬 compare resultado directo: ${contraseñaValida}`)
+    const u2 = await Usuario.findById(usuario._id)
+    const r2 = await bcrypt.compare(contraseña, u2.contraseña)
+    console.log(`🔬 compare via findById: ${r2} | hash igual a findOne=${u2.contraseña === h} | len2=${u2.contraseña?.length}`)
+  } catch (e) {
+    console.error(`🚨 compare LANZÓ EXCEPCIÓN: ${e?.message} | stack: ${e?.stack?.split('\n')[1]?.trim()}`)
+  }
   if (!contraseñaValida) {
     // Diagnóstico (solo logs): la cuenta SÍ existe pero la contraseña no
     // coincide con el hash guardado. Si esto pasa justo después de un reset
