@@ -15,10 +15,10 @@ interface Disputa {
 
 const estadoBadge: Record<string, { bg: string; text: string; label: string }> = {
   abierta: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Abierta' },
-  en_revision: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'En Revision' },
+  en_revision: { bg: 'bg-ml-bg', text: 'text-blue-700', label: 'En Revision' },
   resuelta_comprador: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resuelta (Comprador)' },
   resuelta_vendedor: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Resuelta (Vendedor)' },
-  cerrada: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cerrada' },
+  cerrada: { bg: 'bg-gray-100', text: 'text-ml-ink', label: 'Cerrada' },
 }
 
 const motivoLabels: Record<string, string> = {
@@ -97,7 +97,7 @@ export default function DisputasAdmin() {
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">👑 Gestion de Disputas</h1>
+        <h1 className="text-3xl font-bold text-ml-ink mb-8">👑 Gestion de Disputas</h1>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
@@ -108,7 +108,7 @@ export default function DisputasAdmin() {
               className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filtro === tab.key
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
+                  : 'bg-white text-ml-soft hover:bg-gray-100'
               }`}
             >
               {tab.label}
@@ -119,7 +119,7 @@ export default function DisputasAdmin() {
         {/* Lista */}
         {disputasFiltradas.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
-            <p className="text-gray-400 text-lg">No hay disputas en esta categoria</p>
+            <p className="text-ml-muted text-lg">No hay disputas en esta categoria</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -129,10 +129,10 @@ export default function DisputasAdmin() {
                 <div key={d._id} className="bg-white rounded-2xl shadow-sm p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-ml-muted">
                         Orden #{getOrdenDisplay(d.ordenId)}
                       </p>
-                      <p className="font-semibold text-gray-800 mt-1">
+                      <p className="font-semibold text-ml-ink mt-1">
                         {motivoLabels[d.motivo] || d.motivo}
                       </p>
                     </div>
@@ -142,22 +142,22 @@ export default function DisputasAdmin() {
                       >
                         {badge.label}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-ml-muted">
                         {new Date(d.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex gap-4 mb-3 text-sm">
-                    <span className="text-gray-500">
-                      Comprador: <span className="font-medium text-gray-700">{d.compradorId?.nombre || 'N/A'}</span>
+                    <span className="text-ml-muted">
+                      Comprador: <span className="font-medium text-ml-ink">{d.compradorId?.nombre || 'N/A'}</span>
                     </span>
-                    <span className="text-gray-500">
-                      Vendedor: <span className="font-medium text-gray-700">{d.vendedorId?.nombre || 'N/A'}</span>
+                    <span className="text-ml-muted">
+                      Vendedor: <span className="font-medium text-ml-ink">{d.vendedorId?.nombre || 'N/A'}</span>
                     </span>
                   </div>
 
-                  <p className="text-gray-600 text-sm mb-3">{d.descripcion}</p>
+                  <p className="text-ml-soft text-sm mb-3">{d.descripcion}</p>
 
                   {d.resolucion && (
                     <div className="p-3 bg-green-50 rounded-xl mb-3">
@@ -169,13 +169,13 @@ export default function DisputasAdmin() {
                   {(d.estado === 'abierta' || d.estado === 'en_revision') && (
                     <>
                       {resolviendoId === d._id ? (
-                        <div className="border-t border-gray-100 pt-4 mt-3">
+                        <div className="border-t border-ml-line2 pt-4 mt-3">
                           <textarea
                             value={resolucion}
                             onChange={(e) => setResolucion(e.target.value)}
                             placeholder="Escribe la resolucion..."
                             rows={3}
-                            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none mb-3"
+                            className="w-full border border-ml-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none mb-3"
                           />
                           <div className="flex gap-3">
                             <button
@@ -183,7 +183,7 @@ export default function DisputasAdmin() {
                                 setResolviendoId(null)
                                 setResolucion('')
                               }}
-                              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 text-sm hover:bg-gray-50 transition-colors"
+                              className="px-4 py-2 border border-ml-line rounded-xl text-ml-soft text-sm hover:bg-gray-50 transition-colors"
                             >
                               Cancelar
                             </button>
@@ -206,7 +206,7 @@ export default function DisputasAdmin() {
                       ) : (
                         <button
                           onClick={() => setResolviendoId(d._id)}
-                          className="mt-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+                          className="mt-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium "
                         >
                           Resolver
                         </button>

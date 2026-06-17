@@ -50,8 +50,8 @@ export default function TiendaPublica() {
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <p className="text-6xl mb-4">&#x1F3EA;</p>
-          <h2 className="text-xl font-bold text-gray-800">Tienda no encontrada</h2>
-          <Link to="/catalogo" className="mt-4 inline-block text-blue-600 hover:underline">Volver al cat&aacute;logo</Link>
+          <h2 className="text-xl font-bold text-ml-ink">Tienda no encontrada</h2>
+          <Link to="/catalogo" className="mt-4 inline-block text-ml-blue hover:underline">Volver al cat&aacute;logo</Link>
         </div>
       </div>
     )
@@ -115,33 +115,33 @@ export default function TiendaPublica() {
       {/* Stats reputación */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 -mt-6 relative z-10">
         <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-ml-ink mb-4 flex items-center gap-2">
             <span>&#x1F4CA;</span> Reputaci&oacute;n e historial
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border-l-4 border-blue-500">
-              <p className="text-[11px] sm:text-xs text-gray-500 uppercase font-semibold">Ventas totales</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{ventas}</p>
+              <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Ventas totales</p>
+              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{ventas}</p>
             </div>
             <div className="bg-yellow-50 rounded-xl p-3 sm:p-4 border-l-4 border-yellow-500">
-              <p className="text-[11px] sm:text-xs text-gray-500 uppercase font-semibold">Calificaci&oacute;n</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{calif.toFixed(1)}/5</p>
+              <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Calificaci&oacute;n</p>
+              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{calif.toFixed(1)}/5</p>
             </div>
             <div className="bg-green-50 rounded-xl p-3 sm:p-4 border-l-4 border-green-500">
-              <p className="text-[11px] sm:text-xs text-gray-500 uppercase font-semibold">Productos</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">{productos.length}</p>
+              <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Productos</p>
+              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{productos.length}</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border-l-4 border-purple-500">
-              <p className="text-[11px] sm:text-xs text-gray-500 uppercase font-semibold">Antig&uuml;edad</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-800 mt-1">
+              <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Antig&uuml;edad</p>
+              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">
                 {mesesActivo} {mesesActivo === 1 ? 'mes' : 'meses'}
               </p>
             </div>
           </div>
 
           {/* Barras de reputación estilo ML */}
-          <div className="mt-5 pt-5 border-t border-gray-100">
-            <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Distribuci&oacute;n de calificaciones</p>
+          <div className="mt-5 pt-5 border-t border-ml-line2">
+            <p className="text-xs text-ml-muted uppercase font-semibold mb-3">Distribuci&oacute;n de calificaciones</p>
             <div className="space-y-1.5">
               {[5, 4, 3, 2, 1].map(estrellas => {
                 const porcentaje = calif === 0 ? 0 :
@@ -149,14 +149,14 @@ export default function TiendaPublica() {
                   estrellas === Math.round(calif) - 1 || estrellas === Math.round(calif) + 1 ? 15 : 0
                 return (
                   <div key={estrellas} className="flex items-center gap-2 text-xs">
-                    <span className="w-8 text-gray-600">{estrellas} &#x2605;</span>
+                    <span className="w-8 text-ml-soft">{estrellas} &#x2605;</span>
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full"
                         style={{ width: `${porcentaje}%` }}
                       ></div>
                     </div>
-                    <span className="w-10 text-right text-gray-500">{porcentaje}%</span>
+                    <span className="w-10 text-right text-ml-muted">{porcentaje}%</span>
                   </div>
                 )
               })}
@@ -167,13 +167,13 @@ export default function TiendaPublica() {
 
       {/* Productos de la tienda */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-ml-ink mb-4">
           Productos de esta tienda ({productos.length})
         </h2>
         {productos.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
             <p className="text-5xl mb-3">&#x1F4E6;</p>
-            <p className="text-gray-500">Esta tienda a&uacute;n no tiene productos publicados.</p>
+            <p className="text-ml-muted">Esta tienda a&uacute;n no tiene productos publicados.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">

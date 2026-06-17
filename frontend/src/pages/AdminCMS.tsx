@@ -95,7 +95,7 @@ export default function AdminCMS() {
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-4">&#x2699;&#xFE0F;</div>
-          <p className="text-gray-500">Cargando configuraciones...</p>
+          <p className="text-ml-muted">Cargando configuraciones...</p>
         </div>
       </div>
     )
@@ -107,13 +107,13 @@ export default function AdminCMS() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Panel de Configuraci&oacute;n</h1>
-            <p className="text-gray-500 mt-1">Personalizá textos, colores y funcionalidades del marketplace</p>
+            <h1 className="text-3xl font-bold text-ml-ink">Panel de Configuraci&oacute;n</h1>
+            <p className="text-ml-muted mt-1">Personalizá textos, colores y funcionalidades del marketplace</p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/admin')}
-              className="px-4 py-2 bg-white border border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 font-medium"
+              className="px-4 py-2 bg-white border border-ml-line text-ml-soft rounded-xl hover:bg-gray-50 font-medium"
             >
               &larr; Dashboard
             </button>
@@ -140,7 +140,7 @@ export default function AdminCMS() {
           {/* Sidebar categorías */}
           <div className="col-span-12 md:col-span-3">
             <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-4">
-              <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wider">Categor&iacute;as</h3>
+              <h3 className="font-semibold text-ml-ink mb-3 text-sm uppercase tracking-wider">Categor&iacute;as</h3>
               <div className="space-y-1">
                 {categorias.map(cat => (
                   <button
@@ -149,7 +149,7 @@ export default function AdminCMS() {
                     className={`w-full text-left px-4 py-3 rounded-xl transition-colors flex items-center gap-2 ${
                       categoriaActiva === cat
                         ? 'bg-blue-50 text-blue-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50'
+                        : 'text-ml-soft hover:bg-gray-50'
                     }`}
                   >
                     <span>{ICONOS_CATEGORIA[cat] || '\uD83D\uDCC4'}</span>
@@ -166,11 +166,11 @@ export default function AdminCMS() {
           {/* Campos de configuración */}
           <div className="col-span-12 md:col-span-9">
             <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-ml-ink mb-1 flex items-center gap-2">
                 <span>{ICONOS_CATEGORIA[categoriaActiva] || '\uD83D\uDCC4'}</span>
                 {categoriaActiva}
               </h2>
-              <p className="text-gray-400 text-sm mb-6">
+              <p className="text-ml-muted text-sm mb-6">
                 {categoriaActiva === 'General' && 'Configuraciones básicas del marketplace'}
                 {categoriaActiva === 'Landing' && 'Textos e imágenes de la página de inicio'}
                 {categoriaActiva === 'Negocio' && 'Comisiones, moneda y reglas del negocio'}
@@ -182,11 +182,11 @@ export default function AdminCMS() {
 
               <div className="space-y-5">
                 {configsFiltradas.map(config => (
-                  <div key={config._id} className="border-b border-gray-100 pb-5 last:border-0">
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                  <div key={config._id} className="border-b border-ml-line2 pb-5 last:border-0">
+                    <label className="block text-sm font-semibold text-ml-ink mb-1">
                       {config.descripcion}
                     </label>
-                    <p className="text-xs text-gray-400 mb-2">Clave: {config.clave}</p>
+                    <p className="text-xs text-ml-muted mb-2">Clave: {config.clave}</p>
 
                     {config.tipo === 'boolean' ? (
                       <div className="flex items-center gap-3">
@@ -200,7 +200,7 @@ export default function AdminCMS() {
                             getValor(config) === 'true' ? 'translate-x-7' : 'translate-x-0.5'
                           }`} />
                         </button>
-                        <span className={`text-sm font-medium ${getValor(config) === 'true' ? 'text-green-600' : 'text-gray-400'}`}>
+                        <span className={`text-sm font-medium ${getValor(config) === 'true' ? 'text-green-600' : 'text-ml-muted'}`}>
                           {getValor(config) === 'true' ? 'Activado' : 'Desactivado'}
                         </span>
                       </div>
@@ -210,13 +210,13 @@ export default function AdminCMS() {
                           type="color"
                           value={getValor(config) || '#000000'}
                           onChange={e => handleChange(config.clave, e.target.value)}
-                          className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer"
+                          className="w-12 h-10 rounded-lg border border-ml-line cursor-pointer"
                         />
                         <input
                           type="text"
                           value={getValor(config)}
                           onChange={e => handleChange(config.clave, e.target.value)}
-                          className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                          className="flex-1 px-4 py-2 border border-ml-line rounded-xl text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
                           placeholder="#000000"
                         />
                       </div>
@@ -225,7 +225,7 @@ export default function AdminCMS() {
                         type="number"
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                        className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                       />
                     ) : config.tipo === 'imagen' ? (
                       <div className="space-y-2">
@@ -233,7 +233,7 @@ export default function AdminCMS() {
                           type="text"
                           value={getValor(config)}
                           onChange={e => handleChange(config.clave, e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                          className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                           placeholder="URL de la imagen"
                         />
                         {getValor(config) && (
@@ -245,7 +245,7 @@ export default function AdminCMS() {
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
                         rows={5}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none font-mono text-sm"
+                        className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none font-mono text-sm"
                         placeholder="HTML content..."
                       />
                     ) : (
@@ -253,7 +253,7 @@ export default function AdminCMS() {
                         type="text"
                         value={getValor(config)}
                         onChange={e => handleChange(config.clave, e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                        className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                         placeholder={config.descripcion}
                       />
                     )}
@@ -266,7 +266,7 @@ export default function AdminCMS() {
               </div>
 
               {totalCambios > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-6 pt-4 border-t border-ml-line">
                   <button
                     onClick={guardarCambios}
                     disabled={guardando}

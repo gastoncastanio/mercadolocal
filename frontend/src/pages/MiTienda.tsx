@@ -334,16 +334,16 @@ export default function MiTienda() {
   if (!tienda && !editando) {
     return (
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
-          <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="text-center bg-white rounded-2xl shadow-lg border border-ml-line p-12 max-w-md">
+          <div className="w-20 h-20 bg-ml-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-10 h-10 text-ml-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-18 0A2.997 2.997 0 017.5 6.2l.4-2.1A1.5 1.5 0 019.375 3h5.25a1.5 1.5 0 011.475 1.1l.4 2.1a2.997 2.997 0 014.5 3.149" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Crea tu Tienda</h2>
-          <p className="text-gray-500 mb-6">Configura tu tienda para empezar a vender</p>
+          <h2 className="text-2xl font-bold text-ml-ink mb-2">Crea tu Tienda</h2>
+          <p className="text-ml-muted mb-6">Configura tu tienda para empezar a vender</p>
           <button onClick={() => setEditando(true)}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+            className="px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold">
             Crear Mi Tienda
           </button>
         </div>
@@ -357,13 +357,13 @@ export default function MiTienda() {
     return (
       <div className="min-h-screen bg-ml-bg py-8">
         <div className="max-w-lg mx-auto px-4">
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">{tienda ? 'Editar' : 'Crear'} Tienda</h1>
-          <form onSubmit={guardarTienda} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">{tienda ? 'Editar' : 'Crear'} Tienda</h1>
+          <form onSubmit={guardarTienda} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Logo de la tienda</label>
+              <label className="block text-sm font-medium text-ml-ink mb-2">Logo de la tienda</label>
               {logoSrc ? (
                 <div className="relative inline-block">
-                  <img src={logoSrc} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-gray-200" />
+                  <img src={logoSrc} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-ml-line" />
                   {progresoLogo && (
                     <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center px-3">
                       <div className="text-white text-xs font-medium mb-2 text-center leading-tight">
@@ -383,50 +383,50 @@ export default function MiTienda() {
                 </div>
               ) : (
                 <div onClick={() => logoInputRef.current?.click()}
-                  className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                  <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  className="w-32 h-32 border-2 border-dashed border-ml-line rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                  <svg className="w-8 h-8 text-ml-muted mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                   </svg>
-                  <span className="text-gray-400 text-xs text-center">Subir logo</span>
+                  <span className="text-ml-muted text-xs text-center">Subir logo</span>
                 </div>
               )}
               <input ref={logoInputRef} type="file" accept="image/*,.heic,.heif" onChange={subirLogo} className="hidden" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la tienda</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Nombre de la tienda</label>
               <input type="text" required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Ciudad</label>
               <input type="text" required value={form.ciudad} onChange={e => setForm({...form, ciudad: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Descripcion</label>
               <textarea value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} rows={3}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Telefono</label>
               <input type="text" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Ej: +54 11 1234-5678" />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" placeholder="Ej: +54 11 1234-5678" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Tipo</label>
               <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value as 'online' | 'fisica' | 'ambas'})}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none">
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none">
                 <option value="online">Solo Online</option>
                 <option value="fisica">Tienda Fisica</option>
                 <option value="ambas">Ambas</option>
               </select>
             </div>
             <div className="flex gap-3">
-              <button type="submit" disabled={subiendoLogo} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold disabled:opacity-50">
+              <button type="submit" disabled={subiendoLogo} className="flex-1 py-3 mlbtn ml-grad text-white rounded-xl font-semibold disabled:opacity-50">
                 {subiendoLogo ? 'Esperando logo...' : 'Guardar'}
               </button>
-              <button type="button" onClick={() => { setEditando(false); setPreviewLogo(null) }} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold">Cancelar</button>
+              <button type="button" onClick={() => { setEditando(false); setPreviewLogo(null) }} className="px-6 py-3 bg-ml-bg text-ml-ink rounded-xl font-semibold">Cancelar</button>
             </div>
           </form>
         </div>
@@ -440,30 +440,30 @@ export default function MiTienda() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Info tienda */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 mb-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {logoUrl ? (
-                <img src={logoUrl} alt={tienda?.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200" />
+                <img src={logoUrl} alt={tienda?.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-ml-line" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ml-bg to-ml-bg flex items-center justify-center">
+                  <svg className="w-10 h-10 text-ml-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-18 0A2.997 2.997 0 017.5 6.2l.4-2.1A1.5 1.5 0 019.375 3h5.25a1.5 1.5 0 011.475 1.1l.4 2.1a2.997 2.997 0 014.5 3.149" />
                   </svg>
                 </div>
               )}
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">{tienda?.nombre}</h1>
-                <p className="text-gray-500 mt-1 text-sm">{tienda?.ciudad} · {tienda?.tipo === 'online' ? 'Solo Online' : tienda?.tipo === 'fisica' ? 'Tienda Fisica' : 'Online + Fisica'}</p>
-                {tienda?.descripcion && <p className="text-gray-600 mt-1 text-sm">{tienda.descripcion}</p>}
+                <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink">{tienda?.nombre}</h1>
+                <p className="text-ml-muted mt-1 text-sm">{tienda?.ciudad} · {tienda?.tipo === 'online' ? 'Solo Online' : tienda?.tipo === 'fisica' ? 'Tienda Fisica' : 'Online + Fisica'}</p>
+                {tienda?.descripcion && <p className="text-ml-soft mt-1 text-sm">{tienda.descripcion}</p>}
               </div>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-sm text-gray-500">Ganancias totales</p>
+              <p className="text-sm text-ml-muted">Ganancias totales</p>
               <p className="text-2xl font-bold text-green-600">${tienda?.ganancias?.toLocaleString('es-AR') || 0}</p>
-              <p className="text-xs text-gray-400">{tienda?.totalVentas || 0} ventas</p>
+              <p className="text-xs text-ml-muted">{tienda?.totalVentas || 0} ventas</p>
               <button onClick={() => { setForm({nombre: tienda?.nombre||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||''}); setEditando(true) }}
-                className="mt-2 text-sm text-blue-600 hover:underline font-medium">Editar tienda</button>
+                className="mt-2 text-sm text-ml-blue hover:underline font-medium">Editar tienda</button>
             </div>
           </div>
         </div>
@@ -475,17 +475,17 @@ export default function MiTienda() {
               <div className="flex items-start gap-3">
                 <span className="text-3xl flex-shrink-0">⚠️</span>
                 <div>
-                  <h3 className="font-bold text-gray-800 text-base">
+                  <h3 className="font-bold text-ml-ink text-base">
                     Tus productos NO son visibles en el catálogo público
                   </h3>
-                  <p className="text-sm text-gray-700 mt-1">
+                  <p className="text-sm text-ml-ink mt-1">
                     Vinculá Mercado Pago para que los compradores puedan verlos y comprarlos. Los pagos se acreditan directamente en tu billetera.
                   </p>
                 </div>
               </div>
               <Link
                 to="/central-vendedor"
-                className="flex-shrink-0 px-5 py-3 bg-[#009ee3] text-white rounded-xl font-bold hover:bg-[#0087c9] transition-colors shadow-md text-sm whitespace-nowrap"
+                className="flex-shrink-0 px-5 py-3 mlbtn bg-ml-mp text-white rounded-xl font-bold text-sm whitespace-nowrap"
               >
                 Vincular Mercado Pago
               </Link>
@@ -495,9 +495,9 @@ export default function MiTienda() {
 
         {/* Productos */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-800">Mis Productos ({productos.length})</h2>
+          <h2 className="text-xl font-bold text-ml-ink">Mis Productos ({productos.length})</h2>
           {tienda?.mpVinculado ? (
-            <Link to="/publicar" className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+            <Link to="/publicar" className="flex items-center gap-2 px-4 py-2.5 mlbtn ml-grad text-white rounded-xl font-semibold text-sm">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
@@ -507,7 +507,7 @@ export default function MiTienda() {
             <Link
               to="/central-vendedor"
               title="Vinculá Mercado Pago primero"
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-300 text-gray-600 rounded-xl font-semibold cursor-not-allowed text-sm hover:bg-gray-400 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 bg-ml-bg border border-ml-line text-ml-muted rounded-xl font-semibold cursor-not-allowed text-sm"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -522,22 +522,22 @@ export default function MiTienda() {
             <div className="spinner" />
           </div>
         ) : productos.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-ml-line">
+            <div className="w-16 h-16 bg-ml-bg rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No tienes productos</h3>
-            <p className="text-gray-500 mb-4">Publica tu primer producto y empeza a vender</p>
-            <Link to="/publicar" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
+            <h3 className="text-xl font-semibold text-ml-ink mb-2">No tienes productos</h3>
+            <p className="text-ml-muted mb-4">Publica tu primer producto y empeza a vender</p>
+            <Link to="/publicar" className="inline-block px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold">
               Publicar Mi Primer Producto
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {productos.map(p => (
-              <div key={p._id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group relative">
+              <div key={p._id} className="bg-white rounded-xl shadow-sm border border-ml-line2 overflow-hidden group relative">
                 {/* Menu kebab (3 puntitos) en esquina superior derecha */}
                 <div className="absolute top-2 right-2 z-10">
                   <button
@@ -548,7 +548,7 @@ export default function MiTienda() {
                     className="w-8 h-8 bg-white/95 backdrop-blur rounded-full shadow-md flex items-center justify-center hover:bg-white hover:shadow-lg transition-all"
                     aria-label="Más opciones"
                   >
-                    <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-ml-ink" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
                     </svg>
                   </button>
@@ -559,12 +559,12 @@ export default function MiTienda() {
                       <div className="fixed inset-0 z-20" onClick={() => setMenuAbierto(null)} />
 
                       {/* Dropdown menu */}
-                      <div className="absolute right-0 top-10 w-52 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-30 animate-dropdown-in">
+                      <div className="absolute right-0 top-10 w-52 bg-white rounded-xl shadow-2xl border border-ml-line2 overflow-hidden z-30 animate-dropdown-in">
                         <button
                           onClick={() => { abrirEditorProducto(p); setMenuAbierto(null) }}
-                          className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                          className="w-full px-4 py-3 text-left text-sm text-ml-ink hover:bg-gray-50 flex items-center gap-3 transition-colors"
                         >
-                          <svg className="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-4 h-4 text-ml-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
                           </svg>
                           Editar producto
@@ -572,7 +572,7 @@ export default function MiTienda() {
 
                         <button
                           onClick={() => toggleActivoProducto(p)}
-                          className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-50"
+                          className="w-full px-4 py-3 text-left text-sm text-ml-ink hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-50"
                         >
                           {p.activo === false ? (
                             <>
@@ -638,7 +638,7 @@ export default function MiTienda() {
 
                 {/* Info */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-800 truncate">{p.nombre}</h3>
+                  <h3 className="font-semibold text-ml-ink truncate">{p.nombre}</h3>
                   {/* Precio editable inline */}
                   {editandoPrecioId === p._id ? (
                     <input
@@ -650,19 +650,19 @@ export default function MiTienda() {
                         if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                         if (e.key === 'Escape') setEditandoPrecioId(null)
                       }}
-                      className="text-blue-600 font-bold text-lg w-full px-2 py-1 border-2 border-blue-500 rounded-lg outline-none"
+                      className="text-ml-blue font-bold text-lg w-full px-2 py-1 border-2 border-blue-500 rounded-lg outline-none"
                       disabled={guardandoRapido}
                     />
                   ) : (
                     <button
                       onClick={() => setEditandoPrecioId(p._id)}
-                      className="text-blue-600 font-bold text-lg hover:bg-blue-50 px-1 -ml-1 rounded transition-colors text-left w-full"
+                      className="text-ml-blue font-bold text-lg hover:bg-blue-50 px-1 -ml-1 rounded transition-colors text-left w-full"
                       title="Click para editar precio"
                     >
                       ${p.precio.toLocaleString('es-AR')} <span className="text-xs text-gray-300 font-normal">✏</span>
                     </button>
                   )}
-                  <div className="flex items-center gap-3 text-xs text-gray-400 mt-1">
+                  <div className="flex items-center gap-3 text-xs text-ml-muted mt-1">
                     {/* Stock editable inline */}
                     {editandoStockId === p._id ? (
                       <input
@@ -675,7 +675,7 @@ export default function MiTienda() {
                           if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
                           if (e.key === 'Escape') setEditandoStockId(null)
                         }}
-                        className="w-20 px-2 py-0.5 border-2 border-blue-500 rounded text-xs text-gray-700 outline-none"
+                        className="w-20 px-2 py-0.5 border-2 border-blue-500 rounded text-xs text-ml-ink outline-none"
                         disabled={guardandoRapido}
                       />
                     ) : (
@@ -693,7 +693,7 @@ export default function MiTienda() {
                   {p.categorias?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {p.categorias.slice(0, 2).map(cat => (
-                        <span key={cat} className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{cat}</span>
+                        <span key={cat} className="text-[10px] bg-gray-100 text-ml-muted px-2 py-0.5 rounded-full">{cat}</span>
                       ))}
                     </div>
                   )}
@@ -711,8 +711,8 @@ export default function MiTienda() {
           <div className="absolute inset-0 bg-black/50" onClick={cerrarEditorProducto} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 rounded-t-2xl flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Editar Producto</h2>
-              <button onClick={cerrarEditorProducto} className="text-gray-400 hover:text-gray-600 p-1" aria-label="Cerrar">
+              <h2 className="text-xl font-bold text-ml-ink">Editar Producto</h2>
+              <button onClick={cerrarEditorProducto} className="text-ml-muted hover:text-ml-soft p-1" aria-label="Cerrar">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -728,10 +728,10 @@ export default function MiTienda() {
 
               {/* Imagen */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Foto del producto</label>
+                <label className="block text-sm font-medium text-ml-ink mb-2">Foto del producto</label>
                 {editForm.imagenes[0] ? (
                   <div className="relative">
-                    <img src={editForm.imagenes[0]} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-gray-200" />
+                    <img src={editForm.imagenes[0]} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-ml-line" />
                     {progresoImagenEdit && (
                       <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center px-6">
                         <div className="text-white text-sm font-medium mb-2 text-center">
@@ -751,44 +751,44 @@ export default function MiTienda() {
                   </div>
                 ) : (
                   <div onClick={() => editFileRef.current?.click()}
-                    className="w-full h-36 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                    <svg className="w-8 h-8 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    className="w-full h-36 border-2 border-dashed border-ml-line rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                    <svg className="w-8 h-8 text-ml-muted mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                     </svg>
-                    <span className="text-gray-500 text-sm font-medium">Subir foto</span>
+                    <span className="text-ml-muted text-sm font-medium">Subir foto</span>
                   </div>
                 )}
                 <input ref={editFileRef} type="file" accept="image/*,.heic,.heif" onChange={subirImagenEdit} className="hidden" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Nombre *</label>
                 <input type="text" required value={editForm.nombre} onChange={e => setEditForm({...editForm, nombre: e.target.value})}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Descripcion</label>
                 <textarea value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Precio *</label>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">Precio *</label>
                   <input type="number" required min="0" step="0.01" value={editForm.precio} onChange={e => setEditForm({...editForm, precio: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+                    className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">Stock</label>
                   <input type="number" min="0" value={editForm.stock} onChange={e => setEditForm({...editForm, stock: e.target.value})}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+                    className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                <label className="block text-sm font-medium text-ml-ink mb-2">Categoría</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {CATEGORIAS.map(cat => {
                     const seleccionada = editForm.categorias[0] === cat.id
@@ -800,7 +800,7 @@ export default function MiTienda() {
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all border-2 text-left ${
                           seleccionada
                             ? 'bg-blue-50 border-blue-500 text-blue-700'
-                            : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                            : 'bg-white border-ml-line text-ml-ink hover:border-ml-line'
                         }`}
                       >
                         <span className="text-lg flex-shrink-0">{cat.icono}</span>
@@ -826,25 +826,25 @@ export default function MiTienda() {
               {/* ===== Marca y Código de barras ===== */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Marca <span className="text-gray-400 font-normal">(opcional)</span>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">
+                    Marca <span className="text-ml-muted font-normal">(opcional)</span>
                   </label>
                   <input
                     type="text"
                     maxLength={80}
                     value={editForm.marca}
                     onChange={e => setEditForm({ ...editForm, marca: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                    className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                     placeholder="Ej: Samsung, Genérico"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-ml-ink mb-1">
                     Código de barras{' '}
                     {categoriaSeleccionadaEdit && requiereCodigoBarras(categoriaSeleccionadaEdit.id) ? (
                       <span className="text-red-500">*</span>
                     ) : (
-                      <span className="text-gray-400 font-normal">(opcional)</span>
+                      <span className="text-ml-muted font-normal">(opcional)</span>
                     )}
                   </label>
                   <input
@@ -853,7 +853,7 @@ export default function MiTienda() {
                     maxLength={14}
                     value={editForm.codigoBarras}
                     onChange={e => setEditForm({ ...editForm, codigoBarras: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none font-mono"
+                    className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none font-mono"
                     placeholder="Ej: 7790070451095"
                   />
                 </div>
@@ -873,11 +873,11 @@ export default function MiTienda() {
 
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={editCargando || subiendoImagenEdit}
-                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                  className="flex-1 py-3 mlbtn ml-grad text-white rounded-xl font-semibold  disabled:opacity-50 transition-colors">
                   {editCargando ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
                 <button type="button" onClick={cerrarEditorProducto}
-                  className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors">
+                  className="px-6 py-3 bg-ml-bg text-ml-ink rounded-xl font-semibold hover:bg-gray-300 transition-colors">
                   Cancelar
                 </button>
               </div>
@@ -896,17 +896,17 @@ export default function MiTienda() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
               </svg>
             </div>
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Eliminar producto</h3>
-            <p className="text-gray-500 text-sm mb-1">
+            <h3 className="text-lg font-bold text-ml-ink mb-2">Eliminar producto</h3>
+            <p className="text-ml-muted text-sm mb-1">
               {productos.find(p => p._id === productoEliminando)?.nombre}
             </p>
-            <p className="text-gray-400 text-xs mb-6">
+            <p className="text-ml-muted text-xs mb-6">
               El producto dejara de aparecer en el catalogo. Esta accion no se puede deshacer.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setProductoEliminando(null)}
-                className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="flex-1 py-2.5 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
               >
                 Cancelar
               </button>

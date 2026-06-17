@@ -51,17 +51,17 @@ const COLOR_PRIORIDAD: Record<string, string> = {
   urgente: 'bg-red-100 text-red-700 border-red-300',
   alta: 'bg-orange-100 text-orange-700 border-orange-300',
   media: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-  baja: 'bg-gray-100 text-gray-600 border-gray-300'
+  baja: 'bg-gray-100 text-ml-soft border-ml-line'
 }
 
 const COLOR_ESTADO: Record<string, string> = {
-  esperando_admin: 'bg-blue-100 text-blue-700',
+  esperando_admin: 'bg-ml-bg text-blue-700',
   en_revision: 'bg-indigo-100 text-indigo-700',
   aprobada: 'bg-green-100 text-green-700',
   en_ejecucion: 'bg-purple-100 text-purple-700',
   completada: 'bg-emerald-100 text-emerald-700',
   rechazada: 'bg-red-100 text-red-700',
-  pospuesta: 'bg-gray-100 text-gray-600',
+  pospuesta: 'bg-gray-100 text-ml-soft',
   modificada: 'bg-amber-100 text-amber-700'
 }
 
@@ -164,7 +164,7 @@ export default function PropuestasEquipo() {
             <h1 className="text-3xl font-bold flex items-center gap-2">
               📋 Propuestas del equipo IA
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-ml-muted mt-1">
               Los agentes analizan datos reales cada 6 horas y proponen mejoras. Vos decidís.
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function PropuestasEquipo() {
             <button
               onClick={forzarRonda}
               disabled={forzando}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium"
+              className="bg-blue-600  disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium"
             >
               {forzando ? 'Analizando...' : '🔄 Forzar análisis ahora'}
             </button>
@@ -213,7 +213,7 @@ export default function PropuestasEquipo() {
       {/* Lista de propuestas */}
       <div className="max-w-6xl mx-auto">
         {cargando ? (
-          <div className="text-center py-12 text-gray-400">Cargando...</div>
+          <div className="text-center py-12 text-ml-muted">Cargando...</div>
         ) : propuestas.length === 0 ? (
           <div className="text-center py-12 bg-gray-800 rounded-xl border border-gray-700">
             <div className="text-5xl mb-3">🎉</div>
@@ -222,7 +222,7 @@ export default function PropuestasEquipo() {
                 ? 'No hay propuestas esperando tu decisión.'
                 : 'No hay propuestas con este filtro.'}
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-ml-muted mt-2">
               El equipo analiza los datos cada 6 horas. Si no detectan un patrón, no inventan propuestas.
             </p>
           </div>
@@ -244,13 +244,13 @@ export default function PropuestasEquipo() {
                       <span className={`text-xs px-2 py-0.5 rounded-full ${COLOR_ESTADO[p.estado]}`}>
                         {p.estado.replace('_', ' ')}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-ml-muted">
                         {ICONO_AGENTE[p.proponente]} {p.proponente.replace('_', ' ')}
                       </span>
-                      <span className="text-xs text-gray-500">· {tiempoRelativo(p.createdAt)}</span>
+                      <span className="text-xs text-ml-muted">· {tiempoRelativo(p.createdAt)}</span>
                     </div>
                     <h3 className="font-semibold text-gray-100 mb-1">{p.titulo}</h3>
-                    <p className="text-sm text-gray-400 line-clamp-2">{p.problema}</p>
+                    <p className="text-sm text-ml-muted line-clamp-2">{p.problema}</p>
                   </div>
                 </div>
               </button>
@@ -300,12 +300,12 @@ function ModalDetalle({
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-white text-gray-900 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white text-ml-ink rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative"
         onClick={e => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-gray-700 rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md"
+          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-ml-ink rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md"
         >
           ×
         </button>
@@ -313,7 +313,7 @@ function ModalDetalle({
         {/* Header */}
         <div className="px-6 py-4 pr-14 ml-grad text-white">
           <div className="flex items-center gap-2 mb-1 flex-wrap text-xs">
-            <span className={`px-2 py-0.5 rounded-full ${COLOR_PRIORIDAD[propuesta.prioridad]} text-gray-900`}>
+            <span className={`px-2 py-0.5 rounded-full ${COLOR_PRIORIDAD[propuesta.prioridad]} text-ml-ink`}>
               {propuesta.prioridad}
             </span>
             <span className="bg-white/20 px-2 py-0.5 rounded-full">
@@ -332,30 +332,30 @@ function ModalDetalle({
         <div className="p-6 space-y-5">
           {/* Problema */}
           <section>
-            <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">🔎 Problema detectado</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{propuesta.problema}</p>
+            <h3 className="font-bold text-ml-ink mb-2 text-sm uppercase tracking-wide">🔎 Problema detectado</h3>
+            <p className="text-sm text-ml-ink whitespace-pre-wrap">{propuesta.problema}</p>
           </section>
 
           {/* Evidencia */}
           {propuesta.evidencia && propuesta.evidencia.length > 0 && (
             <section>
-              <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">
+              <h3 className="font-bold text-ml-ink mb-2 text-sm uppercase tracking-wide">
                 📊 Evidencia ({propuesta.evidencia.length} casos)
               </h3>
               <div className="space-y-2">
                 {propuesta.evidencia.map((ev, i) => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <div key={i} className="bg-gray-50 rounded-lg p-3 border border-ml-line">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
+                      <span className="text-xs bg-ml-bg text-ml-ink px-2 py-0.5 rounded">
                         {ev.tipo}
                       </span>
                       {ev.referenciaId && (
-                        <span className="text-xs text-gray-500 font-mono">{ev.referenciaId.slice(-8)}</span>
+                        <span className="text-xs text-ml-muted font-mono">{ev.referenciaId.slice(-8)}</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-700">{ev.descripcion}</p>
+                    <p className="text-sm text-ml-ink">{ev.descripcion}</p>
                     {ev.datos && Object.keys(ev.datos).length > 0 && (
-                      <pre className="text-[10px] text-gray-500 mt-1 overflow-x-auto">
+                      <pre className="text-[10px] text-ml-muted mt-1 overflow-x-auto">
                         {JSON.stringify(ev.datos, null, 2).slice(0, 300)}
                       </pre>
                     )}
@@ -367,8 +367,8 @@ function ModalDetalle({
 
           {/* Propuesta */}
           <section>
-            <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">💡 Propuesta</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap bg-blue-50 rounded-lg p-3 border border-blue-200">
+            <h3 className="font-bold text-ml-ink mb-2 text-sm uppercase tracking-wide">💡 Propuesta</h3>
+            <p className="text-sm text-ml-ink whitespace-pre-wrap bg-blue-50 rounded-lg p-3 border border-blue-200">
               {propuesta.propuesta}
             </p>
           </section>
@@ -376,16 +376,16 @@ function ModalDetalle({
           {/* Impacto */}
           {propuesta.impactoEstimado && (
             <section>
-              <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">📈 Impacto esperado</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{propuesta.impactoEstimado}</p>
+              <h3 className="font-bold text-ml-ink mb-2 text-sm uppercase tracking-wide">📈 Impacto esperado</h3>
+              <p className="text-sm text-ml-ink whitespace-pre-wrap">{propuesta.impactoEstimado}</p>
             </section>
           )}
 
           {/* Riesgos */}
           {propuesta.riesgos && (
             <section>
-              <h3 className="font-bold text-gray-800 mb-2 text-sm uppercase tracking-wide">⚠️ Riesgos / contraargumentos</h3>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-orange-50 rounded-lg p-3 border border-orange-200">
+              <h3 className="font-bold text-ml-ink mb-2 text-sm uppercase tracking-wide">⚠️ Riesgos / contraargumentos</h3>
+              <p className="text-sm text-ml-ink whitespace-pre-wrap bg-orange-50 rounded-lg p-3 border border-orange-200">
                 {propuesta.riesgos}
               </p>
             </section>
@@ -393,20 +393,20 @@ function ModalDetalle({
 
           {/* Decisión previa */}
           {yaDecidida && propuesta.decisionFundador?.decidida && (
-            <section className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
+            <section className="bg-gray-50 rounded-lg p-3 border border-ml-line">
+              <div className="text-xs text-ml-muted uppercase tracking-wide font-semibold mb-1">
                 Tu decisión previa ({new Date(propuesta.decisionFundador.fecha || '').toLocaleString('es-AR')})
               </div>
               {propuesta.decisionFundador.comentario && (
-                <p className="text-sm text-gray-700 italic">"{propuesta.decisionFundador.comentario}"</p>
+                <p className="text-sm text-ml-ink italic">"{propuesta.decisionFundador.comentario}"</p>
               )}
             </section>
           )}
 
           {/* Comentario + acciones */}
           {!yaDecidida && (
-            <section className="border-t border-gray-200 pt-4">
-              <label className="block text-sm font-semibold text-gray-800 mb-2">
+            <section className="border-t border-ml-line pt-4">
+              <label className="block text-sm font-semibold text-ml-ink mb-2">
                 Comentario para el equipo (opcional, obligatorio si rechazás)
               </label>
               <textarea
@@ -414,7 +414,7 @@ function ModalDetalle({
                 onChange={e => onChangeComentario(e.target.value)}
                 placeholder="Ej: Buena idea pero esperá a Q2; o: No coincido, mirá X dato..."
                 rows={3}
-                className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-ml-purple/30"
+                className="w-full border border-ml-line rounded-lg p-2 text-sm focus:ring-2 focus:ring-ml-purple/30"
               />
 
               <div className="flex gap-2 mt-4 flex-wrap">
@@ -447,7 +447,7 @@ function ModalDetalle({
                   🔍 En revisión
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-3">
+              <p className="text-xs text-ml-muted mt-3">
                 ⚠️ Aprobar NO ejecuta la propuesta. Solo la deja lista para que Claude la implemente en código.
               </p>
             </section>

@@ -42,8 +42,8 @@ export default function MasVendidos() {
         ) : productos.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
             <p className="text-6xl mb-4">&#x1F4E6;</p>
-            <h2 className="text-xl font-semibold text-gray-800">A&uacute;n no hay ventas registradas</h2>
-            <p className="text-gray-500 mt-2">Vuelve pronto, los rankings se actualizan con cada compra.</p>
+            <h2 className="text-xl font-semibold text-ml-ink">A&uacute;n no hay ventas registradas</h2>
+            <p className="text-ml-muted mt-2">Vuelve pronto, los rankings se actualizan con cada compra.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

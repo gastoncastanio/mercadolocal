@@ -73,12 +73,12 @@ export default function RecuperarPassword() {
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <span className="text-4xl">{paso === 'listo' ? '✅' : '🔑'}</span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mt-2">
             {paso === 'email' && 'Recuperar contraseña'}
             {paso === 'codigo' && 'Ingresá el código'}
             {paso === 'listo' && '¡Listo!'}
           </h1>
-          <p className="text-gray-500 mt-2 text-sm">
+          <p className="text-ml-muted mt-2 text-sm">
             {paso === 'email' && 'Te enviaremos un código de 6 dígitos a tu email'}
             {paso === 'codigo' && `Enviamos un código a ${email}`}
             {paso === 'listo' && 'Tu contraseña fue actualizada'}
@@ -94,13 +94,13 @@ export default function RecuperarPassword() {
         {paso === 'email' && (
           <form onSubmit={solicitarCodigo} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email de tu cuenta</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Email de tu cuenta</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                 placeholder="tu@email.com"
               />
             </div>
@@ -130,20 +130,20 @@ export default function RecuperarPassword() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Código de 6 dígitos</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Código de 6 dígitos</label>
               <input
                 type="text"
                 required
                 maxLength={6}
                 value={token}
                 onChange={e => { setToken(e.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none text-center text-2xl tracking-[0.5em] font-bold"
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none text-center text-2xl tracking-[0.5em] font-bold"
                 placeholder="000000"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nueva contraseña</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Nueva contraseña</label>
               <div className="relative">
                 <input
                   type={verContraseña ? 'text' : 'password'}
@@ -151,13 +151,13 @@ export default function RecuperarPassword() {
                   autoComplete="new-password"
                   value={nuevaContraseña}
                   onChange={e => { setNuevaContraseña(e.target.value); setError('') }}
-                  className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 pr-12 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                   placeholder="Mínimo 8 caracteres y un número"
                 />
                 <button
                   type="button"
                   onClick={() => setVerContraseña(v => !v)}
-                  className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 px-3 flex items-center text-ml-muted hover:text-ml-soft"
                   aria-label={verContraseña ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   tabIndex={-1}
                 >
@@ -167,14 +167,14 @@ export default function RecuperarPassword() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar contraseña</label>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Confirmar contraseña</label>
               <input
                 type={verContraseña ? 'text' : 'password'}
                 required
                 autoComplete="new-password"
                 value={confirmar}
                 onChange={e => { setConfirmar(e.target.value); setError('') }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-transparent outline-none"
                 placeholder="Repetir contraseña"
               />
             </div>
@@ -190,7 +190,7 @@ export default function RecuperarPassword() {
             <button
               type="button"
               onClick={() => { setPaso('email'); setError('') }}
-              className="w-full text-sm text-blue-600 hover:underline"
+              className="w-full text-sm text-ml-blue hover:underline"
             >
               Usar otro email
             </button>
@@ -209,8 +209,8 @@ export default function RecuperarPassword() {
           </div>
         )}
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          <Link to="/login" className="text-blue-600 font-medium hover:underline">
+        <p className="text-center text-sm text-ml-muted mt-6">
+          <Link to="/login" className="text-ml-blue font-medium hover:underline">
             ← Volver al login
           </Link>
         </p>

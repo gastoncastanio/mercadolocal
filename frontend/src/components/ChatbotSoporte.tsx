@@ -110,7 +110,7 @@ export default function ChatbotSoporte() {
 
       {/* Ventana de chat */}
       {abierto && (
-        <div className="fixed bottom-24 right-6 w-[360px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden" style={{ height: '500px' }}>
+        <div className="fixed bottom-24 right-6 w-[360px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-ml-line z-50 flex flex-col overflow-hidden" style={{ height: '500px' }}>
           {/* Header */}
           <div className="ml-grad text-white p-4 shrink-0">
             <div className="flex items-center gap-3">
@@ -130,7 +130,7 @@ export default function ChatbotSoporte() {
               <div key={i} className={`flex ${msg.esBot ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-line ${
                   msg.esBot
-                    ? 'bg-gray-100 text-gray-800 rounded-bl-md'
+                    ? 'bg-gray-100 text-ml-ink rounded-bl-md'
                     : 'bg-blue-600 text-white rounded-br-md'
                 }`}>
                   {msg.texto}
@@ -145,7 +145,7 @@ export default function ChatbotSoporte() {
                   <button
                     key={q}
                     onClick={() => preguntaRapida(q)}
-                    className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors"
+                    className="px-3 py-1.5 bg-blue-50 text-ml-blue rounded-full text-xs font-medium hover:bg-ml-bg transition-colors"
                   >
                     {q}
                   </button>
@@ -163,7 +163,7 @@ export default function ChatbotSoporte() {
               placeholder="Escribi tu pregunta..."
               className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300"
             />
-            <button type="submit" className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">
+            <button type="submit" className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium ">
               Enviar
             </button>
           </form>

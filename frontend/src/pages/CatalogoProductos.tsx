@@ -119,18 +119,18 @@ export default function CatalogoProductos() {
             La búsqueda de texto vive en el buscador global del navbar (evita el
             doble buscador). Acá mostramos el término activo y el toggle de filtros. */}
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 text-sm text-gray-500 min-w-0 truncate">
+          <div className="flex-1 text-sm text-ml-muted min-w-0 truncate">
             {busqueda
-              ? <>Resultados para <span className="font-semibold text-gray-800">&ldquo;{busqueda}&rdquo;</span></>
+              ? <>Resultados para <span className="font-semibold text-ml-ink">&ldquo;{busqueda}&rdquo;</span></>
               : categoria
-                ? <>Categoría <span className="font-semibold text-gray-800">{categoria}</span></>
+                ? <>Categoría <span className="font-semibold text-ml-ink">{categoria}</span></>
                 : 'Explorá todo el catálogo de tiendas locales'}
           </div>
           <button
             type="button"
             onClick={() => setMostrarFiltros(!mostrarFiltros)}
             className={`shrink-0 px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors flex items-center gap-2 ${
-              mostrarFiltros ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+              mostrarFiltros ? 'bg-ml-bg text-blue-700' : 'bg-white text-ml-soft border border-ml-line hover:bg-gray-50'
             }`}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M6 12h12M10 20h4" /></svg>

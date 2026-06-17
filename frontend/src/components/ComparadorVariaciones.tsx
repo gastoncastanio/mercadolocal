@@ -13,7 +13,7 @@ export default function ComparadorVariaciones({
 }: ComparadorVariacionesProps) {
   if (variaciones.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-ml-muted">
         No hay variaciones disponibles
       </div>
     )
@@ -21,13 +21,13 @@ export default function ComparadorVariaciones({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800">
+      <h3 className="text-lg font-semibold text-ml-ink">
         Variaciones ({variaciones.length})
       </h3>
 
       <div className="space-y-4">
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Original</p>
+          <p className="text-sm font-medium text-ml-ink mb-2">Original</p>
           <div className="bg-gray-100 rounded-lg p-4 h-48 flex items-center justify-center">
             <img
               src={logoOriginal.url}
@@ -38,7 +38,7 @@ export default function ComparadorVariaciones({
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Variaciones</p>
+          <p className="text-sm font-medium text-ml-ink mb-2">Variaciones</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {variaciones.map((variacion, index) => (
               <button

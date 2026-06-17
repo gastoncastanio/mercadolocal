@@ -316,11 +316,11 @@ export function BannerFlotanteInstalar() {
 
   return (
     <div className="fixed bottom-4 left-3 right-3 z-50 sm:left-auto sm:right-4 sm:max-w-sm animate-slide-up">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 relative">
+      <div className="bg-white rounded-2xl shadow-2xl border border-ml-line2 p-4 relative">
         {/* Botón cerrar */}
         <button
           onClick={handleCerrar}
-          className="absolute -top-2 -right-2 w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold transition-colors shadow-sm"
+          className="absolute -top-2 -right-2 w-7 h-7 bg-gray-100 hover:bg-ml-bg rounded-full flex items-center justify-center text-ml-muted text-xs font-bold transition-colors shadow-sm"
         >
           &#x2715;
         </button>
@@ -333,14 +333,14 @@ export function BannerFlotanteInstalar() {
 
           {/* Contenido */}
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900 text-sm">MercadoLocal</p>
-            <p className="text-xs text-gray-500 truncate">Instal&aacute; la app en 30 seg &middot; +{installCount} la usan</p>
+            <p className="font-bold text-ml-ink text-sm">MercadoLocal</p>
+            <p className="text-xs text-ml-muted truncate">Instal&aacute; la app en 30 seg &middot; +{installCount} la usan</p>
           </div>
 
           {/* CTA */}
           <button
             onClick={handleInstalar}
-            className="flex-shrink-0 bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            className="flex-shrink-0 bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl "
           >
             Instalar
           </button>

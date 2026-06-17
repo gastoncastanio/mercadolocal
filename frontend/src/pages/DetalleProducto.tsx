@@ -103,7 +103,7 @@ export default function DetalleProducto() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-3">
+        <div className="flex items-center gap-1.5 text-[13px] text-ml-muted mb-3">
           <Link to="/" className="hover:text-ml-blue">Volver al listado</Link>
           <span className="text-gray-300">|</span>
           <Link to="/catalogo" className="hover:text-ml-blue">Cat&aacute;logo</Link>
@@ -120,7 +120,7 @@ export default function DetalleProducto() {
           {/* Top section: 3 columns - images | info | buy panel */}
           <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_350px]">
             {/* LEFT: Images + Product Info */}
-            <div className="grid md:grid-cols-[1fr_1fr] border-r border-gray-100">
+            <div className="grid md:grid-cols-[1fr_1fr] border-r border-ml-line2">
               {/* Image gallery */}
               <div className="p-4">
                 <div className="flex gap-2">
@@ -133,7 +133,7 @@ export default function DetalleProducto() {
                           onMouseEnter={() => setImagenActual(i)}
                           onClick={() => setImagenActual(i)}
                           className={`w-[44px] h-[44px] rounded border overflow-hidden shrink-0 transition-colors ${
-                            i === imagenActual ? 'border-ml-blue' : 'border-gray-200 hover:border-ml-purple/40'
+                            i === imagenActual ? 'border-ml-blue' : 'border-ml-line hover:border-ml-purple/40'
                           }`}
                         >
                           <img src={img} alt="" className="w-full h-full object-contain" />
@@ -159,7 +159,7 @@ export default function DetalleProducto() {
                 </div>
 
                 {/* Share & favorite row */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-ml-line2">
                   <BotonCompartir producto={producto} />
                   <button
                     onClick={toggleFavorito}
@@ -173,9 +173,9 @@ export default function DetalleProducto() {
               </div>
 
               {/* Product info center column */}
-              <div className="p-5 border-l border-gray-100">
+              <div className="p-5 border-l border-ml-line2">
                 {/* Condition + sales */}
-                <div className="flex items-center gap-1 text-[13px] text-gray-500 mb-2">
+                <div className="flex items-center gap-1 text-[13px] text-ml-muted mb-2">
                   <span>{condicionLabel[producto.condicion || 'nuevo']}</span>
                   {producto.totalVentas > 0 && (
                     <>
@@ -191,7 +191,7 @@ export default function DetalleProducto() {
                 {/* Rating */}
                 {producto.calificacion > 0 && (
                   <div className="flex items-center gap-1 mb-4">
-                    <span className="text-sm font-medium text-gray-800">{producto.calificacion.toFixed(1)}</span>
+                    <span className="text-sm font-medium text-ml-ink">{producto.calificacion.toFixed(1)}</span>
                     <div className="flex">
                       {[1,2,3,4,5].map(s => (
                         <span key={s} className={`text-xs ${s <= Math.round(producto.calificacion) ? 'text-ml-blue' : 'text-gray-300'}`}>
@@ -205,20 +205,20 @@ export default function DetalleProducto() {
                 {/* Price section - ML style */}
                 <div className="mb-5">
                   {precioAnterior && (
-                    <p className="text-sm text-gray-400 line-through mb-0.5">
+                    <p className="text-sm text-ml-muted line-through mb-0.5">
                       ${precioAnterior.toLocaleString('es-AR')}
                     </p>
                   )}
                   <div className="flex items-center gap-2">
-                    <p className="text-[36px] font-light text-gray-900 leading-none">
+                    <p className="text-[36px] font-light text-ml-ink leading-none">
                       ${producto.precio.toLocaleString('es-AR')}
                     </p>
                     {porcentajeOff && (
                       <span className="text-lg font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-[15px] text-gray-500 font-normal mt-2">
-                    en 12x ${cuota12.toLocaleString('es-AR')} <span className="text-xs text-gray-400">(precio referencial)</span>
+                  <p className="text-[15px] text-ml-muted font-normal mt-2">
+                    en 12x ${cuota12.toLocaleString('es-AR')} <span className="text-xs text-ml-muted">(precio referencial)</span>
                   </p>
                   <Link to="#cuotas" className="text-[13px] text-ml-blue hover:text-ml-violet">
                     Calcular cuotas con tu tarjeta
@@ -231,8 +231,8 @@ export default function DetalleProducto() {
                   producto.entrega.envioPropio.activo ||
                   producto.entrega.envioCorreo.activo
                 ) && (
-                  <div className="mb-4 border border-gray-200 rounded-xl p-3 bg-gray-50">
-                    <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+                  <div className="mb-4 border border-ml-line rounded-xl p-3 bg-gray-50">
+                    <p className="text-xs font-bold text-ml-soft uppercase tracking-wide mb-2">
                       Cómo recibís este producto
                     </p>
                     <div className="space-y-2">
@@ -240,14 +240,14 @@ export default function DetalleProducto() {
                         <div className="flex items-start gap-2">
                           <span className="text-lg leading-none mt-0.5">🏪</span>
                           <div className="flex-1 text-sm">
-                            <p className="font-semibold text-gray-800">
+                            <p className="font-semibold text-ml-ink">
                               Retiro en local <span className="text-green-600 font-normal">— Sin costo</span>
                             </p>
                             {producto.entrega.retiroEnLocal.direccion && (
-                              <p className="text-xs text-gray-600">{producto.entrega.retiroEnLocal.direccion}</p>
+                              <p className="text-xs text-ml-soft">{producto.entrega.retiroEnLocal.direccion}</p>
                             )}
                             {producto.entrega.retiroEnLocal.horarios && (
-                              <p className="text-[11px] text-gray-500">{producto.entrega.retiroEnLocal.horarios}</p>
+                              <p className="text-[11px] text-ml-muted">{producto.entrega.retiroEnLocal.horarios}</p>
                             )}
                           </div>
                         </div>
@@ -256,14 +256,14 @@ export default function DetalleProducto() {
                         <div className="flex items-start gap-2">
                           <span className="text-lg leading-none mt-0.5">🛵</span>
                           <div className="flex-1 text-sm">
-                            <p className="font-semibold text-gray-800">
+                            <p className="font-semibold text-ml-ink">
                               Envío propio del vendedor
                             </p>
                             {producto.entrega.envioPropio.zonas && (
-                              <p className="text-xs text-gray-600">Zonas: {producto.entrega.envioPropio.zonas}</p>
+                              <p className="text-xs text-ml-soft">Zonas: {producto.entrega.envioPropio.zonas}</p>
                             )}
                             {producto.entrega.envioPropio.notas && (
-                              <p className="text-[11px] text-gray-500">{producto.entrega.envioPropio.notas}</p>
+                              <p className="text-[11px] text-ml-muted">{producto.entrega.envioPropio.notas}</p>
                             )}
                           </div>
                         </div>
@@ -272,16 +272,16 @@ export default function DetalleProducto() {
                         <div className="flex items-start gap-2">
                           <span className="text-lg leading-none mt-0.5">📦</span>
                           <div className="flex-1 text-sm">
-                            <p className="font-semibold text-gray-800">Envío por correo</p>
+                            <p className="font-semibold text-ml-ink">Envío por correo</p>
                             {producto.entrega.envioCorreo.empresas && (
-                              <p className="text-xs text-gray-600">{producto.entrega.envioCorreo.empresas}</p>
+                              <p className="text-xs text-ml-soft">{producto.entrega.envioCorreo.empresas}</p>
                             )}
-                            <p className="text-[11px] text-gray-500">A coordinar con el vendedor</p>
+                            <p className="text-[11px] text-ml-muted">A coordinar con el vendedor</p>
                           </div>
                         </div>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500 italic mt-3 border-t border-gray-200 pt-2">
+                    <p className="text-[11px] text-ml-muted italic mt-3 border-t border-ml-line pt-2">
                       💡 El costo del envío se coordina con el vendedor después de comprar. No se procesa por la app.
                     </p>
                   </div>
@@ -290,7 +290,7 @@ export default function DetalleProducto() {
                 {/* Stock */}
                 <div className="mb-4">
                   {producto.stock > 0 ? (
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-ml-ink">
                       Stock disponible
                     </p>
                   ) : (
@@ -306,21 +306,21 @@ export default function DetalleProducto() {
                 {/* Description short */}
                 {producto.descripcion && (
                   <div className="mb-4">
-                    <h3 className="font-semibold text-sm text-gray-800 mb-1">Lo que ten&eacute;s que saber</h3>
-                    <p className="text-[13px] text-gray-600 leading-relaxed line-clamp-4">{producto.descripcion}</p>
+                    <h3 className="font-semibold text-sm text-ml-ink mb-1">Lo que ten&eacute;s que saber</h3>
+                    <p className="text-[13px] text-ml-soft leading-relaxed line-clamp-4">{producto.descripcion}</p>
                   </div>
                 )}
 
                 {/* Caracteristicas preview */}
                 {producto.caracteristicas && producto.caracteristicas.length > 0 && (
                   <div>
-                    <h3 className="font-semibold text-sm text-gray-800 mb-2">Caracter&iacute;sticas principales</h3>
+                    <h3 className="font-semibold text-sm text-ml-ink mb-2">Caracter&iacute;sticas principales</h3>
                     <ul className="space-y-1">
                       {(verTodasCaract ? producto.caracteristicas : producto.caracteristicas.slice(0, 5)).map((c, i) => (
                         <li key={i} className="flex text-[13px]">
-                          <span className="text-gray-400 mr-2">&bull;</span>
-                          <span className="text-gray-500">{c.clave}:</span>
-                          <span className="ml-1 text-gray-800">{c.valor}</span>
+                          <span className="text-ml-muted mr-2">&bull;</span>
+                          <span className="text-ml-muted">{c.clave}:</span>
+                          <span className="ml-1 text-ml-ink">{c.valor}</span>
                         </li>
                       ))}
                     </ul>
@@ -338,12 +338,12 @@ export default function DetalleProducto() {
             </div>
 
             {/* RIGHT: Buy panel (sticky on desktop) */}
-            <div className="p-5 lg:border-l border-gray-100">
+            <div className="p-5 lg:border-l border-ml-line2">
               <div className="lg:sticky lg:top-[80px]">
                 {/* Seller info mini */}
                 {tienda && typeof tienda === 'object' && (
-                  <div className="mb-4 pb-4 border-b border-gray-100">
-                    <p className="text-[13px] text-gray-500 mb-1">Vendido por</p>
+                  <div className="mb-4 pb-4 border-b border-ml-line2">
+                    <p className="text-[13px] text-ml-muted mb-1">Vendido por</p>
                     <Link to={`/tienda/${tienda._id}`} className="text-sm text-ml-blue hover:text-ml-violet font-medium">
                       {tienda.nombre}
                     </Link>
@@ -355,7 +355,7 @@ export default function DetalleProducto() {
                           </span>
                         ))}
                         {(tienda.totalVentas ?? 0) > 0 && (
-                          <span className="text-xs text-gray-400 ml-1">{tienda.totalVentas} ventas</span>
+                          <span className="text-xs text-ml-muted ml-1">{tienda.totalVentas} ventas</span>
                         )}
                       </div>
                     )}
@@ -365,40 +365,40 @@ export default function DetalleProducto() {
                 {/* Price in buy panel */}
                 <div className="mb-4">
                   {precioAnterior && (
-                    <p className="text-xs text-gray-400 line-through">${precioAnterior.toLocaleString('es-AR')}</p>
+                    <p className="text-xs text-ml-muted line-through">${precioAnterior.toLocaleString('es-AR')}</p>
                   )}
                   <div className="flex items-center gap-2">
-                    <p className="text-[32px] font-light text-gray-900 leading-none">
+                    <p className="text-[32px] font-light text-ml-ink leading-none">
                       ${producto.precio.toLocaleString('es-AR')}
                     </p>
                     {porcentajeOff && (
                       <span className="text-base font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    en 6x ${cuota6.toLocaleString('es-AR')} <span className="text-xs text-gray-400">(ver cuotas)</span>
+                  <p className="text-sm text-ml-muted mt-1">
+                    en 6x ${cuota6.toLocaleString('es-AR')} <span className="text-xs text-ml-muted">(ver cuotas)</span>
                   </p>
                 </div>
 
                 {/* Envio */}
                 {producto.envioGratis && (
-                  <div className="flex items-start gap-2 mb-4 pb-4 border-b border-gray-100">
+                  <div className="flex items-start gap-2 mb-4 pb-4 border-b border-ml-line2">
                     <svg className="w-4 h-4 text-green-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
                     </svg>
                     <div>
                       <p className="text-sm text-green-600 font-semibold">Env&iacute;o gratis</p>
-                      <p className="text-[11px] text-gray-400">El vendedor cubre el costo</p>
+                      <p className="text-[11px] text-ml-muted">El vendedor cubre el costo</p>
                     </div>
                   </div>
                 )}
 
                 {/* Stock info */}
-                <p className={`text-sm mb-3 ${producto.stock > 0 ? 'text-gray-800' : 'text-red-600 font-semibold'}`}>
+                <p className={`text-sm mb-3 ${producto.stock > 0 ? 'text-ml-ink' : 'text-red-600 font-semibold'}`}>
                   {producto.stock > 0 ? (
                     <>
                       Stock disponible
-                      <span className="text-gray-400 text-xs ml-1">({producto.stock} {producto.stock === 1 ? 'unidad' : 'disponibles'})</span>
+                      <span className="text-ml-muted text-xs ml-1">({producto.stock} {producto.stock === 1 ? 'unidad' : 'disponibles'})</span>
                     </>
                   ) : 'Sin stock'}
                 </p>
@@ -407,17 +407,17 @@ export default function DetalleProducto() {
                   <>
                     {/* Quantity selector */}
                     <div className="flex items-center gap-2 mb-5">
-                      <span className="text-sm text-gray-600">Cantidad:</span>
+                      <span className="text-sm text-ml-soft">Cantidad:</span>
                       <select
                         value={cantidad}
                         onChange={e => setCantidad(Number(e.target.value))}
-                        className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                        className="border border-ml-line rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
                       >
                         {Array.from({ length: Math.min(producto.stock, 10) }, (_, i) => i + 1).map(n => (
                           <option key={n} value={n}>{n} {n === 1 ? 'unidad' : 'unidades'}</option>
                         ))}
                       </select>
-                      <span className="text-xs text-gray-400">({producto.stock} disponibles)</span>
+                      <span className="text-xs text-ml-muted">({producto.stock} disponibles)</span>
                     </div>
 
                     {/* Buy buttons */}
@@ -444,33 +444,33 @@ export default function DetalleProducto() {
                 )}
 
                 {/* Garantia & devoluciones */}
-                <div className="mt-5 pt-4 border-t border-gray-100 space-y-3">
+                <div className="mt-5 pt-4 border-t border-ml-line2 space-y-3">
                   <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-ml-muted mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                     <div>
-                      <p className="text-[13px] text-gray-800">Compra Protegida</p>
-                      <p className="text-[11px] text-gray-400">recib&iacute; el producto que esperabas o te devolvemos tu dinero</p>
+                      <p className="text-[13px] text-ml-ink">Compra Protegida</p>
+                      <p className="text-[11px] text-ml-muted">recib&iacute; el producto que esperabas o te devolvemos tu dinero</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4 text-ml-muted mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                     <div>
-                      <p className="text-[13px] text-gray-800">Devoluci&oacute;n gratis</p>
-                      <p className="text-[11px] text-gray-400">Ten&eacute;s 30 d&iacute;as desde que lo recib&iacute;s</p>
+                      <p className="text-[13px] text-ml-ink">Devoluci&oacute;n gratis</p>
+                      <p className="text-[11px] text-ml-muted">Ten&eacute;s 30 d&iacute;as desde que lo recib&iacute;s</p>
                     </div>
                   </div>
                   {producto.garantia && (
                     <div className="flex items-start gap-2">
-                      <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4 text-ml-muted mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path d="M5 13l4 4L19 7" />
                       </svg>
                       <div>
-                        <p className="text-[13px] text-gray-800">Garant&iacute;a</p>
-                        <p className="text-[11px] text-gray-400">{producto.garantia}</p>
+                        <p className="text-[13px] text-ml-ink">Garant&iacute;a</p>
+                        <p className="text-[11px] text-ml-muted">{producto.garantia}</p>
                       </div>
                     </div>
                   )}
@@ -490,8 +490,8 @@ export default function DetalleProducto() {
                 <div className="divide-y divide-gray-100">
                   {producto.caracteristicas.map((c, i) => (
                     <div key={i} className={`grid grid-cols-2 py-2.5 text-sm ${i % 2 === 0 ? 'bg-gray-50' : ''} -mx-2 px-2 rounded`}>
-                      <span className="text-gray-500">{c.clave}</span>
-                      <span className="text-gray-800">{c.valor}</span>
+                      <span className="text-ml-muted">{c.clave}</span>
+                      <span className="text-ml-ink">{c.valor}</span>
                     </div>
                   ))}
                 </div>
@@ -502,7 +502,7 @@ export default function DetalleProducto() {
             {producto.descripcion && (
               <div className="bg-white rounded-2xl border border-ml-line p-5 sm:p-6">
                 <h2 className="font-display text-[22px] font-semibold text-ml-ink mb-3">Descripci&oacute;n</h2>
-                <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{producto.descripcion}</p>
+                <p className="text-sm text-ml-soft leading-relaxed whitespace-pre-line">{producto.descripcion}</p>
               </div>
             )}
 
@@ -541,17 +541,17 @@ export default function DetalleProducto() {
               >
                 <div className="flex items-center gap-3 mb-3">
                   {tienda.logo ? (
-                    <img src={tienda.logo} alt={tienda.nombre} className="w-12 h-12 rounded-full object-cover border border-gray-200 shrink-0" />
+                    <img src={tienda.logo} alt={tienda.nombre} className="w-12 h-12 rounded-full object-cover border border-ml-line shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-xl shrink-0">&#x1F3EA;</div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate group-hover:text-ml-blue">{tienda.nombre}</p>
-                    <p className="text-xs text-gray-400">&#x1F4CD; {tienda.ciudad}</p>
+                    <p className="font-medium text-ml-ink truncate group-hover:text-ml-blue">{tienda.nombre}</p>
+                    <p className="text-xs text-ml-muted">&#x1F4CD; {tienda.ciudad}</p>
                   </div>
                 </div>
                 {(tienda.calificacion ?? 0) > 0 && (
-                  <div className="flex items-center gap-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                  <div className="flex items-center gap-3 pt-3 border-t border-ml-line2 text-xs text-ml-muted">
                     <span>&#x2B50; {(tienda.calificacion ?? 0).toFixed(1)}</span>
                     {(tienda.totalVentas ?? 0) > 0 && <span>{tienda.totalVentas} ventas</span>}
                     <span className="text-ml-blue ml-auto font-medium">Ver tienda</span>

@@ -164,7 +164,7 @@ export default function Registro() {
               className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
               placeholder="Ej: 35.123.456"
             />
-            <p className="text-xs text-gray-400 mt-1">Requerido para verificar tu identidad. No se comparte públicamente.</p>
+            <p className="text-xs text-ml-muted mt-1">Requerido para verificar tu identidad. No se comparte públicamente.</p>
           </div>
 
           <div>
@@ -224,9 +224,9 @@ export default function Registro() {
                 type="checkbox"
                 checked={quiereTienda}
                 onChange={(e) => { setQuiereTienda(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-ml-line text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-ml-soft">
                 Quiero <strong>abrir mi tienda ya</strong> para empezar a vender (opcional)
               </span>
             </label>
@@ -234,7 +234,7 @@ export default function Registro() {
 
           {quiereTienda && (
             <div className="space-y-4 p-4 bg-[#f6f3ff] rounded-xl border border-[#e7dcff]">
-              <h3 className="font-semibold text-gray-800 text-sm">Datos de tu tienda</h3>
+              <h3 className="font-semibold text-ml-ink text-sm">Datos de tu tienda</h3>
 
               <div>
                 <label className="block text-sm font-semibold text-ml-slate mb-1">Nombre de la tienda</label>
@@ -291,9 +291,9 @@ export default function Registro() {
                 type="checkbox"
                 checked={mayorDeEdad}
                 onChange={(e) => { setMayorDeEdad(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-ml-line text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-ml-soft">
                 Declaro bajo juramento ser <strong>mayor de 18 años</strong>. Entiendo que proporcionar información falsa puede resultar en la suspensión de mi cuenta.
               </span>
             </label>
@@ -303,9 +303,9 @@ export default function Registro() {
                 type="checkbox"
                 checked={aceptaTerminos}
                 onChange={(e) => { setAceptaTerminos(e.target.checked); setError('') }}
-                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-ml-violet focus:ring-ml-purple/30 shrink-0"
+                className="mt-0.5 w-5 h-5 rounded border-ml-line text-ml-violet focus:ring-ml-purple/30 shrink-0"
               />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-ml-soft">
                 Acepto los{' '}
                 <Link to="/terminos" target="_blank" className="text-ml-blue hover:underline font-bold">Términos y Condiciones</Link>
                 {' '}y la{' '}
@@ -323,7 +323,7 @@ export default function Registro() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-ml-muted mt-6">
           ¿Ya tienes cuenta?{' '}
           <Link to="/login" className="text-ml-blue font-bold hover:underline">
             Iniciar Sesión

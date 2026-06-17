@@ -77,10 +77,10 @@ export default function SelectorEstilo({ onSelect, estiloSeleccionado }: Selecto
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-lg font-semibold text-ml-ink mb-4">
           Elige el Estilo de tu Logo
         </h3>
-        <p className="text-sm text-gray-600 mb-6">
+        <p className="text-sm text-ml-soft mb-6">
           Selecciona el estilo que mejor representa tu marca. Podrás personalizarlo después.
         </p>
       </div>
@@ -93,19 +93,19 @@ export default function SelectorEstilo({ onSelect, estiloSeleccionado }: Selecto
             className={`p-4 rounded-lg border-2 transition-all text-left ${
               estiloSeleccionado === estilo.id
                 ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                : 'border-ml-line bg-white hover:border-ml-line'
             }`}
           >
             <div className="flex items-start justify-between mb-2">
               <div>
-                <h4 className="font-semibold text-gray-900">{estilo.nombre}</h4>
-                <p className="text-sm text-gray-600">{estilo.descripcion}</p>
+                <h4 className="font-semibold text-ml-ink">{estilo.nombre}</h4>
+                <p className="text-sm text-ml-soft">{estilo.descripcion}</p>
               </div>
               {estiloSeleccionado === estilo.id && (
-                <div className="text-blue-600 text-xl">✓</div>
+                <div className="text-ml-blue text-xl">✓</div>
               )}
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-ml-muted">
               Ej: {estilo.ejemplos.join(', ')}
             </p>
           </button>

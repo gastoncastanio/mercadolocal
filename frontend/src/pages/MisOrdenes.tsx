@@ -197,7 +197,7 @@ export default function MisOrdenes() {
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-3">🔄</div>
-          <p className="text-gray-500 text-sm">Cargando tus pedidos...</p>
+          <p className="text-ml-muted text-sm">Cargando tus pedidos...</p>
         </div>
       </div>
     )
@@ -207,21 +207,21 @@ export default function MisOrdenes() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Mis pedidos</h1>
+          <h1 className="text-3xl font-bold text-ml-ink">Mis pedidos</h1>
           <button
             onClick={cargarOrdenes}
-            className="text-sm text-blue-600 font-medium hover:underline"
+            className="text-sm text-ml-blue font-medium hover:underline"
           >
             ↻ Actualizar
           </button>
         </div>
 
         {ordenes.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-ml-line2">
             <p className="text-5xl mb-4">📦</p>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Todavía no hiciste compras</h3>
-            <p className="text-gray-500 text-sm mb-6">Cuando compres algo, vas a poder seguir el envío desde acá.</p>
-            <Link to="/catalogo" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors">
+            <h3 className="text-xl font-semibold text-ml-ink mb-2">Todavía no hiciste compras</h3>
+            <p className="text-ml-muted text-sm mb-6">Cuando compres algo, vas a poder seguir el envío desde acá.</p>
+            <Link to="/catalogo" className="inline-block px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold">
               Ver catálogo
             </Link>
           </div>
@@ -257,21 +257,21 @@ export default function MisOrdenes() {
               const tienePregunta = `Hola, te escribo por mi pedido #${orden._id.slice(-8).toUpperCase()}.`
 
               return (
-                <div key={orden._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div key={orden._id} className="bg-white rounded-2xl shadow-sm border border-ml-line2 overflow-hidden">
                   {/* Header */}
-                  <div className={`px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2 ${
+                  <div className={`px-5 py-4 border-b border-ml-line2 flex items-center justify-between flex-wrap gap-2 ${
                     isPendiente ? 'bg-orange-50' : ''
                   }`}>
                     <div>
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                      <p className="text-[11px] font-bold text-ml-muted uppercase tracking-wider">
                         Pedido #{orden._id.slice(-8).toUpperCase()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-ml-muted mt-0.5">
                         {tiempoRelativo(orden.createdAt)} · {formatearFechaHora(orden.createdAt)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-800">${orden.total.toLocaleString('es-AR')}</p>
+                      <p className="text-2xl font-bold text-ml-ink">${orden.total.toLocaleString('es-AR')}</p>
                     </div>
                   </div>
 
@@ -302,10 +302,10 @@ export default function MisOrdenes() {
 
                   {/* Timeline visual (no cancelada) */}
                   {!isCancelada && (
-                    <div className="px-5 py-5 border-b border-gray-100">
+                    <div className="px-5 py-5 border-b border-ml-line2">
                       <div className="flex items-center justify-between gap-2 relative">
                         {/* Línea base */}
-                        <div className="absolute top-5 left-5 right-5 h-0.5 bg-gray-200" />
+                        <div className="absolute top-5 left-5 right-5 h-0.5 bg-ml-bg" />
 
                         {timeline.map((step, idx) => (
                           <div key={step.key} className="flex flex-col items-center flex-1 relative z-10">
@@ -315,18 +315,18 @@ export default function MisOrdenes() {
                                   ? 'bg-green-500 text-white border-green-500'
                                   : step.activo
                                   ? 'bg-blue-500 text-white border-blue-500 animate-pulse'
-                                  : 'bg-white text-gray-400 border-gray-300'
+                                  : 'bg-white text-ml-muted border-ml-line'
                               }`}
                             >
                               {step.completado ? '✓' : step.icon}
                             </div>
                             <p className={`text-[11px] mt-2 text-center font-medium leading-tight ${
-                              step.completado ? 'text-green-700' : step.activo ? 'text-blue-700' : 'text-gray-400'
+                              step.completado ? 'text-green-700' : step.activo ? 'text-blue-700' : 'text-ml-muted'
                             }`}>
                               {step.label}
                             </p>
                             {step.fecha && (step.completado || step.activo) && (
-                              <p className="text-[10px] text-gray-400 mt-0.5">
+                              <p className="text-[10px] text-ml-muted mt-0.5">
                                 {tiempoRelativo(step.fecha)}
                               </p>
                             )}
@@ -346,8 +346,8 @@ export default function MisOrdenes() {
 
                   {/* Tienda vendedora (con WhatsApp) */}
                   {tiendaPrincipal && !isCancelada && (
-                    <div className="px-5 py-4 bg-gray-50 border-b border-gray-100">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                    <div className="px-5 py-4 bg-gray-50 border-b border-ml-line2">
+                      <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-2">
                         Vendido por
                       </p>
                       <div className="flex items-center gap-3 flex-wrap">
@@ -355,17 +355,17 @@ export default function MisOrdenes() {
                           <img
                             src={tiendaPrincipal.logo}
                             alt={tiendaPrincipal.nombre}
-                            className="w-10 h-10 rounded-lg object-cover border border-gray-200"
+                            className="w-10 h-10 rounded-lg object-cover border border-ml-line"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center font-bold text-blue-600">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-ml-bg to-ml-bg flex items-center justify-center font-bold text-ml-blue">
                             {tiendaPrincipal.nombre.charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 truncate">{tiendaPrincipal.nombre}</p>
+                          <p className="font-semibold text-ml-ink truncate">{tiendaPrincipal.nombre}</p>
                           {tiendaPrincipal.ciudad && (
-                            <p className="text-xs text-gray-500 truncate">📍 {tiendaPrincipal.ciudad}</p>
+                            <p className="text-xs text-ml-muted truncate">📍 {tiendaPrincipal.ciudad}</p>
                           )}
                         </div>
                         {tiendaPrincipal.telefono && (
@@ -387,7 +387,7 @@ export default function MisOrdenes() {
 
                   {/* Productos */}
                   {!isCancelada && (
-                    <div className="px-5 py-4 border-b border-gray-100">
+                    <div className="px-5 py-4 border-b border-ml-line2">
                       <div className="space-y-3">
                         {orden.items.map((item, i) => {
                           const productoPop = typeof item.productoId === 'object' ? item.productoId : null
@@ -395,19 +395,19 @@ export default function MisOrdenes() {
                           return (
                             <div key={i} className="flex items-center gap-3">
                               {imagen ? (
-                                <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                                <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-ml-line flex-shrink-0" />
                               ) : (
                                 <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
                                   📦
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-800 truncate">{item.nombre}</p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-sm font-medium text-ml-ink truncate">{item.nombre}</p>
+                                <p className="text-xs text-ml-muted">
                                   {item.cantidad} × ${item.precioUnitario.toLocaleString('es-AR')}
                                 </p>
                               </div>
-                              <p className="text-sm font-semibold text-gray-800 flex-shrink-0">
+                              <p className="text-sm font-semibold text-ml-ink flex-shrink-0">
                                 ${item.subtotal.toLocaleString('es-AR')}
                               </p>
                             </div>
@@ -454,13 +454,13 @@ export default function MisOrdenes() {
 
                   {/* Dirección de entrega */}
                   {!isCancelada && (
-                    <div className="px-5 py-4 border-b border-gray-100">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                    <div className="px-5 py-4 border-b border-ml-line2">
+                      <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-1">
                         Enviar a
                       </p>
-                      <p className="text-sm text-gray-700">📍 {orden.direccionEntrega}</p>
+                      <p className="text-sm text-ml-ink">📍 {orden.direccionEntrega}</p>
                       {orden.notasComprador && (
-                        <p className="text-xs text-gray-500 mt-1">Notas: {orden.notasComprador}</p>
+                        <p className="text-xs text-ml-muted mt-1">Notas: {orden.notasComprador}</p>
                       )}
                     </div>
                   )}
@@ -472,7 +472,7 @@ export default function MisOrdenes() {
                       {(isPagada || isEnviada || isCompletada) && (
                         <Link
                           to="/mis-disputas"
-                          className="text-xs text-gray-500 hover:text-gray-700 hover:underline"
+                          className="text-xs text-ml-muted hover:text-ml-ink hover:underline"
                         >
                           ¿Tuviste un problema?
                         </Link>
@@ -527,11 +527,11 @@ export default function MisOrdenes() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">✓</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">¿Recibiste tu pedido?</h2>
-            <p className="text-sm text-gray-600 mb-1">
+            <h2 className="text-xl font-bold text-ml-ink mb-2">¿Recibiste tu pedido?</h2>
+            <p className="text-sm text-ml-soft mb-1">
               Pedido #{confirmandoOrden._id.slice(-8).toUpperCase()}
             </p>
-            <p className="text-xs text-gray-500 mb-6">
+            <p className="text-xs text-ml-muted mb-6">
               Al confirmar, le decís al vendedor que todo llegó bien y se libera el pago.
               <br />
               <span className="font-semibold">Esta acción no se puede deshacer.</span>
@@ -539,7 +539,7 @@ export default function MisOrdenes() {
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmandoOrden(null)}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                className="flex-1 py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
               >
                 Todavía no
               </button>

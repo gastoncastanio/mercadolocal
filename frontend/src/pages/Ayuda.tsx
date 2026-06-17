@@ -70,8 +70,8 @@ export default function Ayuda() {
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-800">Centro de Ayuda</h1>
-          <p className="text-gray-500 mt-2">Encontra respuestas a las preguntas mas frecuentes</p>
+          <h1 className="text-3xl font-bold text-ml-ink">Centro de Ayuda</h1>
+          <p className="text-ml-muted mt-2">Encontra respuestas a las preguntas mas frecuentes</p>
         </div>
 
         {/* Categorias */}
@@ -83,7 +83,7 @@ export default function Ayuda() {
               className={`p-4 rounded-2xl text-center transition-all ${
                 categoriaActiva === i
                   ? 'bg-blue-600 text-white shadow-lg scale-105'
-                  : 'bg-white text-gray-700 shadow-sm hover:shadow-md'
+                  : 'bg-white text-ml-ink shadow-sm hover:shadow-md'
               }`}
             >
               <span className="text-2xl block mb-1">{cat.icono}</span>
@@ -95,7 +95,7 @@ export default function Ayuda() {
         {/* Preguntas */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-ml-ink flex items-center gap-2">
               <span>{categorias[categoriaActiva].icono}</span>
               {categorias[categoriaActiva].titulo}
             </h2>
@@ -107,16 +107,16 @@ export default function Ayuda() {
                   onClick={() => setPreguntaAbierta(preguntaAbierta === i ? null : i)}
                   className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                 >
-                  <span className="font-medium text-gray-800 pr-4">{faq.pregunta}</span>
+                  <span className="font-medium text-ml-ink pr-4">{faq.pregunta}</span>
                   <svg
-                    className={`w-5 h-5 text-gray-400 shrink-0 transition-transform ${preguntaAbierta === i ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-ml-muted shrink-0 transition-transform ${preguntaAbierta === i ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
                 {preguntaAbierta === i && (
-                  <div className="px-6 pb-4 text-gray-600 text-sm leading-relaxed bg-blue-50/50">
+                  <div className="px-6 pb-4 text-ml-soft text-sm leading-relaxed bg-blue-50/50">
                     {faq.respuesta}
                   </div>
                 )}
@@ -127,31 +127,31 @@ export default function Ayuda() {
 
         {/* Contacto */}
         <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-bold text-gray-800 text-lg mb-4">No encontraste lo que buscabas?</h3>
+          <h3 className="font-bold text-ml-ink text-lg mb-4">No encontraste lo que buscabas?</h3>
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded-xl">
               <span className="text-2xl">📧</span>
-              <p className="font-semibold text-gray-800 mt-2">Email</p>
-              <p className="text-sm text-gray-600">soporte@mercadolocal.com.ar</p>
+              <p className="font-semibold text-ml-ink mt-2">Email</p>
+              <p className="text-sm text-ml-soft">soporte@mercadolocal.com.ar</p>
             </div>
             <div className="p-4 bg-green-50 rounded-xl">
               <span className="text-2xl">💬</span>
-              <p className="font-semibold text-gray-800 mt-2">Chat</p>
-              <p className="text-sm text-gray-600">Usa el bot en la esquina inferior derecha</p>
+              <p className="font-semibold text-ml-ink mt-2">Chat</p>
+              <p className="text-sm text-ml-soft">Usa el bot en la esquina inferior derecha</p>
             </div>
             <div className="p-4 bg-purple-50 rounded-xl">
               <span className="text-2xl">📋</span>
-              <p className="font-semibold text-gray-800 mt-2">Reclamos</p>
-              <Link to="/mis-disputas" className="text-sm text-blue-600 hover:underline">Abrir reclamo formal</Link>
+              <p className="font-semibold text-ml-ink mt-2">Reclamos</p>
+              <Link to="/mis-disputas" className="text-sm text-ml-blue hover:underline">Abrir reclamo formal</Link>
             </div>
           </div>
         </div>
 
         {/* Links a politicas */}
         <div className="mt-6 flex flex-wrap gap-4 justify-center text-sm">
-          <Link to="/devoluciones" className="text-blue-600 hover:underline">Politica de devoluciones</Link>
-          <Link to="/terminos" className="text-blue-600 hover:underline">Terminos y condiciones</Link>
-          <Link to="/privacidad" className="text-blue-600 hover:underline">Politica de privacidad</Link>
+          <Link to="/devoluciones" className="text-ml-blue hover:underline">Politica de devoluciones</Link>
+          <Link to="/terminos" className="text-ml-blue hover:underline">Terminos y condiciones</Link>
+          <Link to="/privacidad" className="text-ml-blue hover:underline">Politica de privacidad</Link>
         </div>
       </div>
     </div>

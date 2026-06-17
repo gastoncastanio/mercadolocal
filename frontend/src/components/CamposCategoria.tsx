@@ -50,18 +50,18 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
     const valor = getValor(campo.id)
 
     const labelComun = (
-      <label htmlFor={`campo-${campo.id}`} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={`campo-${campo.id}`} className="block text-sm font-medium text-ml-ink mb-1">
         {campo.label}{' '}
         {campo.obligatorio ? (
           <span className="text-red-500">*</span>
         ) : (
-          <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+          <span className="text-ml-muted font-normal text-xs">(opcional)</span>
         )}
       </label>
     )
 
     const ayuda = campo.ayuda && (
-      <p className="text-xs text-gray-500 mt-1">{campo.ayuda}</p>
+      <p className="text-xs text-ml-muted mt-1">{campo.ayuda}</p>
     )
 
     switch (campo.tipo) {
@@ -73,7 +73,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               id={`campo-${campo.id}`}
               value={valor}
               onChange={e => setValor(campo.id, e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
             >
               <option value="">Elegí una opción...</option>
               {campo.opciones?.map(opt => (
@@ -103,7 +103,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
                 />
               </button>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium text-ml-ink">
                   {campo.label}{' '}
                   {campo.obligatorio && <span className="text-red-500">*</span>}
                 </p>
@@ -126,7 +126,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               min={campo.min}
               max={campo.max}
               placeholder={campo.placeholder}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>
@@ -141,7 +141,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               type="date"
               value={valor}
               onChange={e => setValor(campo.id, e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>
@@ -158,7 +158,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               maxLength={campo.maxLength}
               placeholder={campo.placeholder}
               rows={3}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none resize-none"
             />
             {ayuda}
           </div>
@@ -176,7 +176,7 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
               onChange={e => setValor(campo.id, e.target.value)}
               maxLength={campo.maxLength}
               placeholder={campo.placeholder}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
             />
             {ayuda}
           </div>
@@ -185,12 +185,12 @@ export default function CamposCategoria({ categoria, valores, onChange }: Campos
   }
 
   return (
-    <div className="space-y-4 border-t border-gray-100 pt-5">
+    <div className="space-y-4 border-t border-ml-line2 pt-5">
       <div>
-        <h3 className="text-sm font-bold text-gray-800 mb-1">
+        <h3 className="text-sm font-bold text-ml-ink mb-1">
           {categoria.icono} Datos específicos de {categoria.nombre.toLowerCase()}
         </h3>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ml-muted">
           Estos datos ayudan a los compradores a encontrar tu producto y a generar confianza.
         </p>
       </div>

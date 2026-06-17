@@ -117,7 +117,7 @@ export default function Notificaciones() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <span className="text-3xl">&#x1F514;</span>
-            <h1 className="text-3xl font-bold text-gray-800">Notificaciones</h1>
+            <h1 className="text-3xl font-bold text-ml-ink">Notificaciones</h1>
             {noLeidas > 0 && (
               <span className="bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
                 {noLeidas} sin leer
@@ -125,7 +125,7 @@ export default function Notificaciones() {
             )}
           </div>
           {noLeidas > 0 && (
-            <button onClick={leerTodas} className="text-sm text-blue-600 hover:underline font-medium">
+            <button onClick={leerTodas} className="text-sm text-ml-blue hover:underline font-medium">
               Marcar todas como le&iacute;das
             </button>
           )}
@@ -133,12 +133,12 @@ export default function Notificaciones() {
 
         {/* Activar notificaciones push (avisos con la app cerrada) */}
         {pushSoportado() && (
-          <div className="mb-6 flex items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+          <div className="mb-6 flex items-center justify-between gap-4 p-4 bg-white rounded-xl shadow-sm border border-ml-line2">
             <div className="min-w-0">
-              <p className="font-semibold text-gray-800 flex items-center gap-2">
+              <p className="font-semibold text-ml-ink flex items-center gap-2">
                 <span>&#x1F514;</span> Notificaciones en tu celular
               </p>
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-ml-muted mt-0.5">
                 Recib&iacute; avisos de ventas, pagos y mensajes aunque tengas la app cerrada.
               </p>
               {pushError && <p className="text-xs text-red-500 mt-1">{pushError}</p>}
@@ -148,8 +148,8 @@ export default function Notificaciones() {
               disabled={pushProcesando}
               className={`shrink-0 px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
                 pushActivo
-                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-gray-100 text-ml-ink hover:bg-ml-bg'
+                  : 'bg-blue-600 text-white '
               }`}
             >
               {pushProcesando ? '...' : pushActivo ? 'Desactivar' : 'Activar'}
@@ -164,30 +164,30 @@ export default function Notificaciones() {
         ) : items.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
             <p className="text-6xl mb-4">&#x1F515;</p>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">No tienes notificaciones</h2>
-            <p className="text-gray-500">Te avisaremos cuando pase algo importante.</p>
+            <h2 className="text-xl font-semibold text-ml-ink mb-2">No tienes notificaciones</h2>
+            <p className="text-ml-muted">Te avisaremos cuando pase algo importante.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {items.map(n => {
               const Contenido = (
-                <div className={`flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border ${n.leida ? 'border-gray-100' : 'border-blue-200 bg-blue-50/30'}`}>
+                <div className={`flex items-start gap-3 p-4 bg-white rounded-xl shadow-sm border ${n.leida ? 'border-ml-line2' : 'border-blue-200 bg-blue-50/30'}`}>
                   <div className="text-3xl shrink-0">{ICONOS[n.tipo] || '\u{1F514}'}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className={`font-semibold ${n.leida ? 'text-gray-700' : 'text-gray-900'}`}>
+                      <h3 className={`font-semibold ${n.leida ? 'text-ml-ink' : 'text-ml-ink'}`}>
                         {n.titulo}
                       </h3>
-                      <span className="text-xs text-gray-400 shrink-0">{formatFecha(n.createdAt)}</span>
+                      <span className="text-xs text-ml-muted shrink-0">{formatFecha(n.createdAt)}</span>
                     </div>
-                    {n.mensaje && <p className="text-sm text-gray-600 mt-1">{n.mensaje}</p>}
+                    {n.mensaje && <p className="text-sm text-ml-soft mt-1">{n.mensaje}</p>}
                     {!n.leida && (
                       <span className="inline-block mt-2 w-2 h-2 rounded-full bg-blue-500"></span>
                     )}
                   </div>
                   <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); eliminar(n._id) }}
-                    className="text-gray-400 hover:text-red-500 text-sm px-2"
+                    className="text-ml-muted hover:text-red-500 text-sm px-2"
                     aria-label="Eliminar"
                   >&#x2715;</button>
                 </div>

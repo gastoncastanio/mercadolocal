@@ -37,7 +37,7 @@ export default function Favoritos() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center gap-3 mb-6">
           <span className="text-3xl">&#x2764;&#xFE0F;</span>
-          <h1 className="text-3xl font-bold text-gray-800">Mis Favoritos</h1>
+          <h1 className="text-3xl font-bold text-ml-ink">Mis Favoritos</h1>
         </div>
 
         {cargando ? (
@@ -47,9 +47,9 @@ export default function Favoritos() {
         ) : productos.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
             <p className="text-6xl mb-4">&#x1F494;</p>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">A&uacute;n no tienes favoritos</h2>
-            <p className="text-gray-500 mb-6">Guard&aacute; productos tocando el coraz&oacute;n en cada publicaci&oacute;n.</p>
-            <Link to="/catalogo" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
+            <h2 className="text-2xl font-semibold text-ml-ink mb-2">A&uacute;n no tienes favoritos</h2>
+            <p className="text-ml-muted mb-6">Guard&aacute; productos tocando el coraz&oacute;n en cada publicaci&oacute;n.</p>
+            <Link to="/catalogo" className="inline-block px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold ">
               Explorar cat&aacute;logo
             </Link>
           </div>

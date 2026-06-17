@@ -19,10 +19,10 @@ interface OrdenSimple {
 
 const estadoBadge: Record<string, { bg: string; text: string; label: string }> = {
   abierta: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Abierta' },
-  en_revision: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'En Revision' },
+  en_revision: { bg: 'bg-ml-bg', text: 'text-blue-700', label: 'En Revision' },
   resuelta_comprador: { bg: 'bg-green-100', text: 'text-green-700', label: 'Resuelta (Comprador)' },
   resuelta_vendedor: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Resuelta (Vendedor)' },
-  cerrada: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cerrada' },
+  cerrada: { bg: 'bg-gray-100', text: 'text-ml-ink', label: 'Cerrada' },
 }
 
 const motivoLabels: Record<string, string> = {
@@ -108,7 +108,7 @@ export default function MisDisputas() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">⚖️ Mis Disputas</h1>
+          <h1 className="text-3xl font-bold text-ml-ink">⚖️ Mis Disputas</h1>
           <button
             onClick={abrirFormulario}
             className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
@@ -128,10 +128,10 @@ export default function MisDisputas() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Nueva Disputa</h2>
+                <h2 className="text-xl font-bold text-ml-ink">Nueva Disputa</h2>
                 <button
                   onClick={() => setMostrarForm(false)}
-                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                  className="text-ml-muted hover:text-ml-soft text-2xl"
                 >
                   ×
                 </button>
@@ -139,11 +139,11 @@ export default function MisDisputas() {
 
               <form onSubmit={enviarDisputa} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Orden</label>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">Orden</label>
                   <select
                     value={ordenId}
                     onChange={(e) => setOrdenId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
+                    className="w-full border border-ml-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="">Selecciona una orden</option>
                     {ordenes.map((o) => (
@@ -155,11 +155,11 @@ export default function MisDisputas() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">Motivo</label>
                   <select
                     value={motivo}
                     onChange={(e) => setMotivo(e.target.value)}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
+                    className="w-full border border-ml-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="">Selecciona un motivo</option>
                     <option value="producto_dañado">Producto danado</option>
@@ -170,13 +170,13 @@ export default function MisDisputas() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
+                  <label className="block text-sm font-medium text-ml-ink mb-1">Descripcion</label>
                   <textarea
                     value={descripcion}
                     onChange={(e) => setDescripcion(e.target.value)}
                     placeholder="Describe tu problema en detalle..."
                     rows={4}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
+                    className="w-full border border-ml-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
                   />
                 </div>
 
@@ -184,7 +184,7 @@ export default function MisDisputas() {
                   <button
                     type="button"
                     onClick={() => setMostrarForm(false)}
-                    className="flex-1 py-3 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 border border-ml-line rounded-xl text-ml-soft font-medium hover:bg-gray-50 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -205,7 +205,7 @@ export default function MisDisputas() {
         {disputas.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
             <p className="text-6xl mb-4">✅</p>
-            <p className="text-gray-500 text-lg">No tienes disputas</p>
+            <p className="text-ml-muted text-lg">No tienes disputas</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -215,10 +215,10 @@ export default function MisDisputas() {
                 <div key={d._id} className="bg-white rounded-2xl shadow-sm p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-ml-muted">
                         Orden #{getOrdenDisplay(d.ordenId)}
                       </p>
-                      <p className="font-semibold text-gray-800 mt-1">
+                      <p className="font-semibold text-ml-ink mt-1">
                         {motivoLabels[d.motivo] || d.motivo}
                       </p>
                     </div>
@@ -228,12 +228,12 @@ export default function MisDisputas() {
                       >
                         {badge.label}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-ml-muted">
                         {new Date(d.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
-                  <p className="text-gray-600 text-sm">{d.descripcion}</p>
+                  <p className="text-ml-soft text-sm">{d.descripcion}</p>
                   {d.resolucion && (
                     <div className="mt-3 p-3 bg-green-50 rounded-xl">
                       <p className="text-xs font-semibold text-green-700 mb-1">Resolucion</p>

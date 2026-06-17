@@ -76,7 +76,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setVerContraseña(v => !v)}
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600"
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-ml-muted hover:text-ml-soft"
                 aria-label={verContraseña ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 tabIndex={-1}
               >
@@ -100,7 +100,7 @@ export default function Login() {
           </Link>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p className="text-center text-sm text-ml-muted mt-4">
           &iquest;No ten&eacute;s cuenta?{' '}
           <Link to="/registro" className="text-ml-blue font-bold hover:underline">
             Registrarse

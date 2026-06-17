@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { Orden, Usuario } from '../types'
 
 const estadoColores: Record<string, string> = {
-  pagada: 'bg-blue-100 text-blue-700',
+  pagada: 'bg-ml-bg text-blue-700',
   enviada: 'bg-purple-100 text-purple-700',
   completada: 'bg-green-100 text-green-700',
   cancelada: 'bg-red-100 text-red-700',
@@ -166,7 +166,7 @@ export default function PedidosVendedor() {
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin text-4xl mb-3">🔄</div>
-          <p className="text-gray-500 text-sm">Cargando tus pedidos...</p>
+          <p className="text-ml-muted text-sm">Cargando tus pedidos...</p>
         </div>
       </div>
     )
@@ -177,14 +177,14 @@ export default function PedidosVendedor() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Pedidos recibidos</h1>
-            <p className="text-gray-500 text-sm mt-1">
+            <h1 className="text-3xl font-bold text-ml-ink">Pedidos recibidos</h1>
+            <p className="text-ml-muted text-sm mt-1">
               {tienda?.nombre || 'Tu tienda'} · {ordenes.length} pedido{ordenes.length === 1 ? '' : 's'} totales
             </p>
           </div>
           <button
             onClick={cargarOrdenes}
-            className="text-sm text-blue-600 font-medium hover:underline"
+            className="text-sm text-ml-blue font-medium hover:underline"
             title="Refrescar"
           >
             ↻ Actualizar
@@ -196,7 +196,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('todos')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+              filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Todos ({ordenes.length})
@@ -204,7 +204,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('pagada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'pagada' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+              filtro === 'pagada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Por enviar ({cuentaPorEstado.pagada})
@@ -212,7 +212,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('enviada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'enviada' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+              filtro === 'enviada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             En camino ({cuentaPorEstado.enviada})
@@ -220,7 +220,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('completada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'completada' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+              filtro === 'completada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Entregados ({cuentaPorEstado.completada})
@@ -228,12 +228,12 @@ export default function PedidosVendedor() {
         </div>
 
         {ordenesVisibles.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-ml-line2">
             <p className="text-5xl mb-4">📦</p>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            <h3 className="text-xl font-semibold text-ml-ink mb-2">
               {filtro === 'todos' ? 'Todavía no recibiste pedidos' : 'No hay pedidos en este estado'}
             </h3>
-            <p className="text-gray-500 text-sm">
+            <p className="text-ml-muted text-sm">
               {filtro === 'todos'
                 ? 'Cuando alguien te compre algo, vas a verlo acá con todos los datos para enviar.'
                 : 'Probá con otro filtro.'}
@@ -263,14 +263,14 @@ export default function PedidosVendedor() {
               const mensajeWA = `Hola ${nombreFinal.split(' ')[0]}, soy de ${tienda?.nombre || 'tu compra'}. Te confirmo el pedido #${orden._id.slice(-8).toUpperCase()} y coordino el envío.`
 
               return (
-                <div key={orden._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div key={orden._id} className="bg-white rounded-2xl shadow-sm border border-ml-line2 overflow-hidden">
                   {/* Header */}
-                  <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                  <div className="px-5 py-4 border-b border-ml-line2 flex items-center justify-between flex-wrap gap-2">
                     <div>
-                      <p className="text-xs text-gray-400 font-medium">
+                      <p className="text-xs text-ml-muted font-medium">
                         Pedido #{orden._id.slice(-8).toUpperCase()}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-ml-muted mt-0.5">
                         {tiempoRelativo(orden.createdAt)} · {formatearFechaHora(orden.createdAt)}
                       </p>
                     </div>
@@ -280,15 +280,15 @@ export default function PedidosVendedor() {
                   </div>
 
                   {/* Comprador */}
-                  <div className="px-5 py-4 bg-gray-50 border-b border-gray-100">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Comprador</p>
+                  <div className="px-5 py-4 bg-gray-50 border-b border-ml-line2">
+                    <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-2">Comprador</p>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                      <div className="w-10 h-10 rounded-full bg-ml-bg flex items-center justify-center text-ml-blue font-bold">
                         {nombreFinal.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-800 truncate">{nombreFinal}</p>
-                        {emailFinal && <p className="text-xs text-gray-500 truncate">{emailFinal}</p>}
+                        <p className="font-semibold text-ml-ink truncate">{nombreFinal}</p>
+                        {emailFinal && <p className="text-xs text-ml-muted truncate">{emailFinal}</p>}
                       </div>
                     </div>
 
@@ -315,7 +315,7 @@ export default function PedidosVendedor() {
                           </a>
                           <button
                             onClick={() => copiarTexto(telFinal, 'Teléfono copiado')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-ml-soft text-xs font-medium rounded-lg border border-ml-line hover:bg-gray-50 transition-colors"
                           >
                             📋 {telFinal}
                           </button>
@@ -329,7 +329,7 @@ export default function PedidosVendedor() {
                       {emailFinal && (
                         <a
                           href={`mailto:${emailFinal}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-ml-soft text-xs font-medium rounded-lg border border-ml-line hover:bg-gray-50 transition-colors"
                         >
                           ✉️ Email
                         </a>
@@ -338,20 +338,20 @@ export default function PedidosVendedor() {
                   </div>
 
                   {/* Dirección */}
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Enviar a</p>
+                  <div className="px-5 py-4 border-b border-ml-line2">
+                    <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-2">Enviar a</p>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <p className="text-sm text-gray-800 font-medium leading-snug">📍 {orden.direccionEntrega}</p>
+                        <p className="text-sm text-ml-ink font-medium leading-snug">📍 {orden.direccionEntrega}</p>
                         {orden.notasComprador && (
-                          <p className="text-xs text-gray-600 mt-2 bg-yellow-50 border-l-2 border-yellow-300 px-3 py-2 rounded">
+                          <p className="text-xs text-ml-soft mt-2 bg-yellow-50 border-l-2 border-yellow-300 px-3 py-2 rounded">
                             <span className="font-semibold">Nota del comprador:</span> {orden.notasComprador}
                           </p>
                         )}
                       </div>
                       <button
                         onClick={() => copiarTexto(orden.direccionEntrega, 'Dirección copiada')}
-                        className="text-xs text-blue-600 font-medium hover:underline whitespace-nowrap mt-0.5"
+                        className="text-xs text-ml-blue font-medium hover:underline whitespace-nowrap mt-0.5"
                       >
                         Copiar
                       </button>
@@ -359,8 +359,8 @@ export default function PedidosVendedor() {
                   </div>
 
                   {/* Productos vendidos */}
-                  <div className="px-5 py-4 border-b border-gray-100">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Productos</p>
+                  <div className="px-5 py-4 border-b border-ml-line2">
+                    <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-3">Productos</p>
                     <div className="space-y-3">
                       {itemsMios.map((item, i) => {
                         const productoPop = typeof item.productoId === 'object' ? item.productoId : null
@@ -368,19 +368,19 @@ export default function PedidosVendedor() {
                         return (
                           <div key={i} className="flex items-center gap-3">
                             {imagen ? (
-                              <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-gray-200" />
+                              <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-ml-line" />
                             ) : (
                               <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
                                 📦
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{item.nombre}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-sm font-medium text-ml-ink truncate">{item.nombre}</p>
+                              <p className="text-xs text-ml-muted">
                                 {item.cantidad} unid. × ${item.precioUnitario.toLocaleString('es-AR')}
                               </p>
                             </div>
-                            <p className="text-sm font-bold text-gray-800">
+                            <p className="text-sm font-bold text-ml-ink">
                               ${item.subtotal.toLocaleString('es-AR')}
                             </p>
                           </div>
@@ -408,11 +408,11 @@ export default function PedidosVendedor() {
                   {/* Totales y acción */}
                   <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <p className="text-xs text-gray-500">Tu ganancia neta</p>
+                      <p className="text-xs text-ml-muted">Tu ganancia neta</p>
                       <p className="text-2xl font-bold text-green-600">
                         ${gananciaMia.toLocaleString('es-AR')}
                       </p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p className="text-[11px] text-ml-muted mt-0.5">
                         Subtotal ${subtotalMio.toLocaleString('es-AR')} · Comisión ${comisionMia.toLocaleString('es-AR')} ({orden.porcentajeComision || 10}%)
                       </p>
                     </div>
@@ -454,24 +454,24 @@ export default function PedidosVendedor() {
           <div className="absolute inset-0 bg-black/50" onClick={cerrarModalEnvio} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-800">Marcar como enviado</h2>
-              <button onClick={cerrarModalEnvio} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
+              <h2 className="text-xl font-bold text-ml-ink">Marcar como enviado</h2>
+              <button onClick={cerrarModalEnvio} className="text-ml-muted hover:text-ml-soft text-2xl leading-none">×</button>
             </div>
 
-            <p className="text-sm text-gray-600 mb-5">
+            <p className="text-sm text-ml-soft mb-5">
               Le vamos a avisar al comprador que su pedido fue enviado.
               Si pusiste un código de seguimiento, también lo va a recibir.
             </p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  ¿Cómo lo enviás? <span className="text-gray-400 font-normal">(opcional)</span>
+                <label className="block text-sm font-medium text-ml-ink mb-1">
+                  ¿Cómo lo enviás? <span className="text-ml-muted font-normal">(opcional)</span>
                 </label>
                 <select
                   value={empresaEnvio}
                   onChange={e => setEmpresaEnvio(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white"
                 >
                   <option value="">Elegir empresa...</option>
                   <option value="Andreani">Andreani</option>
@@ -485,8 +485,8 @@ export default function PedidosVendedor() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Código de seguimiento <span className="text-gray-400 font-normal">(opcional)</span>
+                <label className="block text-sm font-medium text-ml-ink mb-1">
+                  Código de seguimiento <span className="text-ml-muted font-normal">(opcional)</span>
                 </label>
                 <input
                   type="text"
@@ -494,9 +494,9 @@ export default function PedidosVendedor() {
                   onChange={e => setCodigoSeguimiento(e.target.value)}
                   placeholder="Ej: AND123456789"
                   maxLength={100}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-ml-muted mt-1">
                   El comprador podrá usarlo para rastrear su pedido.
                 </p>
               </div>
@@ -506,7 +506,7 @@ export default function PedidosVendedor() {
               <button
                 onClick={cerrarModalEnvio}
                 disabled={enviandoMarca}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                className="flex-1 py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

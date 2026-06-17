@@ -5,14 +5,14 @@ export default function Terminos() {
     <div className="min-h-screen bg-ml-bg py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-800">Terminos y Condiciones</h1>
-          <p className="text-gray-500 mt-2">Ultima actualizacion: 1 de abril de 2026</p>
+          <h1 className="text-3xl font-bold text-ml-ink">Terminos y Condiciones</h1>
+          <p className="text-ml-muted mt-2">Ultima actualizacion: 1 de abril de 2026</p>
         </div>
 
-        <div className="space-y-8 text-gray-700 leading-relaxed">
+        <div className="space-y-8 text-ml-ink leading-relaxed">
           {/* 1. Aceptacion */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">1. Aceptacion de los Terminos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">1. Aceptacion de los Terminos</h2>
             <p>
               Al acceder, registrarse o utilizar la plataforma MercadoLocal (en adelante, "la Plataforma"), el usuario acepta
               de manera integra y sin reservas los presentes Terminos y Condiciones. Si no esta de acuerdo con alguna de
@@ -25,7 +25,7 @@ export default function Terminos() {
 
           {/* 2. Registro y Cuentas */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">2. Registro y Cuentas de Usuario</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">2. Registro y Cuentas de Usuario</h2>
             <p>
               Para utilizar los servicios de MercadoLocal es necesario crear una cuenta proporcionando informacion veraz,
               completa y actualizada. El usuario es responsable de mantener la confidencialidad de sus credenciales de acceso
@@ -41,7 +41,7 @@ export default function Terminos() {
 
           {/* 3. Responsabilidades del Comprador */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">3. Responsabilidades del Comprador</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">3. Responsabilidades del Comprador</h2>
             <ul className="list-disc ml-6 space-y-1">
               <li>Verificar las caracteristicas, precio y condiciones del producto antes de realizar la compra.</li>
               <li>Proporcionar datos de contacto y direccion de entrega correctos y completos.</li>
@@ -53,7 +53,7 @@ export default function Terminos() {
 
           {/* 4. Responsabilidades del Vendedor */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">4. Responsabilidades del Vendedor</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">4. Responsabilidades del Vendedor</h2>
             <ul className="list-disc ml-6 space-y-1">
               <li>Publicar informacion precisa, veraz y completa sobre los productos ofrecidos.</li>
               <li>Mantener actualizado el stock y los precios de sus publicaciones.</li>
@@ -66,7 +66,7 @@ export default function Terminos() {
 
           {/* 5. Comisiones */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">5. Estructura de Comisiones</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">5. Estructura de Comisiones</h2>
             <p>
               MercadoLocal cobra una comision del <strong>10% (diez por ciento)</strong> sobre el precio final de cada venta
               realizada a traves de la Plataforma. Esta comision se descuenta automaticamente del monto de la transaccion
@@ -82,7 +82,7 @@ export default function Terminos() {
 
           {/* 6. Procesamiento de Pagos */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">6. Procesamiento de Pagos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">6. Procesamiento de Pagos</h2>
             <p>
               Todos los pagos se procesan a traves de <strong>Mercado Pago</strong>, plataforma de pagos de terceros.
               MercadoLocal no almacena datos de tarjetas de credito ni informacion financiera sensible de los usuarios.
@@ -97,7 +97,7 @@ export default function Terminos() {
 
           {/* 7. Publicaciones */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">7. Publicaciones de Productos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">7. Publicaciones de Productos</h2>
             <p>
               Los vendedores son los unicos responsables del contenido de sus publicaciones. MercadoLocal no verifica
               la exactitud de la informacion publicada pero se reserva el derecho de eliminar publicaciones que incumplan
@@ -113,7 +113,7 @@ export default function Terminos() {
 
           {/* 8. Productos Prohibidos */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">8. Productos Prohibidos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">8. Productos Prohibidos</h2>
             <p>
               Queda expresamente prohibido publicar, ofrecer o vender a traves de la Plataforma los siguientes productos:
             </p>
@@ -132,7 +132,7 @@ export default function Terminos() {
 
           {/* 9. Disputas */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">9. Resolucion de Disputas</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">9. Resolucion de Disputas</h2>
             <p>
               En caso de controversias entre compradores y vendedores, se seguira el siguiente procedimiento:
             </p>
@@ -159,7 +159,7 @@ export default function Terminos() {
 
           {/* 10. Limitacion de Responsabilidad */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">10. Limitacion de Responsabilidad</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">10. Limitacion de Responsabilidad</h2>
             <p>
               MercadoLocal actua como intermediario tecnologico entre compradores y vendedores. En tal caracter:
             </p>
@@ -174,10 +174,10 @@ export default function Terminos() {
 
           {/* 11. Privacidad */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">11. Privacidad y Datos Personales</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">11. Privacidad y Datos Personales</h2>
             <p>
               El tratamiento de datos personales se rige por nuestra{' '}
-              <Link to="/privacidad" className="text-blue-600 hover:underline font-medium">
+              <Link to="/privacidad" className="text-ml-blue hover:underline font-medium">
                 Politica de Privacidad
               </Link>
               , la cual forma parte integrante de estos Terminos y Condiciones, y se ajusta a la Ley 25.326 de Proteccion
@@ -187,10 +187,10 @@ export default function Terminos() {
 
           {/* 12. Contacto */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">12. Informacion de Contacto</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">12. Informacion de Contacto</h2>
             <p>Para consultas relacionadas con estos Terminos y Condiciones, puede contactarnos a traves de:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
-              <li>Email: <span className="text-blue-600">soporte@mercadolocal.com.ar</span></li>
+              <li>Email: <span className="text-ml-blue">soporte@mercadolocal.com.ar</span></li>
               <li>Formulario de contacto disponible en la Plataforma.</li>
               <li>Domicilio legal: Ciudad Autonoma de Buenos Aires, Republica Argentina.</li>
             </ul>
@@ -198,7 +198,7 @@ export default function Terminos() {
 
           {/* 13. Modificaciones */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">13. Modificacion de los Terminos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">13. Modificacion de los Terminos</h2>
             <p>
               MercadoLocal se reserva el derecho de modificar los presentes Terminos y Condiciones en cualquier momento.
               Las modificaciones seran notificadas a los usuarios a traves de la Plataforma y/o por correo electronico
@@ -212,8 +212,8 @@ export default function Terminos() {
           </section>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gray-200 text-center">
-          <Link to="/" className="text-blue-600 hover:underline font-medium">
+        <div className="mt-10 pt-6 border-t border-ml-line text-center">
+          <Link to="/" className="text-ml-blue hover:underline font-medium">
             Volver al inicio
           </Link>
         </div>

@@ -5,11 +5,11 @@ export default function Privacidad() {
     <div className="min-h-screen bg-ml-bg py-12 px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-800">Politica de Privacidad</h1>
-          <p className="text-gray-500 mt-2">Ultima actualizacion: 1 de abril de 2026</p>
+          <h1 className="text-3xl font-bold text-ml-ink">Politica de Privacidad</h1>
+          <p className="text-ml-muted mt-2">Ultima actualizacion: 1 de abril de 2026</p>
         </div>
 
-        <div className="space-y-8 text-gray-700 leading-relaxed">
+        <div className="space-y-8 text-ml-ink leading-relaxed">
           {/* Introduccion */}
           <section>
             <p>
@@ -22,7 +22,7 @@ export default function Privacidad() {
 
           {/* 1. Datos que recopilamos */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">1. Datos Personales que Recopilamos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">1. Datos Personales que Recopilamos</h2>
             <p>Recopilamos los siguientes datos personales cuando usted se registra y utiliza la Plataforma:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
               <li><strong>Datos de identificacion:</strong> nombre completo, DNI/CUIT (para vendedores).</li>
@@ -36,7 +36,7 @@ export default function Privacidad() {
 
           {/* 2. Como usamos los datos */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">2. Uso de los Datos Personales</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">2. Uso de los Datos Personales</h2>
             <p>Utilizamos sus datos personales para los siguientes fines:</p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
               <li>Gestionar su cuenta y brindarle acceso a los servicios de la Plataforma.</li>
@@ -52,7 +52,7 @@ export default function Privacidad() {
 
           {/* 3. Datos de pago */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">3. Datos de Pago</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">3. Datos de Pago</h2>
             <p>
               Los pagos en MercadoLocal se procesan integramente a traves de <strong>Mercado Pago</strong>.
             </p>
@@ -69,7 +69,7 @@ export default function Privacidad() {
                 href="https://www.mercadopago.com.ar/privacidad"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline"
+                className="text-ml-blue hover:underline"
               >
                 Politica de Privacidad de Mercado Pago
               </a>.
@@ -78,7 +78,7 @@ export default function Privacidad() {
 
           {/* 4. Comparticion de datos */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">4. Comparticion de Datos con Terceros</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">4. Comparticion de Datos con Terceros</h2>
             <p>
               Sus datos personales no seran vendidos, alquilados ni cedidos a terceros con fines comerciales.
               Unicamente compartimos datos en los siguientes casos:
@@ -101,36 +101,36 @@ export default function Privacidad() {
 
           {/* 5. Derechos del usuario - ARCO */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">5. Derechos del Titular de los Datos (Derechos ARCO)</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">5. Derechos del Titular de los Datos (Derechos ARCO)</h2>
             <p>
               De conformidad con la Ley 25.326, usted tiene los siguientes derechos sobre sus datos personales:
             </p>
             <div className="mt-3 space-y-3">
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-800">Acceso</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+                <h3 className="font-semibold text-ml-ink">Acceso</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar informacion sobre los datos personales que tenemos almacenados sobre usted.
                   Puede ejercer este derecho de forma gratuita en intervalos no menores a 6 meses, salvo interes
                   legitimo acreditado.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-800">Rectificacion</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+                <h3 className="font-semibold text-ml-ink">Rectificacion</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar la correccion de datos personales inexactos o incompletos. Puede actualizar
                   la mayoria de sus datos directamente desde su perfil en la Plataforma.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-800">Cancelacion (Supresion)</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+                <h3 className="font-semibold text-ml-ink">Cancelacion (Supresion)</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar la eliminacion de sus datos personales cuando ya no sean necesarios para la
                   finalidad para la que fueron recopilados. Algunos datos podran ser retenidos por obligaciones
                   legales o fiscales.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <h3 className="font-semibold text-gray-800">Oposicion</h3>
+              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+                <h3 className="font-semibold text-ml-ink">Oposicion</h3>
                 <p className="text-sm mt-1">
                   Derecho a oponerse al tratamiento de sus datos personales para fines especificos, como el envio
                   de comunicaciones comerciales.
@@ -139,14 +139,14 @@ export default function Privacidad() {
             </div>
             <p className="mt-3">
               Para ejercer cualquiera de estos derechos, envie un correo electronico a{' '}
-              <span className="text-blue-600">privacidad@mercadolocal.com.ar</span> indicando su nombre completo,
+              <span className="text-ml-blue">privacidad@mercadolocal.com.ar</span> indicando su nombre completo,
               DNI y el derecho que desea ejercer. Responderemos en un plazo maximo de 10 dias habiles.
             </p>
           </section>
 
           {/* 6. Cookies */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">6. Cookies y Tecnologias Similares</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">6. Cookies y Tecnologias Similares</h2>
             <p>
               MercadoLocal utiliza cookies y tecnologias similares para mejorar la experiencia del usuario:
             </p>
@@ -163,7 +163,7 @@ export default function Privacidad() {
 
           {/* 7. Seguridad */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">7. Medidas de Seguridad</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">7. Medidas de Seguridad</h2>
             <p>
               Implementamos medidas tecnicas y organizativas para proteger sus datos personales contra el acceso
               no autorizado, la alteracion, divulgacion o destruccion:
@@ -180,13 +180,13 @@ export default function Privacidad() {
 
           {/* 8. Contacto */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">8. Contacto para Solicitudes de Datos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">8. Contacto para Solicitudes de Datos</h2>
             <p>
               Para ejercer sus derechos ARCO o realizar cualquier consulta relacionada con el tratamiento de sus
               datos personales, puede contactarnos a traves de:
             </p>
             <ul className="list-disc ml-6 mt-2 space-y-1">
-              <li>Email: <span className="text-blue-600">privacidad@mercadolocal.com.ar</span></li>
+              <li>Email: <span className="text-ml-blue">privacidad@mercadolocal.com.ar</span></li>
               <li>Domicilio legal: Ciudad Autonoma de Buenos Aires, Republica Argentina.</li>
             </ul>
             <p className="mt-3">
@@ -198,9 +198,9 @@ export default function Privacidad() {
 
           {/* Referencia a Terminos */}
           <section>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ml-muted">
               Esta Politica de Privacidad forma parte integrante de los{' '}
-              <Link to="/terminos" className="text-blue-600 hover:underline">
+              <Link to="/terminos" className="text-ml-blue hover:underline">
                 Terminos y Condiciones
               </Link>{' '}
               de MercadoLocal.
@@ -208,8 +208,8 @@ export default function Privacidad() {
           </section>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gray-200 text-center">
-          <Link to="/" className="text-blue-600 hover:underline font-medium">
+        <div className="mt-10 pt-6 border-t border-ml-line text-center">
+          <Link to="/" className="text-ml-blue hover:underline font-medium">
             Volver al inicio
           </Link>
         </div>
