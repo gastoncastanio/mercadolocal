@@ -102,13 +102,13 @@ export default function Navbar() {
   return (
     <>
       {/* ===== TOP BAR ===== */}
-      <header className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 sticky top-0 z-50">
+      <header className="bg-white/85 backdrop-blur-md border-b border-ml-line2 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {/* Hamburger mobile */}
             <button
               onClick={() => setMenuMobile(!menuMobile)}
-              className="md:hidden text-white/80 hover:text-white p-1"
+              className="md:hidden text-ml-slate hover:text-ml-ink p-1"
               aria-label="Menú"
             >
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -122,12 +122,12 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 ml-grad rounded-[10px] flex items-center justify-center shrink-0 shadow-sm">
                 <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
                 </svg>
               </div>
-              <span className="text-base sm:text-lg font-bold text-white tracking-tight truncate">MercadoLocal</span>
+              <span className="text-base sm:text-lg font-display font-extrabold text-ml-ink tracking-tight truncate">MercadoLocal</span>
             </Link>
 
             {/* Buscador */}
@@ -138,9 +138,9 @@ export default function Navbar() {
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
                   placeholder="Buscar productos, marcas y más..."
-                  className="w-full px-4 py-2 pr-10 rounded-lg border-0 text-gray-800 text-sm focus:ring-2 focus:ring-white/30 outline-none bg-white/95 placeholder-gray-400"
+                  className="w-full px-4 py-2 pr-10 rounded-xl border border-ml-line text-ml-ink text-sm focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none bg-ml-bg placeholder-ml-muted transition-colors"
                 />
-                <button type="submit" className="absolute right-0 top-0 bottom-0 px-3 text-gray-400 hover:text-blue-600" aria-label="Buscar">
+                <button type="submit" className="absolute right-0 top-0 bottom-0 px-3 text-ml-muted hover:text-ml-blue" aria-label="Buscar">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -152,22 +152,22 @@ export default function Navbar() {
             <div className="flex items-center gap-1 sm:gap-2 ml-auto shrink-0">
               {estaLogueado ? (
                 <>
-                  <Link to="/notificaciones" className="relative text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Notificaciones">
+                  <Link to="/notificaciones" className="relative text-ml-slate hover:text-ml-ink p-2 rounded-xl hover:bg-ml-bg transition-colors" aria-label="Notificaciones">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     {notifsNoLeidas > 0 && (
-                      <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                      <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 ml-grad text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                         {notifsNoLeidas > 9 ? '9+' : notifsNoLeidas}
                       </span>
                     )}
                   </Link>
-                  <Link to="/favoritos" className="hidden sm:flex text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Favoritos">
+                  <Link to="/favoritos" className="hidden sm:flex text-ml-slate hover:text-ml-ink p-2 rounded-xl hover:bg-ml-bg transition-colors" aria-label="Favoritos">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                   </Link>
-                  <Link to="/carrito" className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors" aria-label="Carrito">
+                  <Link to="/carrito" className="text-ml-slate hover:text-ml-ink p-2 rounded-xl hover:bg-ml-bg transition-colors" aria-label="Carrito">
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
@@ -176,15 +176,15 @@ export default function Navbar() {
                   <div ref={refUsuario} className="relative">
                     <button
                       onClick={() => toggleMenu('usuario')}
-                      className="flex items-center gap-2 p-1 rounded-lg hover:bg-white/10 transition-colors"
+                      className="flex items-center gap-2 p-1 rounded-xl hover:bg-ml-bg transition-colors"
                     >
-                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-semibold border border-white/30">
+                      <div className="w-8 h-8 rounded-full ml-grad flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                         {usuario?.nombre?.charAt(0).toUpperCase()}
                       </div>
-                      <span className="hidden md:block text-white/90 text-sm font-medium max-w-[100px] truncate">
+                      <span className="hidden md:block text-ml-slate text-sm font-semibold max-w-[100px] truncate">
                         {usuario?.nombre?.split(' ')[0]}
                       </span>
-                      <svg className="w-3 h-3 text-white/60 hidden md:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <svg className="w-3 h-3 text-ml-muted hidden md:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -250,11 +250,11 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-white border border-white/40 hover:bg-white/10 text-xs sm:text-sm font-medium px-2 sm:px-4 py-1.5 rounded-lg transition-colors whitespace-nowrap">
-                    <span className="hidden sm:inline">Iniciar sesión</span>
+                  <Link to="/login" className="text-ml-slate hover:text-ml-ink text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">
+                    <span className="hidden sm:inline">Ingresar</span>
                     <span className="sm:hidden">Entrar</span>
                   </Link>
-                  <Link to="/registro" className="bg-white text-indigo-700 text-xs sm:text-sm font-semibold px-2 sm:px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors whitespace-nowrap">
+                  <Link to="/registro" className="mlbtn ml-grad text-white text-xs sm:text-sm font-bold px-3 sm:px-5 py-2 rounded-xl transition-all whitespace-nowrap shadow-sm">
                     <span className="hidden sm:inline">Creá tu cuenta</span>
                     <span className="sm:hidden">Registrarse</span>
                   </Link>
@@ -271,9 +271,9 @@ export default function Navbar() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar productos..."
-                className="w-full px-3 py-2 pr-10 rounded-lg border-0 text-gray-800 text-sm focus:ring-2 focus:ring-white/30 outline-none bg-white/95 placeholder-gray-400"
+                className="w-full px-3 py-2 pr-10 rounded-xl border border-ml-line text-ml-ink text-sm focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none bg-ml-bg placeholder-ml-muted"
               />
-              <button type="submit" className="absolute right-0 top-0 bottom-0 px-3 text-gray-400" aria-label="Buscar">
+              <button type="submit" className="absolute right-0 top-0 bottom-0 px-3 text-ml-muted" aria-label="Buscar">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
@@ -284,7 +284,7 @@ export default function Navbar() {
       </header>
 
       {/* ===== NAV SECUNDARIO ===== */}
-      <nav className="bg-white border-b border-gray-200 sticky top-[52px] sm:top-[52px] z-40 hidden md:block">
+      <nav className="bg-white/85 backdrop-blur-md border-b border-ml-line2 sticky top-[52px] sm:top-[52px] z-40 hidden md:block">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center h-10 text-[13px] gap-1">
             {/* Categorías dropdown */}
@@ -455,10 +455,10 @@ export default function Navbar() {
                 <>
                   <div className="border-t my-2 mx-3"></div>
                   <div className="px-4 py-3 space-y-2">
-                    <Link to="/login" className="block w-full text-center py-2.5 text-sm text-blue-600 font-medium border border-blue-600 rounded-lg hover:bg-blue-50">
+                    <Link to="/login" className="block w-full text-center py-2.5 text-sm text-ml-blue font-semibold border border-ml-line rounded-xl hover:bg-ml-bg">
                       Ingresá
                     </Link>
-                    <Link to="/registro" className="block w-full text-center py-2.5 text-sm text-white font-medium bg-blue-600 rounded-lg hover:bg-blue-700">
+                    <Link to="/registro" className="block w-full text-center py-2.5 text-sm text-white font-bold ml-grad rounded-xl shadow-sm">
                       Creá tu cuenta
                     </Link>
                   </div>

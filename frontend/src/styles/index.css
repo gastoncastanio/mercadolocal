@@ -244,3 +244,78 @@ body {
   animation: dropdown-in 0.15s ease-out;
   transform-origin: top right;
 }
+
+/* ============================================================
+   SISTEMA DE DISEÑO "Mercado Local - Futuro"
+   Utilidades y animaciones para la landing y el navbar nuevos.
+   No reemplaza nada existente: son clases nuevas (prefijo ml-).
+   ============================================================ */
+
+/* Texto del cuerpo en Manrope (la app usa font-sans = Manrope ahora) */
+.font-display { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+/* Gradiente de marca azul -> violeta */
+.ml-grad { background-image: linear-gradient(95deg, #2563eb, #7c3aed); }
+.ml-grad-text {
+  background-image: linear-gradient(95deg, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Card de producto: levita y resalta al pasar el mouse */
+.mlc {
+  transition: transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease, border-color .35s ease;
+}
+.mlc:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 56px -28px rgba(37,40,90,.45);
+  border-color: #e3dcff;
+}
+.mlc:hover img.ph { transform: scale(1.07); }
+img.ph { transition: transform .55s cubic-bezier(.2,.7,.2,1); }
+
+/* Tile de categoría */
+.mlt {
+  transition: transform .25s ease, border-color .25s ease, color .25s ease, box-shadow .25s ease;
+}
+.mlt:hover {
+  transform: translateY(-4px);
+  border-color: #cdbcff;
+  box-shadow: 0 16px 30px -18px rgba(91,33,182,.4);
+}
+
+/* Botón con elevación */
+.mlbtn { transition: transform .2s ease, box-shadow .2s ease; }
+.mlbtn:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -12px rgba(91,33,182,.6); }
+
+/* Link sutil */
+.mllink { transition: opacity .2s ease; }
+.mllink:hover { opacity: .6; }
+
+/* Floats y blobs del hero */
+@keyframes mlfloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes mlfloat2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+@keyframes mlblob {
+  0% { transform: translate(0,0) scale(1); }
+  33% { transform: translate(40px,-30px) scale(1.12); }
+  66% { transform: translate(-30px,20px) scale(.94); }
+  100% { transform: translate(0,0) scale(1); }
+}
+.ml-float { animation: mlfloat 6.5s ease-in-out infinite; }
+.ml-float2 { animation: mlfloat2 5.5s ease-in-out infinite; }
+.ml-blob { animation: mlblob 18s ease-in-out infinite; }
+.ml-blob-rev { animation: mlblob 22s ease-in-out infinite reverse; }
+
+/* Marquee de tiendas */
+@keyframes mlmarq { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.ml-marq-track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: mlmarq 32s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-float, .ml-float2, .ml-blob, .ml-blob-rev, .ml-marq-track { animation: none; }
+}
