@@ -92,11 +92,11 @@ const usuarioSchema = new mongoose.Schema({
 usuarioSchema.pre('save', async function(next) {
   if (!this.isModified('contraseña')) return next()
 
-  // CRÍTICO: Si la contraseña ya es un hash bcrypt ($2b$...), NO la vuelvas a hashear.
-  // Esto evita el bug de doble-hashing si el hook se ejecuta múltiples veces
-  // o si hay una race condition.
-  if (String(this.contraseña).startsWith('$2b$')) {
-    console.warn(`⚠️  pre-save: Contraseña ya es un hash bcrypt (${String(this.contraseña).slice(0, 12)}…), saltando rehash para ${this.email}`)
+  // Defensa anti doble-hash: si la contraseña ya es un hash bcrypt
+  // ($2a$/$2b$/$2y$ + 60 chars), NO la vuelvas a hashear. Evita que un re-save
+  // accidental del documento convierta el hash en hash(hash) y rompa el login.
+  if (/^\$2[aby]\$\d{2}\$.{53}$/.test(String(this.contraseña))) {
+    console.warn(`⚠️  pre-save: la contraseña ya es un hash bcrypt, se omite el rehash para ${this.email}`)
     return next()
   }
 
