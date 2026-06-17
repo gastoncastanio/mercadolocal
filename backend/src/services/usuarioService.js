@@ -1,8 +1,15 @@
 import Usuario from '../models/Usuario.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
+import crypto from 'crypto'
 import { generarAccessToken, generarRefreshToken } from '../middleware/auth.js'
 import { enviarBienvenida } from './emailService.js'
+
+// Huella no reversible de un texto, para comparar en logs si dos contraseñas
+// son idénticas a nivel bytes SIN exponer la contraseña. (Diagnóstico temporal.)
+function huella(txt) {
+  return crypto.createHash('sha256').update(String(txt)).digest('hex').slice(0, 16)
+}
 
 // Registrar nuevo usuario
 export async function registrarUsuario(datos) {
@@ -111,7 +118,8 @@ export async function loginUsuario(email, contraseña) {
   const cuentasConEseEmail = await Usuario.countDocuments({ email })
   console.log(
     `🔍 Login: email="${email}" -> doc _id=${usuario._id} | ` +
-    `cuentas con ese email=${cuentasConEseEmail} | hash=${String(usuario.contraseña).slice(0, 12)}…`
+    `cuentas con ese email=${cuentasConEseEmail} | hash=${String(usuario.contraseña).slice(0, 12)}… | ` +
+    `pass(len=${contraseña.length} huella=${huella(contraseña)})`
   )
   if (cuentasConEseEmail > 1) {
     console.warn(`🚨 Login: hay ${cuentasConEseEmail} cuentas DUPLICADAS con el email "${email}". El reset y el login pueden estar tocando documentos distintos.`)
