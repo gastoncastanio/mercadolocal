@@ -370,7 +370,22 @@ router.post('/reset', async (req, res) => {
     usuario.resetTokenExpira = null
     await usuario.save()
 
-    console.log(`✅ Contraseña restablecida para ${email}`)
+    // Verificación defensiva: releemos de la BD y confirmamos que la nueva
+    // contraseña quedó realmente guardada y hasheada. Esto atrapa cualquier
+    // fallo silencioso (como el bug viejo de encoding que asignaba a una
+    // propiedad fantasma y nunca persistía). Si falla, lo gritamos en los logs
+    // y NO le devolvemos un "éxito" falso al usuario.
+    const verificacion = await Usuario.findById(usuario._id)
+    const seGuardoBien = verificacion && await verificacion.compararContraseña(nuevaContraseña)
+    if (!seGuardoBien) {
+      console.error(
+        `🚨 CRÍTICO: el reset de ${email} reportó éxito pero la nueva contraseña ` +
+        `NO quedó guardada correctamente. Revisar el modelo Usuario / pre-save hook.`
+      )
+      return res.status(500).json({ error: 'No se pudo guardar la nueva contraseña. Probá de nuevo en un momento.' })
+    }
+
+    console.log(`✅ Contraseña restablecida y verificada para ${email}`)
 
     res.json({ mensaje: 'Contraseña actualizada con éxito. Ya podés iniciar sesión.' })
   } catch (error) {
