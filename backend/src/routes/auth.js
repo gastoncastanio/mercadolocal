@@ -385,7 +385,18 @@ router.post('/reset', async (req, res) => {
       return res.status(500).json({ error: 'No se pudo guardar la nueva contraseña. Probá de nuevo en un momento.' })
     }
 
-    console.log(`✅ Contraseña restablecida y verificada para ${email}`)
+    // Diagnóstico: logueamos el _id actualizado, cuántas cuentas comparten ese
+    // email y el prefijo del hash guardado. Al cruzarlo con el log del login
+    // sabemos si ambos tocan el MISMO documento (mismo _id y mismo hash).
+    const emailNorm = sanitizar(email).toLowerCase()
+    const cuentasConEseEmail = await Usuario.countDocuments({ email: emailNorm })
+    console.log(
+      `✅ Contraseña restablecida y verificada para ${emailNorm} -> doc _id=${usuario._id} | ` +
+      `cuentas con ese email=${cuentasConEseEmail} | hash=${String(verificacion.contraseña).slice(0, 12)}…`
+    )
+    if (cuentasConEseEmail > 1) {
+      console.warn(`🚨 Reset: hay ${cuentasConEseEmail} cuentas DUPLICADAS con el email "${emailNorm}". El login puede leer otra distinta a la que acabás de actualizar.`)
+    }
 
     res.json({ mensaje: 'Contraseña actualizada con éxito. Ya podés iniciar sesión.' })
   } catch (error) {
