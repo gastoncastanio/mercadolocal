@@ -13,78 +13,86 @@ export default function TarjetaProducto({ producto }: Props) {
   const porcentajeOff = precioAnterior ? Math.round((1 - producto.precio / precioAnterior) * 100) : null
 
   const cuota6 = Math.round(producto.precio / 6)
+  const tieneTienda = tienda && typeof tienda === 'object'
+  const inicial = (tieneTienda && tienda.nombre ? tienda.nombre : producto.nombre).charAt(0).toUpperCase()
 
   return (
     <Link
       to={`/producto/${producto._id}`}
-      className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col relative"
+      className="mlc bg-white rounded-[18px] border border-ml-line overflow-hidden group flex flex-col relative"
     >
       {/* Imagen */}
-      <div className="aspect-square bg-white relative overflow-hidden flex items-center justify-center p-4">
+      <div className="relative aspect-square overflow-hidden flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg,#f3f3f8,#eef0fb)' }}>
         {producto.imagenes && producto.imagenes.length > 0 ? (
           <img
             src={producto.imagenes[0]}
             alt={producto.nombre}
             loading="lazy"
-            className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500"
+            className="ph max-w-full max-h-full object-contain"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-            <span className="text-5xl opacity-60">{'\u{1F4E6}'}</span>
-          </div>
+          <span className="text-5xl opacity-50">{'\u{1F4E6}'}</span>
         )}
 
         {(producto as any).esDestacado && (
-          <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase shadow-sm">
+          <span className="absolute top-3 left-3 ml-grad text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
             {'\u{1F525}'} Top ventas
-          </div>
+          </span>
         )}
 
         {porcentajeOff && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-sm">
+          <span className="absolute bottom-3 left-3 bg-ml-mp text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm">
             {porcentajeOff}% OFF
-          </div>
+          </span>
         )}
+
+        {/* Corazón (favorito visual) */}
+        <span className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/95 flex items-center justify-center shadow-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={2}>
+            <path d="M19 14c1.5-1.5 3-3.3 3-5.5A3.5 3.5 0 0 0 12 6 3.5 3.5 0 0 0 2 8.5c0 2.2 1.5 4 3 5.5l7 7Z" />
+          </svg>
+        </span>
 
         {producto.stock <= 0 && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Sin stock</span>
+            <span className="text-sm font-semibold text-ml-muted bg-white border border-ml-line px-3 py-1 rounded-full">Sin stock</span>
           </div>
         )}
       </div>
 
       {/* Info */}
-      <div className="p-3 pt-2 flex-1 flex flex-col border-t border-gray-50">
+      <div className="p-4 flex-1 flex flex-col">
         {/* Precio */}
-        <div className="mb-1">
+        <div className="flex items-baseline gap-2">
+          <span className="font-display font-extrabold text-[20px] text-ml-ink">${producto.precio.toLocaleString('es-AR')}</span>
           {precioAnterior && (
-            <p className="text-xs text-gray-400 line-through">${precioAnterior.toLocaleString()}</p>
+            <span className="text-[13px] text-ml-muted line-through">${precioAnterior.toLocaleString('es-AR')}</span>
           )}
-          <p className="text-[22px] font-normal text-gray-900">${producto.precio.toLocaleString()}</p>
         </div>
 
         {/* Cuotas */}
-        <p className="text-xs text-green-600 font-medium mb-1.5">
-          en 6x ${cuota6.toLocaleString()} sin inter&eacute;s
+        <p className="text-[12px] text-[#0a7d34] font-semibold mt-0.5">
+          en 6x ${cuota6.toLocaleString('es-AR')} sin inter&eacute;s
         </p>
 
-        {/* Envio gratis */}
+        {/* Envío gratis */}
         {producto.envioGratis && (
-          <p className="text-xs text-green-600 font-bold mb-1.5 flex items-center gap-1">
+          <p className="text-[12px] text-[#0a7d34] font-bold mt-1 flex items-center gap-1">
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
             Env&iacute;o gratis
           </p>
         )}
 
         {/* Nombre */}
-        <h3 className="text-[13px] text-gray-700 leading-snug line-clamp-2 flex-1 group-hover:text-blue-600 transition-colors">{producto.nombre}</h3>
+        <h3 className="font-display font-semibold text-[14.5px] text-ml-ink leading-snug line-clamp-2 mt-2 flex-1 group-hover:text-ml-blue transition-colors">{producto.nombre}</h3>
 
         {/* Tienda */}
-        {tienda && typeof tienda === 'object' && tienda.ciudad && (
-          <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-            {tienda.nombre} &middot; {tienda.ciudad}
-          </p>
+        {tieneTienda && (tienda.nombre || tienda.ciudad) && (
+          <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ml-line2">
+            <span className="shrink-0 w-6 h-6 rounded-full ml-grad text-white text-[11px] font-bold flex items-center justify-center">{inicial}</span>
+            {tienda.nombre && <span className="text-[12.5px] text-ml-soft font-semibold truncate">{tienda.nombre}</span>}
+            {tienda.ciudad && <span className="ml-auto text-[11.5px] text-ml-muted whitespace-nowrap">{tienda.ciudad}</span>}
+          </div>
         )}
       </div>
     </Link>

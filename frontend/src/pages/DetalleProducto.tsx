@@ -83,7 +83,7 @@ export default function DetalleProducto() {
 
   if (!producto) {
     return (
-      <div className="min-h-screen bg-[#ebebeb] flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">&#x1F504;</div>
       </div>
     )
@@ -100,23 +100,23 @@ export default function DetalleProducto() {
   const cuota12 = Math.round(producto.precio / 12)
 
   return (
-    <div className="min-h-screen bg-[#ebebeb]">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-[13px] text-gray-500 mb-3">
-          <Link to="/" className="hover:text-blue-500">Volver al listado</Link>
+          <Link to="/" className="hover:text-ml-blue">Volver al listado</Link>
           <span className="text-gray-300">|</span>
-          <Link to="/catalogo" className="hover:text-blue-500">Cat&aacute;logo</Link>
+          <Link to="/catalogo" className="hover:text-ml-blue">Cat&aacute;logo</Link>
           {producto.categorias?.[0] && (
             <>
               <span className="text-gray-300">&rsaquo;</span>
-              <Link to={`/catalogo?categoria=${producto.categorias[0]}`} className="hover:text-blue-500">{producto.categorias[0]}</Link>
+              <Link to={`/catalogo?categoria=${producto.categorias[0]}`} className="hover:text-ml-blue">{producto.categorias[0]}</Link>
             </>
           )}
         </div>
 
         {/* Main card */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-ml-line overflow-hidden">
           {/* Top section: 3 columns - images | info | buy panel */}
           <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_350px]">
             {/* LEFT: Images + Product Info */}
@@ -133,7 +133,7 @@ export default function DetalleProducto() {
                           onMouseEnter={() => setImagenActual(i)}
                           onClick={() => setImagenActual(i)}
                           className={`w-[44px] h-[44px] rounded border overflow-hidden shrink-0 transition-colors ${
-                            i === imagenActual ? 'border-blue-500' : 'border-gray-200 hover:border-blue-400'
+                            i === imagenActual ? 'border-ml-blue' : 'border-gray-200 hover:border-ml-purple/40'
                           }`}
                         >
                           <img src={img} alt="" className="w-full h-full object-contain" />
@@ -164,7 +164,7 @@ export default function DetalleProducto() {
                   <button
                     onClick={toggleFavorito}
                     disabled={togglingFav}
-                    className="flex items-center gap-1.5 text-sm text-blue-500 hover:text-blue-600 disabled:opacity-50"
+                    className="flex items-center gap-1.5 text-sm text-ml-blue hover:text-ml-violet disabled:opacity-50"
                   >
                     <span className="text-lg">{esFavorito ? '\u2764\uFE0F' : '\u2661'}</span>
                     <span>{esFavorito ? 'Favorito' : 'Agregar a favoritos'}</span>
@@ -186,7 +186,7 @@ export default function DetalleProducto() {
                 </div>
 
                 {/* Title */}
-                <h1 className="text-[22px] font-normal text-gray-800 leading-snug mb-4">{producto.nombre}</h1>
+                <h1 className="font-display text-[22px] font-semibold text-ml-ink leading-snug mb-4">{producto.nombre}</h1>
 
                 {/* Rating */}
                 {producto.calificacion > 0 && (
@@ -194,7 +194,7 @@ export default function DetalleProducto() {
                     <span className="text-sm font-medium text-gray-800">{producto.calificacion.toFixed(1)}</span>
                     <div className="flex">
                       {[1,2,3,4,5].map(s => (
-                        <span key={s} className={`text-xs ${s <= Math.round(producto.calificacion) ? 'text-blue-500' : 'text-gray-300'}`}>
+                        <span key={s} className={`text-xs ${s <= Math.round(producto.calificacion) ? 'text-ml-blue' : 'text-gray-300'}`}>
                           &#x2605;
                         </span>
                       ))}
@@ -220,7 +220,7 @@ export default function DetalleProducto() {
                   <p className="text-[15px] text-gray-500 font-normal mt-2">
                     en 12x ${cuota12.toLocaleString('es-AR')} <span className="text-xs text-gray-400">(precio referencial)</span>
                   </p>
-                  <Link to="#cuotas" className="text-[13px] text-blue-500 hover:text-blue-600">
+                  <Link to="#cuotas" className="text-[13px] text-ml-blue hover:text-ml-violet">
                     Calcular cuotas con tu tarjeta
                   </Link>
                 </div>
@@ -327,7 +327,7 @@ export default function DetalleProducto() {
                     {producto.caracteristicas.length > 5 && (
                       <button
                         onClick={() => setVerTodasCaract(v => !v)}
-                        className="text-[13px] text-blue-500 hover:text-blue-600 mt-2"
+                        className="text-[13px] text-ml-blue hover:text-ml-violet mt-2"
                       >
                         {verTodasCaract ? 'Ver menos' : `Ver todas las características (${producto.caracteristicas.length})`}
                       </button>
@@ -344,13 +344,13 @@ export default function DetalleProducto() {
                 {tienda && typeof tienda === 'object' && (
                   <div className="mb-4 pb-4 border-b border-gray-100">
                     <p className="text-[13px] text-gray-500 mb-1">Vendido por</p>
-                    <Link to={`/tienda/${tienda._id}`} className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                    <Link to={`/tienda/${tienda._id}`} className="text-sm text-ml-blue hover:text-ml-violet font-medium">
                       {tienda.nombre}
                     </Link>
                     {(tienda.calificacion ?? 0) > 0 && (
                       <div className="flex items-center gap-1 mt-1">
                         {[1,2,3,4,5].map(s => (
-                          <span key={s} className={`text-xs ${s <= Math.round(tienda.calificacion ?? 0) ? 'text-blue-500' : 'text-gray-300'}`}>
+                          <span key={s} className={`text-xs ${s <= Math.round(tienda.calificacion ?? 0) ? 'text-ml-blue' : 'text-gray-300'}`}>
                             &#x2605;
                           </span>
                         ))}
@@ -411,7 +411,7 @@ export default function DetalleProducto() {
                       <select
                         value={cantidad}
                         onChange={e => setCantidad(Number(e.target.value))}
-                        className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                        className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-ml-purple/30 outline-none"
                       >
                         {Array.from({ length: Math.min(producto.stock, 10) }, (_, i) => i + 1).map(n => (
                           <option key={n} value={n}>{n} {n === 1 ? 'unidad' : 'unidades'}</option>
@@ -420,17 +420,17 @@ export default function DetalleProducto() {
                       <span className="text-xs text-gray-400">({producto.stock} disponibles)</span>
                     </div>
 
-                    {/* Buy buttons - ML style */}
+                    {/* Buy buttons */}
                     <button
                       onClick={() => { agregarAlCarrito().then(() => navigate('/carrito')) }}
-                      className="w-full py-3.5 bg-blue-500 text-white rounded-md font-medium text-[15px] hover:bg-blue-600 transition-colors mb-2"
+                      className="mlbtn w-full py-3.5 ml-grad text-white rounded-xl font-bold text-[15px] shadow-sm mb-2"
                     >
                       Comprar ahora
                     </button>
                     <button
                       onClick={agregarAlCarrito}
                       disabled={agregando}
-                      className="w-full py-3.5 bg-blue-50 text-blue-500 rounded-md font-medium text-[15px] hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      className="w-full py-3.5 bg-[#f3edff] text-ml-violet rounded-xl font-bold text-[15px] hover:bg-[#ece2ff] transition-colors disabled:opacity-50"
                     >
                       {agregando ? 'Agregando...' : 'Agregar al carrito'}
                     </button>
@@ -485,8 +485,8 @@ export default function DetalleProducto() {
           <div className="space-y-4">
             {/* Caracteristicas tabla completa */}
             {producto.caracteristicas && producto.caracteristicas.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-5 sm:p-6">
-                <h2 className="text-[22px] font-normal text-gray-800 mb-5">Caracter&iacute;sticas del producto</h2>
+              <div className="bg-white rounded-2xl border border-ml-line p-5 sm:p-6">
+                <h2 className="font-display text-[22px] font-semibold text-ml-ink mb-5">Caracter&iacute;sticas del producto</h2>
                 <div className="divide-y divide-gray-100">
                   {producto.caracteristicas.map((c, i) => (
                     <div key={i} className={`grid grid-cols-2 py-2.5 text-sm ${i % 2 === 0 ? 'bg-gray-50' : ''} -mx-2 px-2 rounded`}>
@@ -500,25 +500,25 @@ export default function DetalleProducto() {
 
             {/* Descripcion completa */}
             {producto.descripcion && (
-              <div className="bg-white rounded-lg shadow-sm p-5 sm:p-6">
-                <h2 className="text-[22px] font-normal text-gray-800 mb-3">Descripci&oacute;n</h2>
+              <div className="bg-white rounded-2xl border border-ml-line p-5 sm:p-6">
+                <h2 className="font-display text-[22px] font-semibold text-ml-ink mb-3">Descripci&oacute;n</h2>
                 <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">{producto.descripcion}</p>
               </div>
             )}
 
             {/* Resenas */}
-            <div className="bg-white rounded-lg shadow-sm p-5 sm:p-6">
+            <div className="bg-white rounded-2xl border border-ml-line p-5 sm:p-6">
               <Resenas productoId={producto._id} puedeResenar={false} />
             </div>
 
             {/* Mas productos del vendedor */}
             {productosTienda.length > 0 && tienda && typeof tienda === 'object' && (
-              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <div className="bg-white rounded-2xl border border-ml-line p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-[22px] font-normal text-gray-800">
+                  <h2 className="font-display text-[22px] font-semibold text-ml-ink">
                     Publicaciones del vendedor
                   </h2>
-                  <Link to={`/tienda/${tienda._id}`} className="text-sm text-blue-500 hover:text-blue-600 font-medium shrink-0">
+                  <Link to={`/tienda/${tienda._id}`} className="text-sm text-ml-blue hover:text-ml-violet font-medium shrink-0">
                     Ver m&aacute;s
                   </Link>
                 </div>
@@ -537,7 +537,7 @@ export default function DetalleProducto() {
             {tienda && typeof tienda === 'object' && (
               <Link
                 to={`/tienda/${tienda._id}`}
-                className="block bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow group"
+                className="block bg-white rounded-2xl border border-ml-line p-5 hover:shadow-md transition-shadow group"
               >
                 <div className="flex items-center gap-3 mb-3">
                   {tienda.logo ? (
@@ -546,7 +546,7 @@ export default function DetalleProducto() {
                     <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-xl shrink-0">&#x1F3EA;</div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-800 truncate group-hover:text-blue-500">{tienda.nombre}</p>
+                    <p className="font-medium text-gray-800 truncate group-hover:text-ml-blue">{tienda.nombre}</p>
                     <p className="text-xs text-gray-400">&#x1F4CD; {tienda.ciudad}</p>
                   </div>
                 </div>
@@ -554,7 +554,7 @@ export default function DetalleProducto() {
                   <div className="flex items-center gap-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
                     <span>&#x2B50; {(tienda.calificacion ?? 0).toFixed(1)}</span>
                     {(tienda.totalVentas ?? 0) > 0 && <span>{tienda.totalVentas} ventas</span>}
-                    <span className="text-blue-500 ml-auto font-medium">Ver tienda</span>
+                    <span className="text-ml-blue ml-auto font-medium">Ver tienda</span>
                   </div>
                 )}
               </Link>
