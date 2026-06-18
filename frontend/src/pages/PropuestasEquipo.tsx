@@ -217,7 +217,7 @@ export default function PropuestasEquipo() {
         ) : propuestas.length === 0 ? (
           <div className="text-center py-12 bg-gray-800 rounded-xl border border-gray-700">
             <div className="text-5xl mb-3">🎉</div>
-            <p className="text-gray-300">
+            <p className="text-ml-line">
               {filtroEstado === 'esperando_admin'
                 ? 'No hay propuestas esperando tu decisión.'
                 : 'No hay propuestas con este filtro.'}

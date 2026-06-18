@@ -140,7 +140,7 @@ export default function PromoverProducto() {
                         productoSel === p._id ? 'border-blue-500 bg-blue-50' : 'border-ml-line2 hover:border-ml-line'
                       }`}
                     >
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-ml-bg shrink-0">
                         {p.imagenes?.[0] ? (
                           <img src={p.imagenes[0]} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -239,7 +239,7 @@ export default function PromoverProducto() {
               <button
                 onClick={crearPromocion}
                 disabled={cargando || !productoSel}
-                className="w-full py-3 bg-white text-blue-700 rounded-xl font-bold text-base hover:bg-gray-100 transition-colors disabled:opacity-50"
+                className="w-full py-3 bg-white text-blue-700 rounded-xl font-bold text-base hover:bg-ml-bg transition-colors disabled:opacity-50"
               >
                 {cargando ? 'Procesando...' : `Promocionar por $${precioActual.toLocaleString('es-AR')}`}
               </button>
@@ -264,7 +264,7 @@ export default function PromoverProducto() {
                 return (
                   <div key={promo._id} className={`bg-white rounded-xl shadow-sm p-4 border ${activa ? 'border-green-200' : 'border-ml-line2'}`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                      <div className="w-14 h-14 rounded-lg overflow-hidden bg-ml-bg shrink-0">
                         {promo.productoId?.imagenes?.[0] ? (
                           <img src={promo.productoId.imagenes[0]} alt="" className="w-full h-full object-cover" />
                         ) : (

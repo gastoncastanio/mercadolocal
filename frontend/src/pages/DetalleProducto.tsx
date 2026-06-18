@@ -105,11 +105,11 @@ export default function DetalleProducto() {
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-[13px] text-ml-muted mb-3">
           <Link to="/" className="hover:text-ml-blue">Volver al listado</Link>
-          <span className="text-gray-300">|</span>
+          <span className="text-ml-line">|</span>
           <Link to="/catalogo" className="hover:text-ml-blue">Cat&aacute;logo</Link>
           {producto.categorias?.[0] && (
             <>
-              <span className="text-gray-300">&rsaquo;</span>
+              <span className="text-ml-line">&rsaquo;</span>
               <Link to={`/catalogo?categoria=${producto.categorias[0]}`} className="hover:text-ml-blue">{producto.categorias[0]}</Link>
             </>
           )}
@@ -194,7 +194,7 @@ export default function DetalleProducto() {
                     <span className="text-sm font-medium text-ml-ink">{producto.calificacion.toFixed(1)}</span>
                     <div className="flex">
                       {[1,2,3,4,5].map(s => (
-                        <span key={s} className={`text-xs ${s <= Math.round(producto.calificacion) ? 'text-ml-blue' : 'text-gray-300'}`}>
+                        <span key={s} className={`text-xs ${s <= Math.round(producto.calificacion) ? 'text-ml-blue' : 'text-ml-line'}`}>
                           &#x2605;
                         </span>
                       ))}

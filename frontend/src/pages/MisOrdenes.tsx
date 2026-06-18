@@ -397,7 +397,7 @@ export default function MisOrdenes() {
                               {imagen ? (
                                 <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-ml-line flex-shrink-0" />
                               ) : (
-                                <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                                <div className="w-14 h-14 bg-ml-bg rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
                                   📦
                                 </div>
                               )}
@@ -539,7 +539,7 @@ export default function MisOrdenes() {
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmandoOrden(null)}
-                className="flex-1 py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
+                className="flex-1 py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
               >
                 Todavía no
               </button>

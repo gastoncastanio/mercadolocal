@@ -370,7 +370,7 @@ export default function PedidosVendedor() {
                             {imagen ? (
                               <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-ml-line" />
                             ) : (
-                              <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
+                              <div className="w-14 h-14 bg-ml-bg rounded-lg flex items-center justify-center text-2xl">
                                 📦
                               </div>
                             )}
@@ -506,7 +506,7 @@ export default function PedidosVendedor() {
               <button
                 onClick={cerrarModalEnvio}
                 disabled={enviandoMarca}
-                className="flex-1 py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors disabled:opacity-50"
+                className="flex-1 py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

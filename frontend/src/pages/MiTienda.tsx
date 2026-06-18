@@ -684,7 +684,7 @@ export default function MiTienda() {
                         className="hover:bg-gray-100 px-1 -ml-1 rounded transition-colors"
                         title="Click para editar stock"
                       >
-                        Stock: {p.stock} <span className="text-gray-300">✏</span>
+                        Stock: {p.stock} <span className="text-ml-line">✏</span>
                       </button>
                     )}
                     <span>·</span>
