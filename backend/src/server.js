@@ -44,6 +44,7 @@ import centroRouter from './routes/centro.js'
 import privacidadRouter from './routes/privacidad.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
 import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
+import { sembrarBloqueHorario } from './services/seedBloqueHorario.js'
 import { iniciarCronCerebro } from './services/cronCerebro.js'
 import { inicializarConfig } from './services/configService.js'
 
@@ -240,6 +241,10 @@ connectDB().then(async () => {
   sembrarMemoriaFundador()
     .then(r => console.log(`📚 Memoria fundador: ${r.creados} hechos nuevos, ${r.yaExistían} existentes (total ${r.total})`))
     .catch(err => console.warn('Seed memoria:', err.message))
+
+  // Sembrar bloques horarios del Radar del Centro (Fase 3, idempotente)
+  sembrarBloqueHorario()
+    .catch(err => console.warn('Seed bloques horarios:', err.message))
 
   // Cron del cerebro: reporte diario CEO + ascensos automáticos
   // Deshabilitado temporalmente: Gemini API en quota exceeded

@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Coord, obtenerUbicacion, ordenarPorCercania, formatearDistancia } from '../utils/geo'
 import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlash'
+import DespatxadorBloqueHorario from '../components/DespatxadorBloqueHorario'
 import { calcularOffset } from '../utils/canjes'
+import { useBloqueHorario } from '../hooks/useBloqueHorario'
 
 interface Comercio {
   _id: string
@@ -36,6 +38,7 @@ export default function RadarCentro() {
   const [offsetMs, setOffsetMs] = useState(0)
   const [cargandoComercios, setCargandoComercios] = useState(false)
   const [coords, setCoords] = useState<Coord | null>(null)
+  const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
 
   // Si ya dio consentimiento antes, lo recordamos
   useEffect(() => {
@@ -166,6 +169,8 @@ export default function RadarCentro() {
   }
 
   // ===== Feed por cercanía =====
+  const ciudad = coords?.ciudad || 'Rosario'
+
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-2xl mx-auto px-4 py-6">
@@ -191,8 +196,19 @@ export default function RadarCentro() {
           </div>
         </div>
 
-        {/* Ofertas relámpago vigentes (countdown sincronizado con el server) */}
-        {!cargandoComercios && ofertas.length > 0 && (
+        {/* FASE 3: Despachador dinámico por bloque horario */}
+        {!cargandoBloque && bloqueActual && (
+          <DespatxadorBloqueHorario
+            bloque={bloqueActual}
+            coords={coords}
+            ciudad={ciudad}
+            offsetMs={offsetMs}
+            cargando={cargandoComercios}
+          />
+        )}
+
+        {/* Ofertas relámpago vigentes (solo si no hay bloque activo) */}
+        {!cargandoComercios && !bloqueActual && ofertas.length > 0 && (
           <div className="mb-6">
             <h2 className="text-sm font-bold text-ml-soft uppercase tracking-wide mb-2">⚡ Ofertas relámpago cerca</h2>
             <div className="space-y-3">
@@ -212,45 +228,50 @@ export default function RadarCentro() {
           </div>
         )}
 
-        {cargandoComercios ? (
-          <div className="flex justify-center py-16"><div className="spinner" /></div>
-        ) : comercios.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-ml-line">
-            <p className="text-4xl mb-3">🗺️</p>
-            <p className="text-ml-muted text-sm">Todavía no hay comercios cargados en el Radar de tu zona.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {comercios.map(c => (
-              <div key={c._id} className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
-                <div className="flex">
-                  {/* Media / poster */}
-                  <div className="w-24 sm:w-28 bg-ml-bg flex items-center justify-center shrink-0 overflow-hidden">
-                    {c.media?.posterUrl ? (
-                      <img src={c.media.posterUrl} alt={c.nombre} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-4xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
-                    )}
-                  </div>
-                  <div className="flex-1 p-3 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-ml-ink truncate">{c.nombre}</h3>
-                      {c.estadoPrograma === 'fundador' && (
-                        <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-ml-muted line-clamp-1">{c.descripcion || c.ubicacion.direccion}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs">
-                      <span className="font-semibold text-ml-violet">📍 {formatearDistancia(c.distancia)}</span>
-                      {c.tiempoPrepEstimado && (
-                        <span className="text-green-600">⏱️ listo en ~{c.tiempoPrepEstimado} min</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+        {/* Feed de comercios (solo si no hay bloque activo) */}
+        {!bloqueActual && (
+          <>
+            {cargandoComercios ? (
+              <div className="flex justify-center py-16"><div className="spinner" /></div>
+            ) : comercios.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border border-ml-line">
+                <p className="text-4xl mb-3">🗺️</p>
+                <p className="text-ml-muted text-sm">Todavía no hay comercios cargados en el Radar de tu zona.</p>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="space-y-3">
+                {comercios.map(c => (
+                  <div key={c._id} className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
+                    <div className="flex">
+                      {/* Media / poster */}
+                      <div className="w-24 sm:w-28 bg-ml-bg flex items-center justify-center shrink-0 overflow-hidden">
+                        {c.media?.posterUrl ? (
+                          <img src={c.media.posterUrl} alt={c.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-4xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 p-3 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-ml-ink truncate">{c.nombre}</h3>
+                          {c.estadoPrograma === 'fundador' && (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-ml-muted line-clamp-1">{c.descripcion || c.ubicacion.direccion}</p>
+                        <div className="flex items-center gap-3 mt-2 text-xs">
+                          <span className="font-semibold text-ml-violet">📍 {formatearDistancia(c.distancia)}</span>
+                          {c.tiempoPrepEstimado && (
+                            <span className="text-green-600">⏱️ listo en ~{c.tiempoPrepEstimado} min</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
 
         <p className="text-center text-[11px] text-ml-muted mt-6">

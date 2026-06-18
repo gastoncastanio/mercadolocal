@@ -3,7 +3,9 @@ import { verificarToken } from '../middleware/auth.js'
 import ComercioCentro from '../models/ComercioCentro.js'
 import OfertaFlash from '../models/OfertaFlash.js'
 import CanjeAtribuido from '../models/CanjeAtribuido.js'
+import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
+import { bloqueActual, obtenerBloques } from '../utils/bloqueHorario.js'
 
 const router = Router()
 
@@ -511,5 +513,201 @@ router.get('/metricas/:comercioId', verificarToken, async (req, res) => {
     res.status(500).json({ error: error.message })
   }
 })
+
+// ============================================================
+//  FASE 3 — Bloques horarios dinámicos y despachador
+// ============================================================
+
+// GET /api/centro/bloque/actual - bloque horario activo AHORA
+router.get('/bloque/actual', async (req, res) => {
+  try {
+    const bloque = await bloqueActual()
+    res.json({ bloque })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/centro/bloques - lista de bloques configurados (para UI)
+router.get('/bloques', async (req, res) => {
+  try {
+    const bloques = await obtenerBloques()
+    res.json(bloques)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/centro/ofertas/bloque/:nombre - ofertas del bloque actual o específico
+// Dispatch dinámico: si tipoDispatcher='cercania', filtra por distancia real del usuario
+// Si 'cruzada', devuelve ofertas con desbloquea (sugerencias de ruta).
+// El cliente debe enviar ?lat=X&lng=Y si quiere filtro de cercanía.
+router.get('/ofertas/bloque/:nombre', async (req, res) => {
+  try {
+    const ahora = new Date()
+    const { nombre } = req.params
+    const { lat, lng, ciudad } = req.query
+
+    // Obtén la config del bloque (valida que exista + esté activo)
+    const bloqueConfig = await BloqueHorarioConfig.findOne({ nombre, activo: true }).lean()
+    if (!bloqueConfig) {
+      return res.status(404).json({ error: `Bloque "${nombre}" no disponible.` })
+    }
+
+    const filtro = {
+      activa: true,
+      inicioEn: { $lte: ahora },
+      finEn: { $gte: ahora },
+      bloqueHorario: { $in: [nombre, 'todos'] }
+    }
+    if (ciudad) {
+      filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+    }
+
+    const ofertas = await OfertaFlash.find(filtro)
+      .populate('comercioId', 'nombre ubicacion')
+      .sort({ finEn: 1 })
+      .limit(100)
+
+    // Filtra solo vigentes (con cupo)
+    const vigentes = ofertas.filter(o => o.estaVigente(ahora))
+
+    // Despacha según tipo del bloque
+    let resultado = vigentes.map(o => ({
+      ...o.toPublic(ahora),
+      comercioNombre: o.comercioId?.nombre,
+      comercioLat: o.comercioId?.ubicacion?.lat,
+      comercioLng: o.comercioId?.ubicacion?.lng
+    }))
+
+    if (bloqueConfig.tipoDispatcher === 'cercania' && lat != null && lng != null) {
+      // Calcula distancia client-side: ordena por proximidad, filtra < distanciaMaxima
+      const clientLat = Number(lat)
+      const clientLng = Number(lng)
+      if (!isNaN(clientLat) && !isNaN(clientLng)) {
+        resultado = resultado
+          .map(o => ({
+            ...o,
+            distancia: calcularDistancia(clientLat, clientLng, o.comercioLat, o.comercioLng)
+          }))
+          .filter(o => o.distancia <= bloqueConfig.distanciaMaxima)
+          .sort((a, b) => a.distancia - b.distancia)
+      }
+    } else if (bloqueConfig.tipoDispatcher === 'cruzada') {
+      // Para 'Desconexión e Impulso': prioriza ofertas con desbloquea
+      resultado.sort((a, b) => {
+        const aDesbloquea = a.desbloquea ? 1 : 0
+        const bDesbloquea = b.desbloquea ? 1 : 0
+        return bDesbloquea - aDesbloquea // desbloquea primero
+      })
+    }
+
+    res.json({
+      serverNow: ahora,
+      bloque: bloqueConfig,
+      ofertas: resultado
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// ============================================================
+//  ADMIN — configuración de bloques horarios
+// ============================================================
+
+// POST /api/centro/admin/bloques - crear bloque (solo admin)
+router.post('/admin/bloques', verificarToken, async (req, res) => {
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo administradores pueden configurar bloques.' })
+    }
+
+    const { nombre, horaInicio, horaFin, titulo, descripcion, tipoDispatcher, distanciaMaxima } = req.body
+
+    if (!nombre || !horaInicio || !horaFin || !titulo) {
+      return res.status(400).json({ error: 'Nombre, horas y título son obligatorios.' })
+    }
+
+    // Valida que no exista un bloque con ese nombre
+    const existe = await BloqueHorarioConfig.findOne({ nombre })
+    if (existe) {
+      return res.status(409).json({ error: `Bloque "${nombre}" ya existe.` })
+    }
+
+    const bloque = await BloqueHorarioConfig.create({
+      nombre,
+      horaInicio,
+      horaFin,
+      titulo,
+      descripcion: descripcion || '',
+      tipoDispatcher: tipoDispatcher || 'general',
+      distanciaMaxima: distanciaMaxima || 300
+    })
+
+    res.status(201).json(bloque)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PUT /api/centro/admin/bloques/:nombre - editar bloque (solo admin)
+router.put('/admin/bloques/:nombre', verificarToken, async (req, res) => {
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo administradores pueden configurar bloques.' })
+    }
+
+    const bloque = await BloqueHorarioConfig.findOne({ nombre: req.params.nombre })
+    if (!bloque) {
+      return res.status(404).json({ error: 'Bloque no encontrado.' })
+    }
+
+    const campos = ['horaInicio', 'horaFin', 'titulo', 'descripcion', 'tipoDispatcher', 'distanciaMaxima', 'activo']
+    for (const c of campos) {
+      if (req.body[c] !== undefined) bloque[c] = req.body[c]
+    }
+
+    await bloque.save()
+    res.json(bloque)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// DELETE /api/centro/admin/bloques/:nombre - eliminar bloque (solo admin)
+router.delete('/admin/bloques/:nombre', verificarToken, async (req, res) => {
+  try {
+    if (req.usuario.rol !== 'admin') {
+      return res.status(403).json({ error: 'Solo administradores pueden configurar bloques.' })
+    }
+
+    const bloque = await BloqueHorarioConfig.findOneAndDelete({ nombre: req.params.nombre })
+    if (!bloque) {
+      return res.status(404).json({ error: 'Bloque no encontrado.' })
+    }
+
+    // Al eliminar un bloque, las ofertas vinculadas quedan con bloqueHorario='todos' o se mantienen
+    // (no borramos ofertas; solo se dejan sin bloque específico)
+    res.json({ ok: true, mensaje: 'Bloque eliminado.' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Helper: Haversine distance entre dos coords (lat/lng en grados)
+function calcularDistancia(lat1, lng1, lat2, lng2) {
+  const R = 6371000 // Tierra en metros
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c // distancia en metros
+}
 
 export default router
