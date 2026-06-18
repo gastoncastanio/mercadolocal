@@ -36,9 +36,10 @@ const categorias = [
     icono: '🔄',
     titulo: 'Devoluciones',
     preguntas: [
-      { pregunta: 'Puedo devolver un producto?', respuesta: 'Si, antes de confirmar la recepcion podes abrir un reclamo. El vendedor coordinara la devolucion y una vez que reciba el producto te reembolsamos en 48hs.' },
-      { pregunta: 'Quien paga el envio de devolucion?', respuesta: 'Depende del motivo: si el producto no coincide con la descripcion o llego danado, el vendedor cubre el envio. Si es arrepentimiento, lo cubre el comprador.' },
-      { pregunta: 'Cuanto tardan en reembolsarme?', respuesta: 'Desde que el vendedor confirma que recibio el producto en buen estado, procesamos el reembolso en maximo 48 horas habiles.' },
+      { pregunta: 'Tengo derecho a arrepentirme de una compra?', respuesta: 'Si. Por la Ley 24.240 de Defensa del Consumidor, tenes 10 dias corridos desde que recibis el producto para arrepentirte sin dar explicaciones y recibir el reintegro total. Para ejercerlo, anda a "Mis pedidos", busca la compra y toca el boton "Arrepentirme". Queda registrado al instante y procesamos la devolucion.' },
+      { pregunta: 'Puedo devolver un producto?', respuesta: 'Si. Si el producto llego con fallas, no coincide con la descripcion o no llego, abri un reclamo desde "Mis pedidos" antes de confirmar la recepcion. El vendedor coordinara la devolucion y una vez que reciba el producto te reembolsamos en 48hs.' },
+      { pregunta: 'Quien paga el envio de devolucion?', respuesta: 'Depende del motivo: si el producto no coincide con la descripcion o llego danado, el vendedor cubre el envio. Si es arrepentimiento dentro de los 10 dias, el reintegro del producto es total y los gastos de devolucion los cubre el comprador, salvo que el producto tuviera fallas.' },
+      { pregunta: 'Cuanto tardan en reembolsarme?', respuesta: 'Desde que el vendedor confirma que recibio el producto en buen estado, o desde que registras tu arrepentimiento en plazo, procesamos el reembolso en maximo 48 horas habiles sobre el mismo medio de pago.' },
     ]
   },
   {
@@ -46,7 +47,9 @@ const categorias = [
     titulo: 'Seguridad',
     preguntas: [
       { pregunta: 'Es seguro comprar en MercadoLocal?', respuesta: 'Si. Tu dinero queda retenido hasta que confirmes la entrega. Usamos Mercado Pago como procesador de pagos, con toda su infraestructura de seguridad.' },
-      { pregunta: 'Como protegen mis datos?', respuesta: 'Usamos encriptacion para contraseñas, HTTPS para todas las comunicaciones, y no almacenamos datos de tarjetas. Consulta nuestra politica de privacidad para mas detalles.' },
+      { pregunta: 'Como protegen mis datos?', respuesta: 'Usamos encriptacion para contraseñas, HTTPS para todas las comunicaciones, y no almacenamos datos de tarjetas. Cumplimos con la Ley 25.326 de Proteccion de Datos Personales. Consulta nuestra politica de privacidad para mas detalles.' },
+      { pregunta: 'Puedo ver y descargar todos mis datos?', respuesta: 'Si. Desde tu menu de cuenta entra a "Privacidad y mis datos" y toca "Descargar mis datos" para obtener al instante un archivo con toda tu informacion: cuenta, tienda, pedidos, favoritos y el perfil de intereses publicitario que armamos. Es tu derecho de acceso de la Ley 25.326.' },
+      { pregunta: 'Como funciona la publicidad personalizada y como la desactivo?', respuesta: 'Analizamos tu actividad (productos que miras, busquedas y compras) para mostrarte productos mas relevantes por categoria y ciudad. No usamos datos sensibles ni vendemos tu informacion. Podes oponerte cuando quieras desde "Privacidad y mis datos": al desactivarla dejamos de usar tu actividad y borramos el perfil. Los visitantes sin cuenta pueden rechazarlo desde el aviso de privacidad.' },
       { pregunta: 'Que hago si sospecho de una estafa?', respuesta: 'No confirmes la recepcion del producto. Abri un reclamo inmediatamente y escribinos a soporte@mercadolocal.com.ar. Investigaremos el caso.' },
     ]
   },
@@ -56,7 +59,9 @@ const categorias = [
     preguntas: [
       { pregunta: 'Como creo una cuenta?', respuesta: 'Hace click en "Registrarse", completa tus datos (nombre, email, DNI, telefono, contraseña) y elegi si queres ser comprador o vendedor.' },
       { pregunta: 'Olvide mi contraseña', respuesta: 'Anda a la pagina de login y hacé click en "Olvidé mi contraseña". Te enviaremos un codigo de recuperacion a tu email.' },
-      { pregunta: 'Puedo cambiar de comprador a vendedor?', respuesta: 'Por ahora necesitas crear una cuenta nueva como vendedor. Proximamente vamos a habilitar el cambio de rol.' },
+      { pregunta: 'Como corrijo mis datos personales?', respuesta: 'Podes actualizar la mayoria de tus datos directamente desde tu perfil. Si necesitas corregir algun dato que no aparezca editable, escribinos a privacidad@mercadolocal.com.ar. Es tu derecho de rectificacion de la Ley 25.326.' },
+      { pregunta: 'Como elimino o doy de baja mi cuenta?', respuesta: 'Dar de baja tu cuenta es tan facil como crearla. Anda a "Privacidad y mis datos" desde el menu de tu cuenta y toca "Eliminar mi cuenta" (te vamos a pedir tu contraseña para confirmar). Borramos tus datos personales y de navegacion. Algunos datos de operaciones ya facturadas se conservan por obligaciones fiscales y legales.' },
+      { pregunta: 'Puedo cambiar de comprador a vendedor?', respuesta: 'Si. Desde "Central de vendedores" podes crear tu tienda y empezar a vender con la misma cuenta, sin necesidad de registrarte de nuevo.' },
     ]
   }
 ]
@@ -128,11 +133,11 @@ export default function Ayuda() {
         {/* Contacto */}
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-ml-line p-6">
           <h3 className="font-bold text-ml-ink text-lg mb-4">No encontraste lo que buscabas?</h3>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="p-4 bg-blue-50 rounded-xl">
               <span className="text-2xl">📧</span>
               <p className="font-semibold text-ml-ink mt-2">Email</p>
-              <p className="text-sm text-ml-soft">soporte@mercadolocal.com.ar</p>
+              <p className="text-sm text-ml-soft break-words">soporte@mercadolocal.com.ar</p>
             </div>
             <div className="p-4 bg-green-50 rounded-xl">
               <span className="text-2xl">💬</span>
@@ -141,9 +146,22 @@ export default function Ayuda() {
             </div>
             <div className="p-4 bg-purple-50 rounded-xl">
               <span className="text-2xl">📋</span>
-              <p className="font-semibold text-ml-ink mt-2">Reclamos</p>
-              <Link to="/mis-disputas" className="text-sm text-ml-blue hover:underline">Abrir reclamo formal</Link>
+              <p className="font-semibold text-ml-ink mt-2">Reclamo de compra</p>
+              <Link to="/mis-disputas" className="text-sm text-ml-blue hover:underline">Abrir reclamo de un pedido</Link>
             </div>
+            <div className="p-4 bg-rose-50 rounded-xl">
+              <span className="text-2xl">📕</span>
+              <p className="font-semibold text-ml-ink mt-2">Libro de Quejas</p>
+              <Link to="/libro-de-quejas" className="text-sm text-ml-blue hover:underline">Dejar una queja formal</Link>
+            </div>
+          </div>
+          <div className="mt-4 p-4 bg-ml-bg rounded-xl border border-ml-line">
+            <p className="text-sm text-ml-soft">
+              <span className="font-semibold text-ml-ink">Privacidad y datos personales:</span> gestiona tus datos,
+              la publicidad personalizada o la baja de tu cuenta desde{' '}
+              <Link to="/privacidad-datos" className="text-ml-blue hover:underline font-medium">Privacidad y mis datos</Link>,
+              o escribinos a privacidad@mercadolocal.com.ar.
+            </p>
           </div>
         </div>
 
@@ -152,6 +170,7 @@ export default function Ayuda() {
           <Link to="/devoluciones" className="text-ml-blue hover:underline">Politica de devoluciones</Link>
           <Link to="/terminos" className="text-ml-blue hover:underline">Terminos y condiciones</Link>
           <Link to="/privacidad" className="text-ml-blue hover:underline">Politica de privacidad</Link>
+          <Link to="/libro-de-quejas" className="text-ml-blue hover:underline">Libro de Quejas</Link>
         </div>
       </div>
     </div>
