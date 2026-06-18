@@ -83,7 +83,7 @@ export default function PersonalizadorEstilo({
           {parametros.coloresPrimarios.map((color, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2"
+              className="flex items-center gap-2 bg-ml-bg rounded-lg px-3 py-2"
             >
               <div
                 className="w-6 h-6 rounded border-2 border-ml-line"
@@ -150,7 +150,7 @@ export default function PersonalizadorEstilo({
         </label>
         <div className="grid grid-cols-2 gap-2">
           {ELEMENTOS.map((elemento) => (
-            <label key={elemento} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50">
+            <label key={elemento} className="flex items-center gap-2 p-2 rounded hover:bg-ml-bg">
               <input
                 type="checkbox"
                 checked={parametros.elementos?.includes(elemento) || false}

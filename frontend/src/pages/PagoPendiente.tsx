@@ -7,7 +7,7 @@ export default function PagoPendiente() {
         <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <span className="text-4xl">&#8987;</span>
         </div>
-        <h1 className="text-3xl font-bold text-ml-ink mb-3">Pago Pendiente</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-3">Pago Pendiente</h1>
         <p className="text-ml-muted mb-6">Tu pago está siendo procesado. Te notificaremos cuando se confirme.</p>
         <div className="space-y-3">
           <Link to="/mis-ordenes"
@@ -15,7 +15,7 @@ export default function PagoPendiente() {
             Ver Mis Pedidos
           </Link>
           <Link to="/catalogo"
-            className="block w-full py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors">
+            className="block w-full py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors">
             Seguir Comprando
           </Link>
         </div>

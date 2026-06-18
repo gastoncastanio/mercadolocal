@@ -97,7 +97,7 @@ export default function DisputasAdmin() {
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-ml-ink mb-8">👑 Gestion de Disputas</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">👑 Gestion de Disputas</h1>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6">
@@ -107,7 +107,7 @@ export default function DisputasAdmin() {
               onClick={() => setFiltro(tab.key)}
               className={`px-5 py-2 rounded-xl text-sm font-medium transition-colors ${
                 filtro === tab.key
-                  ? 'bg-blue-600 text-white'
+                  ? 'mlbtn ml-grad text-white'
                   : 'bg-white text-ml-soft hover:bg-gray-100'
               }`}
             >
@@ -126,7 +126,7 @@ export default function DisputasAdmin() {
             {disputasFiltradas.map((d) => {
               const badge = estadoBadge[d.estado] || estadoBadge.cerrada
               return (
-                <div key={d._id} className="bg-white rounded-2xl shadow-sm p-6">
+                <div key={d._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="text-sm text-ml-muted">
@@ -206,7 +206,7 @@ export default function DisputasAdmin() {
                       ) : (
                         <button
                           onClick={() => setResolviendoId(d._id)}
-                          className="mt-2 px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium "
+                          className="mt-2 px-5 py-2 mlbtn ml-grad text-white rounded-xl text-sm font-medium "
                         >
                           Resolver
                         </button>

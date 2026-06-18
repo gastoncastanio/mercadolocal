@@ -74,7 +74,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
         <button
           type="button"
           onClick={toggleRetiro}
-          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-ml-bg/50 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">🏪</span>
@@ -147,7 +147,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
         <button
           type="button"
           onClick={toggleEnvioPropio}
-          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-ml-bg/50 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">🛵</span>
@@ -220,7 +220,7 @@ export default function SelectorEntrega({ valor, onChange }: Props) {
         <button
           type="button"
           onClick={toggleEnvioCorreo}
-          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-gray-50/50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-ml-bg/50 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">📦</span>

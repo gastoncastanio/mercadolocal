@@ -204,7 +204,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('pagada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'pagada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
+              filtro === 'pagada' ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Por enviar ({cuentaPorEstado.pagada})
@@ -212,7 +212,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('enviada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'enviada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
+              filtro === 'enviada' ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             En camino ({cuentaPorEstado.enviada})
@@ -220,7 +220,7 @@ export default function PedidosVendedor() {
           <button
             onClick={() => setFiltro('completada')}
             className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filtro === 'completada' ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft border border-ml-line'
+              filtro === 'completada' ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft border border-ml-line'
             }`}
           >
             Entregados ({cuentaPorEstado.completada})
@@ -309,7 +309,7 @@ export default function PedidosVendedor() {
                           </a>
                           <a
                             href={`tel:${limpiarTelefono(telFinal)}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ml-blue text-white text-xs font-semibold rounded-lg hover:bg-ml-violet transition-colors"
                           >
                             📞 Llamar
                           </a>

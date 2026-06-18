@@ -340,7 +340,7 @@ export default function MiTienda() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016A3.001 3.001 0 0021 9.349m-18 0A2.997 2.997 0 017.5 6.2l.4-2.1A1.5 1.5 0 019.375 3h5.25a1.5 1.5 0 011.475 1.1l.4 2.1a2.997 2.997 0 014.5 3.149" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-ml-ink mb-2">Crea tu Tienda</h2>
+          <h2 className="font-display text-[24px] font-extrabold text-ml-ink mb-2">Crea tu Tienda</h2>
           <p className="text-ml-muted mb-6">Configura tu tienda para empezar a vender</p>
           <button onClick={() => setEditando(true)}
             className="px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold">
@@ -453,7 +453,7 @@ export default function MiTienda() {
                 </div>
               )}
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink">{tienda?.nombre}</h1>
+                <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink">{tienda?.nombre}</h1>
                 <p className="text-ml-muted mt-1 text-sm">{tienda?.ciudad} · {tienda?.tipo === 'online' ? 'Solo Online' : tienda?.tipo === 'fisica' ? 'Tienda Fisica' : 'Online + Fisica'}</p>
                 {tienda?.descripcion && <p className="text-ml-soft mt-1 text-sm">{tienda.descripcion}</p>}
               </div>

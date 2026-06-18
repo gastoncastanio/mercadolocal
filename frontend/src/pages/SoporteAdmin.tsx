@@ -133,7 +133,7 @@ export default function SoporteAdmin() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-ml-ink">Centro de Soporte · Admin</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Centro de Soporte · Admin</h1>
           <p className="text-ml-muted text-sm mt-1">
             Tickets escalados por el AGENTE-SOPORTE que requieren atención humana.
           </p>
@@ -148,7 +148,7 @@ export default function SoporteAdmin() {
                 key={e}
                 onClick={() => setFiltroEstado(e)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  filtroEstado === e ? 'bg-blue-600 text-white' : 'bg-gray-100 text-ml-soft hover:bg-ml-bg'
+                  filtroEstado === e ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
                 }`}
               >
                 {e === 'escalado' ? 'En revisión' : e.charAt(0).toUpperCase() + e.slice(1)}
@@ -161,7 +161,7 @@ export default function SoporteAdmin() {
             <button
               onClick={() => setFiltroPrioridad('')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                !filtroPrioridad ? 'bg-blue-600 text-white' : 'bg-gray-100 text-ml-soft hover:bg-ml-bg'
+                !filtroPrioridad ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
               }`}
             >
               Todas
@@ -171,7 +171,7 @@ export default function SoporteAdmin() {
                 key={p}
                 onClick={() => setFiltroPrioridad(p)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                  filtroPrioridad === p ? 'bg-blue-600 text-white' : 'bg-gray-100 text-ml-soft hover:bg-ml-bg'
+                  filtroPrioridad === p ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
                 }`}
               >
                 {p}

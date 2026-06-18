@@ -73,7 +73,7 @@ export default function CotizadorEnvio({ cpOrigen, pesoGr, alto, ancho, largo }:
         <button
           type="submit"
           disabled={cargando}
-          className="px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold  disabled:opacity-50 shrink-0"
+          className="px-4 py-2.5 mlbtn ml-grad text-white rounded-lg text-sm font-semibold disabled:opacity-50 shrink-0"
         >
           {cargando ? '...' : 'Calcular'}
         </button>
@@ -87,7 +87,7 @@ export default function CotizadorEnvio({ cpOrigen, pesoGr, alto, ancho, largo }:
             <div
               key={i}
               className={`flex items-center justify-between p-3 rounded-lg border ${
-                i === 0 ? 'border-green-200 bg-green-50' : 'border-ml-line2 bg-gray-50'
+                i === 0 ? 'border-green-200 bg-green-50' : 'border-ml-line2 bg-ml-bg'
               }`}
             >
               <div className="flex-1 min-w-0">

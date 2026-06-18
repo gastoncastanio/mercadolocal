@@ -6,7 +6,7 @@ export default function Devoluciones() {
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-5 sm:p-8 md:p-12">
         <div className="text-center mb-8 sm:mb-10">
           <div className="inline-block text-5xl mb-3">&#x1F504;</div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink">Pol&iacute;tica de Devoluciones</h1>
+          <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink">Pol&iacute;tica de Devoluciones</h1>
           <p className="text-ml-muted mt-2 text-sm">&Uacute;ltima actualizaci&oacute;n: 6 de abril de 2026</p>
         </div>
 

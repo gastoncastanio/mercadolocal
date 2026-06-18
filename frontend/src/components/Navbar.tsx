@@ -195,15 +195,15 @@ export default function Navbar() {
                           <p className="text-xs text-ml-muted truncate">{usuario?.email}</p>
                         </div>
                         <div className="py-1">
-                          <Link to="/mis-ordenes" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                          <Link to="/mis-ordenes" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                             <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                             Mis pedidos
                           </Link>
-                          <Link to="/favoritos" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                          <Link to="/favoritos" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                             <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
                             Favoritos
                           </Link>
-                          <Link to="/mis-disputas" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                          <Link to="/mis-disputas" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                             <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             Mis reclamos
                           </Link>
@@ -215,15 +215,15 @@ export default function Navbar() {
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
                                 Publicar producto
                               </Link>
-                              <Link to="/mi-tienda" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                              <Link to="/mi-tienda" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                                 <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                                 Mi tienda
                               </Link>
-                              <Link to="/pedidos-vendedor" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                              <Link to="/pedidos-vendedor" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                                 <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                 Mis ventas
                               </Link>
-                              <Link to="/central-vendedor" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">
+                              <Link to="/central-vendedor" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                                 <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                                 Central vendedor
                               </Link>
@@ -239,7 +239,7 @@ export default function Navbar() {
                             </>
                           )}
                           <div className="border-t my-1 mx-3 border-ml-line2"></div>
-                          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ml-muted hover:bg-gray-50">
+                          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ml-muted hover:bg-ml-bg">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             Cerrar sesión
                           </button>
@@ -291,7 +291,7 @@ export default function Navbar() {
             <div ref={refCategorias} className="relative">
               <button
                 onClick={() => toggleMenu('categorias')}
-                className="flex items-center gap-1.5 text-ml-ink hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 text-ml-ink hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
@@ -323,10 +323,10 @@ export default function Navbar() {
 
             <span className="text-gray-200">|</span>
 
-            <Link to="/catalogo" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors">
+            <Link to="/catalogo" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
               Catálogo
             </Link>
-            <Link to="/mas-vendidos" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors">
+            <Link to="/mas-vendidos" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
               Más vendidos
             </Link>
 
@@ -336,7 +336,7 @@ export default function Navbar() {
                 <div ref={refVendedor} className="relative">
                   <button
                     onClick={() => toggleMenu('vendedor')}
-                    className="flex items-center gap-1.5 text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-1.5 text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors"
                   >
                     Vender
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -346,19 +346,19 @@ export default function Navbar() {
                   {menuVendedor && (
                     <div className="absolute left-0 mt-1 w-64 bg-white rounded-xl shadow-2xl border border-ml-line2 overflow-hidden z-50">
                       <div className="py-1">
-                        <Link to="/publicar" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Link to="/publicar" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ml-bg">
                           <svg className="w-4 h-4 text-ml-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
                           <span className="font-medium text-ml-ink">Publicar producto</span>
                         </Link>
-                        <Link to="/dashboard-vendedor" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Link to="/dashboard-vendedor" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ml-bg">
                           <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                           <span className="text-ml-ink">Dashboard</span>
                         </Link>
-                        <Link to="/mi-tienda" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Link to="/mi-tienda" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ml-bg">
                           <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                           <span className="text-ml-ink">Mis publicaciones</span>
                         </Link>
-                        <Link to="/pedidos-vendedor" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-50">
+                        <Link to="/pedidos-vendedor" onClick={() => setMenuVendedor(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ml-bg">
                           <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                           <span className="text-ml-ink">Ventas</span>
                         </Link>
@@ -386,7 +386,7 @@ export default function Navbar() {
                 <div ref={refCompras} className="relative">
                   <button
                     onClick={() => toggleMenu('compras')}
-                    className="flex items-center gap-1.5 text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-1.5 text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors"
                   >
                     Mis compras
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -395,10 +395,10 @@ export default function Navbar() {
                   </button>
                   {menuCompras && (
                     <div className="absolute left-0 mt-1 w-52 bg-white rounded-lg shadow-xl border border-ml-line2 overflow-hidden py-1 z-50">
-                      <Link to="/mis-ordenes" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">Mis pedidos</Link>
-                      <Link to="/favoritos" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">Favoritos</Link>
-                      <Link to="/carrito" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">Carrito</Link>
-                      <Link to="/mis-disputas" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-gray-50">Mis reclamos</Link>
+                      <Link to="/mis-ordenes" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">Mis pedidos</Link>
+                      <Link to="/favoritos" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">Favoritos</Link>
+                      <Link to="/carrito" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">Carrito</Link>
+                      <Link to="/mis-disputas" onClick={() => setMenuCompras(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">Mis reclamos</Link>
                     </div>
                   )}
                 </div>
@@ -406,7 +406,7 @@ export default function Navbar() {
             )}
 
             <div className="ml-auto">
-              <Link to="/ayuda" className="text-ml-muted hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-gray-50 transition-colors">
+              <Link to="/ayuda" className="text-ml-muted hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
                 Ayuda
               </Link>
             </div>
@@ -421,12 +421,12 @@ export default function Navbar() {
           <div className="relative bg-white w-72 max-w-[80vw] h-full overflow-y-auto shadow-2xl animate-slide-in-left">
             <div className="py-3">
               <p className="px-4 py-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Explorar</p>
-              <Link to="/catalogo" className="block px-4 py-3 text-ml-ink font-medium hover:bg-gray-50">Catálogo completo</Link>
-              <Link to="/mas-vendidos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-gray-50">Más vendidos</Link>
+              <Link to="/catalogo" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Catálogo completo</Link>
+              <Link to="/mas-vendidos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Más vendidos</Link>
 
               <p className="px-4 py-2 mt-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Categorías</p>
               {CATEGORIAS_NAV.map(cat => (
-                <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`} className="block px-4 py-3 text-ml-ink hover:bg-gray-50">
+                <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`} className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">
                   {cat.nombre}
                 </Link>
               ))}
@@ -435,9 +435,9 @@ export default function Navbar() {
                 <>
                   <p className="px-4 py-2 mt-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Vendedor</p>
                   <Link to="/publicar" className="block px-4 py-3 text-ml-blue font-medium hover:bg-blue-50">Publicar producto</Link>
-                  <Link to="/mi-tienda" className="block px-4 py-3 text-ml-ink hover:bg-gray-50">Mi tienda</Link>
-                  <Link to="/pedidos-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-gray-50">Mis ventas</Link>
-                  <Link to="/central-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-gray-50">Central vendedor</Link>
+                  <Link to="/mi-tienda" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Mi tienda</Link>
+                  <Link to="/pedidos-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Mis ventas</Link>
+                  <Link to="/central-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Central vendedor</Link>
                 </>
               )}
 
@@ -449,7 +449,7 @@ export default function Navbar() {
               )}
 
               <div className="border-t my-2 mx-3"></div>
-              <Link to="/ayuda" className="block px-4 py-3 text-ml-soft hover:bg-gray-50">Centro de ayuda</Link>
+              <Link to="/ayuda" className="block px-4 py-3 text-ml-soft hover:bg-ml-bg">Centro de ayuda</Link>
 
               {!estaLogueado && (
                 <>

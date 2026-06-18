@@ -130,8 +130,8 @@ export default function ChatbotSoporte() {
               <div key={i} className={`flex ${msg.esBot ? 'justify-start' : 'justify-end'}`}>
                 <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm whitespace-pre-line ${
                   msg.esBot
-                    ? 'bg-gray-100 text-ml-ink rounded-bl-md'
-                    : 'bg-blue-600 text-white rounded-br-md'
+                    ? 'bg-ml-bg text-ml-ink rounded-bl-md'
+                    : 'bg-ml-blue text-white rounded-br-md'
                 }`}>
                   {msg.texto}
                 </div>
@@ -161,9 +161,9 @@ export default function ChatbotSoporte() {
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder="Escribi tu pregunta..."
-              className="flex-1 px-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-300"
+              className="flex-1 px-4 py-2.5 bg-ml-bg rounded-xl text-sm outline-none focus:ring-2 focus:ring-ml-purple/30"
             />
-            <button type="submit" className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium ">
+            <button type="submit" className="px-4 py-2.5 mlbtn ml-grad text-white rounded-xl text-sm font-medium ">
               Enviar
             </button>
           </form>

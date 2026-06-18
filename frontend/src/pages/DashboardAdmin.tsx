@@ -146,7 +146,7 @@ function SeccionInicio() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ml-ink mb-6">Resumen General</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Resumen General</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {cards.map(c => (
           <div key={c.t} className={`bg-gradient-to-r ${c.c} rounded-2xl p-5 text-white shadow-lg`}>
@@ -162,12 +162,12 @@ function SeccionInicio() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
           <h3 className="font-semibold text-ml-ink mb-2">✅ Completadas</h3>
           <p className="text-3xl font-bold text-green-600">{stats.ordenesCompletadas}</p>
           <p className="text-sm text-ml-muted">de {stats.totalOrdenes} órdenes</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
           <h3 className="font-semibold text-ml-ink mb-2">⏳ Pendientes</h3>
           <p className="text-3xl font-bold text-yellow-600">{stats.ordenesPendientes}</p>
           <p className="text-sm text-ml-muted">requieren atención</p>
@@ -265,7 +265,7 @@ function SeccionUsuarios() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-ml-ink">Usuarios ({usuarios.length})</h1>
+        <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Usuarios ({usuarios.length})</h1>
       </div>
 
       <input
@@ -340,7 +340,7 @@ function SeccionVendedores() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ml-ink mb-6">Vendedores y Tiendas ({tiendas.length})</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Vendedores y Tiendas ({tiendas.length})</h1>
 
       {tiendas.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
@@ -410,7 +410,7 @@ function SeccionProductos() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ml-ink mb-6">Productos ({productos.length})</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Productos ({productos.length})</h1>
 
       <input
         type="text"
@@ -536,7 +536,7 @@ function SeccionOrdenes() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-ml-ink">Órdenes ({ordenes.length})</h1>
+        <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Órdenes ({ordenes.length})</h1>
         <button
           onClick={limpiarHistorial}
           disabled={limpiando}
@@ -629,7 +629,7 @@ function SeccionPublicidad() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-ml-ink mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
@@ -646,7 +646,7 @@ function SeccionPublicidad() {
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
           <p className="text-xs text-ml-muted mb-1">Promos totales</p>
-          <p className="text-2xl font-bold text-ml-ink">{stats?.promocionesTotales || 0}</p>
+          <p className="font-display text-[24px] font-extrabold text-ml-ink">{stats?.promocionesTotales || 0}</p>
         </div>
       </div>
 
@@ -768,7 +768,7 @@ function SeccionConfig() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-ml-ink">Configuración del Sitio</h1>
+          <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Configuración del Sitio</h1>
           <p className="text-sm text-ml-muted">Cambiá textos, colores y funciones fácilmente</p>
         </div>
         {totalCambios > 0 && (
@@ -792,7 +792,7 @@ function SeccionConfig() {
             key={cat}
             onClick={() => setCategoriaActiva(cat)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 ${
-              categoriaActiva === cat ? 'bg-blue-600 text-white' : 'bg-white text-ml-soft hover:bg-gray-50 border border-ml-line'
+              categoriaActiva === cat ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft hover:bg-ml-bg border border-ml-line'
             }`}
           >
             <span>{ICONOS_CAT[cat] || '📄'}</span>
@@ -805,7 +805,7 @@ function SeccionConfig() {
       </div>
 
       {/* Campos */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-5">
         {configsFiltradas.map(config => (
           <div key={config._id} className="border-b border-ml-line2 pb-5 last:border-0 last:pb-0">
             <label className="block text-sm font-semibold text-ml-ink mb-1">{config.descripcion}</label>

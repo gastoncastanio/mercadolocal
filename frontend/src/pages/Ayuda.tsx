@@ -126,7 +126,7 @@ export default function Ayuda() {
         </div>
 
         {/* Contacto */}
-        <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
+        <div className="mt-8 bg-white rounded-2xl shadow-sm border border-ml-line p-6">
           <h3 className="font-bold text-ml-ink text-lg mb-4">No encontraste lo que buscabas?</h3>
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="p-4 bg-blue-50 rounded-xl">

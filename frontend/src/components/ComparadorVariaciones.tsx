@@ -28,7 +28,7 @@ export default function ComparadorVariaciones({
       <div className="space-y-4">
         <div>
           <p className="text-sm font-medium text-ml-ink mb-2">Original</p>
-          <div className="bg-gray-100 rounded-lg p-4 h-48 flex items-center justify-center">
+          <div className="bg-ml-bg rounded-lg p-4 h-48 flex items-center justify-center">
             <img
               src={logoOriginal.url}
               alt="Logo original"
@@ -44,7 +44,7 @@ export default function ComparadorVariaciones({
               <button
                 key={index}
                 onClick={() => onSeleccionar?.(variacion)}
-                className="bg-gray-100 rounded-lg p-3 h-40 flex items-center justify-center hover:ring-2 hover:ring-blue-500 transition"
+                className="bg-ml-bg rounded-lg p-3 h-40 flex items-center justify-center hover:ring-2 hover:ring-blue-500 transition"
               >
                 <img
                   src={variacion.url}

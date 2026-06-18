@@ -58,7 +58,7 @@ export default function CarritosAbandonados() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-ml-ink">Compras sin completar</h1>
+            <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Compras sin completar</h1>
             <p className="text-ml-muted mt-1">Ordenes creadas sin pago confirmado (ultimas 48hs)</p>
           </div>
           <div className="bg-orange-100 text-orange-700 px-4 py-2 rounded-xl font-bold text-2xl">
@@ -109,7 +109,7 @@ export default function CarritosAbandonados() {
                     <button
                       onClick={() => enviarRecordatorio(orden._id)}
                       disabled={enviando === orden._id || mensajes[orden._id] === 'Recordatorio enviado'}
-                      className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg font-medium  disabled:opacity-50 flex items-center gap-2"
+                      className="px-4 py-2 mlbtn ml-grad text-white text-sm rounded-lg font-medium disabled:opacity-50 flex items-center gap-2"
                     >
                       {enviando === orden._id ? (
                         'Enviando...'

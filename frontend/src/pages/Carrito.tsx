@@ -97,7 +97,7 @@ export default function Carrito() {
             <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-lg text-ml-muted">Total</span>
-                <span className="text-3xl font-bold text-ml-ink">${total.toLocaleString()}</span>
+                <span className="font-display text-[28px] font-extrabold text-ml-ink">${total.toLocaleString()}</span>
               </div>
               <button
                 onClick={() => navigate('/checkout')}

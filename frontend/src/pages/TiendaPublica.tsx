@@ -121,19 +121,19 @@ export default function TiendaPublica() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-blue-50 rounded-xl p-3 sm:p-4 border-l-4 border-blue-500">
               <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Ventas totales</p>
-              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{ventas}</p>
+              <p className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mt-1">{ventas}</p>
             </div>
             <div className="bg-yellow-50 rounded-xl p-3 sm:p-4 border-l-4 border-yellow-500">
               <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Calificaci&oacute;n</p>
-              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{calif.toFixed(1)}/5</p>
+              <p className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mt-1">{calif.toFixed(1)}/5</p>
             </div>
             <div className="bg-green-50 rounded-xl p-3 sm:p-4 border-l-4 border-green-500">
               <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Productos</p>
-              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">{productos.length}</p>
+              <p className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mt-1">{productos.length}</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3 sm:p-4 border-l-4 border-purple-500">
               <p className="text-[11px] sm:text-xs text-ml-muted uppercase font-semibold">Antig&uuml;edad</p>
-              <p className="text-xl sm:text-2xl font-bold text-ml-ink mt-1">
+              <p className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mt-1">
                 {mesesActivo} {mesesActivo === 1 ? 'mes' : 'meses'}
               </p>
             </div>
@@ -167,7 +167,7 @@ export default function TiendaPublica() {
 
       {/* Productos de la tienda */}
       <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-ml-ink mb-4">
+        <h2 className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mb-4">
           Productos de esta tienda ({productos.length})
         </h2>
         {productos.length === 0 ? (

@@ -57,7 +57,7 @@ export default function EspaciosPublicitarios() {
                   &#x2B50; Promo
                 </span>
                 <div className="flex items-center gap-3 p-3">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-ml-bg shrink-0">
                     {prod.imagenes?.[0] ? (
                       <img src={prod.imagenes[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     ) : (

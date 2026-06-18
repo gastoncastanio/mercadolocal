@@ -70,10 +70,10 @@ export default function RecuperarPassword() {
 
   return (
     <div className="min-h-screen bg-ml-bg flex items-center justify-center py-12 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-ml-line p-8">
         <div className="text-center mb-8">
           <span className="text-4xl">{paso === 'listo' ? '✅' : '🔑'}</span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mt-2">
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink mt-2">
             {paso === 'email' && 'Recuperar contraseña'}
             {paso === 'codigo' && 'Ingresá el código'}
             {paso === 'listo' && '¡Listo!'}
@@ -107,7 +107,7 @@ export default function RecuperarPassword() {
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="w-full py-3 mlbtn ml-grad text-white rounded-xl font-semibold disabled:opacity-50"
             >
               {cargando ? 'Enviando...' : 'Enviar código'}
             </button>
@@ -182,7 +182,7 @@ export default function RecuperarPassword() {
             <button
               type="submit"
               disabled={cargando}
-              className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+              className="w-full py-3 mlbtn ml-grad text-white rounded-xl font-semibold disabled:opacity-50"
             >
               {cargando ? 'Restableciendo...' : 'Restablecer contraseña'}
             </button>
@@ -202,7 +202,7 @@ export default function RecuperarPassword() {
             <p className="text-green-600 font-medium mb-6">Tu contraseña fue actualizada correctamente.</p>
             <Link
               to="/login"
-              className="inline-block w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all text-center"
+              className="inline-block w-full py-3 mlbtn ml-grad text-white rounded-xl font-semibold text-center"
             >
               Iniciar sesión
             </Link>

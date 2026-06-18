@@ -178,7 +178,7 @@ export default function PropuestasEquipo() {
             <button
               onClick={forzarRonda}
               disabled={forzando}
-              className="bg-blue-600  disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium"
+              className="mlbtn ml-grad text-white disabled:opacity-50 px-4 py-2 rounded-lg text-sm font-medium"
             >
               {forzando ? 'Analizando...' : '🔄 Forzar análisis ahora'}
             </button>
@@ -200,7 +200,7 @@ export default function PropuestasEquipo() {
               onClick={() => setFiltroEstado(f.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 filtroEstado === f.id
-                  ? 'bg-blue-600 text-white'
+                  ? 'mlbtn ml-grad text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
               }`}
             >

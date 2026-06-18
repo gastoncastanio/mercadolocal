@@ -180,7 +180,7 @@ export default function PublicarProducto() {
             <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-5">
               <span className="text-4xl">⚠️</span>
             </div>
-            <h1 className="text-2xl font-bold text-ml-ink mb-3">
+            <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-3">
               Vinculá Mercado Pago para empezar a vender
             </h1>
             <p className="text-ml-ink mb-2">

@@ -144,7 +144,7 @@ export default function InstalarApp() {
             {deferredPrompt && (
               <button
                 onClick={instalar}
-                className="flex-shrink-0 w-full sm:w-auto bg-white text-indigo-700 font-bold px-8 py-3.5 rounded-xl text-sm sm:text-base hover:bg-gray-50 hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 animate-pulse"
+                className="flex-shrink-0 w-full sm:w-auto bg-white text-indigo-700 font-bold px-8 py-3.5 rounded-xl text-sm sm:text-base hover:bg-ml-bg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 animate-pulse"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -340,7 +340,7 @@ export function BannerFlotanteInstalar() {
           {/* CTA */}
           <button
             onClick={handleInstalar}
-            className="flex-shrink-0 bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl "
+            className="flex-shrink-0 mlbtn ml-grad text-white font-bold text-xs px-4 py-2.5 rounded-xl "
           >
             Instalar
           </button>

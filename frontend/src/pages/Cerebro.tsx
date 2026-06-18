@@ -419,7 +419,7 @@ export default function Cerebro() {
             </a>
             <button
               onClick={generarReporteAhora}
-              className="text-xs bg-blue-600  px-3 py-1.5 rounded-md font-medium"
+              className="text-xs mlbtn ml-grad text-white px-3 py-1.5 rounded-md font-medium"
             >
               Generar reporte
             </button>
@@ -503,7 +503,7 @@ export default function Cerebro() {
               <button
                 onClick={enviarMensaje}
                 disabled={enviando || !textoInput.trim()}
-                className="bg-blue-600  disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="mlbtn ml-grad disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 {enviando ? '...' : 'Enviar'}
               </button>
@@ -862,7 +862,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
         <div
           className={`px-3 py-2 rounded-2xl text-sm ${
             esAdmin
-              ? 'bg-blue-600 text-white rounded-br-sm'
+              ? 'bg-ml-blue text-white rounded-br-sm'
               : 'bg-white text-ml-ink rounded-bl-sm border border-ml-line'
           }`}
         >
@@ -970,7 +970,7 @@ function ChatPrivadoCEO({
             <button
               onClick={onSend}
               disabled={enviando || !texto.trim()}
-              className="bg-blue-600  disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
+              className="mlbtn ml-grad disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
               {enviando ? '...' : 'Enviar'}
             </button>

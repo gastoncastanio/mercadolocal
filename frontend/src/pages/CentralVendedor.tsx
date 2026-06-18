@@ -114,7 +114,7 @@ export default function CentralVendedor() {
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
           <p className="text-6xl mb-4">&#x1F3EA;</p>
-          <h2 className="text-2xl font-bold text-ml-ink mb-2">Necesit&aacute;s una tienda</h2>
+          <h2 className="font-display text-[24px] font-extrabold text-ml-ink mb-2">Necesit&aacute;s una tienda</h2>
           <p className="text-ml-muted mb-6">Cre&aacute; tu tienda para acceder a la Central de Vendedores</p>
           <Link to="/mi-tienda" className="inline-block px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold ">
             Crear mi tienda
@@ -128,7 +128,7 @@ export default function CentralVendedor() {
     <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header con bienvenida + reputación */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 mb-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {tienda.logo ? (
@@ -140,7 +140,7 @@ export default function CentralVendedor() {
               )}
               <div>
                 <p className="text-sm text-ml-muted">Bienvenido,</p>
-                <h1 className="text-2xl font-bold text-ml-ink">{usuario?.nombre?.split(' ')[0]}</h1>
+                <h1 className="font-display text-[24px] font-extrabold text-ml-ink">{usuario?.nombre?.split(' ')[0]}</h1>
                 <p className="text-ml-soft">{tienda.nombre}</p>
               </div>
             </div>
@@ -156,19 +156,19 @@ export default function CentralVendedor() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-blue-500">
             <p className="text-sm text-ml-muted mb-1">Productos</p>
-            <p className="text-3xl font-bold text-ml-ink">{stats.totalProductos}</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.totalProductos}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-green-500">
             <p className="text-sm text-ml-muted mb-1">Ventas</p>
-            <p className="text-3xl font-bold text-ml-ink">{stats.totalVentas}</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.totalVentas}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-purple-500">
             <p className="text-sm text-ml-muted mb-1">Ganancias</p>
-            <p className="text-3xl font-bold text-ml-ink">${stats.ganancias.toLocaleString()}</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">${stats.ganancias.toLocaleString()}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-yellow-500">
             <p className="text-sm text-ml-muted mb-1">Reputaci&oacute;n</p>
-            <p className="text-3xl font-bold text-ml-ink">{stats.calificacion.toFixed(1)}</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.calificacion.toFixed(1)}</p>
           </div>
         </div>
 

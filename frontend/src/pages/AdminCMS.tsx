@@ -107,7 +107,7 @@ export default function AdminCMS() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-ml-ink">Panel de Configuraci&oacute;n</h1>
+            <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Panel de Configuraci&oacute;n</h1>
             <p className="text-ml-muted mt-1">Personalizá textos, colores y funcionalidades del marketplace</p>
           </div>
           <div className="flex items-center gap-3">
@@ -139,7 +139,7 @@ export default function AdminCMS() {
         <div className="grid grid-cols-12 gap-6">
           {/* Sidebar categorías */}
           <div className="col-span-12 md:col-span-3">
-            <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-4 sticky top-4">
               <h3 className="font-semibold text-ml-ink mb-3 text-sm uppercase tracking-wider">Categor&iacute;as</h3>
               <div className="space-y-1">
                 {categorias.map(cat => (
@@ -165,7 +165,7 @@ export default function AdminCMS() {
 
           {/* Campos de configuración */}
           <div className="col-span-12 md:col-span-9">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
               <h2 className="text-xl font-bold text-ml-ink mb-1 flex items-center gap-2">
                 <span>{ICONOS_CATEGORIA[categoriaActiva] || '\uD83D\uDCC4'}</span>
                 {categoriaActiva}

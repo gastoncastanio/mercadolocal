@@ -101,7 +101,7 @@ export default function PromoverProducto() {
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink">&#x1F4E2; Promocionar productos</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink">&#x1F4E2; Promocionar productos</h1>
             <p className="text-ml-muted text-sm mt-1">Destac&aacute; tus productos para vender m&aacute;s r&aacute;pido</p>
           </div>
           <Link to="/central-vendedor" className="text-ml-blue hover:underline text-sm">&larr; Volver</Link>
@@ -203,7 +203,7 @@ export default function PromoverProducto() {
                         : 'border-ml-line2 hover:border-ml-line'
                     }`}
                   >
-                    <p className="text-2xl font-bold text-ml-ink">{dias}</p>
+                    <p className="font-display text-[24px] font-extrabold text-ml-ink">{dias}</p>
                     <p className="text-xs text-ml-muted mb-2">d&iacute;as</p>
                     <p className="text-sm font-bold text-ml-blue">${(precio as number).toLocaleString('es-AR')}</p>
                     <p className="text-[10px] text-ml-muted">${Math.round((precio as number) / Number(dias)).toLocaleString('es-AR')}/d&iacute;a</p>

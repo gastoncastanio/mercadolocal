@@ -40,7 +40,7 @@ export default function PortonPrivado({ children }: { children: React.ReactNode 
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-6">
           <div className="text-6xl mb-3">🔒</div>
-          <h1 className="text-3xl font-bold text-ml-ink mb-2">MercadoLocal</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-2">MercadoLocal</h1>
           <p className="text-ml-muted">Sitio en pruebas. Ingresá la clave de acceso.</p>
         </div>
         <form onSubmit={intentar} className="space-y-4">

@@ -108,7 +108,7 @@ export default function MisDisputas() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-ml-ink">⚖️ Mis Disputas</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">⚖️ Mis Disputas</h1>
           <button
             onClick={abrirFormulario}
             className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl font-medium hover:shadow-lg transition-all"
@@ -184,7 +184,7 @@ export default function MisDisputas() {
                   <button
                     type="button"
                     onClick={() => setMostrarForm(false)}
-                    className="flex-1 py-3 border border-ml-line rounded-xl text-ml-soft font-medium hover:bg-gray-50 transition-colors"
+                    className="flex-1 py-3 border border-ml-line rounded-xl text-ml-soft font-medium hover:bg-ml-bg transition-colors"
                   >
                     Cancelar
                   </button>
@@ -212,7 +212,7 @@ export default function MisDisputas() {
             {disputas.map((d) => {
               const badge = estadoBadge[d.estado] || estadoBadge.cerrada
               return (
-                <div key={d._id} className="bg-white rounded-2xl shadow-sm p-6">
+                <div key={d._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="text-sm text-ml-muted">

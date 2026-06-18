@@ -157,7 +157,7 @@ export default function PagoExitoso() {
               Pago {colaProgreso.pagados} de {colaProgreso.total} listo
             </p>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mb-3">¡Falta un pago más!</h1>
+          <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Falta un pago más!</h1>
           <p className="text-ml-muted mb-4">
             Como compraste a varios vendedores, cada uno cobra por separado.
           </p>
@@ -183,7 +183,7 @@ export default function PagoExitoso() {
             </button>
             <Link
               to="/mis-ordenes"
-              className="block w-full py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
+              className="block w-full py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
             >
               Lo hago después
             </Link>
@@ -201,7 +201,7 @@ export default function PagoExitoso() {
             <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mb-3">Verificando tu pago...</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">Verificando tu pago...</h1>
             <p className="text-ml-muted mb-2">Estamos confirmando con Mercado Pago.</p>
             <p className="text-xs text-ml-muted mb-6">Intento {intentos + 1} de {MAX_INTENTOS}. No cierres esta ventana.</p>
           </>
@@ -214,7 +214,7 @@ export default function PagoExitoso() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mb-3">¡Pago confirmado!</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Pago confirmado!</h1>
             {colaProgreso && colaProgreso.total > 1 ? (
               <p className="text-ml-muted mb-2">¡Listo! Pagaste a los {colaProgreso.total} vendedores de tu compra.</p>
             ) : (
@@ -231,7 +231,7 @@ export default function PagoExitoso() {
             <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">⏳</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mb-3">Tu pago está siendo procesado</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">Tu pago está siendo procesado</h1>
             <p className="text-ml-muted mb-6">
               Te avisaremos por email cuando se confirme. Podés ver el estado actualizado en "Mis pedidos".
             </p>
@@ -245,7 +245,7 @@ export default function PagoExitoso() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-ml-ink mb-3">¡Pago Exitoso!</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Pago Exitoso!</h1>
             <p className="text-ml-muted mb-2">Tu pedido fue procesado correctamente.</p>
             {paymentId && (
               <p className="text-xs text-ml-muted mb-6">ID de pago: {paymentId}</p>
@@ -262,7 +262,7 @@ export default function PagoExitoso() {
           </Link>
           <Link
             to="/catalogo"
-            className="block w-full py-3 bg-gray-100 text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
+            className="block w-full py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
           >
             Seguir comprando
           </Link>

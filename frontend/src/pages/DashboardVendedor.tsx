@@ -104,7 +104,7 @@ export default function DashboardVendedor() {
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-ml-ink mb-8">
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">
           🏪 Dashboard - {tienda?.nombre || stats.nombre}
         </h1>
 
@@ -128,7 +128,7 @@ export default function DashboardVendedor() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Bar chart */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
             <h3 className="font-semibold text-ml-ink mb-4">Ventas - Ultimos 7 dias</h3>
             <div className="flex items-end gap-3 h-48">
               {ventasPorDia.map((dia, i) => (
@@ -150,7 +150,7 @@ export default function DashboardVendedor() {
           </div>
 
           {/* Recent orders */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
             <h3 className="font-semibold text-ml-ink mb-4">Ordenes Recientes</h3>
             {ordenesRecientes.length === 0 ? (
               <p className="text-ml-muted text-center py-8">No hay ordenes aun</p>

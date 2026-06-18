@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 export default function Terminos() {
   return (
     <div className="min-h-screen bg-ml-bg py-12 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-ml-line p-8 md:p-12">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-ml-ink">Terminos y Condiciones</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Terminos y Condiciones</h1>
           <p className="text-ml-muted mt-2">Ultima actualizacion: 1 de abril de 2026</p>
         </div>
 

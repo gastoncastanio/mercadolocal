@@ -203,7 +203,7 @@ export default function ModeracionAdmin() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-ml-ink">Moderación de productos</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Moderación de productos</h1>
         <p className="text-sm text-ml-soft mt-1">
           Panel del AGENTE-MODERACIÓN. Revisá productos marcados para revisión humana.
         </p>
@@ -276,7 +276,7 @@ export default function ModeracionAdmin() {
                     )}
                     <button
                       onClick={() => { setProductoActivo(p); setMotivoRechazo('') }}
-                      className="w-full bg-blue-600  text-white text-sm py-2 rounded-md font-medium"
+                      className="w-full mlbtn ml-grad text-white text-sm py-2 rounded-md font-medium"
                     >
                       Revisar
                     </button>
@@ -384,25 +384,25 @@ export default function ModeracionAdmin() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-lg border border-ml-line p-4">
                   <div className="text-xs text-ml-muted uppercase">Total {metricas.dias}d</div>
-                  <div className="text-2xl font-bold text-ml-ink mt-1">
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {metricas.totales?.total || 0}
                   </div>
                 </div>
                 <div className="bg-white rounded-lg border border-ml-line p-4">
                   <div className="text-xs text-ml-muted uppercase">Costo estimado</div>
-                  <div className="text-2xl font-bold text-ml-ink mt-1">
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     US${metricas.costoEstimadoUSD.toFixed(4)}
                   </div>
                 </div>
                 <div className="bg-white rounded-lg border border-ml-line p-4">
                   <div className="text-xs text-ml-muted uppercase">Tokens cacheados</div>
-                  <div className="text-2xl font-bold text-ml-ink mt-1">
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {((metricas.totales?.tokensCached || 0) / 1000).toFixed(1)}k
                   </div>
                 </div>
                 <div className="bg-white rounded-lg border border-ml-line p-4">
                   <div className="text-xs text-ml-muted uppercase">Duración promedio</div>
-                  <div className="text-2xl font-bold text-ml-ink mt-1">
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {Math.round(metricas.totales?.duracionPromedio || 0)}ms
                   </div>
                 </div>
@@ -473,7 +473,7 @@ export default function ModeracionAdmin() {
               {/* Info */}
               <div>
                 <h3 className="text-xl font-bold text-ml-ink">{productoActivo.nombre}</h3>
-                <p className="text-2xl font-bold text-ml-ink mt-1">{formatearPrecio(productoActivo.precio)}</p>
+                <p className="font-display text-[24px] font-extrabold text-ml-ink mt-1">{formatearPrecio(productoActivo.precio)}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">

@@ -42,7 +42,7 @@ export default function GaleriaLogos({
             key={logo._id || index}
             className="card-lg overflow-hidden hover:scale-105 transition-transform"
           >
-            <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+            <div className="aspect-square bg-ml-bg flex items-center justify-center overflow-hidden">
               <img
                 src={logo.url}
                 alt={`Logo ${index + 1}`}

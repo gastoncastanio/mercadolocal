@@ -83,14 +83,14 @@ export default function Resenas({ productoId, puedeResenar, ordenId }: ResenasPr
 
   if (cargando) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
         <div className="animate-pulse text-center text-ml-muted">Cargando resenas...</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm p-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
       <h3 className="text-xl font-bold text-ml-ink mb-4">Resenas</h3>
 
       {/* Promedio */}
@@ -138,7 +138,7 @@ export default function Resenas({ productoId, puedeResenar, ordenId }: ResenasPr
           <button
             type="submit"
             disabled={enviando}
-            className="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium  disabled:opacity-50"
+            className="px-6 py-2 mlbtn ml-grad text-white rounded-xl font-medium disabled:opacity-50"
           >
             {enviando ? 'Enviando...' : 'Enviar Resena'}
           </button>

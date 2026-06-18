@@ -189,7 +189,7 @@ export default function Soporte() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-ml-ink">Soporte</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Soporte</h1>
           <p className="text-ml-muted text-sm mt-1">
             Hablá con nuestro asistente para resolver cualquier duda. Si necesitamos, te derivamos a un humano.
           </p>
@@ -222,7 +222,7 @@ export default function Soporte() {
                       <button
                         key={t._id}
                         onClick={() => abrirTicket(t._id)}
-                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                        className={`w-full px-4 py-3 text-left hover:bg-ml-bg transition-colors ${
                           ticketActivo?._id === t._id ? 'bg-blue-50' : ''
                         }`}
                       >
@@ -288,7 +288,7 @@ export default function Soporte() {
               </div>
 
               {/* Mensajes */}
-              <div ref={mensajesRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-gray-50/50">
+              <div ref={mensajesRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-ml-bg/50">
                 {!ticketActivo || ticketActivo.mensajes.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center px-6">
                     <div className="w-16 h-16 bg-gradient-to-br from-ml-bg to-ml-bg rounded-2xl flex items-center justify-center mb-4 text-3xl">
@@ -362,7 +362,7 @@ export default function Soporte() {
                       placeholder={enviando ? 'Esperando respuesta...' : 'Escribí tu consulta...'}
                       disabled={enviando}
                       maxLength={2000}
-                      className="flex-1 px-4 py-3 border border-ml-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 disabled:bg-gray-50"
+                      className="flex-1 px-4 py-3 border border-ml-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 disabled:bg-ml-bg"
                     />
                     <button
                       type="submit"

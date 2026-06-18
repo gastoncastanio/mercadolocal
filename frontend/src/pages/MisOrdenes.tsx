@@ -207,7 +207,7 @@ export default function MisOrdenes() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-ml-ink">Mis pedidos</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Mis pedidos</h1>
           <button
             onClick={cargarOrdenes}
             className="text-sm text-ml-blue font-medium hover:underline"
@@ -271,7 +271,7 @@ export default function MisOrdenes() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-ml-ink">${orden.total.toLocaleString('es-AR')}</p>
+                      <p className="font-display text-[24px] font-extrabold text-ml-ink">${orden.total.toLocaleString('es-AR')}</p>
                     </div>
                   </div>
 

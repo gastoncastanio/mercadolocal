@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 export default function Privacidad() {
   return (
     <div className="min-h-screen bg-ml-bg py-12 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-8 md:p-12">
+      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-ml-line p-8 md:p-12">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-ml-ink">Politica de Privacidad</h1>
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Politica de Privacidad</h1>
           <p className="text-ml-muted mt-2">Ultima actualizacion: 1 de abril de 2026</p>
         </div>
 
@@ -106,7 +106,7 @@ export default function Privacidad() {
               De conformidad con la Ley 25.326, usted tiene los siguientes derechos sobre sus datos personales:
             </p>
             <div className="mt-3 space-y-3">
-              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+              <div className="bg-ml-bg rounded-xl p-4 border border-ml-line">
                 <h3 className="font-semibold text-ml-ink">Acceso</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar informacion sobre los datos personales que tenemos almacenados sobre usted.
@@ -114,14 +114,14 @@ export default function Privacidad() {
                   legitimo acreditado.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+              <div className="bg-ml-bg rounded-xl p-4 border border-ml-line">
                 <h3 className="font-semibold text-ml-ink">Rectificacion</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar la correccion de datos personales inexactos o incompletos. Puede actualizar
                   la mayoria de sus datos directamente desde su perfil en la Plataforma.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+              <div className="bg-ml-bg rounded-xl p-4 border border-ml-line">
                 <h3 className="font-semibold text-ml-ink">Cancelacion (Supresion)</h3>
                 <p className="text-sm mt-1">
                   Derecho a solicitar la eliminacion de sus datos personales cuando ya no sean necesarios para la
@@ -129,7 +129,7 @@ export default function Privacidad() {
                   legales o fiscales.
                 </p>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4 border border-ml-line">
+              <div className="bg-ml-bg rounded-xl p-4 border border-ml-line">
                 <h3 className="font-semibold text-ml-ink">Oposicion</h3>
                 <p className="text-sm mt-1">
                   Derecho a oponerse al tratamiento de sus datos personales para fines especificos, como el envio
