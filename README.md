@@ -1,254 +1,81 @@
-# LogoAI - Generador de Logos con IA
+# 🛒 Mercado Local - Marketplace Local
 
-Aplicación profesional para generar logos personalizados para marcas usando IA (DALL-E 3).
+Plataforma de marketplace local con sistema inteligente de pauta, usuarios, vendedores y compra-venta de productos.
 
-## 🎯 Características
+## 🎯 Características Principales
 
-- ✨ Generación de 10+ opciones de logo por proyecto
-- 🎨 Sistema híbrido de estilos (predefinidos personalizables)
-- 💾 Galería de logos con favoritOS
-- ✏️ Editor en línea para modificar logos
-- 📊 Comparador de variaciones
-- 💾 Descarga en múltiples formatos (PNG, SVG, PDF)
-- 📱 Interfaz responsive y profesional
-- 🔐 Historial de proyectos guardados
+- **Catálogo de Productos**: Búsqueda, filtros por categoría y ciudad
+- **Secciones Especializadas**: Usados, Ofertas con datos reales
+- **Pauta Inteligente**: Motor de propensión con decay temporal, funnel de intención, filtrado colaborativo y Thompson sampling
+- **Sistema de Pagos**: Mercado Pago integrado para compras y pauta publicitaria
+- **Perfiles de Usuario**: Logueados y anónimos, con tracking de comportamiento
+- **Notificaciones Inteligentes**: Alertas personalizadas basadas en intereses del usuario
+- **Panel de Admin**: Control de usuarios, categorías, moderación y pautas publicitarias
 
 ## 🛠️ Stack Tecnológico
 
 ### Frontend
 - React 18 + TypeScript
 - Vite
-- Tailwind CSS
+- Tailwind CSS + Design System "Mercado Local - Futuro"
 - React Router
-- Axios
+- Axios + Socket.IO
 
 ### Backend
 - Node.js + Express
 - MongoDB (Mongoose)
-- OpenAI API (DALL-E 3)
-- CORS
+- Mercado Pago API
+- Socket.IO (WebSockets)
+- Seguridad: Helmet, CORS, NoSQL Sanitize, Rate Limiting
 
-## 📋 Requisitos Previos
+### Infraestructura
+- **Frontend**: Vercel
+- **Backend**: Railway
+- **Base de Datos**: MongoDB Atlas
+- **Almacenamiento**: Cloudinary
+- **Push Notifications**: Web Push API
 
-- Node.js v18+ instalado
-- npm o yarn
-- Cuenta de OpenAI con acceso a DALL-E 3
-- MongoDB (local o MongoDB Atlas)
+## 📋 Instalación Local
 
-## ⚙️ Instalación
-
-### 1. Clonar o descargar el proyecto
+### 1. Clonar el proyecto
 
 ```bash
-cd logoai
+git clone https://github.com/gastoncastanio/mercadolocal.git
+cd mercadolocal
 ```
 
-### 2. Configurar el Backend
+### 2. Backend
 
 ```bash
 cd backend
-
-# Instalar dependencias
 npm install
-
-# Crear archivo .env
 cp .env.example .env
-
-# Editar .env con tus credenciales
-# MONGODB_URI=tu_mongodb_uri
-# OPENAI_API_KEY=tu_api_key
+# Configurar variables de entorno (MongoDB, JWT, Mercado Pago, etc.)
+npm run dev
 ```
 
-### 3. Configurar el Frontend
+### 3. Frontend
 
 ```bash
-cd ../frontend
-
-# Instalar dependencias
+cd frontend
 npm install
-
-# Crear archivo .env.local (opcional)
-echo "VITE_API_URL=http://localhost:3001/api" > .env.local
-```
-
-## 🚀 Iniciar la Aplicación
-
-### Terminal 1 - Backend
-
-```bash
-cd backend
 npm run dev
-# El servidor estará disponible en http://localhost:3001
 ```
 
-### Terminal 2 - Frontend
+El frontend estará disponible en `http://localhost:5173` y el backend en `http://localhost:3001`.
 
-```bash
-cd frontend
-npm run dev
-# La aplicación estará disponible en http://localhost:5173
-```
+## 🚀 Deploy
 
-## 📝 Estructura del Proyecto
+- **Frontend**: Auto-deploy desde rama `main` en Vercel
+- **Backend**: Auto-deploy desde rama `main` en Railway
 
-```
-logoai/
-├── frontend/                    # Aplicación React
-│   ├── src/
-│   │   ├── components/         # Componentes reutilizables
-│   │   ├── pages/             # Páginas principales
-│   │   ├── services/          # Llamadas API
-│   │   ├── types/             # Tipos TypeScript
-│   │   ├── styles/            # Estilos CSS
-│   │   └── App.tsx
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── backend/                     # Servidor Node.js + Express
-│   ├── src/
-│   │   ├── routes/            # Rutas API
-│   │   ├── services/          # Lógica de negocio
-│   │   ├── models/            # Modelos Mongoose
-│   │   ├── config/            # Configuración
-│   │   └── server.js
-│   ├── package.json
-│   └── .env.example
-│
-└── README.md
-```
+Push a `main` → webhooks disparan builds automáticos.
 
-## 🔑 Variables de Entorno Requeridas
+## 📚 Documentación
 
-### Backend (.env)
-```
-MONGODB_URI=mongodb+srv://usuario:contraseña@cluster.mongodb.net/logoai
-OPENAI_API_KEY=sk-tu-clave-aqui
-PORT=3001
-NODE_ENV=development
-```
-
-## 📚 API Endpoints
-
-### Proyectos
-- `POST /api/proyectos` - Crear nuevo proyecto
-- `GET /api/proyectos` - Listar proyectos
-- `GET /api/proyectos/:id` - Obtener proyecto
-- `PUT /api/proyectos/:id` - Actualizar proyecto
-- `DELETE /api/proyectos/:id` - Eliminar proyecto
-
-### Logos
-- `POST /api/logos/generar` - Generar logos
-- `POST /api/logos/:logoId/variaciones` - Generar variaciones
-- `PUT /api/logos/:logoId/favorito` - Marcar como favorito
-- `GET /api/logos/:logoId/descargar` - Descargar logo
-
-## 🎨 Estilos de Logo Disponibles
-
-1. **Minimalista** - Limpio y simple
-2. **Moderno** - Contemporáneo y dinámico
-3. **Clásico** - Tradicional y atemporal
-4. **Corporativo** - Profesional y confiable
-5. **Creativo** - Artístico e imaginativo
-6. **Tech** - Futurista y digital
-7. **Vintage** - Retro y nostálgico
-8. **Geométrico** - Formas matemáticas
-9. **Elegante** - Lujo y sofisticación
-10. **Juguetón** - Divertido y amigable
-
-## 🔄 Flujo de la Aplicación
-
-1. **Crear Proyecto** → Usuario ingresa info de marca
-2. **Seleccionar Estilo** → Elige entre 10 estilos predefinidos
-3. **Personalizar** → Ajusta colores, tipografía, elementos
-4. **Generar** → Backend crea 12 variaciones con DALL-E 3
-5. **Galería** → Usuario visualiza y selecciona logos
-6. **Edición** → Puede modificar colores y guardar cambios
-7. **Descarga** → Exporta en PNG, SVG o PDF
-
-## 💡 Ejemplo de Uso
-
-```javascript
-// Generar logos para una marca
-POST /api/logos/generar
-{
-  "nombreMarca": "TechStart",
-  "descripcion": "App de productividad para equipos remotos",
-  "valores": ["innovación", "colaboración", "eficiencia"],
-  "estilo": "moderno",
-  "parametros": {
-    "coloresPrimarios": ["#3B82F6", "#FFFFFF"],
-    "complejidad": "medio",
-    "orientacion": "cuadrado"
-  },
-  "cantidadLogos": 12
-}
-```
-
-## 🧪 Testing
-
-```bash
-# Frontend
-cd frontend
-npm run lint
-
-# Backend
-cd backend
-# Pendiente de implementar tests
-```
-
-## 📦 Build para Producción
-
-### Frontend
-```bash
-cd frontend
-npm run build
-# Genera carpeta dist/ lista para deployment
-```
-
-### Backend
-```bash
-cd backend
-npm start
-# Inicia en modo producción
-```
-
-## 🌐 Deployment
-
-### Frontend
-- **Vercel**: Conecta el repo, deploy automático
-- **Netlify**: Mismo proceso
-- **GitHub Pages**: Para versión estática
-
-### Backend
-- **Heroku/Railway**: Deployment desde Git
-- **AWS/GCP/Azure**: Usando Docker
-- **DigitalOcean**: App Platform
-
-## 🐛 Troubleshooting
-
-### Error de conexión a MongoDB
-```
-Solución: Verificar MONGODB_URI y estado de la BD
-```
-
-### Error de API Key de OpenAI
-```
-Solución: Verificar OPENAI_API_KEY y límites de crédito
-```
-
-### CORS Error
-```
-Solución: Verificar que backend esté en puerto 3001
-```
+- Backend: `/backend` → API REST + WebSockets + modelos Mongoose
+- Frontend: `/frontend` → React components + páginas
 
 ## 📄 Licencia
 
-MIT
-
-## 👤 Autor
-
-Creado con ❤️ para crear logos increíbles
-
----
-
-¿Preguntas o sugerencias? ¡Abre un issue!
+Mercado Local MVP - Todos los derechos reservados.

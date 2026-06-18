@@ -236,7 +236,8 @@ connectDB().then(async () => {
     .catch(err => console.warn('Seed memoria:', err.message))
 
   // Cron del cerebro: reporte diario CEO + ascensos automáticos
-  iniciarCronCerebro()
+  // Deshabilitado temporalmente: Gemini API en quota exceeded
+  // iniciarCronCerebro()
 
   // Limpiar órdenes pendientes expiradas al iniciar y cada 30 minutos
   try {
