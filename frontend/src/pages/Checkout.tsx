@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import CalculadorCostos from '../components/CalculadorCostos'
 
 export default function Checkout() {
   const { usuario } = useAuth()
@@ -12,6 +13,7 @@ export default function Checkout() {
   const [notas, setNotas] = useState('')
   const [error, setError] = useState('')
   const [procesando, setProcesando] = useState(false)
+  const [medioPago, setMedioPago] = useState<'debito' | 'credito_1' | 'credito_cuotas' | 'mp_credito' | null>('credito_1')
 
   useEffect(() => {
     cargarCarrito()
@@ -173,12 +175,12 @@ export default function Checkout() {
             </form>
           </div>
 
-          {/* Resumen */}
+          {/* Resumen con calculador */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-ml-ink mb-4">Resumen</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 sticky top-24 space-y-4">
+              <h2 className="text-lg font-semibold text-ml-ink">Resumen y costos</h2>
 
-              <div className="space-y-3 mb-4">
+              <div className="space-y-3 bg-ml-bg rounded-xl p-4">
                 {items.map((item: any) => (
                   <div key={item._id} className="flex justify-between text-sm">
                     <span className="text-ml-soft">{item.nombre} x{item.cantidad}</span>
@@ -187,34 +189,36 @@ export default function Checkout() {
                 ))}
               </div>
 
-              <div className="border-t border-ml-line pt-3 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-ml-muted">Subtotal</span>
-                  <span className="text-ml-ink">${total.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-ml-muted">Env&iacute;o</span>
-                  <span className="text-ml-muted text-xs">Coordinado con el vendedor</span>
-                </div>
-                <p className="text-[10px] text-ml-muted leading-snug">
-                  El vendedor te contactar&aacute; para coordinar el env&iacute;o despu&eacute;s del pago. El costo var&iacute;a seg&uacute;n ubicaci&oacute;n y proveedor.
-                </p>
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-ml-line">
-                  <span className="text-ml-ink">Total</span>
-                  <span className="text-ml-mp">${total.toLocaleString()}</span>
-                </div>
+              {/* Seleccionar medio de pago para ver costos exactos */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-ml-ink uppercase tracking-wide">Medio de pago (para ver costos exactos)</label>
+                <select value={medioPago || ''} onChange={(e) => setMedioPago(e.target.value as any)}
+                  className="w-full px-3 py-2 text-sm border border-ml-line rounded-lg focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none">
+                  <option value="">Seleccionar...</option>
+                  <option value="debito">💳 Débito (menor fee)</option>
+                  <option value="credito_1">💳 Crédito 1 cuota</option>
+                  <option value="credito_cuotas">💳 Crédito múltiples cuotas</option>
+                  <option value="mp_credito">💵 Mercado Crédito</option>
+                </select>
               </div>
 
-              {/* Medios de pago */}
-              <div className="mt-4 pt-4 border-t border-ml-line2">
-                <p className="text-xs text-ml-muted mb-2">Medios de pago disponibles:</p>
+              {/* Calculador de costos */}
+              <CalculadorCostos
+                precioProducto={total}
+                medioPago={medioPago}
+                mostrarVendedor={false}
+                compact={false}
+              />
+
+              {/* Medios de pago disponibles */}
+              <div className="pt-3 border-t border-ml-line2">
+                <p className="text-xs text-ml-muted mb-2">Todos estos medios se aceptan a través de Mercado Pago:</p>
                 <div className="flex flex-wrap gap-1 text-xs">
-                  <span className="px-2 py-1 bg-blue-50 text-ml-blue rounded">Visa</span>
-                  <span className="px-2 py-1 bg-red-50 text-red-600 rounded">Mastercard</span>
-                  <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded">Naranja</span>
-                  <span className="px-2 py-1 bg-green-50 text-green-600 rounded">Débito</span>
-                  <span className="px-2 py-1 bg-sky-50 text-sky-600 rounded">MP Crédito</span>
-                  <span className="px-2 py-1 bg-purple-50 text-purple-600 rounded">Cuotas</span>
+                  <span className="px-2 py-1 bg-blue-50 text-ml-blue rounded-full">Visa</span>
+                  <span className="px-2 py-1 bg-red-50 text-red-600 rounded-full">Mastercard</span>
+                  <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded-full">Naranja</span>
+                  <span className="px-2 py-1 bg-green-50 text-green-600 rounded-full">Débito</span>
+                  <span className="px-2 py-1 bg-sky-50 text-sky-600 rounded-full">MP Crédito</span>
                 </div>
               </div>
             </div>

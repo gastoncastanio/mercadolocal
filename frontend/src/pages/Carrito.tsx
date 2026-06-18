@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import CalculadorCostos from '../components/CalculadorCostos'
 import { ItemCarrito } from '../types'
 
 export default function Carrito() {
@@ -93,12 +94,15 @@ export default function Carrito() {
               ))}
             </div>
 
-            {/* Resumen */}
-            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg text-ml-muted">Total</span>
-                <span className="font-display text-[28px] font-extrabold text-ml-ink">${total.toLocaleString()}</span>
-              </div>
+            {/* Resumen con calculador de costos */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-ml-ink">Desglose de costos</h2>
+              <CalculadorCostos
+                precioProducto={total}
+                medioPago={null}
+                mostrarVendedor={false}
+                compact={true}
+              />
               <button
                 onClick={() => navigate('/checkout')}
                 className="w-full py-4 mlbtn ml-grad text-white rounded-xl font-bold text-lg"
