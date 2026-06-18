@@ -206,64 +206,64 @@ export default function Landing() {
 
       {/* ===== HERO ===== */}
       <section ref={hero.ref as any} className="relative overflow-hidden">
-        {/* Glows decorativos */}
-        <div className="pointer-events-none absolute -top-32 -left-20 w-[540px] h-[540px] rounded-full ml-blob"
+        {/* Glows decorativos - hidden on small screens for mobile optimization */}
+        <div className="pointer-events-none absolute -top-32 -left-20 w-[540px] h-[540px] rounded-full ml-blob hidden sm:block"
           style={{ background: 'radial-gradient(circle,rgba(37,99,235,.22),transparent 64%)', filter: 'blur(8px)' }} />
-        <div className="pointer-events-none absolute -top-16 -right-16 w-[520px] h-[520px] rounded-full ml-blob-rev"
+        <div className="pointer-events-none absolute -top-16 -right-16 w-[520px] h-[520px] rounded-full ml-blob-rev hidden sm:block"
           style={{ background: 'radial-gradient(circle,rgba(124,58,237,.26),transparent 62%)', filter: 'blur(8px)' }} />
 
-        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-14 sm:py-20 grid md:grid-cols-[1.05fr_.95fr] gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-8 py-8 sm:py-16 md:py-20 grid md:grid-cols-[1.05fr_.95fr] gap-8 md:gap-12 items-center">
           {/* Columna texto */}
           <div
             className="transition-all duration-1000 ease-out"
             style={{ opacity: hero.visible ? 1 : 0, transform: hero.visible ? 'translateY(0)' : 'translateY(24px)' }}
           >
-            <span className="inline-flex items-center gap-2 text-[13px] font-bold text-ml-violet bg-white/70 backdrop-blur-sm border border-[#e7dcff] px-4 py-2 rounded-full mb-6">
-              <span className="w-[7px] h-[7px] rounded-full bg-green-500 ring-4 ring-green-500/20" />
+            <span className="inline-flex items-center gap-2 text-[12px] sm:text-[13px] font-bold text-ml-violet bg-white/70 backdrop-blur-sm border border-[#e7dcff] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-5">
+              <span className="w-[6px] h-[6px] rounded-full bg-green-500 ring-4 ring-green-500/20" />
               El marketplace que pone a competir a tu ciudad
             </span>
 
-            <h1 className="font-display font-extrabold text-[40px] sm:text-[54px] lg:text-[66px] leading-[1.02] tracking-[-0.025em] m-0">
+            <h1 className="font-display font-extrabold text-[32px] sm:text-[48px] lg:text-[62px] leading-[1.04] tracking-[-0.025em] m-0">
               <span className="block">Comprá una vez.</span>
               <span className="block ml-grad-text">Que compita la ciudad.</span>
             </h1>
 
-            <p className="text-[17px] sm:text-[19px] leading-[1.55] text-ml-soft max-w-[500px] mt-5">
+            <p className="text-[15px] sm:text-[17px] leading-[1.5] text-ml-soft max-w-[500px] mt-3 sm:mt-4">
               El mismo producto, de todas las tiendas de tu zona, con todos los precios a la vista. Elegís el más barato, pagás con Mercado Pago y recibís hoy. Dejá de recorrer 10 negocios.
             </p>
 
             {/* Buscador funcional */}
-            <form onSubmit={buscar} className="mt-8 flex items-center gap-2 bg-white border border-ml-line rounded-2xl p-2 max-w-[560px]"
+            <form onSubmit={buscar} className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white border border-ml-line rounded-2xl p-2 max-w-[560px]"
               style={{ boxShadow: '0 26px 50px -26px rgba(37,99,235,.45)' }}>
               <div className="flex-1 flex items-center gap-2 text-ml-muted pl-2">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" /></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" /></svg>
                 <input
                   value={busqueda}
                   onChange={e => setBusqueda(e.target.value)}
-                  placeholder="Buscá un producto y compará precios…"
-                  className="w-full bg-transparent outline-none text-[15px] text-ml-ink placeholder-ml-muted py-1"
+                  placeholder="Buscá un producto…"
+                  className="w-full bg-transparent outline-none text-[14px] sm:text-[15px] text-ml-ink placeholder-ml-muted py-2.5 sm:py-1"
                 />
               </div>
-              <button type="submit" className="mlbtn ml-grad text-white font-display font-bold text-[15px] px-6 sm:px-8 py-3 rounded-xl shrink-0">
+              <button type="submit" className="mlbtn ml-grad text-white font-display font-bold text-[14px] sm:text-[15px] px-5 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl shrink-0">
                 Comparar
               </button>
             </form>
 
             {/* Stats reales */}
-            <div className="flex flex-wrap gap-8 mt-9">
+            <div className="flex flex-wrap gap-5 sm:gap-8 mt-5 sm:mt-7">
               <div>
-                <div className="font-display font-extrabold text-[28px]"><AnimatedCounter end={nProductos} prefix="+" /></div>
-                <div className="text-[13px] text-ml-muted font-semibold">productos</div>
+                <div className="font-display font-extrabold text-[24px] sm:text-[28px]"><AnimatedCounter end={nProductos} prefix="+" /></div>
+                <div className="text-[12px] sm:text-[13px] text-ml-muted font-semibold">productos</div>
               </div>
               <div className="w-px bg-ml-line self-stretch" />
               <div>
-                <div className="font-display font-extrabold text-[28px]"><AnimatedCounter end={nTiendas} prefix="+" /></div>
-                <div className="text-[13px] text-ml-muted font-semibold">tiendas compitiendo</div>
+                <div className="font-display font-extrabold text-[24px] sm:text-[28px]"><AnimatedCounter end={nTiendas} prefix="+" /></div>
+                <div className="text-[12px] sm:text-[13px] text-ml-muted font-semibold">tiendas</div>
               </div>
               <div className="w-px bg-ml-line self-stretch" />
               <div>
-                <div className="font-display font-extrabold text-[28px] ml-grad-text">-{pctAhorro}%</div>
-                <div className="text-[13px] text-ml-muted font-semibold">precio promedio</div>
+                <div className="font-display font-extrabold text-[24px] sm:text-[28px] ml-grad-text">-{pctAhorro}%</div>
+                <div className="text-[12px] sm:text-[13px] text-ml-muted font-semibold">ahorro medio</div>
               </div>
             </div>
           </div>
@@ -318,7 +318,7 @@ export default function Landing() {
       </section>
 
       {/* ===== MARQUEE DE TIENDAS ===== */}
-      <div className="border-y border-ml-line2 bg-ml-bg overflow-hidden py-[18px]">
+      <div className="border-y border-ml-line2 bg-ml-bg overflow-hidden py-[14px] sm:py-[18px]">
         <div className="ml-marq-track">
           {[...TIENDAS_MARQUEE, ...TIENDAS_MARQUEE].map((t, i) => (
             <span key={i} className="whitespace-nowrap font-display font-bold text-sm text-[#6b6b7b] bg-white border border-ml-line2 rounded-full px-[18px] py-2.5">{t}</span>
@@ -327,10 +327,10 @@ export default function Landing() {
       </div>
 
       {/* ===== RED DE CIUDAD (visión) ===== */}
-      <div ref={red.ref as any} className="relative mt-20 bg-ml-night overflow-hidden">
+      <div ref={red.ref as any} className="relative mt-12 sm:mt-16 md:mt-20 bg-ml-night overflow-hidden">
         <CityNetworkCanvas />
         <div className="absolute inset-0" style={{ background: 'radial-gradient(700px 360px at 50% 18%,rgba(124,58,237,.28),transparent 70%)' }} />
-        <div className="relative max-w-7xl mx-auto px-8 py-[92px] text-center text-white">
+        <div className="relative max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 md:py-[92px] text-center text-white">
           <span className="inline-block text-[13px] font-bold text-[#c4b5fd] bg-white/10 border border-white/15 px-3.5 py-[7px] rounded-full mb-5">La visión</span>
           <h2 className="font-display font-extrabold text-[34px] sm:text-[48px] leading-[1.06] tracking-[-0.02em] max-w-[820px] mx-auto">
             El futuro de las ciudades<br className="hidden sm:block" /> compra local.
@@ -358,16 +358,16 @@ export default function Landing() {
       </div>
 
       {/* ===== CATEGORÍAS ===== */}
-      <section ref={cats.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 pt-16 sm:pt-18 pb-2">
-        <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em] mb-6">Explorá por categoría</h2>
-        <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-3.5 ${cats.visible ? 'stagger-in' : ''}`}>
+      <section ref={cats.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-1 md:pb-2">
+        <h2 className="font-display font-bold text-[18px] sm:text-[24px] md:text-[27px] tracking-[-0.01em] mb-4 sm:mb-5">Explorá por categoría</h2>
+        <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-2 sm:gap-3.5 ${cats.visible ? 'stagger-in' : ''}`}>
           {CATEGORIAS.map(cat => (
             <Link key={cat.nombre} to={`/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
-              className="mlt text-center px-2 py-5 border border-ml-line rounded-2xl bg-white">
-              <span className={`inline-flex w-[46px] h-[46px] rounded-[13px] ${cat.tint} items-center justify-center mb-2.5`}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={cat.stroke} strokeWidth={2}>{cat.icon}</svg>
+              className="mlt text-center px-2 py-3 sm:py-4 border border-ml-line rounded-xl sm:rounded-2xl bg-white">
+              <span className={`inline-flex w-[40px] h-[40px] sm:w-[46px] sm:h-[46px] rounded-[11px] sm:rounded-[13px] ${cat.tint} items-center justify-center mb-1.5 sm:mb-2.5`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={cat.stroke} strokeWidth={2} className="sm:scale-110">{cat.icon}</svg>
               </span>
-              <div className="text-[13px] font-semibold text-ml-slate">{cat.nombre}</div>
+              <div className="text-[11px] sm:text-[13px] font-semibold text-ml-slate">{cat.nombre}</div>
             </Link>
           ))}
         </div>
@@ -380,15 +380,15 @@ export default function Landing() {
 
       {/* ===== DESTACADOS (productos reales) ===== */}
       {destacados.length > 0 && (
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-12 pb-4">
-          <div className="flex items-end justify-between mb-6">
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-8 sm:pt-10 md:pt-12 pb-2">
+          <div className="flex items-end justify-between mb-4 sm:mb-5">
             <div>
-              <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em]">Destacados cerca tuyo</h2>
-              <p className="mt-1.5 text-ml-muted text-[14.5px]">De tiendas verificadas y vecinos de tu ciudad</p>
+              <h2 className="font-display font-bold text-[18px] sm:text-[24px] md:text-[27px] tracking-[-0.01em]">Destacados cerca tuyo</h2>
+              <p className="mt-1 sm:mt-1.5 text-ml-muted text-[13px] sm:text-[14.5px]">De tiendas verificadas</p>
             </div>
-            <Link to="/catalogo" className="mllink text-sm font-bold text-ml-blue whitespace-nowrap">Ver todo →</Link>
+            <Link to="/catalogo" className="mllink text-xs sm:text-sm font-bold text-ml-blue whitespace-nowrap">Ver todo →</Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-5">
             {destacados.slice(0, 8).map(p => <TarjetaProducto key={p._id} producto={p} />)}
           </div>
         </section>
@@ -396,49 +396,49 @@ export default function Landing() {
 
       {/* ===== MÁS VENDIDOS (productos reales) ===== */}
       {masVendidos.length > 0 && (
-        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-8 pb-4">
-          <div className="flex items-end justify-between mb-6">
+        <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-6 sm:pt-8 pb-2">
+          <div className="flex items-end justify-between mb-4 sm:mb-5">
             <div>
-              <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em]">Los más vendidos</h2>
-              <p className="mt-1.5 text-ml-muted text-[14.5px]">Lo que más eligen los compradores esta semana</p>
+              <h2 className="font-display font-bold text-[18px] sm:text-[24px] md:text-[27px] tracking-[-0.01em]">Los más vendidos</h2>
+              <p className="mt-1 sm:mt-1.5 text-ml-muted text-[13px] sm:text-[14.5px]">Favoritos esta semana</p>
             </div>
-            <Link to="/mas-vendidos" className="mllink text-sm font-bold text-ml-blue whitespace-nowrap">Ver todos →</Link>
+            <Link to="/mas-vendidos" className="mllink text-xs sm:text-sm font-bold text-ml-blue whitespace-nowrap">Ver todos →</Link>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-5">
             {masVendidos.slice(0, 4).map(p => <TarjetaProducto key={p._id} producto={p} />)}
           </div>
         </section>
       )}
 
       {/* ===== TEASER SUPERMERCADO ===== */}
-      <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-16">
-        <div className="border border-ml-line rounded-[24px] overflow-hidden" style={{ background: 'linear-gradient(160deg,#fafaff,#fff)' }}>
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-10 sm:pt-14 md:pt-16">
+        <div className="border border-ml-line rounded-[20px] sm:rounded-[24px] overflow-hidden" style={{ background: 'linear-gradient(160deg,#fafaff,#fff)' }}>
           <div className="grid md:grid-cols-[1fr_1.05fr] items-center">
-            <div className="p-8 sm:p-12">
-              <span className="inline-block text-[12px] font-extrabold tracking-[0.06em] uppercase text-ml-mp bg-[#e7f6fd] border border-[#c5ecfa] px-3 py-1.5 rounded-full mb-4">Próximamente</span>
-              <h2 className="font-display font-extrabold text-[28px] sm:text-[36px] leading-[1.08] tracking-[-0.02em]">Tu supermercado,<br />en competencia.</h2>
-              <p className="text-[15px] sm:text-[16.5px] leading-[1.6] text-ml-soft mt-4 max-w-[440px]">
+            <div className="p-6 sm:p-8 md:p-12">
+              <span className="inline-block text-[11px] sm:text-[12px] font-extrabold tracking-[0.06em] uppercase text-ml-mp bg-[#e7f6fd] border border-[#c5ecfa] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3 sm:mb-4">Próximamente</span>
+              <h2 className="font-display font-extrabold text-[22px] sm:text-[28px] md:text-[36px] leading-[1.08] tracking-[-0.02em]">Tu supermercado,<br />en competencia.</h2>
+              <p className="text-[14px] sm:text-[15px] md:text-[16.5px] leading-[1.5] sm:leading-[1.6] text-ml-soft mt-3 sm:mt-4 max-w-[440px]">
                 El mismo producto de todas las cadenas, lado a lado. Armás el changuito una vez y cada artículo se compra donde está más barato. Menos vueltas, más ahorro — y ese ahorro vuelve a tu ciudad.
               </p>
             </div>
-            <div className="p-6 sm:pr-12 sm:py-8 flex flex-col gap-3">
+            <div className="p-5 sm:p-6 md:pr-12 md:py-8 flex flex-col gap-2.5 sm:gap-3">
               {[
                 { p: 'Leche entera 1 L', c: '6 cadenas compiten', precio: '$ 1.190', off: '-14%', tint: 'bg-[#f3edff]', stroke: '#7c3aed' },
                 { p: 'Arroz largo fino 1 kg', c: '5 cadenas compiten', precio: '$ 1.640', off: '-11%', tint: 'bg-[#eef2ff]', stroke: '#2563eb' },
                 { p: 'Yerba mate 1 kg', c: '7 cadenas compiten', precio: '$ 3.250', off: '-18%', tint: 'bg-[#f3edff]', stroke: '#7c3aed' }
               ].map(item => (
-                <div key={item.p} className="flex items-center gap-3.5 bg-white border border-ml-line rounded-[15px] px-4 py-3.5"
+                <div key={item.p} className="flex items-center gap-2.5 sm:gap-3.5 bg-white border border-ml-line rounded-[13px] sm:rounded-[15px] px-3 sm:px-4 py-2.5 sm:py-3.5"
                   style={{ boxShadow: '0 12px 30px -22px rgba(20,20,45,.4)' }}>
-                  <span className={`shrink-0 w-10 h-10 rounded-[11px] ${item.tint} flex items-center justify-center`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={item.stroke} strokeWidth={2}><path d="M4 4h2l1 12h11l2-8H7" /><circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" /></svg>
+                  <span className={`shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] sm:rounded-[11px] ${item.tint} flex items-center justify-center`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={item.stroke} strokeWidth={2} className="sm:scale-110"><path d="M4 4h2l1 12h11l2-8H7" /><circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" /></svg>
                   </span>
-                  <div className="flex-1">
-                    <div className="font-display font-bold text-[14.5px]">{item.p}</div>
-                    <div className="text-[12px] text-ml-muted">{item.c}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display font-bold text-[13px] sm:text-[14.5px]">{item.p}</div>
+                    <div className="text-[11px] sm:text-[12px] text-ml-muted">{item.c}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-display font-extrabold text-[17px]">{item.precio}</div>
-                    <div className="text-[11px] font-bold text-[#0a7d34]">{item.off}</div>
+                  <div className="text-right shrink-0">
+                    <div className="font-display font-extrabold text-[15px] sm:text-[17px]">{item.precio}</div>
+                    <div className="text-[10px] sm:text-[11px] font-bold text-[#0a7d34]">{item.off}</div>
                   </div>
                 </div>
               ))}
@@ -448,9 +448,9 @@ export default function Landing() {
       </section>
 
       {/* ===== CÓMO FUNCIONA / ESCROW (sección de confianza conservada) ===== */}
-      <section ref={escrow.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
-        <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#eef2ff] text-ml-blue rounded-full text-xs font-bold uppercase tracking-wide mb-3">
+      <section ref={escrow.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14 md:py-16">
+        <div className="text-center mb-7 sm:mb-9 md:mb-10">
+          <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 bg-[#eef2ff] text-ml-blue rounded-full text-xs font-bold uppercase tracking-wide mb-2 sm:mb-3">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
             Compra sin riesgo
           </span>
@@ -490,10 +490,10 @@ export default function Landing() {
       </section>
 
       {/* ===== TESTIMONIOS (sección de confianza conservada) ===== */}
-      <section ref={testimonios.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 pb-8">
-        <div className="text-center mb-8">
-          <h2 className="font-display font-extrabold text-[22px] sm:text-[27px] tracking-[-0.01em]">Lo que dicen nuestros usuarios</h2>
-          <p className="text-sm text-ml-muted mt-1.5">Historias reales de compradores y vendedores</p>
+      <section ref={testimonios.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-12 pb-6 sm:pb-8">
+        <div className="text-center mb-5 sm:mb-7">
+          <h2 className="font-display font-bold text-[18px] sm:text-[24px] md:text-[27px] tracking-[-0.01em]">Lo que dicen nuestros usuarios</h2>
+          <p className="text-xs sm:text-sm text-ml-muted mt-1 sm:mt-1.5">Historias reales de compradores y vendedores</p>
         </div>
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-5 ${testimonios.visible ? 'stagger-in' : ''}`}>
           {TESTIMONIOS.map((t, i) => (
@@ -517,38 +517,38 @@ export default function Landing() {
       </section>
 
       {/* ===== CREAR TIENDA ===== */}
-      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-16">
-        <div className="relative overflow-hidden rounded-[28px] p-8 sm:p-14 grid md:grid-cols-[1.2fr_.8fr] gap-10 items-center"
+      <section className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14 md:py-16">
+        <div className="relative overflow-hidden rounded-[20px] sm:rounded-[28px] p-6 sm:p-8 md:p-14 grid md:grid-cols-[1.2fr_.8fr] gap-6 md:gap-10 items-center"
           style={{ background: 'linear-gradient(125deg,#3b32d6 0%,#6d28d9 52%,#7c3aed 100%)' }}>
           <div className="pointer-events-none absolute -top-24 -right-12 w-[360px] h-[360px] rounded-full" style={{ background: 'radial-gradient(circle,rgba(255,255,255,.16),transparent 70%)' }} />
           <div className="relative">
-            <span className="inline-block text-[13px] font-semibold text-white bg-white/15 border border-white/25 px-3.5 py-1.5 rounded-full mb-4">Para comercios</span>
-            <h2 className="font-display font-extrabold text-[30px] sm:text-[40px] leading-[1.06] tracking-[-0.02em] text-white">Sumá tu negocio.<br />Competí y vendé más.</h2>
-            <p className="text-[16px] sm:text-[17px] leading-[1.55] text-white/90 max-w-[520px] mt-4 mb-7">
+            <span className="inline-block text-[11px] sm:text-[13px] font-semibold text-white bg-white/15 border border-white/25 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full mb-3 sm:mb-4">Para comercios</span>
+            <h2 className="font-display font-extrabold text-[22px] sm:text-[30px] md:text-[40px] leading-[1.08] tracking-[-0.02em] text-white">Sumá tu negocio.<br />Competí y vendé más.</h2>
+            <p className="text-[14px] sm:text-[15px] md:text-[16px] leading-[1.5] sm:leading-[1.55] text-white/90 max-w-[520px] mt-3 sm:mt-4 mb-5 sm:mb-6 md:mb-7">
               Publicás en minutos, cobrás con Mercado Pago y te ponés frente a todos los compradores de tu zona. Sin costos de alta.
             </p>
-            <div className="flex flex-wrap gap-3 items-center">
-              <Link to={estaLogueado ? '/mi-tienda' : '/registro?rol=vendedor'} className="mlbtn font-display font-bold text-base text-ml-indigo bg-white px-7 py-3.5 rounded-xl">Crear mi tienda</Link>
-              <Link to="/ayuda" className="font-display font-bold text-[15px] text-white border border-white/40 px-6 py-3.5 rounded-xl hover:bg-white/10 transition-colors">Cómo funciona</Link>
+            <div className="flex flex-wrap gap-2.5 sm:gap-3 items-center">
+              <Link to={estaLogueado ? '/mi-tienda' : '/registro?rol=vendedor'} className="mlbtn font-display font-bold text-sm sm:text-base text-ml-indigo bg-white px-5 sm:px-7 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl">Crear mi tienda</Link>
+              <Link to="/ayuda" className="font-display font-bold text-[13px] sm:text-[15px] text-white border border-white/40 px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl hover:bg-white/10 transition-colors">Cómo funciona</Link>
             </div>
           </div>
-          <div className="relative flex flex-col gap-3.5">
-            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-3.5">
-              <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={2}><path d="M12 2v20M5 7l7-5 7 5" /></svg>
+          <div className="relative flex flex-col gap-2.5 sm:gap-3.5">
+            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-[16px] sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3">
+              <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-white flex items-center justify-center shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth={2} className="sm:scale-110"><path d="M12 2v20M5 7l7-5 7 5" /></svg>
               </span>
-              <div>
-                <div className="font-display font-bold text-base text-white">Publicá en 2 minutos</div>
-                <div className="text-[13px] text-white/80">Foto, precio y listo</div>
+              <div className="min-w-0">
+                <div className="font-display font-bold text-sm sm:text-base text-white">Publicá en 2 minutos</div>
+                <div className="text-[12px] sm:text-[13px] text-white/80">Foto, precio y listo</div>
               </div>
             </div>
-            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-2xl p-4 flex items-center gap-3.5">
-              <span className="w-11 h-11 rounded-xl bg-ml-mp flex items-center justify-center">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20" /></svg>
+            <div className="bg-white/12 backdrop-blur-sm border border-white/20 rounded-[16px] sm:rounded-2xl p-3.5 sm:p-4 flex items-center gap-3">
+              <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-ml-mp flex items-center justify-center shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2} className="sm:scale-110"><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M2 10h20" /></svg>
               </span>
-              <div>
-                <div className="font-display font-bold text-base text-white">Cobrás con Mercado Pago</div>
-                <div className="text-[13px] text-white/80">Acreditación protegida</div>
+              <div className="min-w-0">
+                <div className="font-display font-bold text-sm sm:text-base text-white">Cobrás con Mercado Pago</div>
+                <div className="text-[12px] sm:text-[13px] text-white/80">Acreditación protegida</div>
               </div>
             </div>
           </div>
