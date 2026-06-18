@@ -35,6 +35,7 @@ export default function RadarCentro() {
   const [ofertas, setOfertas] = useState<OfertaFlash[]>([])
   const [offsetMs, setOffsetMs] = useState(0)
   const [cargandoComercios, setCargandoComercios] = useState(false)
+  const [coords, setCoords] = useState<Coord | null>(null)
 
   // Si ya dio consentimiento antes, lo recordamos
   useEffect(() => {
@@ -56,9 +57,10 @@ export default function RadarCentro() {
     localStorage.setItem('ml_radar_consent', 'si')
     setEstado('pidiendo')
     try {
-      const coords = await obtenerUbicacion()
+      const ubic = await obtenerUbicacion()
+      setCoords(ubic)
       setEstado('listo')
-      cargarComercios(coords)
+      cargarComercios(ubic)
     } catch (e: any) {
       setError(e.message || 'No pudimos acceder a tu ubicación.')
       setEstado('error')
@@ -173,6 +175,13 @@ export default function RadarCentro() {
             <p className="text-sm text-ml-muted">Ordenado por cercanía a vos</p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => coords && cargarComercios(coords)}
+              disabled={cargandoComercios}
+              className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet disabled:opacity-50"
+            >
+              🔄 Actualizar
+            </button>
             <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet">
               🎟️ Mis canjes
             </Link>

@@ -58,6 +58,19 @@ function isoALocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+// Estado REAL de una oferta, igual que lo evalúa el server. El badge debe coincidir
+// con lo que pasa en el Radar: una oferta "Programada" (inicio futuro) NO se ve aún.
+function estadoOferta(o: Oferta): { txt: string; cls: string; programada: boolean; finalizada: boolean } {
+  const ahora = Date.now()
+  const inicio = new Date(o.inicioEn).getTime()
+  const fin = new Date(o.finEn).getTime()
+  if (fin <= ahora) return { txt: 'Finalizada', cls: 'bg-gray-100 text-gray-500', programada: false, finalizada: true }
+  if (!o.activa) return { txt: 'Pausada', cls: 'bg-amber-100 text-amber-700', programada: false, finalizada: false }
+  if (inicio > ahora) return { txt: 'Programada', cls: 'bg-blue-100 text-blue-700', programada: true, finalizada: false }
+  if (o.cupoTotal > 0 && o.cupoUsado >= o.cupoTotal) return { txt: 'Agotada', cls: 'bg-gray-100 text-gray-500', programada: false, finalizada: false }
+  return { txt: '✓ En el Radar', cls: 'bg-green-100 text-green-700', programada: false, finalizada: false }
+}
+
 export default function PanelComercio() {
   const [comercios, setComercios] = useState<Comercio[]>([])
   const [sel, setSel] = useState<Comercio | null>(null)
@@ -259,7 +272,7 @@ export default function PanelComercio() {
                   <div className="space-y-2">
                     {ofertas.map(o => {
                       const fin = new Date(o.finEn)
-                      const finalizada = fin < new Date()
+                      const est = estadoOferta(o)
                       return (
                         <div key={o._id} className="bg-white rounded-xl border border-ml-line p-3">
                           <div className="flex items-center justify-between gap-3">
@@ -271,15 +284,18 @@ export default function PanelComercio() {
                                 Cupo {o.cupoTotal === 0 ? '∞' : `${o.cupoUsado}/${o.cupoTotal}`} ·
                                 {' '}vence {fin.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                               </p>
+                              {est.programada && (
+                                <p className="text-[11px] text-blue-600 mt-0.5">
+                                  ⏰ Empieza {new Date(o.inicioEn).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })} — recién ahí aparece en el Radar.
+                                </p>
+                              )}
                             </div>
-                            <span className={`text-[10px] px-2 py-1 rounded-full font-semibold shrink-0 ${
-                              finalizada ? 'bg-gray-100 text-gray-500' : o.activa ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                            }`}>
-                              {finalizada ? 'Finalizada' : o.activa ? 'Activa' : 'Pausada'}
+                            <span className={`text-[10px] px-2 py-1 rounded-full font-semibold shrink-0 ${est.cls}`}>
+                              {est.txt}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-ml-line2">
-                            {!finalizada && (
+                            {!est.finalizada && (
                               <button onClick={() => togglePausaOferta(o)} className="text-xs px-2 py-1 border border-ml-line rounded-lg text-ml-soft hover:border-ml-violet">
                                 {o.activa ? '⏸️ Pausar' : '▶️ Activar'}
                               </button>
@@ -408,6 +424,9 @@ function FormComercio({ inicial, onGuardado, onCancelar }: { inicial?: Comercio;
 // ===== Form de alta / edición de oferta =====
 function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioId: string; inicial?: Oferta; onGuardado: (o: Oferta) => void; onCancelar?: () => void }) {
   const edicion = !!inicial
+  // En edición: "empieza ahora" si el inicio guardado ya pasó.
+  const inicioYaPaso = inicial ? new Date(inicial.inicioEn).getTime() <= Date.now() : true
+  const [empiezaAhora, setEmpiezaAhora] = useState(inicioYaPaso)
   const [f, setF] = useState({
     titulo: inicial?.titulo || '',
     descripcion: inicial?.descripcion || '',
@@ -425,11 +444,16 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
   async function guardar(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (!f.titulo || !f.inicioEn || !f.finEn) {
-      setError('Título, inicio y fin son obligatorios.')
+    if (!f.titulo || !f.finEn) {
+      setError('Título y fin son obligatorios.')
       return
     }
-    if (new Date(f.finEn) <= new Date(f.inicioEn)) {
+    // Si "empieza ahora", arrancamos 1 minuto en el pasado para que sea vigente ya
+    // mismo (evita el borde en que el inicio queda unos segundos en el futuro).
+    const inicioISO = empiezaAhora
+      ? new Date(Date.now() - 60000).toISOString()
+      : new Date(f.inicioEn).toISOString()
+    if (new Date(f.finEn) <= new Date(inicioISO)) {
       setError('El fin debe ser posterior al inicio.')
       return
     }
@@ -440,7 +464,7 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
       descripcion: f.descripcion,
       tipoGancho: f.tipoGancho,
       valorDescuento: f.valorDescuento ? Number(f.valorDescuento) : 0,
-      inicioEn: new Date(f.inicioEn).toISOString(),
+      inicioEn: inicioISO,
       finEn: new Date(f.finEn).toISOString(),
       cupoTotal: f.cupoTotal ? Number(f.cupoTotal) : 0,
       bloqueHorario: f.bloqueHorario,
@@ -476,11 +500,18 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
         )}
       </div>
       <input className={inp} placeholder="Cupo total (0 = ilimitado)" inputMode="numeric" value={f.cupoTotal} onChange={e => setF({ ...f, cupoTotal: e.target.value })} />
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[11px] text-ml-muted mb-1">Inicia</label>
-          <input type="datetime-local" className={inp} value={f.inicioEn} onChange={e => setF({ ...f, inicioEn: e.target.value })} />
-        </div>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={empiezaAhora} onChange={e => setEmpiezaAhora(e.target.checked)} className="w-4 h-4 accent-ml-violet" />
+        <span className="text-sm text-ml-ink font-semibold">Empieza ahora</span>
+        <span className="text-xs text-ml-muted">(aparece en el Radar al instante)</span>
+      </label>
+      <div className={`grid gap-3 ${empiezaAhora ? 'grid-cols-1' : 'grid-cols-2'}`}>
+        {!empiezaAhora && (
+          <div>
+            <label className="block text-[11px] text-ml-muted mb-1">Inicia (programada)</label>
+            <input type="datetime-local" className={inp} value={f.inicioEn} onChange={e => setF({ ...f, inicioEn: e.target.value })} />
+          </div>
+        )}
         <div>
           <label className="block text-[11px] text-ml-muted mb-1">Termina</label>
           <input type="datetime-local" className={inp} value={f.finEn} onChange={e => setF({ ...f, finEn: e.target.value })} />
