@@ -87,22 +87,22 @@ export default function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Checkout</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">Checkout</h1>
 
         <div className="grid md:grid-cols-5 gap-8">
           {/* Formulario */}
           <div className="md:col-span-3">
-            <form onSubmit={crearOrdenYPagar} className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">Datos de Entrega</h2>
+            <form onSubmit={crearOrdenYPagar} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
+              <h2 className="text-lg font-semibold text-ml-ink mb-2">Datos de Entrega</h2>
 
-              {error && <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
+              {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm border border-red-200">{error}</div>}
 
               {/* Aviso multi-vendedor: cada vendedor cobra por separado */}
               {cantidadVendedores > 1 && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                  <p className="text-xs text-blue-900 leading-relaxed">
+                  <p className="text-xs text-ml-ink leading-relaxed">
                     <span className="font-semibold">🛒 Tu carrito tiene productos de {cantidadVendedores} vendedores.</span>{' '}
                     Como cada uno cobra por separado, vas a hacer <strong>{cantidadVendedores} pagos seguidos</strong> (uno por vendedor).
                     Te vamos guiando paso a paso después de cada pago.
@@ -111,32 +111,32 @@ export default function Checkout() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Nombre completo</label>
                 <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tu nombre" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Tu nombre" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Dirección de entrega</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Dirección de entrega</label>
                 <input type="text" value={direccion} onChange={e => setDireccion(e.target.value)} required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Calle, número, ciudad" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Calle, número, ciudad" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Teléfono</label>
                 <input type="text" value={telefono} onChange={e => setTelefono(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Tu teléfono" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Tu teléfono" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Notas (opcional)</label>
                 <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Instrucciones especiales..." />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none resize-none" placeholder="Instrucciones especiales..." />
               </div>
 
               {/* Aviso sobre envío — el costo se coordina aparte */}
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="text-xs text-amber-900 leading-relaxed">
+                <p className="text-xs text-ml-ink leading-relaxed">
                   <span className="font-semibold">📦 Sobre el envío:</span> el costo NO está incluido en este pago.
                   Una vez confirmada la compra, vas a poder coordinar el envío o retiro directamente con el
                   vendedor por WhatsApp (las formas de entrega están en cada producto).
@@ -145,7 +145,7 @@ export default function Checkout() {
 
               {/* Botón Mercado Pago */}
               <button type="submit" disabled={procesando}
-                className="w-full py-4 bg-[#009ee3] text-white rounded-xl font-bold text-lg hover:bg-[#0087c9] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+                className="w-full py-4 mlbtn bg-ml-mp text-white rounded-xl font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-3">
                 {procesando ? (
                   'Redirigiendo a Mercado Pago...'
                 ) : (
@@ -158,14 +158,14 @@ export default function Checkout() {
                 )}
               </button>
 
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-2">
+              <div className="flex items-center justify-center gap-2 text-xs text-ml-muted mt-2">
                 <span>Pago seguro con</span>
-                <span className="font-semibold text-[#009ee3]">Mercado Pago</span>
+                <span className="font-semibold text-ml-mp">Mercado Pago</span>
                 <span>| Tarjetas, cuotas, Mercado Crédito</span>
               </div>
 
               <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-200">
-                <p className="text-xs text-green-700 flex items-center gap-2">
+                <p className="text-xs text-ml-ink flex items-center gap-2">
                   <span className="text-base">🛡️</span>
                   <span><strong>Compra protegida:</strong> tu dinero se retiene hasta que confirmes que recibiste el producto en las condiciones esperadas.</span>
                 </p>
@@ -175,41 +175,41 @@ export default function Checkout() {
 
           {/* Resumen */}
           <div className="md:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">Resumen</h2>
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-ml-ink mb-4">Resumen</h2>
 
               <div className="space-y-3 mb-4">
                 {items.map((item: any) => (
                   <div key={item._id} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{item.nombre} x{item.cantidad}</span>
-                    <span className="font-medium">${(item.precio * item.cantidad).toLocaleString()}</span>
+                    <span className="text-ml-soft">{item.nombre} x{item.cantidad}</span>
+                    <span className="font-medium text-ml-ink">${(item.precio * item.cantidad).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-gray-200 pt-3 space-y-2">
+              <div className="border-t border-ml-line pt-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span className="text-ml-muted">Subtotal</span>
+                  <span className="text-ml-ink">${total.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Env&iacute;o</span>
-                  <span className="text-gray-500 text-xs">Coordinado con el vendedor</span>
+                  <span className="text-ml-muted">Env&iacute;o</span>
+                  <span className="text-ml-muted text-xs">Coordinado con el vendedor</span>
                 </div>
-                <p className="text-[10px] text-gray-400 leading-snug">
+                <p className="text-[10px] text-ml-muted leading-snug">
                   El vendedor te contactar&aacute; para coordinar el env&iacute;o despu&eacute;s del pago. El costo var&iacute;a seg&uacute;n ubicaci&oacute;n y proveedor.
                 </p>
-                <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <span className="text-[#009ee3]">${total.toLocaleString()}</span>
+                <div className="flex justify-between font-bold text-lg pt-2 border-t border-ml-line">
+                  <span className="text-ml-ink">Total</span>
+                  <span className="text-ml-mp">${total.toLocaleString()}</span>
                 </div>
               </div>
 
               {/* Medios de pago */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-400 mb-2">Medios de pago disponibles:</p>
+              <div className="mt-4 pt-4 border-t border-ml-line2">
+                <p className="text-xs text-ml-muted mb-2">Medios de pago disponibles:</p>
                 <div className="flex flex-wrap gap-1 text-xs">
-                  <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded">Visa</span>
+                  <span className="px-2 py-1 bg-blue-50 text-ml-blue rounded">Visa</span>
                   <span className="px-2 py-1 bg-red-50 text-red-600 rounded">Mastercard</span>
                   <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded">Naranja</span>
                   <span className="px-2 py-1 bg-green-50 text-green-600 rounded">Débito</span>

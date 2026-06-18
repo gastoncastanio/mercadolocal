@@ -112,22 +112,22 @@ export default function Chat() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-ml-bg flex">
       {/* Sidebar de conversaciones */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-800">💬 Mensajes</h2>
+      <div className="w-80 bg-white border-r border-ml-line flex flex-col">
+        <div className="p-4 border-b border-ml-line2">
+          <h2 className="text-lg font-bold text-ml-ink">💬 Mensajes</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
           {conversaciones.length === 0 ? (
-            <p className="text-center text-gray-400 py-8 text-sm">No hay conversaciones</p>
+            <p className="text-center text-ml-muted py-8 text-sm">No hay conversaciones</p>
           ) : (
             conversaciones.map((conv) => {
               const otro = conv.participantes.find((p) => p._id !== usuario?._id)
@@ -135,30 +135,30 @@ export default function Chat() {
                 <button
                   key={conv._id}
                   onClick={() => setConversacionActiva(conv._id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
+                  className={`w-full text-left px-4 py-3 border-b border-ml-line2 hover:bg-ml-bg transition-colors ${
                     conversacionActiva === conv._id ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-800 text-sm">
+                    <span className="font-semibold text-ml-ink text-sm">
                       {otro?.nombre || 'Usuario'}
                     </span>
                     <div className="flex items-center gap-2">
                       {conv.noLeidos > 0 && (
-                        <span className="w-2.5 h-2.5 bg-blue-500 rounded-full" />
+                        <span className="w-2.5 h-2.5 bg-ml-blue rounded-full" />
                       )}
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-ml-muted">
                         {new Date(conv.updatedAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
                   {conv.productoId && (
-                    <p className="text-xs text-blue-500 mt-0.5 truncate">
+                    <p className="text-xs text-ml-blue mt-0.5 truncate">
                       {conv.productoId.nombre}
                     </p>
                   )}
                   {conv.ultimoMensaje && (
-                    <p className="text-xs text-gray-400 mt-0.5 truncate">{conv.ultimoMensaje}</p>
+                    <p className="text-xs text-ml-muted mt-0.5 truncate">{conv.ultimoMensaje}</p>
                   )}
                 </button>
               )
@@ -171,7 +171,7 @@ export default function Chat() {
       <div className="flex-1 flex flex-col">
         {!conversacionActiva ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
+            <div className="text-center text-ml-muted">
               <p className="text-6xl mb-4">💬</p>
               <p className="text-lg">Selecciona una conversacion</p>
             </div>
@@ -179,7 +179,7 @@ export default function Chat() {
         ) : (
           <>
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
+            <div className="bg-white border-b border-ml-line px-6 py-4 flex items-center gap-3">
               {convActiva?.productoId?.imagenes?.[0] && (
                 <img
                   src={convActiva.productoId.imagenes[0]}
@@ -188,9 +188,9 @@ export default function Chat() {
                 />
               )}
               <div>
-                <p className="font-semibold text-gray-800">{otroUsuario?.nombre || 'Usuario'}</p>
+                <p className="font-semibold text-ml-ink">{otroUsuario?.nombre || 'Usuario'}</p>
                 {convActiva?.productoId && (
-                  <p className="text-xs text-gray-500">{convActiva.productoId.nombre}</p>
+                  <p className="text-xs text-ml-muted">{convActiva.productoId.nombre}</p>
                 )}
               </div>
             </div>
@@ -207,22 +207,22 @@ export default function Chat() {
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl ${
                         esMio
-                          ? 'bg-blue-500 text-white rounded-br-md'
-                          : 'bg-gray-200 text-gray-800 rounded-bl-md'
+                          ? 'bg-ml-blue text-white rounded-br-md'
+                          : 'bg-ml-bg text-ml-ink rounded-bl-md'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-line">{msg.mensaje}</p>
 
                       {/* Indicador de mensaje censurado */}
                       {msg.huboCensura && (
-                        <p className={`text-[10px] mt-1 italic ${esMio ? 'text-blue-100' : 'text-gray-500'}`}>
+                        <p className={`text-[10px] mt-1 italic ${esMio ? 'text-blue-100' : 'text-ml-muted'}`}>
                           🔒 Por seguridad, el contacto se desbloquea al concretar la compra
                         </p>
                       )}
 
                       <p
                         className={`text-xs mt-1 ${
-                          esMio ? 'text-blue-100' : 'text-gray-400'
+                          esMio ? 'text-blue-100' : 'text-ml-muted'
                         }`}
                       >
                         {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -237,8 +237,8 @@ export default function Chat() {
             </div>
 
             {/* Input */}
-            <form onSubmit={enviarMensaje} className="bg-white border-t border-gray-200 px-6 py-3">
-              <p className="text-[11px] text-gray-400 text-center mb-2 leading-tight">
+            <form onSubmit={enviarMensaje} className="bg-white border-t border-ml-line px-6 py-3">
+              <p className="text-[11px] text-ml-muted text-center mb-2 leading-tight">
                 🔒 Por tu seguridad, los teléfonos, emails y links se ocultan hasta que se concrete la compra
               </p>
               <div className="flex gap-3">
@@ -247,12 +247,12 @@ export default function Chat() {
                   value={nuevoMensaje}
                   onChange={(e) => setNuevoMensaje(e.target.value)}
                   placeholder="Escribe un mensaje..."
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border border-ml-line rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30"
                 />
                 <button
                   type="submit"
                   disabled={enviando || !nuevoMensaje.trim()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="px-6 py-3 mlbtn ml-grad text-white rounded-xl font-medium disabled:opacity-50"
                 >
                   {enviando ? '...' : 'Enviar'}
                 </button>

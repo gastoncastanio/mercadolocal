@@ -401,7 +401,7 @@ export default function Cerebro() {
             <h1 className="text-xl font-bold flex items-center gap-2">
               🧠 MercadoLocal Brain
             </h1>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-ml-muted mt-0.5">
               {agentes.filter(a => a.activo).length} agentes activos · Equipo IA
             </p>
           </div>
@@ -419,7 +419,7 @@ export default function Cerebro() {
             </a>
             <button
               onClick={generarReporteAhora}
-              className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md font-medium"
+              className="text-xs mlbtn ml-grad text-white px-3 py-1.5 rounded-md font-medium"
             >
               Generar reporte
             </button>
@@ -438,17 +438,17 @@ export default function Cerebro() {
       </div>
 
       {/* PANEL CHAT LATERAL */}
-      <div className="w-[420px] bg-gray-50 text-gray-900 border-l border-gray-700 flex flex-col flex-shrink-0">
+      <div className="w-[420px] bg-gray-50 text-ml-ink border-l border-gray-700 flex flex-col flex-shrink-0">
         {/* Tabs de canales */}
-        <div className="bg-white border-b border-gray-200 flex">
+        <div className="bg-white border-b border-ml-line flex">
           {CANALES.map(c => (
             <button
               key={c.id}
               onClick={() => setCanalActivo(c.id)}
               className={`flex-1 px-3 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                 canalActivo === c.id
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-blue-600 text-ml-blue bg-blue-50'
+                  : 'border-transparent text-ml-muted hover:text-ml-ink'
               }`}
             >
               <span className="mr-1">{c.icono}</span>
@@ -465,7 +465,7 @@ export default function Cerebro() {
         {/* Stream de mensajes */}
         <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
           {mensajes.length === 0 ? (
-            <div className="text-center text-gray-400 text-sm py-8">
+            <div className="text-center text-ml-muted text-sm py-8">
               Sin mensajes todavía.
               <br />
               {canalActivo === 'general' && 'Mandá algo para arrancar la conversación.'}
@@ -489,7 +489,7 @@ export default function Cerebro() {
 
         {/* Input (solo en general) */}
         {canalActivo === 'general' && (
-          <div className="bg-white border-t border-gray-200 p-3">
+          <div className="bg-white border-t border-ml-line p-3">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -498,17 +498,17 @@ export default function Cerebro() {
                 onKeyDown={e => e.key === 'Enter' && enviarMensaje()}
                 placeholder="Hablale al equipo... probá @diego, @sofia, @tomas o @todos"
                 disabled={enviando}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-ml-line rounded-md text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500 disabled:opacity-50"
               />
               <button
                 onClick={enviarMensaje}
                 disabled={enviando || !textoInput.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="mlbtn ml-grad disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 {enviando ? '...' : 'Enviar'}
               </button>
             </div>
-            <p className="text-[10px] text-gray-500 mt-1.5">
+            <p className="text-[10px] text-ml-muted mt-1.5">
               Los agentes responden con su personalidad. Mencionalos con @diego, @sofia, @tomas o @todos.
             </p>
           </div>
@@ -646,7 +646,7 @@ function CanvasAgentes({
       </svg>
 
       {/* Leyenda */}
-      <div className="absolute bottom-4 left-4 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 text-xs text-gray-300">
+      <div className="absolute bottom-4 left-4 bg-gray-800/80 backdrop-blur-sm rounded-lg p-3 text-xs text-ml-line">
         <div className="font-semibold text-gray-100 mb-1">Leyenda</div>
         <div className="flex items-center gap-2 mb-1">
           <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
@@ -785,7 +785,7 @@ function BarraMetricas({ agentes }: { agentes: Agente[] }) {
 function Metrica({ label, valor, color }: { label: string; valor: string; color: string }) {
   return (
     <div>
-      <div className="text-xs text-gray-500 uppercase tracking-wide">{label}</div>
+      <div className="text-xs text-ml-muted uppercase tracking-wide">{label}</div>
       <div className={`font-bold ${color}`}>{valor}</div>
     </div>
   )
@@ -801,7 +801,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
   if (esSistema) {
     return (
       <div className="text-center my-2">
-        <span className="inline-block bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
+        <span className="inline-block bg-ml-bg text-ml-soft text-xs px-3 py-1 rounded-full">
           {mensaje.contenido}
         </span>
       </div>
@@ -812,7 +812,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
   if (mensaje.tipo === 'reporte_diario') {
     return (
       <div className="bg-white border-2 border-blue-200 rounded-xl shadow-md overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-3 py-2 text-white">
+        <div className="ml-grad px-3 py-2 text-white">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <span className="text-lg">🎩</span>
             <span>Reporte diario de Diego</span>
@@ -821,7 +821,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
             {new Date(mensaje.createdAt).toLocaleString('es-AR')}
           </div>
         </div>
-        <div className="p-3 text-sm whitespace-pre-wrap text-gray-800">
+        <div className="p-3 text-sm whitespace-pre-wrap text-ml-ink">
           {renderConMenciones(mensaje.contenido, agentesMap)}
         </div>
       </div>
@@ -835,7 +835,7 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
         <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 mb-1">
           🎖️ ASCENSO
         </div>
-        <div className="text-sm text-gray-800">
+        <div className="text-sm text-ml-ink">
           {renderConMenciones(mensaje.contenido, agentesMap)}
         </div>
       </div>
@@ -854,21 +854,21 @@ function Burbuja({ mensaje, agentesMap }: { mensaje: MensajeOrg; agentesMap: Map
       )}
       <div className={`max-w-[78%] ${esAdmin ? 'items-end' : 'items-start'} flex flex-col`}>
         {!esAdmin && agente && (
-          <div className="text-[11px] text-gray-500 mb-0.5 px-2">
+          <div className="text-[11px] text-ml-muted mb-0.5 px-2">
             <span className="font-semibold" style={{ color: agente.color }}>{agente.nombre}</span>
-            <span className="text-gray-400"> · {agente.titulo}</span>
+            <span className="text-ml-muted"> · {agente.titulo}</span>
           </div>
         )}
         <div
           className={`px-3 py-2 rounded-2xl text-sm ${
             esAdmin
-              ? 'bg-blue-600 text-white rounded-br-sm'
-              : 'bg-white text-gray-800 rounded-bl-sm border border-gray-200'
+              ? 'bg-ml-blue text-white rounded-br-sm'
+              : 'bg-white text-ml-ink rounded-bl-sm border border-ml-line'
           }`}
         >
           {renderConMenciones(mensaje.contenido, agentesMap)}
         </div>
-        <div className="text-[10px] text-gray-400 mt-0.5 px-2">
+        <div className="text-[10px] text-ml-muted mt-0.5 px-2">
           {tiempoRelativo(mensaje.createdAt)}
         </div>
       </div>
@@ -936,7 +936,7 @@ function ChatPrivadoCEO({
         {/* Mensajes */}
         <div ref={refChat} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
           {mensajes.length === 0 ? (
-            <div className="text-center text-gray-400 text-sm py-8">
+            <div className="text-center text-ml-muted text-sm py-8">
               Esta es tu sala privada con Diego.
               <br />
               Pedile reportes, dale órdenes estratégicas, recibí su opinión sin filtros.
@@ -956,7 +956,7 @@ function ChatPrivadoCEO({
         </div>
 
         {/* Input */}
-        <div className="bg-white border-t border-gray-200 p-3">
+        <div className="bg-white border-t border-ml-line p-3">
           <div className="flex gap-2">
             <input
               type="text"
@@ -965,12 +965,12 @@ function ChatPrivadoCEO({
               onKeyDown={e => e.key === 'Enter' && onSend()}
               placeholder="Hablale a Diego..."
               disabled={enviando}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+              className="flex-1 px-3 py-2 border border-ml-line rounded-md text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500 disabled:opacity-50"
             />
             <button
               onClick={onSend}
               disabled={enviando || !texto.trim()}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
+              className="mlbtn ml-grad disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
               {enviando ? '...' : 'Enviar'}
             </button>
@@ -997,14 +997,14 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
       onClick={onClose} // click fuera = cerrar
     >
       <div
-        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-gray-900 relative"
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto text-ml-ink relative"
         onClick={e => e.stopPropagation()} // click adentro NO cierra
       >
         {/* Botón cerrar fijo arriba a la derecha, siempre visible (sticky) */}
         <button
           onClick={onClose}
           aria-label="Cerrar"
-          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-gray-700 hover:text-gray-900 rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md"
+          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-ml-ink hover:text-ml-ink rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md"
         >
           ×
         </button>
@@ -1035,7 +1035,7 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
         </div>
 
         {/* Métricas */}
-        <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-gray-200">
+        <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-ml-line">
           <MetricaCard label="XP" valor={agente.metricas.xp.toString()} />
           <MetricaCard label="Reputación" valor={`${agente.metricas.reputacion}/100`} />
           <MetricaCard label="Decisiones" valor={agente.metricas.decisionesTotales.toString()} />
@@ -1049,27 +1049,27 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
         {/* Manifiesto */}
         <div className="p-6 space-y-4">
           <section>
-            <h3 className="font-bold text-gray-900 mb-2">Manifiesto</h3>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{agente.manifiesto}</p>
+            <h3 className="font-bold text-ml-ink mb-2">Manifiesto</h3>
+            <p className="text-sm text-ml-ink whitespace-pre-wrap leading-relaxed">{agente.manifiesto}</p>
           </section>
 
           {agente.trasfondo && (
             <section>
-              <h3 className="font-bold text-gray-900 mb-2">Trasfondo</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">{agente.trasfondo}</p>
+              <h3 className="font-bold text-ml-ink mb-2">Trasfondo</h3>
+              <p className="text-sm text-ml-ink leading-relaxed">{agente.trasfondo}</p>
             </section>
           )}
 
           <section>
-            <h3 className="font-bold text-gray-900 mb-2">Personalidad</h3>
-            <p className="text-sm text-gray-700 mb-2">{agente.personalidad.descripcion}</p>
+            <h3 className="font-bold text-ml-ink mb-2">Personalidad</h3>
+            <p className="text-sm text-ml-ink mb-2">{agente.personalidad.descripcion}</p>
 
             {agente.personalidad.muletillas.length > 0 && (
               <div className="mt-2">
-                <div className="text-xs font-semibold text-gray-600 uppercase mb-1">Muletillas</div>
+                <div className="text-xs font-semibold text-ml-soft uppercase mb-1">Muletillas</div>
                 <div className="flex flex-wrap gap-1">
                   {agente.personalidad.muletillas.map((m, i) => (
-                    <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full italic">
+                    <span key={i} className="text-xs bg-gray-100 text-ml-ink px-2 py-1 rounded-full italic">
                       "{m}"
                     </span>
                   ))}
@@ -1080,7 +1080,7 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
             {agente.personalidad.fortalezas.length > 0 && (
               <div className="mt-3">
                 <div className="text-xs font-semibold text-green-700 uppercase mb-1">Fortalezas</div>
-                <ul className="text-sm text-gray-700 list-disc list-inside space-y-0.5">
+                <ul className="text-sm text-ml-ink list-disc list-inside space-y-0.5">
                   {agente.personalidad.fortalezas.map((f, i) => <li key={i}>{f}</li>)}
                 </ul>
               </div>
@@ -1089,7 +1089,7 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
             {agente.personalidad.debilidades.length > 0 && (
               <div className="mt-3">
                 <div className="text-xs font-semibold text-orange-700 uppercase mb-1">A mejorar</div>
-                <ul className="text-sm text-gray-700 list-disc list-inside space-y-0.5">
+                <ul className="text-sm text-ml-ink list-disc list-inside space-y-0.5">
                   {agente.personalidad.debilidades.map((d, i) => <li key={i}>{d}</li>)}
                 </ul>
               </div>
@@ -1104,8 +1104,8 @@ function ModalAgente({ agente, onClose }: { agente: Agente; onClose: () => void 
 function MetricaCard({ label, valor }: { label: string; valor: string }) {
   return (
     <div className="bg-gray-50 rounded-lg p-3 text-center">
-      <div className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</div>
-      <div className="font-bold text-gray-900 text-sm mt-0.5">{valor}</div>
+      <div className="text-[10px] text-ml-muted uppercase tracking-wide">{label}</div>
+      <div className="font-bold text-ml-ink text-sm mt-0.5">{valor}</div>
     </div>
   )
 }
@@ -1122,11 +1122,11 @@ function Escribiendo({ agente }: { agente: Agente }) {
         {agente.avatar}
       </div>
       <div className="flex flex-col items-start">
-        <div className="text-[11px] text-gray-500 mb-0.5 px-2">
+        <div className="text-[11px] text-ml-muted mb-0.5 px-2">
           <span className="font-semibold" style={{ color: agente.color }}>{agente.nombre}</span>
-          <span className="text-gray-400"> está escribiendo</span>
+          <span className="text-ml-muted"> está escribiendo</span>
         </div>
-        <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
+        <div className="bg-white border border-ml-line rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-1">
           <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
           <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.15s' }} />
           <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.3s' }} />

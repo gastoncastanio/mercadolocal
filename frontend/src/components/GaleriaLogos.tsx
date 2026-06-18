@@ -25,14 +25,14 @@ export default function GaleriaLogos({
   if (logos.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500">No hay logos generados aún</p>
+        <p className="text-ml-muted">No hay logos generados aún</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-800">
+      <h3 className="text-lg font-semibold text-ml-ink">
         Logos Generados ({logos.length})
       </h3>
 
@@ -42,7 +42,7 @@ export default function GaleriaLogos({
             key={logo._id || index}
             className="card-lg overflow-hidden hover:scale-105 transition-transform"
           >
-            <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+            <div className="aspect-square bg-ml-bg flex items-center justify-center overflow-hidden">
               <img
                 src={logo.url}
                 alt={`Logo ${index + 1}`}
@@ -65,7 +65,7 @@ export default function GaleriaLogos({
                   className={`px-4 btn text-lg ${
                     logo.favorito
                       ? 'bg-yellow-50 text-yellow-600'
-                      : 'bg-gray-100 text-gray-400'
+                      : 'bg-gray-100 text-ml-muted'
                   }`}
                 >
                   ★
@@ -79,7 +79,7 @@ export default function GaleriaLogos({
                 Descargar
               </button>
 
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-ml-muted">
                 Estilo: <span className="capitalize">{logo.estilo}</span>
               </p>
             </div>

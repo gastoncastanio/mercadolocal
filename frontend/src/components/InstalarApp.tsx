@@ -103,7 +103,7 @@ export default function InstalarApp() {
 
   return (
     <section id="instalar-app-section" className="max-w-7xl mx-auto px-3 sm:px-4 py-4">
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 rounded-2xl p-6 sm:p-8">
+      <div className="relative overflow-hidden ml-grad rounded-2xl p-6 sm:p-8">
         {/* Decoración */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white rounded-full" />
@@ -144,7 +144,7 @@ export default function InstalarApp() {
             {deferredPrompt && (
               <button
                 onClick={instalar}
-                className="flex-shrink-0 w-full sm:w-auto bg-white text-indigo-700 font-bold px-8 py-3.5 rounded-xl text-sm sm:text-base hover:bg-gray-50 hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 animate-pulse"
+                className="flex-shrink-0 w-full sm:w-auto bg-white text-indigo-700 font-bold px-8 py-3.5 rounded-xl text-sm sm:text-base hover:bg-ml-bg hover:shadow-lg hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 animate-pulse"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -316,11 +316,11 @@ export function BannerFlotanteInstalar() {
 
   return (
     <div className="fixed bottom-4 left-3 right-3 z-50 sm:left-auto sm:right-4 sm:max-w-sm animate-slide-up">
-      <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 relative">
+      <div className="bg-white rounded-2xl shadow-2xl border border-ml-line2 p-4 relative">
         {/* Botón cerrar */}
         <button
           onClick={handleCerrar}
-          className="absolute -top-2 -right-2 w-7 h-7 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold transition-colors shadow-sm"
+          className="absolute -top-2 -right-2 w-7 h-7 bg-gray-100 hover:bg-ml-bg rounded-full flex items-center justify-center text-ml-muted text-xs font-bold transition-colors shadow-sm"
         >
           &#x2715;
         </button>
@@ -333,14 +333,14 @@ export function BannerFlotanteInstalar() {
 
           {/* Contenido */}
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-gray-900 text-sm">MercadoLocal</p>
-            <p className="text-xs text-gray-500 truncate">Instal&aacute; la app en 30 seg &middot; +{installCount} la usan</p>
+            <p className="font-bold text-ml-ink text-sm">MercadoLocal</p>
+            <p className="text-xs text-ml-muted truncate">Instal&aacute; la app en 30 seg &middot; +{installCount} la usan</p>
           </div>
 
           {/* CTA */}
           <button
             onClick={handleInstalar}
-            className="flex-shrink-0 bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-colors"
+            className="flex-shrink-0 mlbtn ml-grad text-white font-bold text-xs px-4 py-2.5 rounded-xl "
           >
             Instalar
           </button>

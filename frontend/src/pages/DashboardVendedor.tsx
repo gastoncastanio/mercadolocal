@@ -38,7 +38,7 @@ export default function DashboardVendedor() {
 
   if (cargando) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="animate-spin text-4xl">🔄</div>
       </div>
     )
@@ -46,7 +46,7 @@ export default function DashboardVendedor() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <p>Error cargando dashboard</p>
       </div>
     )
@@ -95,16 +95,16 @@ export default function DashboardVendedor() {
 
   const estadoColor: Record<string, string> = {
     pendiente: 'text-yellow-600 bg-yellow-50',
-    pagada: 'text-blue-600 bg-blue-50',
+    pagada: 'text-ml-blue bg-blue-50',
     enviada: 'text-purple-600 bg-purple-50',
     completada: 'text-green-600 bg-green-50',
     cancelada: 'text-red-600 bg-red-50',
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">
           🏪 Dashboard - {tienda?.nombre || stats.nombre}
         </h1>
 
@@ -128,12 +128,12 @@ export default function DashboardVendedor() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Bar chart */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Ventas - Ultimos 7 dias</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+            <h3 className="font-semibold text-ml-ink mb-4">Ventas - Ultimos 7 dias</h3>
             <div className="flex items-end gap-3 h-48">
               {ventasPorDia.map((dia, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                  <p className="text-xs text-gray-500 mb-1">
+                  <p className="text-xs text-ml-muted mb-1">
                     {dia.total > 0 ? `$${dia.total.toLocaleString()}` : ''}
                   </p>
                   <div
@@ -143,17 +143,17 @@ export default function DashboardVendedor() {
                       minHeight: '4px',
                     }}
                   />
-                  <p className="text-xs text-gray-400 mt-2 capitalize">{dia.label}</p>
+                  <p className="text-xs text-ml-muted mt-2 capitalize">{dia.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Recent orders */}
-          <div className="bg-white rounded-2xl shadow-sm p-6">
-            <h3 className="font-semibold text-gray-800 mb-4">Ordenes Recientes</h3>
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+            <h3 className="font-semibold text-ml-ink mb-4">Ordenes Recientes</h3>
             {ordenesRecientes.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">No hay ordenes aun</p>
+              <p className="text-ml-muted text-center py-8">No hay ordenes aun</p>
             ) : (
               <div className="space-y-3">
                 {ordenesRecientes.map((orden) => (
@@ -162,10 +162,10 @@ export default function DashboardVendedor() {
                     className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0"
                   >
                     <div>
-                      <p className="text-sm font-medium text-gray-800">
+                      <p className="text-sm font-medium text-ml-ink">
                         #{orden._id.slice(-8)}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-ml-muted">
                         {orden.items.length} producto{orden.items.length !== 1 ? 's' : ''} ·{' '}
                         {orden.createdAt
                           ? new Date(orden.createdAt).toLocaleDateString()
@@ -173,12 +173,12 @@ export default function DashboardVendedor() {
                       </p>
                     </div>
                     <div className="text-right flex items-center gap-3">
-                      <span className="font-semibold text-gray-800">
+                      <span className="font-semibold text-ml-ink">
                         ${orden.total.toLocaleString()}
                       </span>
                       <span
                         className={`px-2 py-1 rounded-lg text-xs font-medium ${
-                          estadoColor[orden.estado] || 'text-gray-600 bg-gray-50'
+                          estadoColor[orden.estado] || 'text-ml-soft bg-gray-50'
                         }`}
                       >
                         {orden.estado}

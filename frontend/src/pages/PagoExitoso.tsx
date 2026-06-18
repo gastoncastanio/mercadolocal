@@ -144,7 +144,7 @@ export default function PagoExitoso() {
   // ===== Pantalla de "continuar pago" (carrito con varios vendedores) =====
   if (colaSiguiente) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center px-4">
         <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -157,13 +157,13 @@ export default function PagoExitoso() {
               Pago {colaProgreso.pagados} de {colaProgreso.total} listo
             </p>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Falta un pago más!</h1>
-          <p className="text-gray-500 mb-4">
+          <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Falta un pago más!</h1>
+          <p className="text-ml-muted mb-4">
             Como compraste a varios vendedores, cada uno cobra por separado.
           </p>
 
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-4">
-            <p className="text-sm text-blue-900">
+            <p className="text-sm text-ml-ink">
               Te queda pagar a <strong>{colaSiguiente.tienda}</strong>
             </p>
             <p className="text-2xl font-bold text-blue-700 mt-1">
@@ -183,7 +183,7 @@ export default function PagoExitoso() {
             </button>
             <Link
               to="/mis-ordenes"
-              className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+              className="block w-full py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
             >
               Lo hago después
             </Link>
@@ -194,16 +194,16 @@ export default function PagoExitoso() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-ml-bg flex items-center justify-center px-4">
       <div className="text-center bg-white rounded-2xl shadow-lg p-8 sm:p-12 max-w-md w-full">
         {estado === 'verificando' && (
           <>
             <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
               <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">Verificando tu pago...</h1>
-            <p className="text-gray-500 mb-2">Estamos confirmando con Mercado Pago.</p>
-            <p className="text-xs text-gray-400 mb-6">Intento {intentos + 1} de {MAX_INTENTOS}. No cierres esta ventana.</p>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">Verificando tu pago...</h1>
+            <p className="text-ml-muted mb-2">Estamos confirmando con Mercado Pago.</p>
+            <p className="text-xs text-ml-muted mb-6">Intento {intentos + 1} de {MAX_INTENTOS}. No cierres esta ventana.</p>
           </>
         )}
 
@@ -214,14 +214,14 @@ export default function PagoExitoso() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Pago confirmado!</h1>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Pago confirmado!</h1>
             {colaProgreso && colaProgreso.total > 1 ? (
-              <p className="text-gray-500 mb-2">¡Listo! Pagaste a los {colaProgreso.total} vendedores de tu compra.</p>
+              <p className="text-ml-muted mb-2">¡Listo! Pagaste a los {colaProgreso.total} vendedores de tu compra.</p>
             ) : (
-              <p className="text-gray-500 mb-2">Tu pedido fue procesado correctamente.</p>
+              <p className="text-ml-muted mb-2">Tu pedido fue procesado correctamente.</p>
             )}
             {paymentId && (
-              <p className="text-xs text-gray-400 mb-6">ID de pago: {paymentId}</p>
+              <p className="text-xs text-ml-muted mb-6">ID de pago: {paymentId}</p>
             )}
           </>
         )}
@@ -231,8 +231,8 @@ export default function PagoExitoso() {
             <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">⏳</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">Tu pago está siendo procesado</h1>
-            <p className="text-gray-500 mb-6">
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">Tu pago está siendo procesado</h1>
+            <p className="text-ml-muted mb-6">
               Te avisaremos por email cuando se confirme. Podés ver el estado actualizado en "Mis pedidos".
             </p>
           </>
@@ -245,10 +245,10 @@ export default function PagoExitoso() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">¡Pago Exitoso!</h1>
-            <p className="text-gray-500 mb-2">Tu pedido fue procesado correctamente.</p>
+            <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink mb-3">¡Pago Exitoso!</h1>
+            <p className="text-ml-muted mb-2">Tu pedido fue procesado correctamente.</p>
             {paymentId && (
-              <p className="text-xs text-gray-400 mb-6">ID de pago: {paymentId}</p>
+              <p className="text-xs text-ml-muted mb-6">ID de pago: {paymentId}</p>
             )}
           </>
         )}
@@ -262,7 +262,7 @@ export default function PagoExitoso() {
           </Link>
           <Link
             to="/catalogo"
-            className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+            className="block w-full py-3 bg-white border border-ml-line text-ml-ink rounded-xl font-semibold hover:bg-ml-bg transition-colors"
           >
             Seguir comprando
           </Link>

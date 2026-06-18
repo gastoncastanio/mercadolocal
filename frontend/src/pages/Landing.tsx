@@ -9,41 +9,42 @@ import EspaciosPublicitarios from '../components/EspaciosPublicitarios'
 import InstalarApp from '../components/InstalarApp'
 
 // ============================================================
-// Categorías: usan los slugs REALES del catálogo (las rutas
-// siguen funcionando) con el estilo de tiles del diseño Futuro.
+// Categorías: usan los NOMBRES REALES del catálogo (exactamente
+// como los filtra CatalogoProductos) para que el link filtre de
+// verdad. El estilo es el de tiles del diseño Futuro.
 // ============================================================
 const CATEGORIAS = [
   {
-    nombre: 'Tecnología', slug: 'tecnologia', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    nombre: 'Electrónica', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
     icon: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8" /></>
   },
   {
-    nombre: 'Hogar', slug: 'hogar', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
-    icon: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9" /></>
-  },
-  {
-    nombre: 'Moda', slug: 'moda', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    nombre: 'Ropa', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
     icon: <><path d="M16 4l4 3-3 3-1-1v11H8V9L7 10 4 7l4-3 2 2h4l2-2Z" /></>
   },
   {
-    nombre: 'Deportes', slug: 'deportes', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
-    icon: <><circle cx="5.5" cy="17" r="3" /><circle cx="18.5" cy="17" r="3" /><path d="M8 17h6l3-7-4-2-2 4H6" /></>
+    nombre: 'Hogar', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    icon: <><path d="m3 10 9-7 9 7" /><path d="M5 9v11h14V9" /></>
   },
   {
-    nombre: 'Belleza', slug: 'belleza', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
+    nombre: 'Alimentos', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><path d="M4 4h2l1 12h11l2-8H7" /><circle cx="9" cy="20" r="1.4" /><circle cx="17" cy="20" r="1.4" /></>
+  },
+  {
+    nombre: 'Belleza', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
     icon: <><path d="M12 3l1.8 4.7L18 9l-4.2 1.3L12 15l-1.8-4.7L6 9l4.2-1.3L12 3Z" /><path d="M5 18l1 3M19 18l-1 3" /></>
   },
   {
-    nombre: 'Juguetes', slug: 'juguetes', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    nombre: 'Deportes', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><circle cx="5.5" cy="17" r="3" /><circle cx="18.5" cy="17" r="3" /><path d="M8 17h6l3-7-4-2-2 4H6" /></>
+  },
+  {
+    nombre: 'Juguetes', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
     icon: <><rect x="3" y="11" width="8" height="8" rx="2" /><circle cx="17" cy="7" r="4" /><path d="M14 17h6M17 14v6" /></>
   },
   {
-    nombre: 'Libros', slug: 'libros', tint: 'bg-[#eef2ff]', stroke: '#2563eb',
-    icon: <><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" /><path d="M19 17H6" /></>
-  },
-  {
-    nombre: 'Autos', slug: 'autos', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
-    icon: <><path d="M5 13 7 7h10l2 6" /><path d="M3 13h18v5H3z" /><circle cx="7.5" cy="18" r="1.5" /><circle cx="16.5" cy="18" r="1.5" /></>
+    nombre: 'Otro', tint: 'bg-[#f3edff]', stroke: '#7c3aed',
+    icon: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>
   }
 ]
 
@@ -361,7 +362,7 @@ export default function Landing() {
         <h2 className="font-display font-bold text-[22px] sm:text-[27px] tracking-[-0.01em] mb-6">Explorá por categoría</h2>
         <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-3.5 ${cats.visible ? 'stagger-in' : ''}`}>
           {CATEGORIAS.map(cat => (
-            <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`}
+            <Link key={cat.nombre} to={`/catalogo?categoria=${encodeURIComponent(cat.nombre)}`}
               className="mlt text-center px-2 py-5 border border-ml-line rounded-2xl bg-white">
               <span className={`inline-flex w-[46px] h-[46px] rounded-[13px] ${cat.tint} items-center justify-center mb-2.5`}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={cat.stroke} strokeWidth={2}>{cat.icon}</svg>

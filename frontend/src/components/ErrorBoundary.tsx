@@ -33,8 +33,8 @@ export default class ErrorBoundary extends Component<Props, State> {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Algo no carga bien</h1>
-            <p className="text-gray-500 mb-6">
+            <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-2">Algo no carga bien</h1>
+            <p className="text-ml-muted mb-6">
               Hubo un error inesperado. Esto puede pasar si el servidor estaba cargando.
             </p>
             <div className="space-y-3">
@@ -43,7 +43,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                   this.setState({ hasError: false, error: null })
                   window.location.reload()
                 }}
-                className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="w-full py-3 ml-grad text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
                 Recargar la pagina
               </button>
@@ -52,14 +52,14 @@ export default class ErrorBoundary extends Component<Props, State> {
                   this.setState({ hasError: false, error: null })
                   window.location.href = '/'
                 }}
-                className="w-full py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-all"
+                className="w-full py-3 border border-ml-line text-ml-ink rounded-xl font-medium hover:bg-ml-bg transition-all"
               >
                 Ir al inicio
               </button>
             </div>
             {this.state.error && (
               <details className="mt-4 text-left">
-                <summary className="text-xs text-gray-400 cursor-pointer">Detalle del error</summary>
+                <summary className="text-xs text-ml-muted cursor-pointer">Detalle del error</summary>
                 <pre className="mt-2 text-xs text-red-400 bg-red-50 p-3 rounded-lg overflow-auto max-h-32">
                   {this.state.error.message}
                 </pre>

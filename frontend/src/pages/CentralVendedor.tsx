@@ -111,12 +111,12 @@ export default function CentralVendedor() {
 
   if (!tienda) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-ml-bg flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-lg p-12 max-w-md">
           <p className="text-6xl mb-4">&#x1F3EA;</p>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Necesit&aacute;s una tienda</h2>
-          <p className="text-gray-500 mb-6">Cre&aacute; tu tienda para acceder a la Central de Vendedores</p>
-          <Link to="/mi-tienda" className="inline-block px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">
+          <h2 className="font-display text-[24px] font-extrabold text-ml-ink mb-2">Necesit&aacute;s una tienda</h2>
+          <p className="text-ml-muted mb-6">Cre&aacute; tu tienda para acceder a la Central de Vendedores</p>
+          <Link to="/mi-tienda" className="inline-block px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold ">
             Crear mi tienda
           </Link>
         </div>
@@ -125,23 +125,23 @@ export default function CentralVendedor() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-ml-bg py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header con bienvenida + reputación */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 mb-6">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {tienda.logo ? (
-                <img src={tienda.logo} alt={tienda.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-gray-200" />
+                <img src={tienda.logo} alt={tienda.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-ml-line" />
               ) : (
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-4xl">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ml-bg to-ml-bg flex items-center justify-center text-4xl">
                   &#x1F3EA;
                 </div>
               )}
               <div>
-                <p className="text-sm text-gray-500">Bienvenido,</p>
-                <h1 className="text-2xl font-bold text-gray-800">{usuario?.nombre?.split(' ')[0]}</h1>
-                <p className="text-gray-600">{tienda.nombre}</p>
+                <p className="text-sm text-ml-muted">Bienvenido,</p>
+                <h1 className="font-display text-[24px] font-extrabold text-ml-ink">{usuario?.nombre?.split(' ')[0]}</h1>
+                <p className="text-ml-soft">{tienda.nombre}</p>
               </div>
             </div>
             <div className={`bg-gradient-to-r ${colorNivel} text-white rounded-2xl p-4 shadow-lg`}>
@@ -155,20 +155,20 @@ export default function CentralVendedor() {
         {/* Stats cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-blue-500">
-            <p className="text-sm text-gray-500 mb-1">Productos</p>
-            <p className="text-3xl font-bold text-gray-800">{stats.totalProductos}</p>
+            <p className="text-sm text-ml-muted mb-1">Productos</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.totalProductos}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-green-500">
-            <p className="text-sm text-gray-500 mb-1">Ventas</p>
-            <p className="text-3xl font-bold text-gray-800">{stats.totalVentas}</p>
+            <p className="text-sm text-ml-muted mb-1">Ventas</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.totalVentas}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-purple-500">
-            <p className="text-sm text-gray-500 mb-1">Ganancias</p>
-            <p className="text-3xl font-bold text-gray-800">${stats.ganancias.toLocaleString()}</p>
+            <p className="text-sm text-ml-muted mb-1">Ganancias</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">${stats.ganancias.toLocaleString()}</p>
           </div>
           <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-yellow-500">
-            <p className="text-sm text-gray-500 mb-1">Reputaci&oacute;n</p>
-            <p className="text-3xl font-bold text-gray-800">{stats.calificacion.toFixed(1)}</p>
+            <p className="text-sm text-ml-muted mb-1">Reputaci&oacute;n</p>
+            <p className="font-display text-[28px] font-extrabold text-ml-ink">{stats.calificacion.toFixed(1)}</p>
           </div>
         </div>
 
@@ -205,7 +205,7 @@ export default function CentralVendedor() {
                     <p className="text-sm text-red-700 font-semibold mt-1">
                       Sin esto NO podés vender. Es obligatorio.
                     </p>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-ml-soft mt-1">
                       Tus productos no aparecen en el catálogo hasta que vincules tu cuenta.
                     </p>
                   </>
@@ -219,7 +219,7 @@ export default function CentralVendedor() {
                     Vinculado
                   </span>
                   <button onClick={desvincularMp}
-                    className="px-4 py-2 bg-white text-gray-600 rounded-xl text-sm border border-gray-300 hover:bg-gray-50">
+                    className="px-4 py-2 bg-white text-ml-soft rounded-xl text-sm border border-ml-line hover:bg-gray-50">
                     Desvincular
                   </button>
                 </>
@@ -237,24 +237,24 @@ export default function CentralVendedor() {
             </p>
           )}
           {!mpEstado.vinculado && (
-            <p className="mt-4 text-xs text-gray-600 bg-white/60 p-3 rounded-lg">
+            <p className="mt-4 text-xs text-ml-soft bg-white/60 p-3 rounded-lg">
               Al vincular tu cuenta, los pagos de tus ventas se acreditarán directamente en tu billetera de Mercado Pago. Solo recibiremos nuestra comisión (10%).
             </p>
           )}
         </div>
 
         {/* Grid de secciones */}
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Accesos r&aacute;pidos</h2>
+        <h2 className="text-xl font-bold text-ml-ink mb-4">Accesos r&aacute;pidos</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {secciones.map(s => (
             <Link
               key={s.titulo}
               to={s.to}
-              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all border border-gray-100"
+              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all border border-ml-line2"
             >
               <div className="text-4xl mb-3">{s.icon}</div>
-              <h3 className="font-bold text-gray-800">{s.titulo}</h3>
-              <p className="text-xs text-gray-500 mt-1">{s.desc}</p>
+              <h3 className="font-bold text-ml-ink">{s.titulo}</h3>
+              <p className="text-xs text-ml-muted mt-1">{s.desc}</p>
             </Link>
           ))}
         </div>
@@ -264,15 +264,15 @@ export default function CentralVendedor() {
           <div className="flex items-start gap-4">
             <span className="text-3xl">&#x1F195;</span>
             <div>
-              <h3 className="font-bold text-gray-800 text-lg">Novedades para vendedores</h3>
-              <p className="text-gray-600 text-sm mt-1">
+              <h3 className="font-bold text-ml-ink text-lg">Novedades para vendedores</h3>
+              <p className="text-ml-soft text-sm mt-1">
                 Pr&oacute;ximamente: sistema de publicidad, cupones de descuento y promociones destacadas. &iexcl;Mantente atento!
               </p>
             </div>
           </div>
         </div>
 
-        {cargando && <div className="text-center mt-4 text-gray-400">Cargando...</div>}
+        {cargando && <div className="text-center mt-4 text-ml-muted">Cargando...</div>}
       </div>
     </div>
   )

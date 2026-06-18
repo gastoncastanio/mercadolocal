@@ -39,14 +39,14 @@ const PRIORIDAD_COLOR: Record<string, string> = {
   urgente: 'bg-red-100 text-red-700 border-red-200',
   alta: 'bg-orange-100 text-orange-700 border-orange-200',
   media: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  baja: 'bg-gray-100 text-gray-600 border-gray-200'
+  baja: 'bg-gray-100 text-ml-soft border-ml-line'
 }
 
 const ESTADO_COLOR: Record<string, string> = {
-  abierto: 'bg-blue-100 text-blue-700',
+  abierto: 'bg-ml-bg text-blue-700',
   resuelto: 'bg-green-100 text-green-700',
   escalado: 'bg-orange-100 text-orange-700',
-  cerrado: 'bg-gray-100 text-gray-500'
+  cerrado: 'bg-gray-100 text-ml-muted'
 }
 
 const ASUNTO_ICONO: Record<string, string> = {
@@ -130,38 +130,38 @@ export default function SoporteAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-gray-800">Centro de Soporte · Admin</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Centro de Soporte · Admin</h1>
+          <p className="text-ml-muted text-sm mt-1">
             Tickets escalados por el AGENTE-SOPORTE que requieren atención humana.
           </p>
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 mb-4 flex flex-wrap gap-2">
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line2 p-3 mb-4 flex flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500">Estado:</span>
+            <span className="text-xs font-medium text-ml-muted">Estado:</span>
             {['escalado', 'abierto', 'resuelto', 'cerrado'].map(e => (
               <button
                 key={e}
                 onClick={() => setFiltroEstado(e)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  filtroEstado === e ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  filtroEstado === e ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
                 }`}
               >
                 {e === 'escalado' ? 'En revisión' : e.charAt(0).toUpperCase() + e.slice(1)}
               </button>
             ))}
           </div>
-          <div className="border-l border-gray-200 mx-2" />
+          <div className="border-l border-ml-line mx-2" />
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500">Prioridad:</span>
+            <span className="text-xs font-medium text-ml-muted">Prioridad:</span>
             <button
               onClick={() => setFiltroPrioridad('')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                !filtroPrioridad ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                !filtroPrioridad ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
               }`}
             >
               Todas
@@ -171,7 +171,7 @@ export default function SoporteAdmin() {
                 key={p}
                 onClick={() => setFiltroPrioridad(p)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium ${
-                  filtroPrioridad === p ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  filtroPrioridad === p ? 'mlbtn ml-grad text-white' : 'bg-ml-bg text-ml-soft border border-ml-line hover:bg-white'
                 }`}
               >
                 {p}
@@ -183,19 +183,19 @@ export default function SoporteAdmin() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Lista de tickets */}
           <div className="lg:col-span-5 xl:col-span-4">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-gray-700">{tickets.length} ticket{tickets.length === 1 ? '' : 's'}</h2>
-                <button onClick={cargarTickets} className="text-xs text-blue-600 font-medium hover:underline">
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line2 overflow-hidden">
+              <div className="px-4 py-3 border-b border-ml-line2 flex items-center justify-between">
+                <h2 className="text-sm font-bold text-ml-ink">{tickets.length} ticket{tickets.length === 1 ? '' : 's'}</h2>
+                <button onClick={cargarTickets} className="text-xs text-ml-blue font-medium hover:underline">
                   ↻ Refrescar
                 </button>
               </div>
 
               <div className="max-h-[calc(100vh-260px)] overflow-y-auto divide-y divide-gray-100">
                 {cargando ? (
-                  <div className="p-6 text-center text-sm text-gray-400">Cargando...</div>
+                  <div className="p-6 text-center text-sm text-ml-muted">Cargando...</div>
                 ) : tickets.length === 0 ? (
-                  <div className="p-8 text-center text-sm text-gray-400">
+                  <div className="p-8 text-center text-sm text-ml-muted">
                     🎉 No hay tickets pendientes
                   </div>
                 ) : (
@@ -208,7 +208,7 @@ export default function SoporteAdmin() {
                       }`}
                     >
                       <div className="flex items-start justify-between mb-1.5 gap-2">
-                        <span className="text-sm font-semibold text-gray-800 flex items-center gap-1.5 truncate">
+                        <span className="text-sm font-semibold text-ml-ink flex items-center gap-1.5 truncate">
                           <span>{ASUNTO_ICONO[t.asunto] || '❓'}</span>
                           <span className="truncate">{t.usuarioId?.nombre || 'Usuario'}</span>
                         </span>
@@ -216,11 +216,11 @@ export default function SoporteAdmin() {
                           {t.prioridad}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-ml-muted truncate">
                         {t.mensajes && t.mensajes.length > 0 ? t.mensajes[t.mensajes.length - 1].texto.slice(0, 120) : '(sin mensajes)'}
                       </p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <p className="text-[10px] text-gray-400">{tiempoRelativo(t.ultimaActividad)}</p>
+                        <p className="text-[10px] text-ml-muted">{tiempoRelativo(t.ultimaActividad)}</p>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full ${ESTADO_COLOR[t.estado]}`}>
                           {t.estado === 'escalado' ? 'En revisión' : t.estado}
                         </span>
@@ -235,17 +235,17 @@ export default function SoporteAdmin() {
           {/* Detalle del ticket */}
           <div className="lg:col-span-7 xl:col-span-8">
             {!ticketActivo ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+              <div className="bg-white rounded-2xl shadow-sm border border-ml-line2 p-12 text-center">
                 <p className="text-5xl mb-3">📋</p>
-                <p className="text-sm text-gray-500">Seleccioná un ticket de la lista para ver el detalle</p>
+                <p className="text-sm text-ml-muted">Seleccioná un ticket de la lista para ver el detalle</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col" style={{ height: 'calc(100vh - 260px)' }}>
+              <div className="bg-white rounded-2xl shadow-sm border border-ml-line2 flex flex-col" style={{ height: 'calc(100vh - 260px)' }}>
                 {/* Header del detalle */}
-                <div className="px-5 py-3 border-b border-gray-100">
+                <div className="px-5 py-3 border-b border-ml-line2">
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <p className="text-sm font-bold text-gray-800 flex items-center gap-2 mb-1">
+                      <p className="text-sm font-bold text-ml-ink flex items-center gap-2 mb-1">
                         <span>{ASUNTO_ICONO[ticketActivo.asunto]}</span>
                         <span className="capitalize">{ticketActivo.asunto}</span>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${PRIORIDAD_COLOR[ticketActivo.prioridad]}`}>
@@ -255,10 +255,10 @@ export default function SoporteAdmin() {
                           {ticketActivo.estado === 'escalado' ? 'En revisión' : ticketActivo.estado}
                         </span>
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-ml-muted">
                         👤 {ticketActivo.usuarioId?.nombre} ({ticketActivo.usuarioId?.rol}) · {ticketActivo.usuarioId?.email}
                       </p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
+                      <p className="text-[11px] text-ml-muted mt-0.5">
                         #{ticketActivo._id.slice(-8).toUpperCase()} · Creado {tiempoRelativo(ticketActivo.createdAt)}
                       </p>
                     </div>
@@ -276,7 +276,7 @@ export default function SoporteAdmin() {
                   {ticketActivo.tags && ticketActivo.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {ticketActivo.tags.map(t => (
-                        <span key={t} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        <span key={t} className="text-[10px] bg-gray-100 text-ml-soft px-2 py-0.5 rounded">
                           #{t}
                         </span>
                       ))}
@@ -294,17 +294,17 @@ export default function SoporteAdmin() {
                       <div key={i} className={`flex ${esUsuario ? 'justify-start' : 'justify-end'}`}>
                         <div className="max-w-[80%] flex items-start gap-2">
                           {esUsuario && (
-                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs">
+                            <div className="w-7 h-7 rounded-full bg-ml-bg flex items-center justify-center flex-shrink-0 mt-0.5 text-xs">
                               👤
                             </div>
                           )}
                           <div className={`px-4 py-2.5 rounded-2xl ${
-                            esUsuario ? 'bg-white border border-gray-200 rounded-bl-md' :
+                            esUsuario ? 'bg-white border border-ml-line rounded-bl-md' :
                             esAgente ? 'bg-blue-50 border border-blue-100 rounded-br-md' :
                             'bg-green-50 border border-green-200 rounded-br-md'
                           }`}>
                             <p className={`text-[10px] font-bold mb-1 ${
-                              esUsuario ? 'text-blue-600' :
+                              esUsuario ? 'text-ml-blue' :
                               esAgente ? 'text-blue-700' :
                               'text-green-700'
                             }`}>
@@ -312,8 +312,8 @@ export default function SoporteAdmin() {
                                esAgente ? '🤖 Agente IA' :
                                '👤 Vos (admin)'}
                             </p>
-                            <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">{m.texto}</p>
-                            <p className="text-[10px] text-gray-400 mt-1">
+                            <p className="text-sm text-ml-ink whitespace-pre-line leading-relaxed">{m.texto}</p>
+                            <p className="text-[10px] text-ml-muted mt-1">
                               {new Date(m.fecha).toLocaleString('es-AR', {
                                 day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                               })}
@@ -337,7 +337,7 @@ export default function SoporteAdmin() {
 
                 {/* Form de respuesta (solo si el ticket está activo) */}
                 {ticketActivo.estado !== 'cerrado' && (
-                  <form onSubmit={responder} className="border-t border-gray-100 p-3">
+                  <form onSubmit={responder} className="border-t border-ml-line2 p-3">
                     <textarea
                       value={respuesta}
                       onChange={e => setRespuesta(e.target.value)}
@@ -345,22 +345,22 @@ export default function SoporteAdmin() {
                       disabled={enviando}
                       rows={3}
                       maxLength={4000}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full px-3 py-2 border border-ml-line rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ml-purple/30 resize-none"
                     />
                     <div className="flex items-center justify-between mt-2">
-                      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                      <label className="flex items-center gap-2 text-xs text-ml-soft cursor-pointer">
                         <input
                           type="checkbox"
                           checked={cerrarAlEnviar}
                           onChange={e => setCerrarAlEnviar(e.target.checked)}
-                          className="rounded text-blue-600"
+                          className="rounded text-ml-blue"
                         />
                         Cerrar ticket como resuelto
                       </label>
                       <button
                         type="submit"
                         disabled={enviando || !respuesta.trim()}
-                        className="px-5 py-2 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 disabled:opacity-50"
+                        className="px-5 py-2 mlbtn ml-grad text-white rounded-xl font-semibold text-sm  disabled:opacity-50"
                       >
                         {enviando ? 'Enviando...' : (cerrarAlEnviar ? 'Responder y cerrar' : 'Responder')}
                       </button>

@@ -51,12 +51,12 @@ export default function DashboardAdmin() {
   const [menuAbierto, setMenuAbierto] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="min-h-screen bg-ml-bg flex">
       {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 min-h-screen">
-        <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800">👑 Admin Panel</h2>
-          <p className="text-xs text-gray-400 mt-1">MercadoLocal</p>
+      <aside className="hidden md:flex flex-col w-64 bg-white border-r border-ml-line min-h-screen">
+        <div className="p-6 border-b border-ml-line2">
+          <h2 className="text-xl font-bold text-ml-ink">👑 Admin Panel</h2>
+          <p className="text-xs text-ml-muted mt-1">MercadoLocal</p>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {SECCIONES.map(s => (
@@ -66,7 +66,7 @@ export default function DashboardAdmin() {
               className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 transition-colors text-sm font-medium ${
                 seccion === s.id
                   ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  : 'text-ml-soft hover:bg-gray-50'
               }`}
             >
               <span className="text-lg">{s.icono}</span>
@@ -74,8 +74,8 @@ export default function DashboardAdmin() {
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-100">
-          <button onClick={() => navigate('/catalogo')} className="w-full text-left px-4 py-2 text-sm text-gray-500 hover:text-blue-600">
+        <div className="p-4 border-t border-ml-line2">
+          <button onClick={() => navigate('/catalogo')} className="w-full text-left px-4 py-2 text-sm text-ml-muted hover:text-ml-blue">
             ← Volver al sitio
           </button>
         </div>
@@ -84,7 +84,7 @@ export default function DashboardAdmin() {
       {/* Mobile header — pt incluye el safe-area del notch/Dynamic Island */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b z-50 px-4 pb-3 pt-[calc(0.75rem_+_env(safe-area-inset-top))] flex items-center justify-between">
         <button onClick={() => setMenuAbierto(!menuAbierto)} className="text-2xl">&#9776;</button>
-        <span className="font-bold text-gray-800">👑 Admin</span>
+        <span className="font-bold text-ml-ink">👑 Admin</span>
         <span className="text-lg">{SECCIONES.find(s => s.id === seccion)?.icono}</span>
       </div>
 
@@ -92,13 +92,13 @@ export default function DashboardAdmin() {
       {menuAbierto && (
         <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMenuAbierto(false)}>
           <div className="w-64 bg-white h-full p-4 pt-[calc(1rem_+_env(safe-area-inset-top))] space-y-1" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-800 mb-4 px-4">👑 Admin Panel</h2>
+            <h2 className="text-lg font-bold text-ml-ink mb-4 px-4">👑 Admin Panel</h2>
             {SECCIONES.map(s => (
               <button
                 key={s.id}
                 onClick={() => { setSeccion(s.id); setMenuAbierto(false) }}
                 className={`w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium ${
-                  seccion === s.id ? 'bg-blue-50 text-blue-700' : 'text-gray-600'
+                  seccion === s.id ? 'bg-blue-50 text-blue-700' : 'text-ml-soft'
                 }`}
               >
                 <span className="text-lg">{s.icono}</span>
@@ -133,7 +133,7 @@ function SeccionInicio() {
   }, [])
 
   if (cargando) return <Cargando />
-  if (!stats) return <p className="text-gray-500">Error cargando datos</p>
+  if (!stats) return <p className="text-ml-muted">Error cargando datos</p>
 
   const cards = [
     { t: 'Ventas Totales', v: `$${stats.totalVentas.toLocaleString()}`, c: 'from-green-400 to-green-600', i: '💰' },
@@ -146,7 +146,7 @@ function SeccionInicio() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Resumen General</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Resumen General</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {cards.map(c => (
           <div key={c.t} className={`bg-gradient-to-r ${c.c} rounded-2xl p-5 text-white shadow-lg`}>
@@ -162,20 +162,20 @@ function SeccionInicio() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-700 mb-2">✅ Completadas</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+          <h3 className="font-semibold text-ml-ink mb-2">✅ Completadas</h3>
           <p className="text-3xl font-bold text-green-600">{stats.ordenesCompletadas}</p>
-          <p className="text-sm text-gray-400">de {stats.totalOrdenes} órdenes</p>
+          <p className="text-sm text-ml-muted">de {stats.totalOrdenes} órdenes</p>
         </div>
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <h3 className="font-semibold text-gray-700 mb-2">⏳ Pendientes</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+          <h3 className="font-semibold text-ml-ink mb-2">⏳ Pendientes</h3>
           <p className="text-3xl font-bold text-yellow-600">{stats.ordenesPendientes}</p>
-          <p className="text-sm text-gray-400">requieren atención</p>
+          <p className="text-sm text-ml-muted">requieren atención</p>
         </div>
       </div>
 
       {/* Acceso destacado al Cerebro IA */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">🧠 MercadoLocal Brain</h2>
+      <h2 className="text-lg font-semibold text-ml-ink mb-3">🧠 MercadoLocal Brain</h2>
       <a
         href="/admin/cerebro"
         className="block bg-gradient-to-br from-blue-700 via-purple-700 to-fuchsia-700 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl hover:scale-[1.01] transition-all mb-6 relative overflow-hidden"
@@ -197,7 +197,7 @@ function SeccionInicio() {
       </a>
 
       {/* Accesos rápidos a paneles especializados */}
-      <h2 className="text-lg font-semibold text-gray-800 mb-3">Paneles especializados</h2>
+      <h2 className="text-lg font-semibold text-ml-ink mb-3">Paneles especializados</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <a
           href="/admin/moderacion"
@@ -207,8 +207,8 @@ function SeccionInicio() {
             <span className="text-3xl">🛡️</span>
             <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">IA</span>
           </div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-purple-600">Moderación</h3>
-          <p className="text-xs text-gray-500 mt-1">Revisar productos pendientes</p>
+          <h3 className="font-semibold text-ml-ink group-hover:text-purple-600">Moderación</h3>
+          <p className="text-xs text-ml-muted mt-1">Revisar productos pendientes</p>
         </a>
         <a
           href="/admin/soporte"
@@ -216,10 +216,10 @@ function SeccionInicio() {
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-3xl">💬</span>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">IA</span>
+            <span className="text-xs bg-ml-bg text-blue-700 px-2 py-0.5 rounded-full">IA</span>
           </div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-blue-600">Soporte</h3>
-          <p className="text-xs text-gray-500 mt-1">Tickets escalados por el agente</p>
+          <h3 className="font-semibold text-ml-ink group-hover:text-ml-blue">Soporte</h3>
+          <p className="text-xs text-ml-muted mt-1">Tickets escalados por el agente</p>
         </a>
         <a
           href="/admin/disputas"
@@ -229,8 +229,8 @@ function SeccionInicio() {
             <span className="text-3xl">⚖️</span>
             <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Manual</span>
           </div>
-          <h3 className="font-semibold text-gray-800 group-hover:text-red-600">Disputas</h3>
-          <p className="text-xs text-gray-500 mt-1">Resolver conflictos de compras</p>
+          <h3 className="font-semibold text-ml-ink group-hover:text-red-600">Disputas</h3>
+          <p className="text-xs text-ml-muted mt-1">Resolver conflictos de compras</p>
         </a>
       </div>
     </div>
@@ -265,7 +265,7 @@ function SeccionUsuarios() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Usuarios ({usuarios.length})</h1>
+        <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Usuarios ({usuarios.length})</h1>
       </div>
 
       <input
@@ -273,12 +273,12 @@ function SeccionUsuarios() {
         placeholder="Buscar por nombre, email o rol..."
         value={filtro}
         onChange={e => setFiltro(e.target.value)}
-        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full mb-4 px-4 py-3 bg-white border border-ml-line rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30"
       />
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+          <thead className="bg-gray-50 text-ml-muted text-xs uppercase">
             <tr>
               <th className="px-4 py-3 text-left">Usuario</th>
               <th className="px-4 py-3 text-left">Rol</th>
@@ -291,17 +291,17 @@ function SeccionUsuarios() {
             {filtrados.map(u => (
               <tr key={u._id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-800">{u.nombre}</p>
-                  <p className="text-gray-400 text-xs">{u.email}</p>
+                  <p className="font-medium text-ml-ink">{u.nombre}</p>
+                  <p className="text-ml-muted text-xs">{u.email}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     u.rol === 'admin' ? 'bg-red-100 text-red-700' :
-                    u.rol === 'vendedor' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'
+                    u.rol === 'vendedor' ? 'bg-ml-bg text-blue-700' :
+                    'bg-gray-100 text-ml-ink'
                   }`}>{u.rol}</span>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{new Date(u.createdAt).toLocaleDateString('es-AR')}</td>
+                <td className="px-4 py-3 text-ml-muted">{new Date(u.createdAt).toLocaleDateString('es-AR')}</td>
                 <td className="px-4 py-3 text-center">
                   <span className={`inline-block w-2.5 h-2.5 rounded-full ${u.activo ? 'bg-green-500' : 'bg-red-500'}`} />
                 </td>
@@ -321,7 +321,7 @@ function SeccionUsuarios() {
             ))}
           </tbody>
         </table>
-        {filtrados.length === 0 && <p className="text-center py-8 text-gray-400">No se encontraron usuarios</p>}
+        {filtrados.length === 0 && <p className="text-center py-8 text-ml-muted">No se encontraron usuarios</p>}
       </div>
     </div>
   )
@@ -340,21 +340,21 @@ function SeccionVendedores() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Vendedores y Tiendas ({tiendas.length})</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Vendedores y Tiendas ({tiendas.length})</h1>
 
       {tiendas.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
           <p className="text-4xl mb-3">🏪</p>
-          <p className="text-gray-500">Todavía no hay vendedores registrados</p>
+          <p className="text-ml-muted">Todavía no hay vendedores registrados</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {tiendas.map(t => (
-            <div key={t._id} className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+            <div key={t._id} className="bg-white rounded-2xl shadow-sm p-5 border border-ml-line2">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="font-bold text-gray-800">{t.nombre}</h3>
-                  <p className="text-sm text-gray-400">📍 {t.ciudad} · {t.tipo}</p>
+                  <h3 className="font-bold text-ml-ink">{t.nombre}</h3>
+                  <p className="text-sm text-ml-muted">📍 {t.ciudad} · {t.tipo}</p>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${t.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {t.activo ? 'Activa' : 'Inactiva'}
@@ -362,20 +362,20 @@ function SeccionVendedores() {
               </div>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-gray-50 rounded-lg p-2">
-                  <p className="text-xs text-gray-400">Ventas</p>
-                  <p className="font-bold text-gray-800">{t.totalVentas}</p>
+                  <p className="text-xs text-ml-muted">Ventas</p>
+                  <p className="font-bold text-ml-ink">{t.totalVentas}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2">
-                  <p className="text-xs text-gray-400">Ganancia</p>
+                  <p className="text-xs text-ml-muted">Ganancia</p>
                   <p className="font-bold text-green-600">${t.ganancias?.toLocaleString() || 0}</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-2">
-                  <p className="text-xs text-gray-400">Rating</p>
+                  <p className="text-xs text-ml-muted">Rating</p>
                   <p className="font-bold text-yellow-600">⭐ {t.calificacion?.toFixed(1) || '0.0'}</p>
                 </div>
               </div>
               {t.usuarioId && typeof t.usuarioId === 'object' && (
-                <p className="text-xs text-gray-400 mt-3">Dueño: {t.usuarioId.nombre} ({t.usuarioId.email})</p>
+                <p className="text-xs text-ml-muted mt-3">Dueño: {t.usuarioId.nombre} ({t.usuarioId.email})</p>
               )}
             </div>
           ))}
@@ -410,19 +410,19 @@ function SeccionProductos() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Productos ({productos.length})</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">Productos ({productos.length})</h1>
 
       <input
         type="text"
         placeholder="Buscar producto..."
         value={filtro}
         onChange={e => setFiltro(e.target.value)}
-        className="w-full mb-4 px-4 py-3 bg-white border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full mb-4 px-4 py-3 bg-white border border-ml-line rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30"
       />
 
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+          <thead className="bg-gray-50 text-ml-muted text-xs uppercase">
             <tr>
               <th className="px-4 py-3 text-left">Producto</th>
               <th className="px-4 py-3 text-left">Tienda</th>
@@ -436,11 +436,11 @@ function SeccionProductos() {
           <tbody className="divide-y divide-gray-100">
             {filtrados.map(p => (
               <tr key={p._id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-800">{p.nombre}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="px-4 py-3 font-medium text-ml-ink">{p.nombre}</td>
+                <td className="px-4 py-3 text-ml-muted text-xs">
                   {p.tiendaId && typeof p.tiendaId === 'object' ? `${p.tiendaId.nombre}` : '-'}
                 </td>
-                <td className="px-4 py-3 text-right font-medium text-blue-600">${p.precio.toLocaleString()}</td>
+                <td className="px-4 py-3 text-right font-medium text-ml-blue">${p.precio.toLocaleString()}</td>
                 <td className="px-4 py-3 text-center">{p.stock}</td>
                 <td className="px-4 py-3 text-center">{p.totalVentas}</td>
                 <td className="px-4 py-3 text-center">
@@ -460,7 +460,7 @@ function SeccionProductos() {
             ))}
           </tbody>
         </table>
-        {filtrados.length === 0 && <p className="text-center py-8 text-gray-400">No hay productos</p>}
+        {filtrados.length === 0 && <p className="text-center py-8 text-ml-muted">No hay productos</p>}
       </div>
     </div>
   )
@@ -518,7 +518,7 @@ function SeccionOrdenes() {
 
   const ESTADOS: Record<string, { color: string; texto: string }> = {
     pendiente: { color: 'bg-yellow-100 text-yellow-700', texto: 'Pendiente' },
-    pagada: { color: 'bg-blue-100 text-blue-700', texto: 'Pagada' },
+    pagada: { color: 'bg-ml-bg text-blue-700', texto: 'Pagada' },
     enviada: { color: 'bg-purple-100 text-purple-700', texto: 'Enviada' },
     completada: { color: 'bg-green-100 text-green-700', texto: 'Completada' },
     cancelada: { color: 'bg-red-100 text-red-700', texto: 'Cancelada' },
@@ -536,7 +536,7 @@ function SeccionOrdenes() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Órdenes ({ordenes.length})</h1>
+        <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Órdenes ({ordenes.length})</h1>
         <button
           onClick={limpiarHistorial}
           disabled={limpiando}
@@ -546,7 +546,7 @@ function SeccionOrdenes() {
         </button>
       </div>
       {msgLimpieza && (
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+        <div className="mb-4 p-3 bg-gray-50 border border-ml-line rounded-lg text-sm text-ml-ink">
           {msgLimpieza}
         </div>
       )}
@@ -554,25 +554,25 @@ function SeccionOrdenes() {
       {ordenes.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
           <p className="text-4xl mb-3">📦</p>
-          <p className="text-gray-500">No hay órdenes todavía</p>
+          <p className="text-ml-muted">No hay órdenes todavía</p>
         </div>
       ) : (
         <div className="space-y-4">
           {ordenes.map(o => {
             const est = ESTADOS[o.estado] || ESTADOS.pendiente
             return (
-              <div key={o._id} className="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+              <div key={o._id} className="bg-white rounded-2xl shadow-sm p-5 border border-ml-line2">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="font-bold text-gray-800">Orden #{o._id.slice(-6).toUpperCase()}</p>
-                    <p className="text-xs text-gray-400">{new Date(o.createdAt).toLocaleString('es-AR')}</p>
+                    <p className="font-bold text-ml-ink">Orden #{o._id.slice(-6).toUpperCase()}</p>
+                    <p className="text-xs text-ml-muted">{new Date(o.createdAt).toLocaleString('es-AR')}</p>
                   </div>
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${est.color}`}>{est.texto}</span>
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-3 mb-3">
                   {o.items?.map((item, i) => (
-                    <p key={i} className="text-sm text-gray-600">
+                    <p key={i} className="text-sm text-ml-soft">
                       {item.cantidad}x {item.nombre} - ${item.precioUnitario?.toLocaleString()}
                     </p>
                   ))}
@@ -580,13 +580,13 @@ function SeccionOrdenes() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex gap-4 text-sm">
-                    <span className="text-gray-500">Total: <strong className="text-gray-800">${o.total?.toLocaleString()}</strong></span>
-                    <span className="text-gray-500">Comisión: <strong className="text-green-600">${o.comision?.toLocaleString()}</strong></span>
+                    <span className="text-ml-muted">Total: <strong className="text-ml-ink">${o.total?.toLocaleString()}</strong></span>
+                    <span className="text-ml-muted">Comisión: <strong className="text-green-600">${o.comision?.toLocaleString()}</strong></span>
                   </div>
                   <select
                     value={o.estado}
                     onChange={e => cambiarEstado(o._id, e.target.value)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="text-xs border border-ml-line rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-ml-purple/30"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="pagada">Pagada</option>
@@ -597,7 +597,7 @@ function SeccionOrdenes() {
                 </div>
 
                 {o.nombreComprador && (
-                  <p className="text-xs text-gray-400 mt-2">👤 {o.nombreComprador} · 📍 {o.direccionEntrega}</p>
+                  <p className="text-xs text-ml-muted mt-2">👤 {o.nombreComprador} · 📍 {o.direccionEntrega}</p>
                 )}
               </div>
             )
@@ -625,52 +625,52 @@ function SeccionPublicidad() {
       .finally(() => setCargando(false))
   }, [])
 
-  if (cargando) return <div className="text-center py-20"><div className="animate-spin text-3xl mb-3">&#x1F4E2;</div><p className="text-gray-400 text-sm">Cargando...</p></div>
+  if (cargando) return <div className="text-center py-20"><div className="animate-spin text-3xl mb-3">&#x1F4E2;</div><p className="text-ml-muted text-sm">Cargando...</p></div>
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
+      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Ingresos totales</p>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
+          <p className="text-xs text-ml-muted mb-1">Ingresos totales</p>
           <p className="text-2xl font-bold text-green-600">${(stats?.ingresosTotales || 0).toLocaleString('es-AR')}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Ingresos (30 d&iacute;as)</p>
-          <p className="text-2xl font-bold text-blue-600">${(stats?.ingresosMes || 0).toLocaleString('es-AR')}</p>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
+          <p className="text-xs text-ml-muted mb-1">Ingresos (30 d&iacute;as)</p>
+          <p className="text-2xl font-bold text-ml-blue">${(stats?.ingresosMes || 0).toLocaleString('es-AR')}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Promos activas</p>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
+          <p className="text-xs text-ml-muted mb-1">Promos activas</p>
           <p className="text-2xl font-bold text-purple-600">{stats?.promocionesActivas || 0}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <p className="text-xs text-gray-500 mb-1">Promos totales</p>
-          <p className="text-2xl font-bold text-gray-700">{stats?.promocionesTotales || 0}</p>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
+          <p className="text-xs text-ml-muted mb-1">Promos totales</p>
+          <p className="font-display text-[24px] font-extrabold text-ml-ink">{stats?.promocionesTotales || 0}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">M&eacute;tricas de rendimiento</h3>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-ml-line2">
+          <h3 className="font-bold text-ml-ink mb-4">M&eacute;tricas de rendimiento</h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Impresiones totales</span>
-              <span className="font-bold text-gray-800">{(stats?.totalImpresiones || 0).toLocaleString()}</span>
+              <span className="text-sm text-ml-soft">Impresiones totales</span>
+              <span className="font-bold text-ml-ink">{(stats?.totalImpresiones || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Clicks totales</span>
-              <span className="font-bold text-gray-800">{(stats?.totalClicks || 0).toLocaleString()}</span>
+              <span className="text-sm text-ml-soft">Clicks totales</span>
+              <span className="font-bold text-ml-ink">{(stats?.totalClicks || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">CTR promedio</span>
-              <span className="font-bold text-blue-600">{stats?.ctr || '0%'}</span>
+              <span className="text-sm text-ml-soft">CTR promedio</span>
+              <span className="font-bold text-ml-blue">{stats?.ctr || '0%'}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-4">Distribuci&oacute;n por plan</h3>
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-ml-line2">
+          <h3 className="font-bold text-ml-ink mb-4">Distribuci&oacute;n por plan</h3>
           <div className="space-y-3">
             {['basico', 'premium', 'elite'].map(plan => {
               const count = stats?.porPlan?.[plan as keyof typeof stats.porPlan] || 0
@@ -681,8 +681,8 @@ function SeccionPublicidad() {
               return (
                 <div key={plan}>
                   <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">{labels[plan]}</span>
-                    <span className="font-bold text-gray-800">{count} ({pct}%)</span>
+                    <span className="text-ml-soft">{labels[plan]}</span>
+                    <span className="font-bold text-ml-ink">{count} ({pct}%)</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
                     <div className={`${colors[plan]} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }} />
@@ -694,7 +694,7 @@ function SeccionPublicidad() {
         </div>
       </div>
 
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-5 text-white">
+      <div className="ml-grad rounded-xl p-5 text-white">
         <h3 className="font-bold text-lg mb-2">&#x1F4B0; Resumen financiero</h3>
         <p className="text-white/80 text-sm">
           Los ingresos por publicidad se generan cuando los vendedores promocionan sus productos.
@@ -768,8 +768,8 @@ function SeccionConfig() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Configuración del Sitio</h1>
-          <p className="text-sm text-gray-400">Cambiá textos, colores y funciones fácilmente</p>
+          <h1 className="font-display text-[24px] font-extrabold text-ml-ink">Configuración del Sitio</h1>
+          <p className="text-sm text-ml-muted">Cambiá textos, colores y funciones fácilmente</p>
         </div>
         {totalCambios > 0 && (
           <button onClick={guardarCambios} disabled={guardando}
@@ -792,7 +792,7 @@ function SeccionConfig() {
             key={cat}
             onClick={() => setCategoriaActiva(cat)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 ${
-              categoriaActiva === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+              categoriaActiva === cat ? 'mlbtn ml-grad text-white' : 'bg-white text-ml-soft hover:bg-ml-bg border border-ml-line'
             }`}
           >
             <span>{ICONOS_CAT[cat] || '📄'}</span>
@@ -805,11 +805,11 @@ function SeccionConfig() {
       </div>
 
       {/* Campos */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-5">
         {configsFiltradas.map(config => (
-          <div key={config._id} className="border-b border-gray-100 pb-5 last:border-0 last:pb-0">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">{config.descripcion}</label>
-            <p className="text-xs text-gray-400 mb-2">{config.clave}</p>
+          <div key={config._id} className="border-b border-ml-line2 pb-5 last:border-0 last:pb-0">
+            <label className="block text-sm font-semibold text-ml-ink mb-1">{config.descripcion}</label>
+            <p className="text-xs text-ml-muted mb-2">{config.clave}</p>
 
             {config.tipo === 'boolean' ? (
               <div className="flex items-center gap-3">
@@ -819,29 +819,29 @@ function SeccionConfig() {
                 >
                   <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${getValor(config) === 'true' ? 'translate-x-7' : 'translate-x-0.5'}`} />
                 </button>
-                <span className={`text-sm font-medium ${getValor(config) === 'true' ? 'text-green-600' : 'text-gray-400'}`}>
+                <span className={`text-sm font-medium ${getValor(config) === 'true' ? 'text-green-600' : 'text-ml-muted'}`}>
                   {getValor(config) === 'true' ? 'Activado' : 'Desactivado'}
                 </span>
               </div>
             ) : config.tipo === 'color' ? (
               <div className="flex items-center gap-3">
                 <input type="color" value={getValor(config) || '#000000'} onChange={e => handleChange(config.clave, e.target.value)}
-                  className="w-12 h-10 rounded-lg border border-gray-300 cursor-pointer" />
+                  className="w-12 h-10 rounded-lg border border-ml-line cursor-pointer" />
                 <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500" />
+                  className="flex-1 px-4 py-2 border border-ml-line rounded-xl text-sm outline-none focus:ring-2 focus:ring-ml-purple/30" />
               </div>
             ) : config.tipo === 'numero' ? (
               <input type="number" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" />
             ) : config.tipo === 'imagen' ? (
               <div className="space-y-2">
                 <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="URL de la imagen" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" placeholder="URL de la imagen" />
                 {getValor(config) && <img src={getValor(config)} alt="Preview" className="h-16 rounded-lg object-cover" />}
               </div>
             ) : (
               <input type="text" value={getValor(config)} onChange={e => handleChange(config.clave, e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder={config.descripcion} />
+                className="w-full px-4 py-3 border border-ml-line rounded-xl outline-none focus:ring-2 focus:ring-ml-purple/30" placeholder={config.descripcion} />
             )}
 
             {cambios[config.clave] !== undefined && (
@@ -867,7 +867,7 @@ function Cargando() {
     <div className="flex items-center justify-center py-20">
       <div className="text-center">
         <div className="animate-spin text-3xl mb-3">⚙️</div>
-        <p className="text-gray-400 text-sm">Cargando...</p>
+        <p className="text-ml-muted text-sm">Cargando...</p>
       </div>
     </div>
   )

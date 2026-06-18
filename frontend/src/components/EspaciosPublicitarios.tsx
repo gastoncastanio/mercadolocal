@@ -31,10 +31,10 @@ export default function EspaciosPublicitarios() {
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 mt-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wide font-semibold">
+        <span className="text-[10px] sm:text-xs text-ml-muted uppercase tracking-wide font-semibold">
           {destacados.length > 0 ? 'Productos promocionados' : 'Espacio publicitario'}
         </span>
-        <Link to="/promover" className="text-[10px] sm:text-xs text-blue-600 hover:underline">
+        <Link to="/promover" className="text-[10px] sm:text-xs text-ml-blue hover:underline">
           Anunciate ac&aacute; &rarr;
         </Link>
       </div>
@@ -51,13 +51,13 @@ export default function EspaciosPublicitarios() {
                 key={dest._id}
                 to={`/producto/${prod._id}`}
                 onClick={() => registrarClick(dest._id)}
-                className="relative block rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white border border-gray-100 group"
+                className="relative block rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white border border-ml-line2 group"
               >
                 <span className="absolute top-1.5 right-2 text-[9px] uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold z-10">
                   &#x2B50; Promo
                 </span>
                 <div className="flex items-center gap-3 p-3">
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 shrink-0">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-ml-bg shrink-0">
                     {prod.imagenes?.[0] ? (
                       <img src={prod.imagenes[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     ) : (
@@ -65,10 +65,10 @@ export default function EspaciosPublicitarios() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-sm text-gray-800 truncate group-hover:text-blue-600">{prod.nombre}</p>
-                    <p className="text-lg font-bold text-blue-600">${prod.precio.toLocaleString('es-AR')}</p>
+                    <p className="font-bold text-sm text-ml-ink truncate group-hover:text-ml-blue">{prod.nombre}</p>
+                    <p className="text-lg font-bold text-ml-blue">${prod.precio.toLocaleString('es-AR')}</p>
                     {tienda && typeof tienda === 'object' && (
-                      <p className="text-[10px] text-gray-400 truncate">{tienda.nombre}</p>
+                      <p className="text-[10px] text-ml-muted truncate">{tienda.nombre}</p>
                     )}
                   </div>
                 </div>

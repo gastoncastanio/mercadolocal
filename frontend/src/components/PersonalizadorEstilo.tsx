@@ -66,27 +66,27 @@ export default function PersonalizadorEstilo({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        <h3 className="text-lg font-semibold text-ml-ink mb-4">
           Personaliza tu Logo
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-ml-soft">
           Ajusta los parámetros para obtener exactamente lo que buscas
         </p>
       </div>
 
       {/* Colores */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ml-ink">
           Colores Principales (máximo 3)
         </label>
         <div className="flex flex-wrap gap-2 mb-4">
           {parametros.coloresPrimarios.map((color, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2"
+              className="flex items-center gap-2 bg-ml-bg rounded-lg px-3 py-2"
             >
               <div
-                className="w-6 h-6 rounded border-2 border-gray-300"
+                className="w-6 h-6 rounded border-2 border-ml-line"
                 style={{ backgroundColor: color }}
               />
               <span className="text-sm">{color}</span>
@@ -110,7 +110,7 @@ export default function PersonalizadorEstilo({
               className={`w-12 h-12 rounded-lg border-2 transition ${
                 parametros.coloresPrimarios.includes(color)
                   ? 'border-gray-400 shadow-lg'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-ml-line hover:border-ml-line'
               }`}
               style={{ backgroundColor: color }}
               title={color}
@@ -125,7 +125,7 @@ export default function PersonalizadorEstilo({
 
       {/* Tipografía */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ml-ink">
           Tipografía
         </label>
         <select
@@ -133,7 +133,7 @@ export default function PersonalizadorEstilo({
           onChange={(e) =>
             setParametros({ ...parametros, tipografia: e.target.value })
           }
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-ml-line rounded-lg focus:ring-2 focus:ring-ml-purple/30"
         >
           {TIPOGRAFIAS.map((tip) => (
             <option key={tip} value={tip}>
@@ -145,12 +145,12 @@ export default function PersonalizadorEstilo({
 
       {/* Elementos */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ml-ink">
           Elementos Principales
         </label>
         <div className="grid grid-cols-2 gap-2">
           {ELEMENTOS.map((elemento) => (
-            <label key={elemento} className="flex items-center gap-2 p-2 rounded hover:bg-gray-50">
+            <label key={elemento} className="flex items-center gap-2 p-2 rounded hover:bg-ml-bg">
               <input
                 type="checkbox"
                 checked={parametros.elementos?.includes(elemento) || false}
@@ -177,7 +177,7 @@ export default function PersonalizadorEstilo({
 
       {/* Complejidad */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ml-ink">
           Complejidad del Diseño
         </label>
         <div className="flex gap-3">
@@ -188,7 +188,7 @@ export default function PersonalizadorEstilo({
               className={`flex-1 px-4 py-2 rounded-lg border-2 capitalize transition ${
                 parametros.complejidad === nivel
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-ml-line hover:border-ml-line'
               }`}
             >
               {nivel}
@@ -199,7 +199,7 @@ export default function PersonalizadorEstilo({
 
       {/* Orientación */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ml-ink">
           Orientación
         </label>
         <div className="flex gap-3">
@@ -210,7 +210,7 @@ export default function PersonalizadorEstilo({
               className={`flex-1 px-4 py-2 rounded-lg border-2 capitalize transition ${
                 parametros.orientacion === orientacion
                   ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  : 'border-ml-line hover:border-ml-line'
               }`}
             >
               {orientacion}

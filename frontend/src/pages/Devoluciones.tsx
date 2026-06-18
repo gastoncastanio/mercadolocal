@@ -2,39 +2,39 @@ import { Link } from 'react-router-dom'
 
 export default function Devoluciones() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8 sm:py-12 px-3 sm:px-4">
+    <div className="min-h-screen bg-ml-bg py-8 sm:py-12 px-3 sm:px-4">
       <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-5 sm:p-8 md:p-12">
         <div className="text-center mb-8 sm:mb-10">
           <div className="inline-block text-5xl mb-3">&#x1F504;</div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Pol&iacute;tica de Devoluciones</h1>
-          <p className="text-gray-500 mt-2 text-sm">&Uacute;ltima actualizaci&oacute;n: 6 de abril de 2026</p>
+          <h1 className="text-2xl sm:font-display text-[28px] font-extrabold text-ml-ink">Pol&iacute;tica de Devoluciones</h1>
+          <p className="text-ml-muted mt-2 text-sm">&Uacute;ltima actualizaci&oacute;n: 6 de abril de 2026</p>
         </div>
 
         {/* Resumen rápido destacado */}
         <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-l-4 border-blue-500 rounded-xl p-5 sm:p-6 mb-8">
-          <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-ml-ink mb-3 flex items-center gap-2">
             <span>&#x2139;&#xFE0F;</span> Resumen r&aacute;pido
           </h2>
-          <ul className="space-y-2 text-sm sm:text-base text-gray-700">
+          <ul className="space-y-2 text-sm sm:text-base text-ml-ink">
             <li className="flex gap-2">
-              <span className="text-blue-600 font-bold shrink-0">1.</span>
+              <span className="text-ml-blue font-bold shrink-0">1.</span>
               <span>El comprador debe enviar el producto de vuelta al vendedor en las <strong>mismas condiciones</strong> en que lo recibi&oacute;.</span>
             </li>
             <li className="flex gap-2">
-              <span className="text-blue-600 font-bold shrink-0">2.</span>
+              <span className="text-ml-blue font-bold shrink-0">2.</span>
               <span>El vendedor revisa el producto y <strong>confirma a MercadoLocal</strong> que est&aacute; todo en orden.</span>
             </li>
             <li className="flex gap-2">
-              <span className="text-blue-600 font-bold shrink-0">3.</span>
+              <span className="text-ml-blue font-bold shrink-0">3.</span>
               <span>Una vez confirmado por el vendedor, procesamos la devoluci&oacute;n en un plazo <strong>m&aacute;ximo de 48 horas</strong>.</span>
             </li>
           </ul>
         </div>
 
-        <div className="space-y-7 text-gray-700 leading-relaxed text-sm sm:text-base">
+        <div className="space-y-7 text-ml-ink leading-relaxed text-sm sm:text-base">
           {/* 1. Cómo funciona */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">1. C&oacute;mo funciona nuestro sistema de pagos</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">1. C&oacute;mo funciona nuestro sistema de pagos</h2>
             <p>
               MercadoLocal act&uacute;a como <strong>intermediario seguro</strong> entre compradores y vendedores.
               El dinero de cada compra queda retenido por nosotros hasta que el comprador confirme que recibi&oacute;
@@ -49,7 +49,7 @@ export default function Devoluciones() {
 
           {/* 2. Cuándo se puede pedir devolución */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">2. Cu&aacute;ndo pod&eacute;s pedir una devoluci&oacute;n</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">2. Cu&aacute;ndo pod&eacute;s pedir una devoluci&oacute;n</h2>
             <p>Pod&eacute;s abrir un reclamo <strong>antes de confirmar la entrega</strong> en los siguientes casos:</p>
             <ul className="list-disc ml-5 sm:ml-6 mt-2 space-y-1">
               <li>El producto nunca lleg&oacute; a tu domicilio.</li>
@@ -67,7 +67,7 @@ export default function Devoluciones() {
 
           {/* 3. Proceso paso a paso */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">3. Proceso de devoluci&oacute;n paso a paso</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">3. Proceso de devoluci&oacute;n paso a paso</h2>
             <div className="space-y-3">
               {[
                 {
@@ -101,8 +101,8 @@ export default function Devoluciones() {
                     {p.n}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-800">{p.titulo}</h3>
-                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5">{p.desc}</p>
+                    <h3 className="font-semibold text-ml-ink">{p.titulo}</h3>
+                    <p className="text-xs sm:text-sm text-ml-soft mt-0.5">{p.desc}</p>
                   </div>
                 </div>
               ))}
@@ -111,7 +111,7 @@ export default function Devoluciones() {
 
           {/* 4. Casos especiales */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">4. Condiciones y casos especiales</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">4. Condiciones y casos especiales</h2>
             <ul className="list-disc ml-5 sm:ml-6 space-y-2">
               <li>
                 <strong>Producto en las mismas condiciones:</strong> el producto debe devolverse con el embalaje
@@ -141,7 +141,7 @@ export default function Devoluciones() {
 
           {/* 5. M&eacute;todo de reembolso */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">5. M&eacute;todo de reembolso</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">5. M&eacute;todo de reembolso</h2>
             <p>
               El reembolso se realiza por el mismo medio de pago que utilizaste en la compra. Si pagaste con tarjeta
               de cr&eacute;dito o d&eacute;bito, el dinero vuelve a la misma tarjeta. Si pagaste con dinero en cuenta
@@ -155,27 +155,27 @@ export default function Devoluciones() {
 
           {/* 6. Contacto */}
           <section>
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">6. Contacto</h2>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">6. Contacto</h2>
             <p>
               Si ten&eacute;s dudas sobre una devoluci&oacute;n o necesit&aacute;s ayuda con un reclamo, escribinos a{' '}
-              <span className="text-blue-600">soporte@mercadolocal.com.ar</span> indicando el n&uacute;mero de pedido.
+              <span className="text-ml-blue">soporte@mercadolocal.com.ar</span> indicando el n&uacute;mero de pedido.
             </p>
           </section>
 
           {/* Links a otras políticas */}
-          <section className="pt-4 border-t border-gray-100">
-            <p className="text-sm text-gray-500">
+          <section className="pt-4 border-t border-ml-line2">
+            <p className="text-sm text-ml-muted">
               Esta Pol&iacute;tica forma parte de los{' '}
-              <Link to="/terminos" className="text-blue-600 hover:underline">T&eacute;rminos y Condiciones</Link>
+              <Link to="/terminos" className="text-ml-blue hover:underline">T&eacute;rminos y Condiciones</Link>
               {' '}y la{' '}
-              <Link to="/privacidad" className="text-blue-600 hover:underline">Pol&iacute;tica de Privacidad</Link>
+              <Link to="/privacidad" className="text-ml-blue hover:underline">Pol&iacute;tica de Privacidad</Link>
               {' '}de MercadoLocal.
             </p>
           </section>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-gray-200 text-center">
-          <Link to="/" className="text-blue-600 hover:underline font-medium">
+        <div className="mt-10 pt-6 border-t border-ml-line text-center">
+          <Link to="/" className="text-ml-blue hover:underline font-medium">
             Volver al inicio
           </Link>
         </div>

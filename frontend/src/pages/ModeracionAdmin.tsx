@@ -203,14 +203,14 @@ export default function ModeracionAdmin() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Moderación de productos</h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Moderación de productos</h1>
+        <p className="text-sm text-ml-soft mt-1">
           Panel del AGENTE-MODERACIÓN. Revisá productos marcados para revisión humana.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 mb-6">
+      <div className="flex gap-2 border-b border-ml-line mb-6">
         {[
           { id: 'pendientes', label: 'Pendientes', icono: '⏳' },
           { id: 'historial', label: 'Historial', icono: '📋' },
@@ -221,8 +221,8 @@ export default function ModeracionAdmin() {
             onClick={() => setTab(t.id as any)}
             className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
               tab === t.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-blue-600 text-ml-blue'
+                : 'border-transparent text-ml-muted hover:text-ml-ink'
             }`}
           >
             {t.icono} {t.label}
@@ -234,34 +234,34 @@ export default function ModeracionAdmin() {
       {tab === 'pendientes' && (
         <div>
           {cargandoPendientes ? (
-            <div className="text-center py-12 text-gray-500">Cargando...</div>
+            <div className="text-center py-12 text-ml-muted">Cargando...</div>
           ) : pendientes.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="text-center py-12 bg-white rounded-lg border border-ml-line">
               <div className="text-5xl mb-2">🎉</div>
-              <p className="text-gray-600">No hay productos pendientes de revisión</p>
+              <p className="text-ml-soft">No hay productos pendientes de revisión</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {pendientes.map(p => (
-                <div key={p._id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div key={p._id} className="bg-white rounded-lg border border-ml-line overflow-hidden hover:shadow-md transition-shadow">
                   <div className="aspect-video bg-gray-100 overflow-hidden">
                     {p.imagenes?.[0] ? (
                       <img src={p.imagenes[0]} alt={p.nombre} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex items-center justify-center text-ml-muted">
                         Sin imagen
                       </div>
                     )}
                   </div>
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2 flex-1">{p.nombre}</h3>
+                      <h3 className="font-semibold text-ml-ink line-clamp-2 flex-1">{p.nombre}</h3>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${DECISION_COLOR.revision}`}>
                         revisión
                       </span>
                     </div>
-                    <p className="text-lg font-bold text-gray-900 mb-2">{formatearPrecio(p.precio)}</p>
-                    <p className="text-xs text-gray-500 mb-2">
+                    <p className="text-lg font-bold text-ml-ink mb-2">{formatearPrecio(p.precio)}</p>
+                    <p className="text-xs text-ml-muted mb-2">
                       {typeof p.tiendaId === 'object' && p.tiendaId.nombre} · {tiempoRelativo(p.createdAt)}
                     </p>
                     {p.moderacion?.motivo && (
@@ -276,7 +276,7 @@ export default function ModeracionAdmin() {
                     )}
                     <button
                       onClick={() => { setProductoActivo(p); setMotivoRechazo('') }}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded-md font-medium"
+                      className="w-full mlbtn ml-grad text-white text-sm py-2 rounded-md font-medium"
                     >
                       Revisar
                     </button>
@@ -295,7 +295,7 @@ export default function ModeracionAdmin() {
             <button
               onClick={() => setFiltroDecision('')}
               className={`px-3 py-1 rounded-full text-sm ${
-                filtroDecision === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+                filtroDecision === '' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-ml-ink'
               }`}
             >
               Todas
@@ -305,7 +305,7 @@ export default function ModeracionAdmin() {
                 key={d}
                 onClick={() => setFiltroDecision(d)}
                 className={`px-3 py-1 rounded-full text-sm capitalize ${
-                  filtroDecision === d ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+                  filtroDecision === d ? 'bg-gray-900 text-white' : 'bg-gray-100 text-ml-ink'
                 }`}
               >
                 {DECISION_ICONO[d]} {d}
@@ -314,32 +314,32 @@ export default function ModeracionAdmin() {
           </div>
 
           {cargandoHistorial ? (
-            <div className="text-center py-12 text-gray-500">Cargando...</div>
+            <div className="text-center py-12 text-ml-muted">Cargando...</div>
           ) : historial.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p className="text-gray-500">Sin decisiones para mostrar</p>
+            <div className="text-center py-12 bg-white rounded-lg border border-ml-line">
+              <p className="text-ml-muted">Sin decisiones para mostrar</p>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg border border-ml-line overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-left">
                   <tr>
-                    <th className="px-4 py-3 font-medium text-gray-600">Producto</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Tienda</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Decisión</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Confianza</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Banderas</th>
-                    <th className="px-4 py-3 font-medium text-gray-600">Fecha</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Producto</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Tienda</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Decisión</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Confianza</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Banderas</th>
+                    <th className="px-4 py-3 font-medium text-ml-soft">Fecha</th>
                   </tr>
                 </thead>
                 <tbody>
                   {historial.map(h => (
-                    <tr key={h._id} className="border-t border-gray-100 hover:bg-gray-50">
+                    <tr key={h._id} className="border-t border-ml-line2 hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{h.snapshot.nombre}</div>
-                        <div className="text-xs text-gray-500">{formatearPrecio(h.snapshot.precio)}</div>
+                        <div className="font-medium text-ml-ink">{h.snapshot.nombre}</div>
+                        <div className="text-xs text-ml-muted">{formatearPrecio(h.snapshot.precio)}</div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td className="px-4 py-3 text-ml-ink">
                         {h.tiendaId?.nombre || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -347,22 +347,22 @@ export default function ModeracionAdmin() {
                           {DECISION_ICONO[h.decision]} {h.decision}
                         </span>
                         {h.revisionAdmin?.realizada && (
-                          <div className="text-[10px] text-blue-600 mt-1">
+                          <div className="text-[10px] text-ml-blue mt-1">
                             Admin: {h.revisionAdmin.decisionFinal}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{h.confianza}%</td>
+                      <td className="px-4 py-3 text-ml-ink">{h.confianza}%</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap max-w-xs">
                           {h.banderas?.slice(0, 3).map(b => (
-                            <span key={b} className="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">
+                            <span key={b} className="text-[10px] bg-gray-100 text-ml-ink px-1.5 py-0.5 rounded">
                               {b}
                             </span>
                           ))}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{tiempoRelativo(h.createdAt)}</td>
+                      <td className="px-4 py-3 text-ml-muted text-xs">{tiempoRelativo(h.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -376,40 +376,40 @@ export default function ModeracionAdmin() {
       {tab === 'metricas' && (
         <div>
           {cargandoMetricas ? (
-            <div className="text-center py-12 text-gray-500">Cargando...</div>
+            <div className="text-center py-12 text-ml-muted">Cargando...</div>
           ) : !metricas ? (
-            <div className="text-center py-12 text-gray-500">Sin datos</div>
+            <div className="text-center py-12 text-ml-muted">Sin datos</div>
           ) : (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="text-xs text-gray-500 uppercase">Total {metricas.dias}d</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-1">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
+                  <div className="text-xs text-ml-muted uppercase">Total {metricas.dias}d</div>
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {metricas.totales?.total || 0}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="text-xs text-gray-500 uppercase">Costo estimado</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-1">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
+                  <div className="text-xs text-ml-muted uppercase">Costo estimado</div>
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     US${metricas.costoEstimadoUSD.toFixed(4)}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="text-xs text-gray-500 uppercase">Tokens cacheados</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-1">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
+                  <div className="text-xs text-ml-muted uppercase">Tokens cacheados</div>
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {((metricas.totales?.tokensCached || 0) / 1000).toFixed(1)}k
                   </div>
                 </div>
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="text-xs text-gray-500 uppercase">Duración promedio</div>
-                  <div className="text-2xl font-bold text-gray-900 mt-1">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
+                  <div className="text-xs text-ml-muted uppercase">Duración promedio</div>
+                  <div className="font-display text-[24px] font-extrabold text-ml-ink mt-1">
                     {Math.round(metricas.totales?.duracionPromedio || 0)}ms
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
                   <h3 className="font-semibold mb-3">Decisiones</h3>
                   <div className="space-y-2">
                     {metricas.porDecision.map(d => (
@@ -423,15 +423,15 @@ export default function ModeracionAdmin() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="bg-white rounded-lg border border-ml-line p-4">
                   <h3 className="font-semibold mb-3">Banderas más frecuentes</h3>
                   <div className="space-y-2">
                     {metricas.banderasTop.length === 0 ? (
-                      <p className="text-sm text-gray-500">Sin banderas registradas</p>
+                      <p className="text-sm text-ml-muted">Sin banderas registradas</p>
                     ) : (
                       metricas.banderasTop.map(b => (
                         <div key={b._id} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">{b._id}</span>
+                          <span className="text-ml-ink">{b._id}</span>
                           <span className="font-medium">{b.count}</span>
                         </div>
                       ))
@@ -448,11 +448,11 @@ export default function ModeracionAdmin() {
       {productoActivo && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white border-b border-ml-line p-4 flex items-center justify-between">
               <h2 className="text-lg font-bold">Revisar producto</h2>
               <button
                 onClick={() => { setProductoActivo(null); setMotivoRechazo('') }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-ml-muted hover:text-ml-soft"
               >
                 ✕
               </button>
@@ -472,25 +472,25 @@ export default function ModeracionAdmin() {
 
               {/* Info */}
               <div>
-                <h3 className="text-xl font-bold text-gray-900">{productoActivo.nombre}</h3>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{formatearPrecio(productoActivo.precio)}</p>
+                <h3 className="text-xl font-bold text-ml-ink">{productoActivo.nombre}</h3>
+                <p className="font-display text-[24px] font-extrabold text-ml-ink mt-1">{formatearPrecio(productoActivo.precio)}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span className="text-gray-500">Categoría:</span>{' '}
+                  <span className="text-ml-muted">Categoría:</span>{' '}
                   <span className="font-medium">{productoActivo.categorias?.join(', ') || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Marca:</span>{' '}
+                  <span className="text-ml-muted">Marca:</span>{' '}
                   <span className="font-medium">{productoActivo.marca || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Código barras:</span>{' '}
+                  <span className="text-ml-muted">Código barras:</span>{' '}
                   <span className="font-medium">{productoActivo.codigoBarras || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Tienda:</span>{' '}
+                  <span className="text-ml-muted">Tienda:</span>{' '}
                   <span className="font-medium">
                     {typeof productoActivo.tiendaId === 'object' ? productoActivo.tiendaId.nombre : '—'}
                   </span>
@@ -498,8 +498,8 @@ export default function ModeracionAdmin() {
               </div>
 
               <div>
-                <div className="text-sm text-gray-500 mb-1">Descripción</div>
-                <p className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded p-3">
+                <div className="text-sm text-ml-muted mb-1">Descripción</div>
+                <p className="text-sm text-ml-ink whitespace-pre-wrap bg-gray-50 rounded p-3">
                   {productoActivo.descripcion || '(sin descripción)'}
                 </p>
               </div>
@@ -515,7 +515,7 @@ export default function ModeracionAdmin() {
 
               {/* Rechazo */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-ml-ink mb-1">
                   Motivo de rechazo (si corresponde)
                 </label>
                 <textarea
@@ -523,15 +523,15 @@ export default function ModeracionAdmin() {
                   onChange={e => setMotivoRechazo(e.target.value)}
                   placeholder="Ej: las imágenes están borrosas, el precio es sospechoso, etc."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-ml-line rounded-md p-2 text-sm focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500"
                 />
               </div>
             </div>
 
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex gap-2 justify-end">
+            <div className="sticky bottom-0 bg-gray-50 border-t border-ml-line p-4 flex gap-2 justify-end">
               <button
                 onClick={() => { setProductoActivo(null); setMotivoRechazo('') }}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-md text-sm"
+                className="px-4 py-2 text-ml-ink hover:bg-ml-bg rounded-md text-sm"
                 disabled={procesando}
               >
                 Cancelar

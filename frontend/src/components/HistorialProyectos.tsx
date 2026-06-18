@@ -25,7 +25,7 @@ export default function HistorialProyectos({
   if (proyectos.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">Aún no tienes proyectos</p>
+        <p className="text-ml-muted mb-4">Aún no tienes proyectos</p>
         <button
           onClick={() => navigate('/crear')}
           className="btn btn-primary"
@@ -44,16 +44,16 @@ export default function HistorialProyectos({
           className="card p-6 flex items-start justify-between"
         >
           <div className="flex-1">
-            <h4 className="font-semibold text-gray-900">{proyecto.nombreMarca}</h4>
-            <p className="text-sm text-gray-600 mb-2">{proyecto.descripcion}</p>
+            <h4 className="font-semibold text-ml-ink">{proyecto.nombreMarca}</h4>
+            <p className="text-sm text-ml-soft mb-2">{proyecto.descripcion}</p>
             <div className="flex gap-2 flex-wrap">
               {proyecto.valores.slice(0, 3).map((valor, i) => (
-                <span key={i} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                <span key={i} className="text-xs bg-ml-bg text-blue-700 px-2 py-1 rounded">
                   {valor}
                 </span>
               ))}
               {proyecto.valores.length > 3 && (
-                <span className="text-xs text-gray-500">+{proyecto.valores.length - 3}</span>
+                <span className="text-xs text-ml-muted">+{proyecto.valores.length - 3}</span>
               )}
             </div>
           </div>

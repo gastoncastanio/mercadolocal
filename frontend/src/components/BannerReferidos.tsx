@@ -19,7 +19,7 @@ export default function BannerReferidos({ codigoReferido }: BannerReferidosProps
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-sm p-6 md:p-8 text-white">
+    <div className="ml-grad rounded-2xl shadow-sm p-6 md:p-8 text-white">
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="text-center md:text-left">
           <h3 className="text-2xl font-bold mb-2">Invita amigos y gana</h3>

@@ -43,18 +43,18 @@ export default function Carrito() {
     }
   }
 
-  if (cargando) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
+  if (cargando) return <div className="min-h-screen bg-ml-bg flex items-center justify-center"><div className="animate-spin text-4xl">🔄</div></div>
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-ml-bg">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">🛒 Mi Carrito</h1>
+        <h1 className="font-display text-[28px] font-extrabold text-ml-ink mb-8">🛒 Mi Carrito</h1>
 
         {items.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl shadow-sm">
+          <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-ml-line">
             <p className="text-5xl mb-4">🛒</p>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Tu carrito está vacío</h3>
-            <Link to="/catalogo" className="inline-block mt-4 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
+            <h3 className="text-xl font-semibold text-ml-ink mb-2">Tu carrito está vacío</h3>
+            <Link to="/catalogo" className="inline-block mt-4 px-6 py-3 mlbtn ml-grad text-white rounded-xl font-semibold">
               Ver Catálogo
             </Link>
           </div>
@@ -62,8 +62,8 @@ export default function Carrito() {
           <>
             <div className="space-y-4 mb-8">
               {items.map(item => (
-                <div key={item._id} className="bg-white rounded-xl shadow-sm p-4 flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div key={item._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-4 flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-lg bg-ml-bg flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {item.imagen ? (
                       <img src={item.imagen} alt={item.nombre} className="w-full h-full object-cover" />
                     ) : (
@@ -72,17 +72,17 @@ export default function Carrito() {
                   </div>
 
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">{item.nombre}</h3>
-                    <p className="text-blue-600 font-bold">${item.precio.toLocaleString()}</p>
+                    <h3 className="font-semibold text-ml-ink">{item.nombre}</h3>
+                    <p className="text-ml-blue font-bold">${item.precio.toLocaleString()}</p>
                   </div>
 
-                  <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                  <div className="flex items-center border border-ml-line rounded-lg overflow-hidden">
                     <button onClick={() => actualizarCantidad(item._id, item.cantidad - 1)} className="px-3 py-1 hover:bg-gray-100">-</button>
                     <span className="px-3 py-1 font-semibold">{item.cantidad}</span>
                     <button onClick={() => actualizarCantidad(item._id, item.cantidad + 1)} className="px-3 py-1 hover:bg-gray-100">+</button>
                   </div>
 
-                  <p className="font-bold text-gray-800 w-24 text-right">
+                  <p className="font-bold text-ml-ink w-24 text-right">
                     ${(item.precio * item.cantidad).toLocaleString()}
                   </p>
 
@@ -94,14 +94,14 @@ export default function Carrito() {
             </div>
 
             {/* Resumen */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
               <div className="flex justify-between items-center mb-4">
-                <span className="text-lg text-gray-600">Total</span>
-                <span className="text-3xl font-bold text-gray-800">${total.toLocaleString()}</span>
+                <span className="text-lg text-ml-muted">Total</span>
+                <span className="font-display text-[28px] font-extrabold text-ml-ink">${total.toLocaleString()}</span>
               </div>
               <button
                 onClick={() => navigate('/checkout')}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:shadow-lg transition-all"
+                className="w-full py-4 mlbtn ml-grad text-white rounded-xl font-bold text-lg"
               >
                 Ir al Checkout
               </button>

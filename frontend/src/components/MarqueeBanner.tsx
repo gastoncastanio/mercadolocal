@@ -11,7 +11,7 @@ export default function MarqueeBanner() {
   const repeats = Array.from({ length: 4 }, (_, i) => i)
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 overflow-hidden">
+    <div className="ml-grad overflow-hidden">
       <div className="relative flex whitespace-nowrap py-2">
         <div className="flex animate-marquee whitespace-nowrap">
           {repeats.map(r =>
