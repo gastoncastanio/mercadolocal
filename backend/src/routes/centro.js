@@ -1,12 +1,30 @@
 import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import ComercioCentro from '../models/ComercioCentro.js'
+import OfertaFlash from '../models/OfertaFlash.js'
+import CanjeAtribuido from '../models/CanjeAtribuido.js'
+import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
 
 const router = Router()
+
+// Minutos que el cliente tiene para llegar al mostrador y canjear su código.
+const VENTANA_CANJE_MIN = 30
 
 // Redondea coordenadas a ~4 decimales (~11 m) para no exponer ubicación exacta
 function redondearCoord(n) {
   return Math.round(Number(n) * 10000) / 10000
+}
+
+// Carga un comercio y verifica que el usuario logueado sea su dueño (o admin).
+// Devuelve el comercio o null si no autorizado / inexistente.
+async function comercioDelUsuario(comercioId, usuario) {
+  const comercio = await ComercioCentro.findById(comercioId)
+  if (!comercio) return { error: 404, msg: 'Comercio no encontrado' }
+  const esDueño = comercio.usuarioId.toString() === usuario.id
+  if (!esDueño && usuario.rol !== 'admin') {
+    return { error: 403, msg: 'No autorizado sobre este comercio' }
+  }
+  return { comercio }
 }
 
 // ============================================================
@@ -114,6 +132,336 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
     res.json(comercio)
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// ============================================================
+//  OFERTAS FLASH — feed público
+// ============================================================
+
+// GET /api/centro/ofertas?ciudad=&bloque=&comercioId=
+// Solo ofertas VIGENTES (ventana temporal abierta + cupo) calculadas con la hora
+// del server. El cliente nunca decide si una oferta sigue viva: lo decide el server.
+router.get('/ofertas', async (req, res) => {
+  try {
+    const ahora = new Date()
+    const filtro = {
+      activa: true,
+      inicioEn: { $lte: ahora },
+      finEn: { $gte: ahora }
+    }
+    if (req.query.ciudad) {
+      filtro.ciudad = new RegExp(`^${String(req.query.ciudad).trim()}$`, 'i')
+    }
+    if (req.query.bloque && req.query.bloque !== 'todos') {
+      filtro.bloqueHorario = { $in: [String(req.query.bloque), 'todos'] }
+    }
+    if (req.query.comercioId) {
+      filtro.comercioId = req.query.comercioId
+    }
+
+    const ofertas = await OfertaFlash.find(filtro).sort({ finEn: 1 }).limit(200)
+    // Filtramos cupo agotado acá (estaVigente lo contempla) para no mostrar ofertas muertas.
+    const publicas = ofertas
+      .filter(o => o.estaVigente(ahora))
+      .map(o => o.toPublic(ahora))
+    res.json({ serverNow: ahora, ofertas: publicas })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/centro/ofertas/:id - detalle público de una oferta
+router.get('/ofertas/:id', async (req, res) => {
+  try {
+    const ahora = new Date()
+    const oferta = await OfertaFlash.findById(req.params.id)
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+    res.json(oferta.toPublic(ahora))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/ofertas/:id/reclamar - el usuario reclama un código de canje
+// Requiere login (fricción cero hasta acá; recién al reclamar pedimos cuenta).
+router.post('/ofertas/:id/reclamar', verificarToken, async (req, res) => {
+  try {
+    const ahora = new Date()
+    const oferta = await OfertaFlash.findById(req.params.id)
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+    if (!oferta.estaVigente(ahora)) {
+      return res.status(409).json({ error: 'La oferta ya no está vigente.' })
+    }
+
+    // ¿El usuario ya tiene un reclamo vigente de esta oferta? (evita duplicados)
+    const yaReclamada = await CanjeAtribuido.findOne({
+      usuarioId: req.usuario.id,
+      ofertaId: oferta._id,
+      estado: 'emitido',
+      expiraEn: { $gt: ahora }
+    })
+    if (yaReclamada) {
+      return res.status(409).json({ error: 'Ya tenés un código activo para esta oferta. Revisá "Mis canjes".' })
+    }
+
+    // Guarda de cupo: contamos lo ya canjeado + reclamos vigentes. La guarda DURA
+    // (atómica) ocurre al canjear; esta evita repartir más códigos que cupos.
+    if (oferta.cupoTotal > 0) {
+      const emitidosVigentes = await CanjeAtribuido.countDocuments({
+        ofertaId: oferta._id,
+        estado: 'emitido',
+        expiraEn: { $gt: ahora }
+      })
+      if (oferta.cupoUsado + emitidosVigentes >= oferta.cupoTotal) {
+        return res.status(409).json({ error: 'No quedan cupos disponibles para esta oferta.' })
+      }
+    }
+
+    // Genera código legible + hash. El código en claro se devuelve UNA sola vez.
+    const { codigo, codigoHash } = generarCodigoCanje()
+    const expiraEn = new Date(ahora.getTime() + VENTANA_CANJE_MIN * 60 * 1000)
+
+    let canje
+    try {
+      canje = await CanjeAtribuido.create({
+        usuarioId: req.usuario.id,
+        comercioId: oferta.comercioId,
+        ofertaId: oferta._id,
+        codigoHash,
+        estado: 'emitido',
+        emitidoEn: ahora,
+        expiraEn
+      })
+    } catch (e) {
+      // Choca con el índice único parcial ⇒ carrera: ya hay un reclamo emitido.
+      if (e.code === 11000) {
+        return res.status(409).json({ error: 'Ya tenés un código activo para esta oferta.' })
+      }
+      throw e
+    }
+
+    res.status(201).json({
+      canjeId: canje._id,
+      codigo,                 // ⚠️ única vez que viaja en claro
+      expiraEn,
+      ventanaMin: VENTANA_CANJE_MIN,
+      oferta: { _id: oferta._id, titulo: oferta.titulo, comercioId: oferta.comercioId }
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/centro/mis-canjes - reclamos del usuario (vigentes y pasados)
+router.get('/mis-canjes', verificarToken, async (req, res) => {
+  try {
+    const ahora = new Date()
+    const canjes = await CanjeAtribuido.find({ usuarioId: req.usuario.id })
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .populate('comercioId', 'nombre rubro ubicacion')
+      .populate('ofertaId', 'titulo descripcion tipoGancho valorDescuento')
+
+    const data = canjes.map(c => ({
+      _id: c._id,
+      estado: c.estado === 'emitido' && ahora > c.expiraEn ? 'expirado' : c.estado,
+      emitidoEn: c.emitidoEn,
+      expiraEn: c.expiraEn,
+      canjeadoEn: c.canjeadoEn,
+      vigente: c.estaVigente(ahora),
+      comercio: c.comercioId,
+      oferta: c.ofertaId
+    }))
+    res.json({ serverNow: ahora, canjes: data })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/canjear - el COMERCIO valida un código en el mostrador.
+// Body: { codigo, ticketValor? }. Requiere ser dueño del comercio de la oferta.
+router.post('/canjear', verificarToken, async (req, res) => {
+  try {
+    const ahora = new Date()
+    const { codigo, ticketValor } = req.body
+    if (!codigo) return res.status(400).json({ error: 'Falta el código de canje.' })
+
+    const codigoHash = hashCodigoCanje(codigo)
+    const canje = await CanjeAtribuido.findOne({ codigoHash, estado: 'emitido' })
+    if (!canje) {
+      return res.status(404).json({ error: 'Código inválido o ya utilizado.' })
+    }
+    if (ahora > canje.expiraEn) {
+      canje.estado = 'expirado'
+      await canje.save()
+      return res.status(410).json({ error: 'El código expiró. Pedile al cliente que lo vuelva a generar.' })
+    }
+
+    // El que canjea debe ser dueño del comercio de la oferta (o admin).
+    const acceso = await comercioDelUsuario(canje.comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    // 1) Transición atómica emitido → canjeado (un solo uso; foto de pantalla no sirve 2 veces).
+    const actualizado = await CanjeAtribuido.findOneAndUpdate(
+      { _id: canje._id, estado: 'emitido' },
+      {
+        $set: {
+          estado: 'canjeado',
+          canjeadoEn: ahora,
+          ticketValor: (ticketValor != null && !isNaN(ticketValor)) ? Number(ticketValor) : null
+        }
+      },
+      { new: true }
+    )
+    if (!actualizado) {
+      return res.status(409).json({ error: 'El código ya fue canjeado.' })
+    }
+
+    // 2) Consumo ATÓMICO de cupo (imposible vender de más). Si justo se agotó, revertimos.
+    const oferta = await OfertaFlash.findOneAndUpdate(
+      {
+        _id: canje.ofertaId,
+        $or: [{ cupoTotal: 0 }, { $expr: { $lt: ['$cupoUsado', '$cupoTotal'] } }]
+      },
+      { $inc: { cupoUsado: 1 } },
+      { new: true }
+    )
+    if (!oferta) {
+      // Cupo agotado en la carrera: revertir el canje para no cobrarle el cupo a nadie.
+      await CanjeAtribuido.updateOne(
+        { _id: canje._id },
+        { $set: { estado: 'emitido', canjeadoEn: null, ticketValor: null } }
+      )
+      return res.status(409).json({ error: 'Se agotó el cupo justo en este momento.' })
+    }
+
+    res.json({
+      ok: true,
+      mensaje: 'Canje validado ✅',
+      oferta: { _id: oferta._id, titulo: oferta.titulo, cupoRestante: oferta.cupoRestante() },
+      canjeadoEn: ahora
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// ============================================================
+//  PANEL DEL COMERCIO — gestión de ofertas y métricas
+// ============================================================
+
+// GET /api/centro/mis-ofertas?comercioId= - ofertas de los comercios del usuario
+router.get('/mis-ofertas', verificarToken, async (req, res) => {
+  try {
+    let comercioIds
+    if (req.query.comercioId) {
+      const acceso = await comercioDelUsuario(req.query.comercioId, req.usuario)
+      if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+      comercioIds = [acceso.comercio._id]
+    } else {
+      const mios = await ComercioCentro.find({ usuarioId: req.usuario.id }).select('_id')
+      comercioIds = mios.map(c => c._id)
+    }
+    const ofertas = await OfertaFlash.find({ comercioId: { $in: comercioIds } })
+      .sort({ createdAt: -1 })
+      .limit(200)
+    res.json(ofertas)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/ofertas - crear oferta flash (dueño del comercio)
+router.post('/ofertas', verificarToken, async (req, res) => {
+  try {
+    const { comercioId, titulo, descripcion, tipoGancho, valorDescuento, inicioEn, finEn, cupoTotal, bloqueHorario, condiciones, desbloquea } = req.body
+
+    if (!comercioId || !titulo || !inicioEn || !finEn) {
+      return res.status(400).json({ error: 'Comercio, título, inicio y fin son obligatorios.' })
+    }
+    const acceso = await comercioDelUsuario(comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    const inicio = new Date(inicioEn)
+    const fin = new Date(finEn)
+    if (isNaN(inicio) || isNaN(fin) || fin <= inicio) {
+      return res.status(400).json({ error: 'La ventana temporal es inválida (fin debe ser posterior al inicio).' })
+    }
+
+    const oferta = await OfertaFlash.create({
+      comercioId,
+      titulo,
+      descripcion: descripcion || '',
+      tipoGancho: tipoGancho || 'descuento',
+      valorDescuento: valorDescuento || 0,
+      inicioEn: inicio,
+      finEn: fin,
+      cupoTotal: cupoTotal ?? 0,
+      bloqueHorario: bloqueHorario || 'todos',
+      condiciones: condiciones || '',
+      desbloquea: desbloquea || {},
+      ciudad: acceso.comercio.ubicacion.ciudad // denormalizado para filtrar el feed
+    })
+    res.status(201).json(oferta)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PUT /api/centro/ofertas/:id - editar / pausar oferta (dueño del comercio)
+router.put('/ofertas/:id', verificarToken, async (req, res) => {
+  try {
+    const oferta = await OfertaFlash.findById(req.params.id)
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+
+    const acceso = await comercioDelUsuario(oferta.comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea']
+    for (const c of campos) {
+      if (req.body[c] !== undefined) oferta[c] = req.body[c]
+    }
+    if (req.body.inicioEn) oferta.inicioEn = new Date(req.body.inicioEn)
+    if (req.body.finEn) oferta.finEn = new Date(req.body.finEn)
+    if (oferta.finEn <= oferta.inicioEn) {
+      return res.status(400).json({ error: 'El fin debe ser posterior al inicio.' })
+    }
+
+    await oferta.save()
+    res.json(oferta)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/centro/metricas/:comercioId - ROI real del comercio (canjes, ticket promedio)
+router.get('/metricas/:comercioId', verificarToken, async (req, res) => {
+  try {
+    const acceso = await comercioDelUsuario(req.params.comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    const comercioId = acceso.comercio._id
+    const [emitidos, canjeados, agg] = await Promise.all([
+      CanjeAtribuido.countDocuments({ comercioId, estado: 'emitido' }),
+      CanjeAtribuido.countDocuments({ comercioId, estado: 'canjeado' }),
+      CanjeAtribuido.aggregate([
+        { $match: { comercioId, estado: 'canjeado', ticketValor: { $ne: null } } },
+        { $group: { _id: null, total: { $sum: '$ticketValor' }, n: { $sum: 1 } } }
+      ])
+    ])
+
+    const totalReclamos = emitidos + canjeados
+    const ticketPromedio = agg[0]?.n ? agg[0].total / agg[0].n : null
+    res.json({
+      reclamos: totalReclamos,
+      canjeados,
+      tasaConversion: totalReclamos ? Math.round((canjeados / totalReclamos) * 100) : 0,
+      ticketPromedio,
+      ingresoAtribuido: agg[0]?.total || 0
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 

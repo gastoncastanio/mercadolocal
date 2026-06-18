@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Coord, obtenerUbicacion, ordenarPorCercania, formatearDistancia } from '../utils/geo'
+import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlash'
+import { calcularOffset } from '../utils/canjes'
 
 interface Comercio {
   _id: string
@@ -30,6 +32,8 @@ export default function RadarCentro() {
   const [mayoria, setMayoria] = useState(false)
   const [error, setError] = useState('')
   const [comercios, setComercios] = useState<(Comercio & { distancia: number })[]>([])
+  const [ofertas, setOfertas] = useState<OfertaFlash[]>([])
+  const [offsetMs, setOffsetMs] = useState(0)
   const [cargandoComercios, setCargandoComercios] = useState(false)
 
   // Si ya dio consentimiento antes, lo recordamos
@@ -66,13 +70,29 @@ export default function RadarCentro() {
     try {
       // El server manda las coords de los COMERCIOS. La distancia se calcula acá,
       // en tu navegador. Tu ubicación nunca se envía ni se guarda.
-      const res = await api.get('/centro/comercios')
-      const ordenados = ordenarPorCercania<Comercio>(res.data || [], coords)
+      const [comerciosRes, ofertasRes] = await Promise.all([
+        api.get('/centro/comercios'),
+        api.get('/centro/ofertas')
+      ])
+      const ordenados = ordenarPorCercania<Comercio>(comerciosRes.data || [], coords)
       setComercios(ordenados)
+      // Las ofertas llegan con la hora del server: calculamos el offset para que
+      // el countdown sea fiel a la realidad y no al reloj (posiblemente mal) del celu.
+      setOffsetMs(calcularOffset(ofertasRes.data.serverNow))
+      setOfertas(ofertasRes.data.ofertas || [])
     } catch {
       setError('No pudimos cargar los comercios del centro.')
     } finally {
       setCargandoComercios(false)
+    }
+  }
+
+  // Datos del comercio (nombre + distancia) para mostrar en cada oferta flash.
+  function infoComercio(comercioId: string) {
+    const c = comercios.find(x => x._id === comercioId)
+    return {
+      nombre: c?.nombre,
+      distanciaTexto: c ? formatearDistancia(c.distancia) : undefined
     }
   }
 
@@ -152,10 +172,36 @@ export default function RadarCentro() {
             <h1 className="font-display text-2xl font-extrabold text-ml-ink">📍 Radar del Centro</h1>
             <p className="text-sm text-ml-muted">Ordenado por cercanía a vos</p>
           </div>
-          <button onClick={apagarRadar} className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-red-300 hover:text-red-600">
-            Apagar Radar
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet">
+              🎟️ Mis canjes
+            </Link>
+            <button onClick={apagarRadar} className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-red-300 hover:text-red-600">
+              Apagar
+            </button>
+          </div>
         </div>
+
+        {/* Ofertas relámpago vigentes (countdown sincronizado con el server) */}
+        {!cargandoComercios && ofertas.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-bold text-ml-soft uppercase tracking-wide mb-2">⚡ Ofertas relámpago cerca</h2>
+            <div className="space-y-3">
+              {ofertas.map(o => {
+                const info = infoComercio(o.comercioId)
+                return (
+                  <TarjetaOfertaFlash
+                    key={o._id}
+                    oferta={o}
+                    offsetMs={offsetMs}
+                    nombreComercio={info.nombre}
+                    distanciaTexto={info.distanciaTexto}
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {cargandoComercios ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>

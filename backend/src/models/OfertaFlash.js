@@ -1,0 +1,122 @@
+import mongoose from 'mongoose'
+
+/**
+ * OfertaFlash — promoción relámpago de un ComercioCentro dentro del "Radar del Centro".
+ *
+ * Principio legal (Ley 24.240 + Lealtad Comercial, Dto 274/2019):
+ * el countdown y el cupo son la FUENTE DE VERDAD en el servidor. No se permite
+ * urgencia ni escasez falsa: si el server dice que quedan 3 cupos, quedan 3 de verdad.
+ * Las condiciones (letra chica) son obligatorias y visibles antes de reclamar.
+ */
+const ofertaFlashSchema = new mongoose.Schema({
+  comercioId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ComercioCentro',
+    required: true,
+    index: true
+  },
+
+  titulo: {
+    type: String,
+    required: [true, 'El título de la oferta es obligatorio'],
+    trim: true,
+    maxlength: 80
+  },
+  descripcion: { type: String, default: '', maxlength: 300 },
+
+  // Tipo de gancho (solo informativo / para iconos del feed)
+  tipoGancho: {
+    type: String,
+    enum: ['descuento', '2x1', 'regalo', 'combo'],
+    default: 'descuento'
+  },
+  // % de descuento si tipoGancho === 'descuento' (0–100)
+  valorDescuento: { type: Number, default: 0, min: 0, max: 100 },
+
+  // Ventana temporal — FUENTE DE VERDAD. inicioEn ≤ ahora ≤ finEn ⇒ vigente.
+  inicioEn: { type: Date, required: true },
+  finEn: {
+    type: Date,
+    required: true,
+    validate: {
+      validator: function (v) {
+        return v > this.inicioEn
+      },
+      message: 'finEn debe ser posterior a inicioEn'
+    }
+  },
+
+  // Cupo REAL. cupoTotal = 0 significa ilimitado. cupoUsado se incrementa de
+  // forma ATÓMICA solo cuando un canje se concreta en el mostrador.
+  cupoTotal: { type: Number, default: 0, min: 0 },
+  cupoUsado: { type: Number, default: 0, min: 0 },
+
+  // El comercio puede pausar la oferta sin borrarla
+  activa: { type: Boolean, default: true },
+
+  // Bloque horario al que pertenece (despachador de Fase 3)
+  bloqueHorario: {
+    type: String,
+    enum: ['manana', 'tarde', 'noche', 'todos'],
+    default: 'todos'
+  },
+
+  // Recompensa cruzada (Fase 3): al canjear esta, se sugiere otra. Solo informativo.
+  desbloquea: {
+    comercioId: { type: mongoose.Schema.Types.ObjectId, ref: 'ComercioCentro', default: null },
+    descripcion: { type: String, default: '' }
+  },
+
+  // Letra chica obligatoria (exclusiones, vigencia, etc.)
+  condiciones: { type: String, default: '', maxlength: 500 },
+
+  // Ciudad denormalizada desde el comercio, para filtrar el feed sin populate.
+  ciudad: { type: String, default: '', index: true }
+}, { timestamps: true })
+
+// Feed público: ofertas activas por ciudad ordenadas por fin de ventana
+ofertaFlashSchema.index({ activa: 1, ciudad: 1, finEn: 1 })
+
+/**
+ * ¿Está vigente AHORA? (ventana temporal abierta, activa y con cupo).
+ * Recibe `ahora` para usar siempre la hora del server (no la del request).
+ */
+ofertaFlashSchema.methods.estaVigente = function (ahora = new Date()) {
+  if (!this.activa) return false
+  if (ahora < this.inicioEn || ahora > this.finEn) return false
+  if (this.cupoTotal > 0 && this.cupoUsado >= this.cupoTotal) return false
+  return true
+}
+
+/** Cupo restante (null = ilimitado). */
+ofertaFlashSchema.methods.cupoRestante = function () {
+  if (this.cupoTotal === 0) return null
+  return Math.max(0, this.cupoTotal - this.cupoUsado)
+}
+
+/**
+ * Versión pública para el feed. Incluye `serverNow` para que el cliente
+ * sincronice el countdown con la hora del server (no con el reloj del celular).
+ */
+ofertaFlashSchema.methods.toPublic = function (ahora = new Date()) {
+  return {
+    _id: this._id,
+    comercioId: this.comercioId,
+    titulo: this.titulo,
+    descripcion: this.descripcion,
+    tipoGancho: this.tipoGancho,
+    valorDescuento: this.valorDescuento,
+    inicioEn: this.inicioEn,
+    finEn: this.finEn,
+    cupoTotal: this.cupoTotal,
+    cupoRestante: this.cupoRestante(),
+    bloqueHorario: this.bloqueHorario,
+    desbloquea: this.desbloquea?.descripcion ? this.desbloquea : null,
+    condiciones: this.condiciones,
+    vigente: this.estaVigente(ahora),
+    serverNow: ahora
+  }
+}
+
+const OfertaFlash = mongoose.model('OfertaFlash', ofertaFlashSchema)
+export default OfertaFlash

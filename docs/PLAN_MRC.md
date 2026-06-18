@@ -202,12 +202,45 @@ local). La ubicación del **usuario** se procesa y se descarta en su propio nave
 
 ## 6. Fases de entrega
 
-- **Fase 1 — Radar/Geo:** modelo `ComercioCentro`, endpoint de comercios, pre-autorización con toggle, Haversine client-side, feed por cercanía. *(Base de todo.)*
-- **Fase 2 — Flash Sales + QR:** `OfertaFlash`, countdown/cupo server, QR seguro, escáner comercio, `CanjeAtribuido`.
+- **Fase 1 — Radar/Geo:** ✅ *Implementada.* modelo `ComercioCentro`, endpoint de comercios, pre-autorización con toggle, Haversine client-side, feed por cercanía. *(Base de todo.)*
+- **Fase 2 — Flash Sales + QR:** ✅ *Implementada (con rediseño, ver §8).* `OfertaFlash`, countdown/cupo server, código+QR seguro, validación por el comercio, `CanjeAtribuido`.
 - **Fase 3 — Bloques horarios + recompensa cruzada:** despachador, franjas configurables, ofertas vinculadas A→B.
 - **Fase 4 — Feed micro-contenido:** soporte de video loops optimizado.
 
 Cada fase compila, se prueba y se commitea por separado.
+
+---
+
+## 8. Rediseño de ingeniería de la Fase 2
+
+Antes de implementar la Fase 2 se revisaron los puntos del plan original que podían
+generar errores o fraude en producción. Cambios aplicados:
+
+| # | Riesgo en el plan original | Rediseño aplicado |
+|---|----------------------------|-------------------|
+| 1 | **Escáner de cámara dentro de la app** (decisión #3): las librerías de QR-scan son frágiles (iOS Safari, permisos, iluminación). | El canje vive en un **código corto legible** (ej. `NQ5Q-P6TC`). El cliente muestra **código + QR** (QR generado 100% local, sin servicio externo → privacidad). El comercio escanea con la **cámara nativa** del celular (el QR abre la URL de canje) **o tipea el código**. Mismo anti-fraude, sin escáner frágil. |
+| 2 | **Cupo con condición de carrera** (dos personas reclaman el último cupo a la vez → venta de más). | Consumo de cupo **atómico**: `findOneAndUpdate` con guarda `$expr: cupoUsado < cupoTotal` + `$inc`. Imposible vender de más; verificado con prueba de concurrencia. |
+| 3 | **Countdown con el reloj del cliente** (reloj mal → urgencia falsa, prohibida por Lealtad Comercial). | El server envía `serverNow` + `finEn`. El cliente calcula el **offset** y muestra el tiempo real del server. |
+| 4 | **HMAC con secreto por comercio** (complejidad innecesaria). | **Token aleatorio fuerte** (`crypto.randomBytes`), se guarda solo el **hash sha256**. Canje autorizado por **JWT del dueño** + verificación de pertenencia de la oferta. |
+| 5 | **Acaparamiento** (un usuario reclama muchos cupos y no aparece). | **Un reclamo activo por usuario/oferta** (índice único parcial sobre estado `emitido`) + **expiración corta** del código (30 min). El cupo real se consume al **canjear**, no al reclamar. |
+
+**Privacidad (Ley 25.326):** `CanjeAtribuido` registra QUÉ se canjeó y CUÁNDO, nunca
+DESDE DÓNDE. No se guarda ninguna coordenada del usuario en ningún modelo.
+
+### Endpoints agregados en Fase 2
+- `GET /api/centro/ofertas` — feed público de ofertas vigentes (server decide vigencia).
+- `GET /api/centro/ofertas/:id` — detalle público.
+- `POST /api/centro/ofertas/:id/reclamar` — (login) genera código de un solo uso.
+- `GET /api/centro/mis-canjes` — (login) reclamos del usuario.
+- `POST /api/centro/canjear` — (comercio) valida el código de forma atómica.
+- `GET /api/centro/mis-ofertas`, `POST/PUT /api/centro/ofertas` — panel del comercio.
+- `GET /api/centro/metricas/:comercioId` — ROI real (reclamos, conversión, ticket).
+
+### Pantallas agregadas en Fase 2
+- `TarjetaOfertaFlash.tsx` — countdown sincronizado, cupo real, botón reclamar.
+- `MisCanjes.tsx` — código + QR generado local, cuenta regresiva, historial.
+- `PanelComercio.tsx` — alta de locales, gestión de ofertas, métricas.
+- `CanjearOferta.tsx` — pantalla de validación del comercio (destino del QR).
 
 ---
 

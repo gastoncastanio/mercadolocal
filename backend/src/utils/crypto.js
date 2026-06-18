@@ -106,3 +106,42 @@ export function estaEncriptado(texto) {
   const parts = texto.split(':')
   return parts.length === 3 && parts[0].length === 32 && parts[1].length === 32
 }
+
+// ============================================================
+//  Códigos de canje (Radar del Centro — ofertas flash)
+// ============================================================
+// Alfabeto base32 SIN caracteres ambiguos (sin 0/O, 1/I/L) para que el comercio
+// pueda tipear el código sin confundirse. 8 caracteres ⇒ 32^8 ≈ 1.1e12 combos.
+// La seguridad real no depende solo de adivinar el código: el canje exige que el
+// DUEÑO del comercio esté logueado, valida pertenencia de la oferta, es de un solo
+// uso (transición atómica) y expira rápido. El código es un secreto de portador.
+const ALFABETO_CANJE = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+
+/**
+ * Genera un código de canje legible y su hash para guardar en BD.
+ * Nunca guardamos el código en claro: solo el hash. El cliente recibe el código
+ * en claro una sola vez (al reclamar) y lo presenta en el mostrador.
+ *
+ * @returns {{ codigo: string, codigoHash: string }} codigo formateado "ABCD-2345"
+ */
+export function generarCodigoCanje() {
+  const bytes = crypto.randomBytes(8)
+  let codigo = ''
+  for (let i = 0; i < 8; i++) {
+    codigo += ALFABETO_CANJE[bytes[i] % ALFABETO_CANJE.length]
+  }
+  // Formato visual con guion al medio: "ABCD-2345"
+  const formateado = `${codigo.slice(0, 4)}-${codigo.slice(4)}`
+  return { codigo: formateado, codigoHash: hashCodigoCanje(formateado) }
+}
+
+/**
+ * Normaliza y hashea un código de canje para buscarlo/validarlo en BD.
+ * Acepta el código con o sin guion, en cualquier capitalización.
+ */
+export function hashCodigoCanje(codigo) {
+  const normalizado = String(codigo || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '') // quita guiones, espacios, etc.
+  return crypto.createHash('sha256').update(normalizado).digest('hex')
+}
