@@ -71,7 +71,15 @@ const ofertaFlashSchema = new mongoose.Schema({
   condiciones: { type: String, default: '', maxlength: 500 },
 
   // Ciudad denormalizada desde el comercio, para filtrar el feed sin populate.
-  ciudad: { type: String, default: '', index: true }
+  ciudad: { type: String, default: '', index: true },
+
+  // FASE 3: Monetización prepago
+  // Precio final que paga el usuario en la app (incluye comisión visible)
+  precioFinal: { type: Number, default: 0, min: 0 },
+  // % de comisión que nos quedamos (6% mañana, 9% tarde, 5% noche)
+  comisionPorcentaje: { type: Number, default: 7, min: 0, max: 100 },
+  // Si requiere pago prepago en app (vs legacy: código QR postpago)
+  requierePrepagoApp: { type: Boolean, default: true }
 }, { timestamps: true })
 
 // Feed público: ofertas activas por ciudad ordenadas por fin de ventana
@@ -114,6 +122,10 @@ ofertaFlashSchema.methods.toPublic = function (ahora = new Date()) {
     desbloquea: this.desbloquea?.descripcion ? this.desbloquea : null,
     condiciones: this.condiciones,
     vigente: this.estaVigente(ahora),
+    // FASE 3: datos de monetización
+    precioFinal: this.precioFinal,
+    comisionPorcentaje: this.comisionPorcentaje,
+    requierePrepagoApp: this.requierePrepagoApp,
     serverNow: ahora
   }
 }

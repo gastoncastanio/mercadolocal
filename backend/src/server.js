@@ -47,6 +47,7 @@ import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
 import { sembrarBloqueHorario } from './services/seedBloqueHorario.js'
 import { iniciarCronCerebro } from './services/cronCerebro.js'
 import { inicializarConfig } from './services/configService.js'
+import { configurarMercadoPago } from './config/mercadopago.js'
 
 const app = express()
 // Railway (y la mayoría de los PaaS) ponen un proxy adelante que agrega el
@@ -231,6 +232,14 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }))
 // Conectar a la base de datos
 connectDB().then(async () => {
   inicializarConfig().catch(err => console.warn('Config init:', err.message))
+
+  // Configurar MercadoPago para Fase 3 (monetización prepago)
+  try {
+    configurarMercadoPago()
+    console.log('✓ MercadoPago configurado')
+  } catch (err) {
+    console.warn('⚠️ MercadoPago no configurado:', err.message)
+  }
 
   // Sembrar el equipo IA (idempotente: no pisa nada existente)
   sembrarAgentesFundadores()

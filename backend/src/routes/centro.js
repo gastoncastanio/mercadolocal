@@ -6,6 +6,7 @@ import CanjeAtribuido from '../models/CanjeAtribuido.js'
 import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
 import { bloqueActual, obtenerBloques } from '../utils/bloqueHorario.js'
+import { crearPreferenciaOferta } from '../config/mercadopago.js'
 
 const router = Router()
 
@@ -606,6 +607,157 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
       serverNow: ahora,
       bloque: bloqueConfig,
       ofertas: resultado
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// ============================================================
+//  FASE 3 — Monetización prepago (MercadoPago)
+// ============================================================
+
+// POST /api/centro/ofertas/:id/checkout - inicia pago prepago para una oferta
+// Crea una preferencia de MercadoPago y devuelve la URL para redirigir al usuario
+router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
+  try {
+    const ahora = new Date()
+    const oferta = await OfertaFlash.findById(req.params.id)
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+
+    // Validar que esté vigente
+    if (!oferta.estaVigente(ahora)) {
+      return res.status(409).json({ error: 'La oferta ya no está vigente.' })
+    }
+
+    // Validar que requiera prepago
+    if (!oferta.requierePrepagoApp) {
+      return res.status(400).json({ error: 'Esta oferta no requiere prepago.' })
+    }
+
+    // Evitar acaparamiento: ¿el usuario ya tiene un canje pendiente de pago?
+    const yaReclamo = await CanjeAtribuido.findOne({
+      usuarioId: req.usuario.id,
+      ofertaId: oferta._id,
+      estadoPago: 'pendiente_pago'
+    })
+    if (yaReclamo) {
+      return res.status(409).json({ error: 'Ya tenés un pago pendiente para esta oferta.' })
+    }
+
+    // Crear registro de canje (aún sin pago confirmado)
+    const canje = await CanjeAtribuido.create({
+      usuarioId: req.usuario.id,
+      comercioId: oferta.comercioId,
+      ofertaId: oferta._id,
+      codigoHash: '', // Se completa después del pago
+      estado: 'emitido',
+      estadoPago: 'pendiente_pago',
+      emitidoEn: ahora,
+      expiraEn: new Date(ahora.getTime() + 15 * 60 * 1000), // 15 min window
+      montoCentavos: Math.round(oferta.precioFinal * 100)
+    })
+
+    // Crear preferencia en MercadoPago
+    const mpResponse = await crearPreferenciaOferta(oferta, req.usuario, canje._id)
+
+    // Guardar el ID de preferencia en el canje
+    canje.mercadopagoPreferenceId = mpResponse.preferenceId
+    await canje.save()
+
+    res.status(201).json({
+      canjeId: canje._id,
+      initPoint: mpResponse.initPoint,
+      sandboxInitPoint: mpResponse.sandboxInitPoint,
+      precioFinal: oferta.precioFinal,
+      comisionPorcentaje: oferta.comisionPorcentaje,
+      oferta: { _id: oferta._id, titulo: oferta.titulo }
+    })
+  } catch (error) {
+    console.error('Error en checkout:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/webhook/mercadopago - webhook de MercadoPago para confirmación de pago
+// MercadoPago notifica acá cuando un pago se completa
+router.post('/webhook/mercadopago', async (req, res) => {
+  try {
+    // MercadoPago envía: type = 'payment', data.id = payment_id
+    // También podemos usar external_reference que es nuestro canjeId
+    const { type, data } = req.body
+
+    if (type !== 'payment' || !data.id) {
+      return res.json({ status: 'ok' }) // Ignorar eventos que no nos importan
+    }
+
+    // Buscar el canje por el ID del payment de MercadoPago
+    // Nota: aquí necesitaríamos hacer un request a MP para obtener el payment completo
+    // e identificar cuál es el canjeId (external_reference). Por ahora, asumimos
+    // que la app hace polling del estado o que existe otro mecanismo.
+
+    // TODO: Implementar polling/confirmación después del redirect desde MP
+    res.json({ status: 'ok' })
+  } catch (error) {
+    console.error('Error en webhook MercadoPago:', error)
+    res.json({ status: 'error' })
+  }
+})
+
+// GET /api/centro/canje/:id/estado-pago - obtiene el estado del pago de un canje
+// El cliente hace polling después del redirect de MP
+router.get('/canje/:id/estado-pago', verificarToken, async (req, res) => {
+  try {
+    const canje = await CanjeAtribuido.findById(req.params.id)
+    if (!canje) return res.status(404).json({ error: 'Canje no encontrado' })
+
+    // Verificar que el usuario es el dueño del canje
+    if (canje.usuarioId.toString() !== req.usuario.id) {
+      return res.status(403).json({ error: 'No autorizado' })
+    }
+
+    res.json({
+      canjeId: canje._id,
+      estadoPago: canje.estadoPago,
+      estado: canje.estado,
+      pagado: canje.estadoPago === 'pagado',
+      codigo: canje.estadoPago === 'pagado' ? generarCodigoCanje().codigo : null
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/canje/:id/confirmar-pago - el cliente confirma que pagó en MP
+// (después de ser redirigido back a la app con success=true)
+router.post('/canje/:id/confirmar-pago', verificarToken, async (req, res) => {
+  try {
+    const canje = await CanjeAtribuido.findById(req.params.id)
+    if (!canje) return res.status(404).json({ error: 'Canje no encontrado' })
+
+    if (canje.usuarioId.toString() !== req.usuario.id) {
+      return res.status(403).json({ error: 'No autorizado' })
+    }
+
+    // Validar que el pago esté en estado correcto en MP (aquí entraría llamada a MP API)
+    // Por ahora, aceptamos que el cliente dice que pagó
+    if (canje.estadoPago === 'pagado') {
+      return res.json({ error: 'El pago ya fue confirmado.' })
+    }
+
+    // Generar código de canje y hashear
+    const { codigo, codigoHash } = generarCodigoCanje()
+
+    // Actualizar el canje con el código
+    canje.estadoPago = 'pagado'
+    canje.codigoHash = codigoHash
+    await canje.save()
+
+    // Guardar el código en caché local del cliente (como en Phase 2)
+    res.json({
+      canjeId: canje._id,
+      codigo, // única vez que viaja en claro
+      estado: 'pagado'
     })
   } catch (error) {
     res.status(500).json({ error: error.message })

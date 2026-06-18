@@ -54,7 +54,21 @@ const canjeAtribuidoSchema = new mongoose.Schema({
   canjeadoEn: { type: Date, default: null },
 
   // Métrica de ROI opcional que el comercio puede cargar al canjear.
-  ticketValor: { type: Number, default: null }
+  ticketValor: { type: Number, default: null },
+
+  // FASE 3: campos de pago prepago (MercadoPago)
+  estadoPago: {
+    type: String,
+    enum: ['pendiente_pago', 'pagado', 'reembolsado'],
+    default: 'pendiente_pago',
+    index: true
+  },
+  // ID de preferencia de MercadoPago para este canje
+  mercadopagoPreferenceId: { type: String, default: null },
+  // Monto que el usuario pagó (en centavos ARS para evitar decimales)
+  montoCentavos: { type: Number, default: null },
+  // Si fue reembolsado, guardamos cuándo
+  reembolsadoEn: { type: Date, default: null }
 }, { timestamps: true })
 
 // Un usuario no puede tener 2 reclamos "emitido" de la misma oferta a la vez.

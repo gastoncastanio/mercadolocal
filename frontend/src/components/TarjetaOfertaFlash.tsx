@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { ahoraServidor, formatearCuenta, guardarCodigo, GANCHO_ICON } from '../utils/canjes'
+import CheckoutOferta from './CheckoutOferta'
 
 export interface OfertaFlash {
   _id: string
@@ -19,6 +20,10 @@ export interface OfertaFlash {
   condiciones: string
   desbloquea: { descripcion: string } | null
   vigente: boolean
+  // FASE 3: campos de monetización
+  precioFinal?: number
+  comisionPorcentaje?: number
+  requierePrepagoApp?: boolean
 }
 
 interface Props {
@@ -35,6 +40,7 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
   const [verCondiciones, setVerCondiciones] = useState(false)
   const [reclamando, setReclamando] = useState(false)
   const [error, setError] = useState('')
+  const [mostrarCheckout, setMostrarCheckout] = useState(false)
 
   // Countdown contra la hora del SERVER (reloj local + offset). Nunca confiamos
   // en el reloj del dispositivo para decidir si la oferta sigue viva.
@@ -50,13 +56,25 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
   const sinCupo = oferta.cupoRestante !== null && oferta.cupoRestante <= 0
   const deshabilitada = expirada || sinCupo || reclamando
 
-  async function reclamar() {
+  function reclamar() {
     setError('')
     if (!estaLogueado) {
-      // Fricción cero hasta acá: recién al reclamar pedimos cuenta.
+      // Fricción cero hasta acá: recién al reclamar/comprar pedimos cuenta.
       navigate('/login?redirect=/radar')
       return
     }
+
+    // FASE 3: si requiere prepago, abre modal de checkout
+    if (oferta.requierePrepagoApp && oferta.precioFinal && oferta.comisionPorcentaje !== undefined) {
+      setMostrarCheckout(true)
+      return
+    }
+
+    // Legacy: flujo de código QR postpago (Phase 2)
+    reclamarCodigoLegacy()
+  }
+
+  async function reclamarCodigoLegacy() {
     setReclamando(true)
     try {
       const res = await api.post(`/centro/ofertas/${oferta._id}/reclamar`)
@@ -125,8 +143,23 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
           disabled={deshabilitada}
           className="w-full py-3 mlbtn ml-grad text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {reclamando ? 'Generando código...' : expirada ? 'Oferta finalizada' : sinCupo ? 'Sin cupos' : '🎟️ Reclamar oferta'}
+          {reclamando ? 'Generando código...' : expirada ? 'Oferta finalizada' : sinCupo ? 'Sin cupos' : oferta.requierePrepagoApp ? `💳 Comprar $${oferta.precioFinal?.toLocaleString('es-AR')}` : '🎟️ Reclamar oferta'}
         </button>
+
+        {/* Modal de checkout (Fase 3) */}
+        {mostrarCheckout && oferta.precioFinal && oferta.comisionPorcentaje !== undefined && (
+          <CheckoutOferta
+            ofertaId={oferta._id}
+            titulo={oferta.titulo}
+            precioFinal={oferta.precioFinal}
+            comisionPorcentaje={oferta.comisionPorcentaje}
+            onClose={() => setMostrarCheckout(false)}
+            onSuccess={() => {
+              setMostrarCheckout(false)
+              // El usuario será redirigido a MercadoPago desde CheckoutOferta
+            }}
+          />
+        )}
       </div>
     </div>
   )
