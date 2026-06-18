@@ -80,6 +80,7 @@ const PropuestasEquipo = lazy(() => import('./pages/PropuestasEquipo'))
 const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
 const MisComprobantes = lazy(() => import('./pages/MisComprobantes'))
 const ComprobanteView = lazy(() => import('./pages/ComprobanteView'))
+const ConfiguracionFiscal = lazy(() => import('./pages/admin/ConfiguracionFiscal'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 function LoadingSpinner() {
@@ -157,6 +158,7 @@ function AppContent() {
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
           <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Ayuda */}

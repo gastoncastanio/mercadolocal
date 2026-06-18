@@ -200,6 +200,28 @@ function SeccionInicio() {
       <h2 className="text-lg font-semibold text-ml-ink mb-3">Paneles especializados</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <a
+          href="/admin/pauta"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">📢</span>
+            <span className="text-xs bg-ml-bg text-ml-blue px-2 py-0.5 rounded-full">Config</span>
+          </div>
+          <h3 className="font-semibold text-ml-ink group-hover:text-ml-blue">Pauta</h3>
+          <p className="text-xs text-ml-muted mt-1">Planes y precios publicitarios</p>
+        </a>
+        <a
+          href="/admin/configuracion-fiscal"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">🧾</span>
+            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Config</span>
+          </div>
+          <h3 className="font-semibold text-ml-ink group-hover:text-green-600">Facturación</h3>
+          <p className="text-xs text-ml-muted mt-1">Datos fiscales de la plataforma</p>
+        </a>
+        <a
           href="/admin/moderacion"
           className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
         >
