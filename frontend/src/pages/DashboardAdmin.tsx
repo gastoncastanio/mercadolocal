@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 import { DashboardAdmin as DashboardData } from '../types'
 
@@ -629,7 +629,12 @@ function SeccionPublicidad() {
 
   return (
     <div>
-      <h1 className="font-display text-[24px] font-extrabold text-ml-ink mb-6">&#x1F4E2; Ingresos por Publicidad</h1>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="font-display text-[24px] font-extrabold text-ml-ink">&#x1F4E2; Ingresos por Publicidad</h1>
+        <Link to="/admin/pauta" className="mlbtn px-4 py-2 ml-grad text-white rounded-lg text-sm font-bold">
+          Panel completo de pauta &rarr;
+        </Link>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-ml-line2">
@@ -697,9 +702,10 @@ function SeccionPublicidad() {
       <div className="ml-grad rounded-xl p-5 text-white">
         <h3 className="font-bold text-lg mb-2">&#x1F4B0; Resumen financiero</h3>
         <p className="text-white/80 text-sm">
-          Los ingresos por publicidad se generan cuando los vendedores promocionan sus productos.
-          El costo se descuenta autom&aacute;ticamente de su saldo de ventas acumulado.
-          Este ingreso es <strong>100% ganancia neta</strong> para la plataforma (sin costo operativo).
+          Los ingresos por publicidad se generan cuando los vendedores promocionan sus productos,
+          pagando con <strong>Mercado Pago</strong> (dinero fresco a la plataforma) o con su saldo de
+          ventas acumulado. La pauta es <strong>inteligente</strong>: cada anuncio se muestra a los
+          clientes con m&aacute;s chance de comprar, as&iacute; rinde y el vendedor reinvierte.
         </p>
       </div>
     </div>

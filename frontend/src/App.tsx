@@ -63,6 +63,7 @@ const DisputasAdmin = lazy(() => import('./pages/DisputasAdmin'))
 const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'))
 const RecuperarPassword = lazy(() => import('./pages/RecuperarPassword'))
 const AdminCMS = lazy(() => import('./pages/AdminCMS'))
+const PautaAdmin = lazy(() => import('./pages/PautaAdmin'))
 const Favoritos = lazy(() => import('./pages/Favoritos'))
 const Notificaciones = lazy(() => import('./pages/Notificaciones'))
 const MasVendidos = lazy(() => import('./pages/MasVendidos'))
@@ -151,6 +152,7 @@ function AppContent() {
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
           <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Ayuda */}

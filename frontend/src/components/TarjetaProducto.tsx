@@ -43,14 +43,22 @@ export default function TarjetaProducto({ producto }: Props) {
           <span className="text-5xl opacity-50">{'\u{1F4E6}'}</span>
         )}
 
-        {(producto as any).esDestacado && (
+        {/* Pauta: producto promocionado (publicidad pagada, ordenado por relevancia) */}
+        {(producto as any).promocionado && (
+          <span className="absolute top-3 left-3 bg-amber-400 text-amber-950 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 7.1-1.01z"/></svg>
+            Promocionado
+          </span>
+        )}
+
+        {!(producto as any).promocionado && (producto as any).esDestacado && (
           <span className="absolute top-3 left-3 ml-grad text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
             {'\u{1F525}'} Top ventas
           </span>
         )}
 
         {/* Badge de condición (sección Usados) */}
-        {!(producto as any).esDestacado && condicionLabel && (
+        {!(producto as any).esDestacado && !(producto as any).promocionado && condicionLabel && (
           <span className="absolute top-3 left-3 bg-white/95 text-ml-ink text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-ml-line">
             {condicionLabel}
           </span>

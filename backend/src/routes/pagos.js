@@ -2,6 +2,8 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import { verificarToken } from '../middleware/auth.js'
 import { crearPreferencia } from '../services/mercadoPagoService.js'
+import { esPagoDePauta, activarPautaDesdePago } from '../services/pautaService.js'
+import { registrarCompra, notificarClientesIdeales } from '../services/targetingService.js'
 import Orden from '../models/Orden.js'
 import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
 import Producto from '../models/Producto.js'
@@ -116,6 +118,34 @@ router.post('/webhook', async (req, res) => {
       const payment = new Payment(client)
       const pago = await payment.get({ id: data.id })
 
+      // ===== Pauta publicitaria =====
+      // Si el pago corresponde a una pauta (external_reference "pauta:<id>"),
+      // lo manejamos aparte: activamos el destacado y cortamos acá. El dinero
+      // ya entró completo a la cuenta de la plataforma (sin split).
+      if (esPagoDePauta(pago)) {
+        const r = await activarPautaDesdePago(pago)
+        if (r.motivo === 'activada' && r.destacado) {
+          try {
+            const tienda = await Tienda.findById(r.destacado.tiendaId)
+            if (tienda) {
+              const notif = await new Notificacion({
+                usuarioId: tienda.usuarioId,
+                tipo: 'pago',
+                titulo: '¡Tu campaña ya está activa!',
+                mensaje: `Pago de pauta aprobado por $${r.destacado.precioTotal.toLocaleString('es-AR')}. Tu producto ya aparece destacado.`,
+                enlace: '/promover'
+              }).save()
+              emitNotificacion(tienda.usuarioId.toString(), notif)
+            }
+          } catch (e) {
+            console.error('Error notificando pauta activada:', e.message)
+          }
+          // Pauta inteligente: avisar a los clientes ideales (async, no bloquea)
+          notificarClientesIdeales(r.destacado, { motivo: 'nuevo' }).catch(() => {})
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 
@@ -194,6 +224,12 @@ router.post('/webhook', async (req, res) => {
             $inc: { totalVentas: 1, ganancias: gananciaTienda }
           })
         }
+
+        // Señal de compra para la pauta inteligente (no bloquea el webhook)
+        registrarCompra(
+          ordenActualizada.compradorId.toString(),
+          ordenActualizada.items
+        ).catch(() => {})
 
         // 4. AUDITORÍA: Registrar transacción financiera
         try {

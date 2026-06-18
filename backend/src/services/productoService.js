@@ -1,3 +1,4 @@
+import mongoose from 'mongoose'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Moderacion from '../models/Moderacion.js'
@@ -392,6 +393,61 @@ export async function listarProductos(filtros = {}) {
   const siguienteCursor = hayMas ? productos[productos.length - 1]._id : null
 
   return { productos, siguienteCursor, hayMas }
+}
+
+/**
+ * Trae productos puntuales por _id, enriquecidos igual que el catálogo público
+ * (solo activos, no rechazados y de tiendas con Mercado Pago vinculado).
+ *
+ * Se usa para los PRODUCTOS PROMOCIONADOS (pauta): garantiza que un producto
+ * destacado aparezca en la primera página del catálogo aunque por su orden
+ * natural (precio/ventas/recientes) cayera más abajo. Mantiene el orden en que
+ * se pasan los ids (que viene priorizado por plan).
+ *
+ * @param {string[]} ids - lista de _id de productos
+ * @returns {Promise<Array>} productos enriquecidos (puede ser menos que ids si
+ *   alguno no cumple los filtros de visibilidad)
+ */
+export async function listarProductosPorIds(ids = []) {
+  if (!Array.isArray(ids) || ids.length === 0) return []
+
+  const objectIds = ids
+    .map(id => { try { return new mongoose.Types.ObjectId(String(id)) } catch { return null } })
+    .filter(Boolean)
+  if (objectIds.length === 0) return []
+
+  const pipeline = [
+    {
+      $match: {
+        _id: { $in: objectIds },
+        activo: true,
+        'moderacion.estado': { $ne: 'rechazado' }
+      }
+    },
+    {
+      $lookup: { from: 'tiendas', localField: 'tiendaId', foreignField: '_id', as: 'tienda' }
+    },
+    { $unwind: { path: '$tienda', preserveNullAndEmptyArrays: false } },
+    { $match: { 'tienda.mpVinculado': true, 'tienda.activo': true } },
+    {
+      $addFields: {
+        tiendaId: {
+          _id: '$tienda._id',
+          nombre: '$tienda.nombre',
+          ciudad: '$tienda.ciudad',
+          logo: '$tienda.logo',
+          calificacion: '$tienda.calificacion'
+        }
+      }
+    },
+    { $project: { tienda: 0 } }
+  ]
+
+  const docs = await Producto.aggregate(pipeline)
+
+  // Reordenar según el orden de `ids` (priorizado por plan en el llamador)
+  const porId = new Map(docs.map(d => [d._id.toString(), d]))
+  return ids.map(id => porId.get(String(id))).filter(Boolean)
 }
 
 /**

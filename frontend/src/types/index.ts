@@ -56,6 +56,10 @@ export interface Producto {
   envioGratis?: boolean
   condicion?: 'nuevo' | 'usado' | 'reacondicionado'
   garantia?: string
+  // Pauta: lo marca el backend cuando el producto se muestra como publicidad
+  // (ordenado por relevancia para el cliente). No se persiste en el producto.
+  promocionado?: boolean
+  esDestacado?: boolean
   caracteristicas?: { clave: string; valor: string }[]
   // Código de barras universal (EAN-13/UPC-A/etc) — opcional, obligatorio en categorías
   // de alto riesgo (electrónica, alimentos, belleza, electrodomésticos)

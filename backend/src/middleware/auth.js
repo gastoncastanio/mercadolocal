@@ -31,6 +31,22 @@ export function verificarToken(req, res, next) {
   }
 }
 
+// Middleware de auth OPCIONAL: si viene un token válido, setea req.usuario;
+// si no viene o es inválido, continúa igual (sin bloquear). Se usa en endpoints
+// públicos que se comportan distinto para usuarios logueados (ej: tracking de
+// señales de interés, donde el visitante anónimo también participa).
+export function tokenOpcional(req, _res, next) {
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      req.usuario = jwt.verify(authHeader.split(' ')[1], JWT_SECRET)
+    } catch {
+      // token inválido/expirado: seguimos como anónimo
+    }
+  }
+  next()
+}
+
 // Middleware para verificar que sea vendedor (roles antiguos: compatibilidad)
 export function soloVendedor(req, res, next) {
   if (req.usuario.rol !== 'vendedor' && req.usuario.rol !== 'admin') {

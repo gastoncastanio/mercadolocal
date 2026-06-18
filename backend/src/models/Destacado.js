@@ -29,7 +29,17 @@ const destacadoSchema = new mongoose.Schema({
   ubicacion: {
     type: [String],
     default: ['catalogo'],
-    enum: ['catalogo', 'banner', 'publicidad', 'busqueda']
+    enum: ['catalogo', 'banner', 'publicidad', 'busqueda', 'home']
+  },
+  // Segmentación opcional (formatos premium): si se setea, el anuncio
+  // solo se prioriza para compradores que filtran por esa ciudad/categoría.
+  segmentoCiudad: {
+    type: String,
+    default: ''
+  },
+  segmentoCategoria: {
+    type: String,
+    default: ''
   },
   duracionDias: {
     type: Number,
@@ -38,6 +48,27 @@ const destacadoSchema = new mongoose.Schema({
   precioTotal: {
     type: Number,
     required: true
+  },
+  // Cómo pagó el vendedor la pauta:
+  //  - 'saldo': se descontó de las ganancias acumuladas en la plataforma
+  //  - 'mercadopago': pagó con dinero real a la cuenta de la plataforma (ingreso fresco)
+  metodoPago: {
+    type: String,
+    enum: ['saldo', 'mercadopago'],
+    default: 'saldo'
+  },
+  // Datos del pago con Mercado Pago (solo cuando metodoPago === 'mercadopago')
+  mpPreferenceId: {
+    type: String,
+    default: ''
+  },
+  mpPaymentId: {
+    type: String,
+    default: ''
+  },
+  mpStatus: {
+    type: String,
+    default: ''
   },
   fechaInicio: {
     type: Date,
@@ -59,6 +90,18 @@ const destacadoSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Audiencia agregada de quienes hicieron clic (para métricas del vendedor).
+  // Solo a nivel categoría/ciudad — nunca quién es la persona.
+  audiencia: {
+    categorias: { type: Map, of: Number, default: {} },
+    ciudades: { type: Map, of: Number, default: {} }
+  },
+  // Cuántas veces este anuncio se mostró por relevancia (match con el perfil)
+  // vs. relleno. Sirve para medir qué tan "inteligente" fue la entrega.
+  impresionesRelevantes: {
+    type: Number,
+    default: 0
+  },
   estado: {
     type: String,
     enum: ['pendiente', 'activo', 'pausado', 'finalizado', 'cancelado'],
@@ -70,6 +113,9 @@ const destacadoSchema = new mongoose.Schema({
 
 destacadoSchema.index({ fechaFin: 1, activo: 1, estado: 1 })
 destacadoSchema.index({ productoId: 1, activo: 1 })
+// Para activar la pauta cuando llega el webhook de Mercado Pago
+destacadoSchema.index({ mpPreferenceId: 1 })
+destacadoSchema.index({ mpPaymentId: 1 })
 
 const Destacado = mongoose.model('Destacado', destacadoSchema)
 
