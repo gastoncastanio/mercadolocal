@@ -120,18 +120,42 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
     for (const c of campos) {
       if (req.body[c] !== undefined) comercio[c] = req.body[c]
     }
+    let cambioCiudad = false
     if (req.body.ubicacion) {
       const u = req.body.ubicacion
       if (u.lat != null) comercio.ubicacion.lat = redondearCoord(u.lat)
       if (u.lng != null) comercio.ubicacion.lng = redondearCoord(u.lng)
       if (u.direccion !== undefined) comercio.ubicacion.direccion = u.direccion
-      if (u.ciudad) comercio.ubicacion.ciudad = String(u.ciudad).trim()
+      if (u.ciudad && String(u.ciudad).trim() !== comercio.ubicacion.ciudad) {
+        comercio.ubicacion.ciudad = String(u.ciudad).trim()
+        cambioCiudad = true
+      }
     }
 
     await comercio.save()
+    // Si cambió la ciudad, mantenemos la denormalización de las ofertas en sintonía
+    // para que el feed las filtre bien por ciudad.
+    if (cambioCiudad) {
+      await OfertaFlash.updateMany({ comercioId: comercio._id }, { ciudad: comercio.ubicacion.ciudad })
+    }
     res.json(comercio)
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// DELETE /api/centro/comercios/:id - eliminar el local y sus ofertas (dueño/admin).
+// Los canjes ya realizados se conservan como historial (no se borran datos contables).
+router.delete('/comercios/:id', verificarToken, async (req, res) => {
+  try {
+    const acceso = await comercioDelUsuario(req.params.id, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    await OfertaFlash.deleteMany({ comercioId: acceso.comercio._id })
+    await acceso.comercio.deleteOne()
+    res.json({ ok: true, mensaje: 'Local y ofertas eliminados.' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 
@@ -432,6 +456,29 @@ router.put('/ofertas/:id', verificarToken, async (req, res) => {
     res.json(oferta)
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// DELETE /api/centro/ofertas/:id - eliminar una oferta (dueño del comercio).
+// Si hay códigos sin canjear, se cancelan para que no queden "vivos".
+router.delete('/ofertas/:id', verificarToken, async (req, res) => {
+  try {
+    const oferta = await OfertaFlash.findById(req.params.id)
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+
+    const acceso = await comercioDelUsuario(oferta.comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    // Cancelamos los reclamos vigentes (pasan a expirado) para no dejar QR canjeables
+    // de una oferta que ya no existe.
+    await CanjeAtribuido.updateMany(
+      { ofertaId: oferta._id, estado: 'emitido' },
+      { $set: { estado: 'expirado' } }
+    )
+    await oferta.deleteOne()
+    res.json({ ok: true, mensaje: 'Oferta eliminada.' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 

@@ -8,9 +8,11 @@ interface Comercio {
   _id: string
   nombre: string
   rubro: string
+  descripcion: string
   ubicacion: { lat: number; lng: number; direccion: string; ciudad: string }
   estadoPrograma: string
   activo: boolean
+  contacto?: { whatsapp?: string; instagram?: string }
 }
 
 interface Oferta {
@@ -18,12 +20,14 @@ interface Oferta {
   titulo: string
   descripcion: string
   tipoGancho: string
+  valorDescuento: number
   inicioEn: string
   finEn: string
   cupoTotal: number
   cupoUsado: number
   activa: boolean
   bloqueHorario: string
+  condiciones: string
 }
 
 interface Metricas {
@@ -42,11 +46,15 @@ const BLOQUES = [
   { v: 'noche', t: 'Noche' }
 ]
 
+const pad = (n: number) => String(n).padStart(2, '0')
 // datetime-local necesita "YYYY-MM-DDTHH:mm" en hora local
 function ahoraLocalInput(offsetMin = 0): string {
   const d = new Date(Date.now() + offsetMin * 60000)
   d.setSeconds(0, 0)
-  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+function isoALocalInput(iso: string): string {
+  const d = new Date(iso)
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
@@ -58,7 +66,9 @@ export default function PanelComercio() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [mostrarFormComercio, setMostrarFormComercio] = useState(false)
+  const [editandoComercio, setEditandoComercio] = useState(false)
   const [mostrarFormOferta, setMostrarFormOferta] = useState(false)
+  const [ofertaEditando, setOfertaEditando] = useState<Oferta | null>(null)
 
   useEffect(() => { cargarComercios() }, [])
 
@@ -67,8 +77,8 @@ export default function PanelComercio() {
     try {
       const res = await api.get('/centro/mis-comercios')
       setComercios(res.data || [])
-      if (res.data?.length && !sel) seleccionar(res.data[0])
-      else if (!res.data?.length) setMostrarFormComercio(true)
+      if (res.data?.length) seleccionar(res.data[0])
+      else setMostrarFormComercio(true)
     } catch {
       setError('No pudimos cargar tus comercios.')
     } finally {
@@ -78,6 +88,9 @@ export default function PanelComercio() {
 
   async function seleccionar(c: Comercio) {
     setSel(c)
+    setEditandoComercio(false)
+    setMostrarFormOferta(false)
+    setOfertaEditando(null)
     setMetricas(null)
     try {
       const [ofRes, mtRes] = await Promise.all([
@@ -100,6 +113,30 @@ export default function PanelComercio() {
     }
   }
 
+  async function eliminarOferta(o: Oferta) {
+    if (!window.confirm(`¿Eliminar la oferta "${o.titulo}"? Esta acción no se puede deshacer.`)) return
+    try {
+      await api.delete(`/centro/ofertas/${o._id}`)
+      setOfertas(ofertas.filter(x => x._id !== o._id))
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo eliminar la oferta.')
+    }
+  }
+
+  async function eliminarComercio() {
+    if (!sel) return
+    if (!window.confirm(`¿Eliminar el local "${sel.nombre}" y TODAS sus ofertas? Esta acción no se puede deshacer.`)) return
+    try {
+      await api.delete(`/centro/comercios/${sel._id}`)
+      const restantes = comercios.filter(c => c._id !== sel._id)
+      setComercios(restantes)
+      if (restantes.length) seleccionar(restantes[0])
+      else { setSel(null); setMostrarFormComercio(true) }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo eliminar el local.')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-3xl mx-auto px-4 py-6">
@@ -111,7 +148,12 @@ export default function PanelComercio() {
           <Link to="/comercio/canjear" className="px-3 py-2 ml-grad text-white rounded-xl font-bold text-sm">🧾 Validar canje</Link>
         </div>
 
-        {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{error}</p>}
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
 
         {cargando ? (
           <div className="flex justify-center py-16"><div className="spinner" /></div>
@@ -129,18 +171,48 @@ export default function PanelComercio() {
                     {c.nombre}
                   </button>
                 ))}
-                <button onClick={() => setMostrarFormComercio(v => !v)} className="px-3 py-2 rounded-xl text-sm font-semibold border border-dashed border-ml-line text-ml-violet">
+                <button onClick={() => { setMostrarFormComercio(v => !v); setEditandoComercio(false) }} className="px-3 py-2 rounded-xl text-sm font-semibold border border-dashed border-ml-line text-ml-violet">
                   + Nuevo local
                 </button>
               </div>
             )}
 
             {mostrarFormComercio && (
-              <FormComercio onCreado={(c) => { setComercios([...comercios, c]); setMostrarFormComercio(false); seleccionar(c) }} />
+              <FormComercio
+                onGuardado={(c) => { setComercios([...comercios, c]); setMostrarFormComercio(false); seleccionar(c) }}
+                onCancelar={comercios.length ? () => setMostrarFormComercio(false) : undefined}
+              />
             )}
 
-            {sel && (
+            {sel && !mostrarFormComercio && (
               <>
+                {/* Datos del local + acciones */}
+                <div className="bg-white rounded-2xl border border-ml-line p-4">
+                  {editandoComercio ? (
+                    <FormComercio
+                      inicial={sel}
+                      onGuardado={(c) => {
+                        setComercios(comercios.map(x => x._id === c._id ? c : x))
+                        setSel(c)
+                        setEditandoComercio(false)
+                      }}
+                      onCancelar={() => setEditandoComercio(false)}
+                    />
+                  ) : (
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-bold text-ml-ink">{sel.nombre} <span className="text-xs font-normal text-ml-muted">· {sel.rubro}</span></p>
+                        <p className="text-xs text-ml-muted">{sel.ubicacion.direccion} · {sel.ubicacion.ciudad}</p>
+                        {sel.descripcion && <p className="text-sm text-ml-soft mt-1">{sel.descripcion}</p>}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => setEditandoComercio(true)} className="text-xs px-3 py-1.5 border border-ml-line rounded-lg text-ml-soft hover:border-ml-violet">✏️ Editar</button>
+                        <button onClick={eliminarComercio} className="text-xs px-3 py-1.5 border border-red-200 rounded-lg text-red-600 hover:bg-red-50">🗑️ Eliminar</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Métricas */}
                 {metricas && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -154,7 +226,10 @@ export default function PanelComercio() {
                 {/* Ofertas */}
                 <div className="flex items-center justify-between">
                   <h2 className="font-bold text-ml-ink">Ofertas relámpago</h2>
-                  <button onClick={() => setMostrarFormOferta(v => !v)} className="text-sm px-3 py-1.5 ml-grad text-white rounded-lg font-semibold">
+                  <button
+                    onClick={() => { setMostrarFormOferta(v => !v); setOfertaEditando(null) }}
+                    className="text-sm px-3 py-1.5 ml-grad text-white rounded-lg font-semibold"
+                  >
                     {mostrarFormOferta ? 'Cerrar' : '+ Nueva oferta'}
                   </button>
                 </div>
@@ -162,7 +237,17 @@ export default function PanelComercio() {
                 {mostrarFormOferta && (
                   <FormOferta
                     comercioId={sel._id}
-                    onCreada={(o) => { setOfertas([o, ...ofertas]); setMostrarFormOferta(false) }}
+                    onGuardado={(o) => { setOfertas([o, ...ofertas]); setMostrarFormOferta(false) }}
+                    onCancelar={() => setMostrarFormOferta(false)}
+                  />
+                )}
+
+                {ofertaEditando && (
+                  <FormOferta
+                    comercioId={sel._id}
+                    inicial={ofertaEditando}
+                    onGuardado={(o) => { setOfertas(ofertas.map(x => x._id === o._id ? o : x)); setOfertaEditando(null) }}
+                    onCancelar={() => setOfertaEditando(null)}
                   />
                 )}
 
@@ -176,27 +261,35 @@ export default function PanelComercio() {
                       const fin = new Date(o.finEn)
                       const finalizada = fin < new Date()
                       return (
-                        <div key={o._id} className="bg-white rounded-xl border border-ml-line p-3 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-ml-ink text-sm truncate">
-                              {GANCHO_ICON[o.tipoGancho] || '🏷️'} {o.titulo}
-                            </p>
-                            <p className="text-xs text-ml-muted">
-                              Cupo {o.cupoTotal === 0 ? '∞' : `${o.cupoUsado}/${o.cupoTotal}`} ·
-                              {' '}vence {fin.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={`text-[10px] px-2 py-1 rounded-full font-semibold ${
+                        <div key={o._id} className="bg-white rounded-xl border border-ml-line p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ml-ink text-sm truncate">
+                                {GANCHO_ICON[o.tipoGancho] || '🏷️'} {o.titulo}
+                              </p>
+                              <p className="text-xs text-ml-muted">
+                                Cupo {o.cupoTotal === 0 ? '∞' : `${o.cupoUsado}/${o.cupoTotal}`} ·
+                                {' '}vence {fin.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <span className={`text-[10px] px-2 py-1 rounded-full font-semibold shrink-0 ${
                               finalizada ? 'bg-gray-100 text-gray-500' : o.activa ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                             }`}>
                               {finalizada ? 'Finalizada' : o.activa ? 'Activa' : 'Pausada'}
                             </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-ml-line2">
                             {!finalizada && (
                               <button onClick={() => togglePausaOferta(o)} className="text-xs px-2 py-1 border border-ml-line rounded-lg text-ml-soft hover:border-ml-violet">
-                                {o.activa ? 'Pausar' : 'Activar'}
+                                {o.activa ? '⏸️ Pausar' : '▶️ Activar'}
                               </button>
                             )}
+                            <button onClick={() => { setOfertaEditando(o); setMostrarFormOferta(false) }} className="text-xs px-2 py-1 border border-ml-line rounded-lg text-ml-soft hover:border-ml-violet">
+                              ✏️ Editar
+                            </button>
+                            <button onClick={() => eliminarOferta(o)} className="text-xs px-2 py-1 border border-red-200 rounded-lg text-red-600 hover:bg-red-50">
+                              🗑️ Eliminar
+                            </button>
                           </div>
                         </div>
                       )
@@ -221,9 +314,20 @@ function Metrica({ label, valor }: { label: string; valor: string | number }) {
   )
 }
 
-// ===== Form de alta de comercio =====
-function FormComercio({ onCreado }: { onCreado: (c: Comercio) => void }) {
-  const [f, setF] = useState({ nombre: '', rubro: 'cafeteria', descripcion: '', direccion: '', ciudad: '', lat: '', lng: '' })
+// ===== Form de alta / edición de comercio =====
+function FormComercio({ inicial, onGuardado, onCancelar }: { inicial?: Comercio; onGuardado: (c: Comercio) => void; onCancelar?: () => void }) {
+  const edicion = !!inicial
+  const [f, setF] = useState({
+    nombre: inicial?.nombre || '',
+    rubro: inicial?.rubro || 'cafeteria',
+    descripcion: inicial?.descripcion || '',
+    direccion: inicial?.ubicacion.direccion || '',
+    ciudad: inicial?.ubicacion.ciudad || '',
+    lat: inicial ? String(inicial.ubicacion.lat) : '',
+    lng: inicial ? String(inicial.ubicacion.lng) : '',
+    whatsapp: inicial?.contacto?.whatsapp || '',
+    instagram: inicial?.contacto?.instagram || ''
+  })
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
 
@@ -245,16 +349,20 @@ function FormComercio({ onCreado }: { onCreado: (c: Comercio) => void }) {
       return
     }
     setGuardando(true)
+    const payload = {
+      nombre: f.nombre,
+      rubro: f.rubro,
+      descripcion: f.descripcion,
+      ubicacion: { lat: Number(f.lat), lng: Number(f.lng), direccion: f.direccion, ciudad: f.ciudad },
+      contacto: { whatsapp: f.whatsapp, instagram: f.instagram }
+    }
     try {
-      const res = await api.post('/centro/comercios', {
-        nombre: f.nombre,
-        rubro: f.rubro,
-        descripcion: f.descripcion,
-        ubicacion: { lat: Number(f.lat), lng: Number(f.lng), direccion: f.direccion, ciudad: f.ciudad }
-      })
-      onCreado(res.data)
+      const res = edicion
+        ? await api.put(`/centro/comercios/${inicial!._id}`, payload)
+        : await api.post('/centro/comercios', payload)
+      onGuardado(res.data)
     } catch (e: any) {
-      setError(e.response?.data?.error || 'No se pudo crear el comercio.')
+      setError(e.response?.data?.error || 'No se pudo guardar el local.')
     } finally {
       setGuardando(false)
     }
@@ -262,8 +370,8 @@ function FormComercio({ onCreado }: { onCreado: (c: Comercio) => void }) {
 
   const inp = 'w-full px-3 py-2 border border-ml-line rounded-xl focus:border-ml-violet outline-none text-sm'
   return (
-    <form onSubmit={guardar} className="bg-white rounded-2xl border border-ml-line p-4 space-y-3">
-      <h3 className="font-bold text-ml-ink">Nuevo local</h3>
+    <form onSubmit={guardar} className="space-y-3">
+      <h3 className="font-bold text-ml-ink">{edicion ? 'Editar local' : 'Nuevo local'}</h3>
       <input className={inp} placeholder="Nombre del local" value={f.nombre} onChange={e => setF({ ...f, nombre: e.target.value })} />
       <div className="grid grid-cols-2 gap-3">
         <select className={inp} value={f.rubro} onChange={e => setF({ ...f, rubro: e.target.value })}>
@@ -273,6 +381,10 @@ function FormComercio({ onCreado }: { onCreado: (c: Comercio) => void }) {
       </div>
       <input className={inp} placeholder="Dirección" value={f.direccion} onChange={e => setF({ ...f, direccion: e.target.value })} />
       <textarea className={inp} placeholder="Descripción corta" rows={2} value={f.descripcion} onChange={e => setF({ ...f, descripcion: e.target.value })} />
+      <div className="grid grid-cols-2 gap-3">
+        <input className={inp} placeholder="WhatsApp (opcional)" value={f.whatsapp} onChange={e => setF({ ...f, whatsapp: e.target.value })} />
+        <input className={inp} placeholder="Instagram (opcional)" value={f.instagram} onChange={e => setF({ ...f, instagram: e.target.value })} />
+      </div>
       <div className="flex items-center gap-2">
         <button type="button" onClick={usarUbicacion} className="text-sm px-3 py-2 border border-ml-line rounded-xl text-ml-violet font-semibold">
           📍 Usar mi ubicación actual
@@ -281,18 +393,31 @@ function FormComercio({ onCreado }: { onCreado: (c: Comercio) => void }) {
       </div>
       <p className="text-[11px] text-ml-muted">Las coordenadas son del LOCAL (dato público) y se redondean a ~11 m.</p>
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{error}</p>}
-      <button type="submit" disabled={guardando} className="w-full py-2.5 ml-grad text-white rounded-xl font-bold disabled:opacity-60">
-        {guardando ? 'Guardando...' : 'Crear local'}
-      </button>
+      <div className="flex gap-2">
+        <button type="submit" disabled={guardando} className="flex-1 py-2.5 ml-grad text-white rounded-xl font-bold disabled:opacity-60">
+          {guardando ? 'Guardando...' : edicion ? 'Guardar cambios' : 'Crear local'}
+        </button>
+        {onCancelar && (
+          <button type="button" onClick={onCancelar} className="px-4 py-2.5 border border-ml-line rounded-xl font-semibold text-ml-soft">Cancelar</button>
+        )}
+      </div>
     </form>
   )
 }
 
-// ===== Form de alta de oferta =====
-function FormOferta({ comercioId, onCreada }: { comercioId: string; onCreada: (o: Oferta) => void }) {
+// ===== Form de alta / edición de oferta =====
+function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioId: string; inicial?: Oferta; onGuardado: (o: Oferta) => void; onCancelar?: () => void }) {
+  const edicion = !!inicial
   const [f, setF] = useState({
-    titulo: '', descripcion: '', tipoGancho: 'descuento', valorDescuento: '',
-    inicioEn: ahoraLocalInput(), finEn: ahoraLocalInput(60), cupoTotal: '', bloqueHorario: 'todos', condiciones: ''
+    titulo: inicial?.titulo || '',
+    descripcion: inicial?.descripcion || '',
+    tipoGancho: inicial?.tipoGancho || 'descuento',
+    valorDescuento: inicial?.valorDescuento ? String(inicial.valorDescuento) : '',
+    inicioEn: inicial ? isoALocalInput(inicial.inicioEn) : ahoraLocalInput(),
+    finEn: inicial ? isoALocalInput(inicial.finEn) : ahoraLocalInput(60),
+    cupoTotal: inicial?.cupoTotal ? String(inicial.cupoTotal) : '',
+    bloqueHorario: inicial?.bloqueHorario || 'todos',
+    condiciones: inicial?.condiciones || ''
   })
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -309,22 +434,25 @@ function FormOferta({ comercioId, onCreada }: { comercioId: string; onCreada: (o
       return
     }
     setGuardando(true)
+    const payload = {
+      comercioId,
+      titulo: f.titulo,
+      descripcion: f.descripcion,
+      tipoGancho: f.tipoGancho,
+      valorDescuento: f.valorDescuento ? Number(f.valorDescuento) : 0,
+      inicioEn: new Date(f.inicioEn).toISOString(),
+      finEn: new Date(f.finEn).toISOString(),
+      cupoTotal: f.cupoTotal ? Number(f.cupoTotal) : 0,
+      bloqueHorario: f.bloqueHorario,
+      condiciones: f.condiciones
+    }
     try {
-      const res = await api.post('/centro/ofertas', {
-        comercioId,
-        titulo: f.titulo,
-        descripcion: f.descripcion,
-        tipoGancho: f.tipoGancho,
-        valorDescuento: f.valorDescuento ? Number(f.valorDescuento) : 0,
-        inicioEn: new Date(f.inicioEn).toISOString(),
-        finEn: new Date(f.finEn).toISOString(),
-        cupoTotal: f.cupoTotal ? Number(f.cupoTotal) : 0,
-        bloqueHorario: f.bloqueHorario,
-        condiciones: f.condiciones
-      })
-      onCreada(res.data)
+      const res = edicion
+        ? await api.put(`/centro/ofertas/${inicial!._id}`, payload)
+        : await api.post('/centro/ofertas', payload)
+      onGuardado(res.data)
     } catch (e: any) {
-      setError(e.response?.data?.error || 'No se pudo crear la oferta.')
+      setError(e.response?.data?.error || 'No se pudo guardar la oferta.')
     } finally {
       setGuardando(false)
     }
@@ -332,7 +460,8 @@ function FormOferta({ comercioId, onCreada }: { comercioId: string; onCreada: (o
 
   const inp = 'w-full px-3 py-2 border border-ml-line rounded-xl focus:border-ml-violet outline-none text-sm'
   return (
-    <form onSubmit={guardar} className="bg-white rounded-2xl border border-ml-line p-4 space-y-3">
+    <form onSubmit={guardar} className="bg-white rounded-2xl border border-ml-violet/30 p-4 space-y-3">
+      <h3 className="font-bold text-ml-ink">{edicion ? 'Editar oferta' : 'Nueva oferta'}</h3>
       <input className={inp} placeholder='Título (ej. "2x1 en Macchiato")' value={f.titulo} onChange={e => setF({ ...f, titulo: e.target.value })} />
       <textarea className={inp} placeholder="Descripción" rows={2} value={f.descripcion} onChange={e => setF({ ...f, descripcion: e.target.value })} />
       <div className="grid grid-cols-2 gap-3">
@@ -342,15 +471,11 @@ function FormOferta({ comercioId, onCreada }: { comercioId: string; onCreada: (o
           <option value="regalo">Regalo</option>
           <option value="combo">Combo</option>
         </select>
-        {f.tipoGancho === 'descuento' ? (
+        {f.tipoGancho === 'descuento' && (
           <input className={inp} placeholder="% desc." inputMode="numeric" value={f.valorDescuento} onChange={e => setF({ ...f, valorDescuento: e.target.value })} />
-        ) : (
-          <input className={inp} placeholder="Cupo total (0 = ∞)" inputMode="numeric" value={f.cupoTotal} onChange={e => setF({ ...f, cupoTotal: e.target.value })} />
         )}
       </div>
-      {f.tipoGancho === 'descuento' && (
-        <input className={inp} placeholder="Cupo total (0 = ilimitado)" inputMode="numeric" value={f.cupoTotal} onChange={e => setF({ ...f, cupoTotal: e.target.value })} />
-      )}
+      <input className={inp} placeholder="Cupo total (0 = ilimitado)" inputMode="numeric" value={f.cupoTotal} onChange={e => setF({ ...f, cupoTotal: e.target.value })} />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-[11px] text-ml-muted mb-1">Inicia</label>
@@ -367,9 +492,14 @@ function FormOferta({ comercioId, onCreada }: { comercioId: string; onCreada: (o
       <textarea className={inp} placeholder="Condiciones / letra chica (exclusiones, vigencia)" rows={2} value={f.condiciones} onChange={e => setF({ ...f, condiciones: e.target.value })} />
       <p className="text-[11px] text-ml-muted">⚖️ El cupo y el horario son reales: el sistema impide vender más cupos de los cargados. Sin urgencia falsa.</p>
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{error}</p>}
-      <button type="submit" disabled={guardando} className="w-full py-2.5 ml-grad text-white rounded-xl font-bold disabled:opacity-60">
-        {guardando ? 'Publicando...' : 'Publicar oferta'}
-      </button>
+      <div className="flex gap-2">
+        <button type="submit" disabled={guardando} className="flex-1 py-2.5 ml-grad text-white rounded-xl font-bold disabled:opacity-60">
+          {guardando ? 'Guardando...' : edicion ? 'Guardar cambios' : 'Publicar oferta'}
+        </button>
+        {onCancelar && (
+          <button type="button" onClick={onCancelar} className="px-4 py-2.5 border border-ml-line rounded-xl font-semibold text-ml-soft">Cancelar</button>
+        )}
+      </div>
     </form>
   )
 }
