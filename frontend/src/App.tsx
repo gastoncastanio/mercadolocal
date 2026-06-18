@@ -84,6 +84,7 @@ const ComprobanteView = lazy(() => import('./pages/ComprobanteView'))
 const ConfiguracionFiscal = lazy(() => import('./pages/admin/ConfiguracionFiscal'))
 const MisDatosPrivacidad = lazy(() => import('./pages/MisDatosPrivacidad'))
 const LibroDeQuejas = lazy(() => import('./pages/LibroDeQuejas'))
+const RadarCentro = lazy(() => import('./pages/RadarCentro'))
 const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
@@ -159,6 +160,7 @@ function AppContent() {
           <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />
           <Route path="/privacidad-datos" element={<ConNavbar><RutaPrivada><MisDatosPrivacidad /></RutaPrivada></ConNavbar>} />
           <Route path="/libro-de-quejas" element={<ConNavbar><LibroDeQuejas /></ConNavbar>} />
+          <Route path="/radar" element={<ConNavbar><RadarCentro /></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />

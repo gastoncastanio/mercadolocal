@@ -211,9 +211,9 @@ Cada fase compila, se prueba y se commitea por separado.
 
 ---
 
-## 7. Decisiones pendientes que necesito de vos
+## 7. Decisiones tomadas
 
-1. **⚠️ Menores:** ¿edad mínima para el Radar? ¿Pido confirmación de mayoría de edad antes de activar GPS?
-2. **⚠️ Quién carga comercios y ofertas:** ¿solo admin (vos), o cada comercio tiene su propio acceso/panel?
-3. **⚠️ Validación del canje en el mostrador:** ¿el comercio escanea el QR del cliente con su celular (necesita login de comercio), o el cliente escanea un QR fijo del local? (cambia el flujo anti-fraude)
-4. **Ciudad inicial:** ¿arrancamos con una sola ciudad/centro para el piloto?
+1. **Menores:** se exige **confirmar mayoría de edad (18+)** antes de activar el GPS. Cuentas marcadas como menores no usan geo ni reciben ofertas flash.
+2. **Carga de comercios/ofertas:** **panel por comercio** — cada comercio gestiona sus propias ofertas (requiere rol/login de comercio).
+3. **Canje en mostrador:** el **comercio escanea el QR único del cliente** (máxima atribución y anti-fraude; el comercio necesita login).
+4. **Piloto:** arrancamos con **una sola ciudad**.
