@@ -8,9 +8,18 @@ interface Props {
 export default function TarjetaProducto({ producto }: Props) {
   const tienda = producto.tiendaId as Tienda
 
-  const tieneDescuento = producto.totalVentas > 5
-  const precioAnterior = tieneDescuento ? Math.round(producto.precio * 1.35) : null
+  // Oferta REAL: precioAnterior lo setea el vendedor y debe ser > precio actual.
+  const precioAnterior = (producto.precioAnterior && producto.precioAnterior > producto.precio)
+    ? producto.precioAnterior
+    : null
   const porcentajeOff = precioAnterior ? Math.round((1 - producto.precio / precioAnterior) * 100) : null
+
+  // Badge de condición (solo para usados/reacondicionados; los nuevos no lo necesitan)
+  const condicionLabel = producto.condicion === 'usado'
+    ? 'Usado'
+    : producto.condicion === 'reacondicionado'
+      ? 'Reacondicionado'
+      : null
 
   const cuota6 = Math.round(producto.precio / 6)
   const tieneTienda = tienda && typeof tienda === 'object'
@@ -37,6 +46,13 @@ export default function TarjetaProducto({ producto }: Props) {
         {(producto as any).esDestacado && (
           <span className="absolute top-3 left-3 ml-grad text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
             {'\u{1F525}'} Top ventas
+          </span>
+        )}
+
+        {/* Badge de condición (sección Usados) */}
+        {!(producto as any).esDestacado && condicionLabel && (
+          <span className="absolute top-3 left-3 bg-white/95 text-ml-ink text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-ml-line">
+            {condicionLabel}
           </span>
         )}
 
@@ -91,7 +107,15 @@ export default function TarjetaProducto({ producto }: Props) {
           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ml-line2">
             <span className="shrink-0 w-6 h-6 rounded-full ml-grad text-white text-[11px] font-bold flex items-center justify-center">{inicial}</span>
             {tienda.nombre && <span className="text-[12.5px] text-ml-soft font-semibold truncate">{tienda.nombre}</span>}
-            {tienda.ciudad && <span className="ml-auto text-[11.5px] text-ml-muted whitespace-nowrap">{tienda.ciudad}</span>}
+            {tienda.ciudad && (
+              <span className="ml-auto shrink-0 flex items-center gap-0.5 text-[11.5px] text-ml-muted whitespace-nowrap">
+                <svg className="w-3 h-3 text-ml-violet" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <circle cx="12" cy="11" r="2.5" />
+                </svg>
+                {tienda.ciudad}
+              </span>
+            )}
           </div>
         )}
       </div>

@@ -182,11 +182,23 @@ export async function crearProducto(tiendaId, datos) {
   // Si el agente decide "revision" o "aprobado", se crea el producto
   const estadoModeracion = moderacionResultado.decision === 'aprobado' ? 'aprobado' : 'revision'
 
+  // Condición (nuevo/usado/reacondicionado) — sección Usados
+  const condicionNormalizada = ['nuevo', 'usado', 'reacondicionado'].includes(datos.condicion)
+    ? datos.condicion
+    : 'nuevo'
+  // Precio anterior (tachado) — solo válido si es mayor al precio actual (oferta real)
+  const precioAnteriorNum = Number(datos.precioAnterior)
+  const precioAnteriorNormalizado = (precioAnteriorNum > 0 && precioAnteriorNum > Number(datos.precio))
+    ? precioAnteriorNum
+    : null
+
   const producto = new Producto({
     tiendaId,
     nombre: datos.nombre,
     descripcion: datos.descripcion || '',
     precio: datos.precio,
+    precioAnterior: precioAnteriorNormalizado,
+    condicion: condicionNormalizada,
     stock: datos.stock || 1,
     imagenes: datos.imagenes || [],
     categorias: datos.categorias || [],
@@ -290,6 +302,15 @@ export async function listarProductos(filtros = {}) {
   if (filtros.ciudad) {
     matchProducto.ciudad = filtros.ciudad
   }
+  // Sección Usados: condicion = 'usado' | 'reacondicionado' | 'nuevo'
+  if (filtros.condicion) {
+    matchProducto.condicion = filtros.condicion
+  }
+  // Sección Ofertas: solo productos con precioAnterior real mayor al precio
+  // actual (descuento genuino, no inventado).
+  if (filtros.enOferta === true || filtros.enOferta === 'true') {
+    matchProducto.$expr = { $gt: ['$precioAnterior', '$precio'] }
+  }
   if (filtros.precioMin || filtros.precioMax) {
     matchProducto.precio = {}
     if (filtros.precioMin) matchProducto.precio.$gte = Number(filtros.precioMin)
@@ -371,6 +392,48 @@ export async function listarProductos(filtros = {}) {
   const siguienteCursor = hayMas ? productos[productos.length - 1]._id : null
 
   return { productos, siguienteCursor, hayMas }
+}
+
+/**
+ * Devuelve las ciudades que realmente tienen productos disponibles para comprar.
+ * Se usa para poblar el selector de ciudad del catálogo (en vez de un input de
+ * texto libre). Agrupa por Producto.ciudad — la misma fuente que usa el filtro
+ * de listarProductos — para que cada ciudad listada devuelva resultados al
+ * seleccionarla. Solo cuenta productos activos, no rechazados, de tiendas con
+ * Mercado Pago vinculado (las únicas que pueden vender).
+ *
+ * @returns {Promise<Array<{ ciudad: string, cantidad: number }>>} ordenado por cantidad desc
+ */
+export async function obtenerCiudadesDisponibles() {
+  const pipeline = [
+    {
+      $match: {
+        activo: true,
+        'moderacion.estado': { $ne: 'rechazado' },
+        ciudad: { $nin: [null, ''] }
+      }
+    },
+    {
+      $lookup: {
+        from: 'tiendas',
+        localField: 'tiendaId',
+        foreignField: '_id',
+        as: 'tienda'
+      }
+    },
+    { $unwind: { path: '$tienda', preserveNullAndEmptyArrays: false } },
+    { $match: { 'tienda.mpVinculado': true, 'tienda.activo': true } },
+    {
+      $group: {
+        _id: '$ciudad',
+        cantidad: { $sum: 1 }
+      }
+    },
+    { $sort: { cantidad: -1, _id: 1 } },
+    { $project: { _id: 0, ciudad: '$_id', cantidad: 1 } }
+  ]
+
+  return await Producto.aggregate(pipeline)
 }
 
 // Productos de una tienda (público): solo si la tienda tiene MP vinculado
@@ -482,6 +545,17 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
   }
   if (datos.marca !== undefined) {
     update.marca = String(datos.marca).trim().slice(0, 80)
+  }
+  // Condición (sección Usados) solo si viene y es válida
+  if (datos.condicion !== undefined && ['nuevo', 'usado', 'reacondicionado'].includes(datos.condicion)) {
+    update.condicion = datos.condicion
+  }
+  // Precio anterior (sección Ofertas) solo si viene definido. Vacío/0/menor al
+  // precio actual => null (quita la oferta). El filtro de ofertas igual exige
+  // precioAnterior > precio, así que un valor inconsistente no genera oferta falsa.
+  if (datos.precioAnterior !== undefined) {
+    const pa = Number(datos.precioAnterior)
+    update.precioAnterior = pa > 0 ? pa : null
   }
 
   const producto = await Producto.findOneAndUpdate(

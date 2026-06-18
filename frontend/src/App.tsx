@@ -66,6 +66,8 @@ const AdminCMS = lazy(() => import('./pages/AdminCMS'))
 const Favoritos = lazy(() => import('./pages/Favoritos'))
 const Notificaciones = lazy(() => import('./pages/Notificaciones'))
 const MasVendidos = lazy(() => import('./pages/MasVendidos'))
+const Usados = lazy(() => import('./pages/Usados'))
+const Ofertas = lazy(() => import('./pages/Ofertas'))
 const CentralVendedor = lazy(() => import('./pages/CentralVendedor'))
 const TiendaPublica = lazy(() => import('./pages/TiendaPublica'))
 const Ayuda = lazy(() => import('./pages/Ayuda'))
@@ -116,6 +118,8 @@ function AppContent() {
           <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
           <Route path="/tienda/:id" element={<ConNavbar><TiendaPublica /></ConNavbar>} />
           <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
+          <Route path="/usados" element={<ConNavbar><Usados /></ConNavbar>} />
+          <Route path="/ofertas" element={<ConNavbar><Ofertas /></ConNavbar>} />
 
           {/* Requieren login */}
           <Route path="/carrito" element={<ConNavbar><RutaPrivada><Carrito /></RutaPrivada></ConNavbar>} />

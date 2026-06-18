@@ -15,21 +15,31 @@ export default function CatalogoProductos() {
   const [categoria, setCategoria] = useState(searchParams.get('categoria') || '')
   const [precioMin, setPrecioMin] = useState('')
   const [precioMax, setPrecioMax] = useState('')
-  const [ciudad, setCiudad] = useState('')
+  const [ciudad, setCiudad] = useState(searchParams.get('ciudad') || '')
   const [ordenar, setOrdenar] = useState('')
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
   const [cargando, setCargando] = useState(true)
+  // Ciudades reales con productos disponibles (para el selector de ubicación)
+  const [ciudades, setCiudades] = useState<{ ciudad: string; cantidad: number }[]>([])
 
   useEffect(() => {
     cargarProductos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoria, ordenar])
+  }, [categoria, ordenar, ciudad])
+
+  // Cargar las ciudades disponibles una sola vez al montar
+  useEffect(() => {
+    api.get('/productos/ciudades')
+      .then(res => setCiudades(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setCiudades([]))
+  }, [])
 
   // Sincronizar con la URL: si el usuario ya está en /catalogo y navega a otra
   // categoría/búsqueda (desde el navbar o la landing), reflejamos el cambio.
   useEffect(() => {
     setBusqueda(searchParams.get('busqueda') || '')
     setCategoria(searchParams.get('categoria') || '')
+    setCiudad(searchParams.get('ciudad') || '')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
 
@@ -110,9 +120,34 @@ export default function CatalogoProductos() {
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="font-display font-extrabold text-[28px] sm:text-[34px] tracking-[-0.02em] text-ml-ink">Catálogo de productos</h1>
-          <p className="text-ml-muted mt-1">Encontrá lo que buscás de tiendas locales</p>
+        <div className="mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h1 className="font-display font-extrabold text-[24px] sm:text-[34px] tracking-[-0.02em] text-ml-ink">Catálogo de productos</h1>
+            <p className="text-ml-muted mt-1 text-sm sm:text-base">Encontrá lo que buscás de tiendas locales</p>
+          </div>
+
+          {/* Selector de ubicación (ciudad del vendedor). Solo aparece cuando hay
+              ciudades reales con productos. Respeta la privacidad: mostramos la
+              ciudad, nunca la dirección exacta del vendedor. */}
+          {ciudades.length > 0 && (
+            <label className="shrink-0 inline-flex items-center gap-2 bg-white border border-ml-line rounded-xl pl-3 pr-2 py-2 cursor-pointer focus-within:ring-2 focus-within:ring-ml-purple/25">
+              <svg className="w-4 h-4 text-ml-violet shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <circle cx="12" cy="11" r="2.5" />
+              </svg>
+              <span className="text-[12px] text-ml-muted font-semibold hidden sm:inline">Ubicación:</span>
+              <select
+                value={ciudad}
+                onChange={e => setCiudad(e.target.value)}
+                className="bg-transparent outline-none text-sm font-bold text-ml-ink cursor-pointer pr-1"
+              >
+                <option value="">Todas las ciudades</option>
+                {ciudades.map(c => (
+                  <option key={c.ciudad} value={c.ciudad}>{c.ciudad} ({c.cantidad})</option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
 
         {/* Toolbar: contexto de búsqueda + filtros.
@@ -125,6 +160,17 @@ export default function CatalogoProductos() {
               : categoria
                 ? <>Categoría <span className="font-semibold text-ml-ink">{categoria}</span></>
                 : 'Explorá todo el catálogo de tiendas locales'}
+            {ciudad && (
+              <span className="ml-1">
+                en <span className="font-semibold text-ml-ink">{ciudad}</span>
+                <button
+                  type="button"
+                  onClick={() => setCiudad('')}
+                  className="ml-1.5 text-ml-violet hover:underline font-semibold"
+                  aria-label="Quitar filtro de ciudad"
+                >✕</button>
+              </span>
+            )}
           </div>
           <button
             type="button"
@@ -163,13 +209,16 @@ export default function CatalogoProductos() {
             </div>
             <div>
               <label className="block text-xs text-ml-muted font-semibold mb-1">Ciudad</label>
-              <input
-                type="text"
+              <select
                 value={ciudad}
                 onChange={e => setCiudad(e.target.value)}
-                placeholder="Ej: Buenos Aires"
-                className="w-full px-3 py-2 border border-ml-line rounded-xl text-sm focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
-              />
+                className="w-full px-3 py-2 border border-ml-line rounded-xl text-sm focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none bg-white"
+              >
+                <option value="">Todas las ciudades</option>
+                {ciudades.map(c => (
+                  <option key={c.ciudad} value={c.ciudad}>{c.ciudad} ({c.cantidad})</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs text-ml-muted font-semibold mb-1">Ordenar por</label>

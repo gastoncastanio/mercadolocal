@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
@@ -16,11 +16,18 @@ export default function PublicarProducto() {
   const { tienda } = useAuth()
   const toast = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [searchParams] = useSearchParams()
+
+  // Si llegan desde "Publicar un usado" (/publicar?condicion=usado) arrancamos
+  // con esa condición preseleccionada.
+  const condicionInicial = searchParams.get('condicion') === 'usado' ? 'usado' : 'nuevo'
 
   const [form, setForm] = useState({
     nombre: '',
     descripcion: '',
     precio: '',
+    precioAnterior: '',
+    condicion: condicionInicial as 'nuevo' | 'usado' | 'reacondicionado',
     stock: '1',
     categorias: [] as string[],
     imagenes: [] as string[],
@@ -123,6 +130,12 @@ export default function PublicarProducto() {
       return
     }
 
+    // Si completan precio anterior, debe ser mayor al precio actual (oferta válida)
+    if (form.precioAnterior && Number(form.precioAnterior) <= Number(form.precio || 0)) {
+      setError('El precio anterior debe ser mayor al precio actual, o dejalo vacío.')
+      return
+    }
+
     // Validar campos personalizados obligatorios de la categoría
     if (categoriaSeleccionada) {
       const { labelsFaltantes } = validarCamposObligatorios(categoriaSeleccionada, caracteristicas)
@@ -157,6 +170,7 @@ export default function PublicarProducto() {
       await api.post('/productos', {
         ...form,
         precio: Number(form.precio),
+        precioAnterior: form.precioAnterior ? Number(form.precioAnterior) : null,
         stock: Number(form.stock),
         caracteristicas,
         entrega
@@ -368,6 +382,57 @@ export default function PublicarProducto() {
                 placeholder="1"
               />
             </div>
+          </div>
+
+          {/* Condición: nuevo / usado / reacondicionado (alimenta la sección Usados) */}
+          <div>
+            <label className="block text-sm font-medium text-ml-ink mb-2">Condición</label>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { val: 'nuevo', label: 'Nuevo' },
+                { val: 'usado', label: 'Usado' },
+                { val: 'reacondicionado', label: 'Reacondicionado' }
+              ] as const).map(op => (
+                <button
+                  key={op.val}
+                  type="button"
+                  onClick={() => setForm({ ...form, condicion: op.val })}
+                  className={`px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border-2 ${
+                    form.condicion === op.val
+                      ? 'bg-blue-50 border-blue-500 text-blue-700'
+                      : 'bg-white border-ml-line text-ml-ink hover:border-ml-line'
+                  }`}
+                >
+                  {op.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Precio anterior (oferta): opcional. Si lo completás y es mayor al
+              precio, el producto entra en la sección Ofertas con el descuento. */}
+          <div>
+            <label className="block text-sm font-medium text-ml-ink mb-1">
+              Precio anterior <span className="text-ml-muted font-normal">(opcional — para mostrar oferta)</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.precioAnterior}
+              onChange={e => setForm({ ...form, precioAnterior: e.target.value })}
+              className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none"
+              placeholder="Ej: precio sin descuento"
+            />
+            {form.precioAnterior && Number(form.precioAnterior) > Number(form.precio || 0) ? (
+              <p className="text-xs text-[#0a7d34] font-semibold mt-1.5">
+                {Math.round((1 - Number(form.precio || 0) / Number(form.precioAnterior)) * 100)}% OFF — aparecerá en Ofertas
+              </p>
+            ) : form.precioAnterior ? (
+              <p className="text-xs text-amber-600 mt-1.5">
+                El precio anterior debe ser mayor al precio actual para mostrar una oferta.
+              </p>
+            ) : null}
           </div>
 
           <div>
