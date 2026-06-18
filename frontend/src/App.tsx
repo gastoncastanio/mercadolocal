@@ -6,6 +6,7 @@ import Navbar from './components/Navbar'
 import MarqueeBanner from './components/MarqueeBanner'
 import ErrorBoundary from './components/ErrorBoundary'
 import { BannerFlotanteInstalar } from './components/InstalarApp'
+import BannerConsentimiento from './components/BannerConsentimiento'
 
 // Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
@@ -81,6 +82,9 @@ const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
 const MisComprobantes = lazy(() => import('./pages/MisComprobantes'))
 const ComprobanteView = lazy(() => import('./pages/ComprobanteView'))
 const ConfiguracionFiscal = lazy(() => import('./pages/admin/ConfiguracionFiscal'))
+const MisDatosPrivacidad = lazy(() => import('./pages/MisDatosPrivacidad'))
+const LibroDeQuejas = lazy(() => import('./pages/LibroDeQuejas'))
+const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 function LoadingSpinner() {
@@ -153,12 +157,15 @@ function AppContent() {
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
           <Route path="/mis-comprobantes" element={<ConNavbar><RutaPrivada requiereVendedor><MisComprobantes /></RutaPrivada></ConNavbar>} />
           <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />
+          <Route path="/privacidad-datos" element={<ConNavbar><RutaPrivada><MisDatosPrivacidad /></RutaPrivada></ConNavbar>} />
+          <Route path="/libro-de-quejas" element={<ConNavbar><LibroDeQuejas /></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
           <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/solicitudes-legales" element={<ConNavbar><RutaPrivada roles={['admin']}><SolicitudesLegales /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Ayuda */}
@@ -181,6 +188,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
+      <BannerConsentimiento />
     </Router>
   )
 }

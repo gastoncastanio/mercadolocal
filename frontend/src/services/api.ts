@@ -35,10 +35,15 @@ function obtenerAnonId(): string {
   }
 }
 
-// Interceptor de request: adjunta el id anónimo a todas las llamadas.
+// Interceptor de request: adjunta el id anónimo a todas las llamadas, salvo que
+// el visitante haya rechazado el perfilado (derecho de oposición, Ley 25.326).
 api.interceptors.request.use((config) => {
-  const anon = obtenerAnonId()
-  if (anon) config.headers.set?.('x-anon-id', anon)
+  let rechazado = false
+  try { rechazado = localStorage.getItem('ml_no_perfilar') === '1' } catch { /* noop */ }
+  if (!rechazado) {
+    const anon = obtenerAnonId()
+    if (anon) config.headers.set?.('x-anon-id', anon)
+  }
   return config
 })
 

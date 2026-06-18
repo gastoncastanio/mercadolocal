@@ -239,6 +239,10 @@ export default function Navbar() {
                             </>
                           )}
                           <div className="border-t my-1 mx-3 border-ml-line2"></div>
+                          <Link to="/privacidad-datos" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                            <svg className="w-4 h-4 text-ml-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            Privacidad y mis datos
+                          </Link>
                           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-ml-muted hover:bg-ml-bg">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                             Cerrar sesión
