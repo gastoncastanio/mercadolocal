@@ -29,6 +29,8 @@ router.get('/', async (req, res) => {
       busqueda: req.query.busqueda,
       categoria: req.query.categoria,
       ciudad: req.query.ciudad,
+      condicion: req.query.condicion,
+      enOferta: req.query.enOferta,
       precioMin: req.query.precioMin,
       precioMax: req.query.precioMax,
       tiendaId: req.query.tiendaId,

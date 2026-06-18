@@ -326,6 +326,12 @@ export default function Navbar() {
             <Link to="/catalogo" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
               Catálogo
             </Link>
+            <Link to="/usados" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+              Usados
+            </Link>
+            <Link to="/ofertas" className="text-ml-violet hover:text-ml-purple font-semibold px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+              Ofertas
+            </Link>
             <Link to="/mas-vendidos" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
               Más vendidos
             </Link>
@@ -422,6 +428,8 @@ export default function Navbar() {
             <div className="py-3">
               <p className="px-4 py-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Explorar</p>
               <Link to="/catalogo" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Catálogo completo</Link>
+              <Link to="/usados" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Usados</Link>
+              <Link to="/ofertas" className="block px-4 py-3 text-ml-violet font-semibold hover:bg-ml-bg">Ofertas</Link>
               <Link to="/mas-vendidos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Más vendidos</Link>
 
               <p className="px-4 py-2 mt-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Categorías</p>

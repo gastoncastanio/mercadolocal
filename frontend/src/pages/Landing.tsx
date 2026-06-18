@@ -574,8 +574,8 @@ export default function Landing() {
             <div className="font-display font-bold text-sm mb-3.5">Comprar</div>
             <div className="flex flex-col gap-2.5 text-[13.5px] text-white/60">
               <Link to="/catalogo" className="mllink">Categorías</Link>
-              <Link to="/catalogo" className="mllink">Tiendas locales</Link>
-              <Link to="/catalogo" className="mllink">Usados</Link>
+              <Link to="/usados" className="mllink">Usados</Link>
+              <Link to="/ofertas" className="mllink">Ofertas</Link>
               <Link to="/mas-vendidos" className="mllink">Más vendidos</Link>
             </div>
           </div>

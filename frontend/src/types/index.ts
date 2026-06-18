@@ -40,6 +40,8 @@ export interface Producto {
   nombre: string
   descripcion: string
   precio: number
+  // Precio anterior (tachado). Si es > precio, el producto está en oferta.
+  precioAnterior?: number | null
   stock: number
   imagenes: string[]
   categorias: string[]

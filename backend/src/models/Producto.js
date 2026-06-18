@@ -20,6 +20,13 @@ const productoSchema = new mongoose.Schema({
     required: [true, 'El precio es obligatorio'],
     min: [0, 'El precio no puede ser negativo']
   },
+  // Precio anterior (tachado). Si es mayor que `precio`, el producto está en
+  // oferta. Lo setea el vendedor de forma opcional. 0/null = sin oferta.
+  precioAnterior: {
+    type: Number,
+    default: null,
+    min: [0, 'El precio anterior no puede ser negativo']
+  },
   stock: {
     type: Number,
     default: 1,
@@ -196,6 +203,9 @@ productoSchema.index({ activo: 1, categorias: 1, precio: 1 })
 
 // 6. Filtros por marca + categoría (cuando integremos comparación)
 productoSchema.index({ activo: 1, marca: 1, categorias: 1 })
+
+// 6b. Sección Usados (filtra por condición)
+productoSchema.index({ activo: 1, condicion: 1, createdAt: -1 })
 
 // 7. Productos por código de barras (para agrupar duplicados en catálogo)
 productoSchema.index({ codigoBarras: 1, activo: 1 }, {

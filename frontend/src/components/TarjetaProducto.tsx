@@ -8,9 +8,18 @@ interface Props {
 export default function TarjetaProducto({ producto }: Props) {
   const tienda = producto.tiendaId as Tienda
 
-  const tieneDescuento = producto.totalVentas > 5
-  const precioAnterior = tieneDescuento ? Math.round(producto.precio * 1.35) : null
+  // Oferta REAL: precioAnterior lo setea el vendedor y debe ser > precio actual.
+  const precioAnterior = (producto.precioAnterior && producto.precioAnterior > producto.precio)
+    ? producto.precioAnterior
+    : null
   const porcentajeOff = precioAnterior ? Math.round((1 - producto.precio / precioAnterior) * 100) : null
+
+  // Badge de condición (solo para usados/reacondicionados; los nuevos no lo necesitan)
+  const condicionLabel = producto.condicion === 'usado'
+    ? 'Usado'
+    : producto.condicion === 'reacondicionado'
+      ? 'Reacondicionado'
+      : null
 
   const cuota6 = Math.round(producto.precio / 6)
   const tieneTienda = tienda && typeof tienda === 'object'
@@ -37,6 +46,13 @@ export default function TarjetaProducto({ producto }: Props) {
         {(producto as any).esDestacado && (
           <span className="absolute top-3 left-3 ml-grad text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
             {'\u{1F525}'} Top ventas
+          </span>
+        )}
+
+        {/* Badge de condición (sección Usados) */}
+        {!(producto as any).esDestacado && condicionLabel && (
+          <span className="absolute top-3 left-3 bg-white/95 text-ml-ink text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-ml-line">
+            {condicionLabel}
           </span>
         )}
 
