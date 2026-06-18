@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import api from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
+import { trackBusqueda } from '../services/tracking'
 
 export default function CatalogoProductos() {
   // La búsqueda y la categoría vienen de la URL (?busqueda= / ?categoria=).
@@ -94,6 +95,9 @@ export default function CatalogoProductos() {
       if (precioMax) params.precioMax = precioMax
       if (ciudad) params.ciudad = ciudad
       if (ordenar) params.ordenar = ordenar
+
+      // Señal de interés: qué busca / qué categoría recorre (pauta inteligente)
+      if (busqueda || categoria) trackBusqueda(busqueda, categoria)
 
       const res = await api.get('/productos', { params })
       setProductos(res.data)

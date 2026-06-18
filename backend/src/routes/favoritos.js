@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { verificarToken } from '../middleware/auth.js'
 import Favorito from '../models/Favorito.js'
 import Producto from '../models/Producto.js'
+import { registrarFavorito } from '../services/targetingService.js'
 
 const router = Router()
 
@@ -46,6 +47,8 @@ router.post('/:productoId', verificarToken, async (req, res) => {
 
     try {
       const fav = await Favorito.create({ usuarioId: req.usuario.id, productoId })
+      // Señal de interés fuerte para la pauta inteligente (no bloquea)
+      registrarFavorito({ usuarioId: req.usuario.id }, producto).catch(() => {})
       res.status(201).json({ mensaje: 'Agregado a favoritos', favorito: fav })
     } catch (e) {
       if (e.code === 11000) {

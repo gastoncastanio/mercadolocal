@@ -1,43 +1,37 @@
 import { Router } from 'express'
-import { verificarToken, soloTieneVendedor, soloAdmin } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor, soloAdmin, tokenOpcional } from '../middleware/auth.js'
 import Destacado from '../models/Destacado.js'
-import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
+import {
+  obtenerPlanes,
+  guardarPrecios,
+  crearPautaMercadoPago,
+  crearPautaSaldo
+} from '../services/pautaService.js'
+import {
+  resolverIdentidad,
+  obtenerPerfil,
+  ordenarDestacadosPorRelevancia,
+  registrarAudienciaClick
+} from '../services/targetingService.js'
 
 const router = Router()
 
-// Planes disponibles con precios y ubicaciones
-const PLANES = {
-  basico: {
-    nombre: 'B\u00e1sico',
-    ubicacion: ['catalogo', 'busqueda'],
-    precios: { 3: 1500, 7: 3000, 15: 5500, 30: 9000 },
-    descripcion: 'Tu producto aparece primero en el cat\u00e1logo y b\u00fasquedas'
-  },
-  premium: {
-    nombre: 'Premium',
-    ubicacion: ['catalogo', 'busqueda', 'publicidad'],
-    precios: { 3: 3000, 7: 6000, 15: 10000, 30: 17000 },
-    descripcion: 'Cat\u00e1logo + b\u00fasquedas + espacios publicitarios en la p\u00e1gina principal'
-  },
-  elite: {
-    nombre: 'Elite',
-    ubicacion: ['catalogo', 'busqueda', 'publicidad', 'banner'],
-    precios: { 3: 5000, 7: 9000, 15: 16000, 30: 28000 },
-    descripcion: 'M\u00e1xima visibilidad: banner principal + cat\u00e1logo + publicidad + b\u00fasquedas'
+// GET /api/destacados/planes - Planes y precios (editables por admin)
+router.get('/planes', async (_req, res) => {
+  try {
+    res.json(await obtenerPlanes())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
-}
-
-// GET /api/destacados/planes - Obtener planes y precios
-router.get('/planes', (req, res) => {
-  res.json(PLANES)
 })
 
-// GET /api/destacados/activos - Productos destacados activos (p\u00fablico)
-router.get('/activos', async (req, res) => {
+// GET /api/destacados/activos - Productos destacados activos (público)
+// Usado por banners y espacios publicitarios de la home.
+router.get('/activos', tokenOpcional, async (req, res) => {
   try {
     const ahora = new Date()
-    const { ubicacion } = req.query
+    const { ubicacion, ciudad, categoria } = req.query
 
     const filtro = {
       activo: true,
@@ -45,18 +39,36 @@ router.get('/activos', async (req, res) => {
       fechaFin: { $gt: ahora },
       fechaInicio: { $lte: ahora }
     }
+    if (ubicacion) filtro.ubicacion = ubicacion
 
-    if (ubicacion) {
-      filtro.ubicacion = ubicacion
+    // Respetar segmentación: si la pauta está segmentada por ciudad/categoría,
+    // solo se muestra cuando coincide (o cuando no se filtra por eso).
+    if (ciudad) {
+      filtro.$or = [{ segmentoCiudad: '' }, { segmentoCiudad: ciudad }]
+    } else {
+      // Sin contexto de ciudad: no mostrar las que están segmentadas a una ciudad puntual
+      filtro.segmentoCiudad = ''
     }
 
-    const destacados = await Destacado.find(filtro)
+    let destacados = await Destacado.find(filtro)
       .populate({
         path: 'productoId',
         populate: { path: 'tiendaId', select: 'nombre ciudad logo calificacion totalVentas' }
       })
       .sort({ plan: -1, createdAt: -1 })
-      .limit(20)
+      .limit(40)
+
+    // Filtro de categoría (a nivel app porque depende del producto poblado)
+    if (categoria) {
+      destacados = destacados.filter(d =>
+        !d.segmentoCategoria || d.segmentoCategoria === categoria
+      )
+    }
+
+    // Ordenar por RELEVANCIA para este cliente (pauta inteligente) y recortar
+    const identity = resolverIdentidad(req)
+    const perfil = await obtenerPerfil(identity)
+    destacados = ordenarDestacadosPorRelevancia(destacados, perfil).slice(0, 20)
 
     // Incrementar impresiones
     const ids = destacados.map(d => d._id)
@@ -71,9 +83,12 @@ router.get('/activos', async (req, res) => {
 })
 
 // POST /api/destacados/click/:id - Registrar click en destacado
-router.post('/click/:id', async (req, res) => {
+router.post('/click/:id', tokenOpcional, async (req, res) => {
   try {
     await Destacado.findByIdAndUpdate(req.params.id, { $inc: { clicks: 1 } })
+    // Sumar la categoría/ciudad del que hizo clic a la audiencia del anuncio
+    // (métricas para el vendedor). No bloquea la respuesta.
+    registrarAudienciaClick(req.params.id, resolverIdentidad(req)).catch(() => {})
     res.json({ ok: true })
   } catch {
     res.status(400).json({ error: 'Error registrando click' })
@@ -96,120 +111,92 @@ router.get('/mis-promociones', verificarToken, soloTieneVendedor, async (req, re
   }
 })
 
-// POST /api/destacados - Crear promoci\u00f3n
+// Mapea los códigos de error del servicio a respuestas HTTP claras
+function responderErrorPauta(res, error) {
+  const map = {
+    PLAN_INVALIDO: 400, DURACION_INVALIDA: 400, SIN_TIENDA: 404,
+    PRODUCTO_INVALIDO: 404, YA_PROMOCIONADO: 400, SALDO_INSUFICIENTE: 400
+  }
+  const status = map[error.code] || 500
+  if (status === 500) console.error('Error en pauta:', error)
+  return res.status(status).json({ error: error.message, code: error.code })
+}
+
+// POST /api/destacados - Crear promoción (pago con Mercado Pago o con saldo)
+// Body: { productoId, plan, duracionDias, metodoPago, segmentoCiudad?, segmentoCategoria? }
 router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
-    const { productoId, plan, duracionDias } = req.body
-
-    // Validar plan
-    if (!PLANES[plan]) {
-      return res.status(400).json({ error: 'Plan no v\u00e1lido' })
+    const { productoId, plan, duracionDias, metodoPago, segmentoCiudad, segmentoCategoria } = req.body
+    const args = {
+      usuarioId: req.usuario.id,
+      productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria
     }
 
-    const planInfo = PLANES[plan]
-
-    // Validar duraci\u00f3n
-    if (!planInfo.precios[duracionDias]) {
-      return res.status(400).json({ error: 'Duraci\u00f3n no disponible para este plan' })
-    }
-
-    // Validar que el producto pertenece al vendedor
-    const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })
-    if (!tienda) return res.status(404).json({ error: 'Tienda no encontrada' })
-
-    const producto = await Producto.findOne({ _id: productoId, tiendaId: tienda._id, activo: true })
-    if (!producto) return res.status(404).json({ error: 'Producto no encontrado o no te pertenece' })
-
-    // Verificar si ya tiene promoci\u00f3n activa
-    const promoExistente = await Destacado.findOne({
-      productoId,
-      activo: true,
-      estado: 'activo',
-      fechaFin: { $gt: new Date() }
-    })
-    if (promoExistente) {
-      return res.status(400).json({ error: 'Este producto ya tiene una promoci\u00f3n activa' })
-    }
-
-    const precioTotal = planInfo.precios[duracionDias]
-    const fechaFin = new Date()
-    fechaFin.setDate(fechaFin.getDate() + duracionDias)
-
-    // Descontar del saldo de la tienda (ganancias acumuladas)
-    if (tienda.ganancias < precioTotal) {
-      return res.status(400).json({
-        error: `Saldo insuficiente. Ten\u00e9s $${tienda.ganancias.toLocaleString('es-AR')} y el plan cuesta $${precioTotal.toLocaleString('es-AR')}. Necesit\u00e1s m\u00e1s ventas para acumular saldo.`
+    // Pago con Mercado Pago (dinero real → cuenta de la plataforma)
+    if (metodoPago === 'mercadopago') {
+      const { destacado, initPoint } = await crearPautaMercadoPago(args)
+      return res.status(201).json({
+        metodoPago: 'mercadopago',
+        destacadoId: destacado._id,
+        initPoint,
+        mensaje: 'Te llevamos a Mercado Pago para completar el pago.'
       })
     }
 
-    // 1) Crear primero el Destacado. Si falla ac\u00e1, no se descuenta nada.
-    const destacado = new Destacado({
-      productoId,
-      tiendaId: tienda._id,
-      vendedorId: req.usuario.id,
-      plan,
-      ubicacion: planInfo.ubicacion,
-      duracionDias,
-      precioTotal,
-      fechaFin,
-      estado: 'activo'
-    })
-
-    await destacado.save()
-
-    // 2) Solo despu\u00e9s de creado el Destacado, descontar ganancias de la tienda.
-    // Si esta operaci\u00f3n fallara, intentamos revertir el Destacado para no dejar inconsistencia.
-    try {
-      await Tienda.findByIdAndUpdate(tienda._id, { $inc: { ganancias: -precioTotal } })
-    } catch (errDescuento) {
-      console.error('Error descontando ganancias, revirtiendo destacado:', errDescuento.message)
-      try {
-        await Destacado.findByIdAndDelete(destacado._id)
-      } catch (errRollback) {
-        console.error('Error revirtiendo destacado:', errRollback.message)
-      }
-      return res.status(500).json({ error: 'No se pudo procesar la promoci\u00f3n. Intent\u00e1 de nuevo.' })
-    }
-
-    console.log(`\u2B50 Nueva promoci\u00f3n: ${producto.nombre} - Plan ${plan} (${duracionDias} d\u00edas) - $${precioTotal}`)
-
-    res.status(201).json({
+    // Pago con saldo acumulado (activa al instante)
+    const { destacado, planInfo } = await crearPautaSaldo(args)
+    return res.status(201).json({
+      metodoPago: 'saldo',
       destacado,
-      mensaje: `Producto promocionado con plan ${planInfo.nombre} por ${duracionDias} d\u00edas. Se descontaron $${precioTotal.toLocaleString('es-AR')} de tu saldo.`
+      mensaje: `Producto promocionado con plan ${planInfo.nombre} por ${destacado.duracionDias} días. Se descontaron $${destacado.precioTotal.toLocaleString('es-AR')} de tu saldo.`
     })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    return responderErrorPauta(res, error)
   }
 })
 
-// DELETE /api/destacados/:id - Cancelar promoci\u00f3n (no reembolsa)
+// DELETE /api/destacados/:id - Cancelar promoción (no reembolsa)
 router.delete('/:id', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const destacado = await Destacado.findById(req.params.id)
-    if (!destacado) return res.status(404).json({ error: 'Promoci\u00f3n no encontrada' })
+    if (!destacado) return res.status(404).json({ error: 'Promoción no encontrada' })
     if (destacado.vendedorId.toString() !== req.usuario.id) {
-      return res.status(403).json({ error: 'No ten\u00e9s permiso' })
+      return res.status(403).json({ error: 'No tenés permiso' })
     }
 
     destacado.estado = 'cancelado'
     destacado.activo = false
     await destacado.save()
 
-    res.json({ mensaje: 'Promoci\u00f3n cancelada' })
+    res.json({ mensaje: 'Promoción cancelada' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-// GET /api/destacados/admin/stats - Estad\u00edsticas de publicidad (admin)
+// ===================== ADMIN =====================
+
+// GET /api/destacados/admin/stats - Estadísticas de publicidad
 router.get('/admin/stats', verificarToken, soloAdmin, async (req, res) => {
   try {
     const todas = await Destacado.find()
-    const activas = todas.filter(d => d.activo && d.estado === 'activo' && d.fechaFin > new Date())
+    const ahora = new Date()
+    const activas = todas.filter(d => d.activo && d.estado === 'activo' && d.fechaFin > ahora)
 
-    const ingresosTotales = todas.reduce((sum, d) => sum + d.precioTotal, 0)
-    const ingresosMes = todas
+    // Solo cuentan como ingreso las pautas efectivamente cobradas:
+    // las pagadas con saldo, y las de MP que se confirmaron (no pendientes/canceladas).
+    const cobradas = todas.filter(d =>
+      d.metodoPago === 'saldo' || (d.metodoPago === 'mercadopago' && d.mpStatus === 'approved')
+    )
+    const ingresosTotales = cobradas.reduce((sum, d) => sum + d.precioTotal, 0)
+    const ingresosMes = cobradas
       .filter(d => d.createdAt > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+      .reduce((sum, d) => sum + d.precioTotal, 0)
+    const ingresosMercadoPago = cobradas
+      .filter(d => d.metodoPago === 'mercadopago')
+      .reduce((sum, d) => sum + d.precioTotal, 0)
+    const ingresosSaldo = cobradas
+      .filter(d => d.metodoPago === 'saldo')
       .reduce((sum, d) => sum + d.precioTotal, 0)
 
     const totalImpresiones = todas.reduce((sum, d) => sum + d.impresiones, 0)
@@ -225,13 +212,55 @@ router.get('/admin/stats', verificarToken, soloAdmin, async (req, res) => {
     res.json({
       promocionesActivas: activas.length,
       promocionesTotales: todas.length,
+      pendientesPago: todas.filter(d => d.estado === 'pendiente').length,
       ingresosTotales,
       ingresosMes,
+      ingresosMercadoPago,
+      ingresosSaldo,
       totalImpresiones,
       totalClicks,
       ctr: `${ctr}%`,
       porPlan
     })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/destacados/admin/campanas - Lista de campañas para el panel de pauta
+router.get('/admin/campanas', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const { estado } = req.query
+    const filtro = {}
+    if (estado && estado !== 'todas') filtro.estado = estado
+
+    const campanas = await Destacado.find(filtro)
+      .populate('productoId', 'nombre precio imagenes')
+      .populate('tiendaId', 'nombre ciudad')
+      .sort({ createdAt: -1 })
+      .limit(200)
+
+    res.json(campanas)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/destacados/admin/precios - Precios actuales (para editar)
+router.get('/admin/precios', verificarToken, soloAdmin, async (_req, res) => {
+  try {
+    res.json(await obtenerPlanes())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/destacados/admin/precios - Guardar precios editados
+// Body: { basico: {3,7,15,30}, premium: {...}, elite: {...} }
+router.put('/admin/precios', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const planes = await guardarPrecios(req.body || {})
+    res.json({ mensaje: 'Precios actualizados', planes })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

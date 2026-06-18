@@ -147,3 +147,74 @@ export async function crearPreferencia(orden, compradorEmail) {
     marketplaceFee
   }
 }
+
+/**
+ * Crea una preferencia de pago para PAUTA PUBLICITARIA.
+ *
+ * A diferencia de una compra, acá el dinero va ENTERO a la cuenta de la
+ * plataforma (no hay split ni marketplace_fee): es ingreso propio por el
+ * servicio de publicidad. El external_reference se prefija con "pauta:" para
+ * que el webhook lo distinga de una orden de compra.
+ *
+ * @param {Object} args
+ * @param {Object} args.destacado - documento Destacado pendiente (tiene _id, plan, duracionDias, precioTotal)
+ * @param {Object} args.producto - producto que se promociona (para el título)
+ * @param {Object} args.planInfo - info del plan (nombre)
+ */
+export async function crearPreferenciaPauta({ destacado, producto, planInfo }) {
+  const preference = new Preference(client)
+
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const preferenceBody = {
+    items: [{
+      id: destacado._id.toString(),
+      title: `Pauta ${planInfo?.nombre || destacado.plan} · ${producto.nombre}`.slice(0, 250),
+      description: `Promoción por ${destacado.duracionDias} días en MercadoLocal`,
+      quantity: 1,
+      unit_price: Math.round(destacado.precioTotal),
+      currency_id: 'ARS'
+    }],
+    external_reference: `pauta:${destacado._id.toString()}`,
+    back_urls: {
+      success: `${frontendUrl}/promover?pago=ok`,
+      failure: `${frontendUrl}/promover?pago=error`,
+      pending: `${frontendUrl}/promover?pago=pendiente`
+    },
+    auto_return: 'approved',
+    statement_descriptor: 'MERCADOLOCAL ADS'
+  }
+
+  // notification_url (mismo webhook que las compras; el handler distingue por external_reference)
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+      }
+    } catch { /* URL inválida: se omite */ }
+  }
+
+  let result
+  try {
+    result = await preference.create({ body: preferenceBody })
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia de pauta:', mpError?.message || mpError)
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
+  }
+
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  if (!initPoint) {
+    throw new Error('Mercado Pago no devolvió una URL de pago válida. Intentá de nuevo.')
+  }
+
+  console.log(`📢 Preferencia de pauta creada: destacado ${destacado._id} | $${destacado.precioTotal}`)
+
+  return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point }
+}

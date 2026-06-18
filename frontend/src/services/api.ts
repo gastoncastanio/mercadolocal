@@ -14,6 +14,34 @@ const api = axios.create({
   timeout: 30000, // 30 segundos (Render free tier tarda 30-60s en cold start)
 })
 
+// ===== Identidad anónima (pauta inteligente) =====
+// Para perfilar el interés de los visitantes SIN cuenta, generamos un id
+// aleatorio y lo guardamos en el navegador. No tiene relación con datos
+// personales: solo sirve para que la publicidad sea relevante (categorías
+// que mira) y mejore con el tiempo. Se envía en el header 'x-anon-id'.
+function obtenerAnonId(): string {
+  try {
+    let id = localStorage.getItem('ml_anon_id')
+    if (!id) {
+      const rnd = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID().replace(/-/g, '')
+        : Math.random().toString(36).slice(2) + Date.now().toString(36)
+      id = `a_${rnd}`.slice(0, 48)
+      localStorage.setItem('ml_anon_id', id)
+    }
+    return id
+  } catch {
+    return ''
+  }
+}
+
+// Interceptor de request: adjunta el id anónimo a todas las llamadas.
+api.interceptors.request.use((config) => {
+  const anon = obtenerAnonId()
+  if (anon) config.headers.set?.('x-anon-id', anon)
+  return config
+})
+
 // Estado del refresh: evita disparar múltiples /refresh en paralelo cuando varios requests
 // fallan con 401 al mismo tiempo. Encolamos los requests pendientes y los reanudamos cuando
 // el refresh termina.

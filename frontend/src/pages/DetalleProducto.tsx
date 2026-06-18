@@ -8,6 +8,7 @@ import BotonCompartir from '../components/BotonCompartir'
 import TarjetaProducto from '../components/TarjetaProducto'
 import CalculadoraCuotas from '../components/CalculadoraCuotas'
 import CotizadorEnvio from '../components/CotizadorEnvio'
+import { trackVista } from '../services/tracking'
 
 export default function DetalleProducto() {
   const { id } = useParams()
@@ -26,6 +27,8 @@ export default function DetalleProducto() {
   useEffect(() => {
     cargarProducto()
     if (estaLogueado) chequearFavorito()
+    // Señal de interés: el cliente vio este producto (pauta inteligente)
+    if (id) trackVista(id)
   }, [id, estaLogueado])
 
   useEffect(() => {

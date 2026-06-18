@@ -1,9 +1,23 @@
 import { Router } from 'express'
-import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
-import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda, obtenerCiudadesDisponibles } from '../services/productoService.js'
+import { verificarToken, soloTieneVendedor, tokenOpcional } from '../middleware/auth.js'
+import { crearProducto, obtenerProducto, listarProductos, listarProductosPorIds, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda, obtenerCiudadesDisponibles } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
+import { resolverIdentidad, obtenerPerfil, scoreRelevancia } from '../services/targetingService.js'
 import { emitNuevoProducto, emitProductoActualizado, emitProductoEliminado } from '../services/socketService.js'
+
+// ¿El producto (ya enriquecido) cumple los filtros estructurados del catálogo?
+// Se usa para no inyectar un promocionado que no corresponde al filtro activo.
+function cumpleFiltros(p, filtros) {
+  if (filtros.categoria && !(p.categorias || []).includes(filtros.categoria)) return false
+  if (filtros.ciudad && p.ciudad !== filtros.ciudad) return false
+  if (filtros.condicion && p.condicion !== filtros.condicion) return false
+  if (filtros.precioMin && p.precio < Number(filtros.precioMin)) return false
+  if (filtros.precioMax && p.precio > Number(filtros.precioMax)) return false
+  if ((filtros.enOferta === 'true' || filtros.enOferta === true) &&
+      !(p.precioAnterior && p.precioAnterior > p.precio)) return false
+  return true
+}
 
 const router = Router()
 
@@ -23,7 +37,7 @@ const router = Router()
 //
 // Para retrocompatibilidad: si no se pasa cursor, devuelve array directo
 // (los clientes viejos siguen funcionando).
-router.get('/', async (req, res) => {
+router.get('/', tokenOpcional, async (req, res) => {
   try {
     const filtros = {
       busqueda: req.query.busqueda,
@@ -43,28 +57,96 @@ router.get('/', async (req, res) => {
 
     let listaFinal = productos
 
-    // Insertar productos destacados al inicio del listado (solo en la primera página)
-    if (!filtros.cursor) {
+    // ===== PAUTA INTELIGENTE =====
+    // Insertamos los productos promocionados al inicio (solo en la primera página),
+    // pero ORDENADOS POR RELEVANCIA para este cliente: el que paga aparece, y lo
+    // mostramos primero a quien tiene más chance de comprarlo. Un promocionado que
+    // por su orden natural caería en otra página igual sube a la primera.
+    // No aplicamos pauta cuando se navega el perfil de una tienda puntual
+    // (mostraría productos de otra tienda) ni en páginas siguientes.
+    if (!filtros.cursor && !filtros.tiendaId) {
       try {
         const ahora = new Date()
+        // En una búsqueda priorizamos la pauta de "busqueda"; navegando, la de "catalogo".
+        const ubic = filtros.busqueda ? 'busqueda' : 'catalogo'
+
         const destacados = await Destacado.find({
           activo: true,
           estado: 'activo',
           fechaFin: { $gt: ahora },
           fechaInicio: { $lte: ahora },
-          ubicacion: 'catalogo'
-        }).select('productoId').lean()
+          ubicacion: ubic
+        }).select('_id productoId plan segmentoCiudad segmentoCategoria').lean()
 
-        const idsDestacados = new Set(destacados.map(d => d.productoId.toString()))
+        // Respetar segmentación premium (ciudad/categoría) vs el filtro activo
+        const aplicables = destacados.filter(d => {
+          if (d.segmentoCategoria && filtros.categoria && d.segmentoCategoria !== filtros.categoria) return false
+          if (d.segmentoCiudad && filtros.ciudad && d.segmentoCiudad !== filtros.ciudad) return false
+          return true
+        })
 
-        if (idsDestacados.size > 0) {
-          const prodsDestacados = listaFinal.filter(p => idsDestacados.has(p._id.toString()))
-          const prodsNormales = listaFinal.filter(p => !idsDestacados.has(p._id.toString()))
-          // Marcar como destacado (objeto plano porque viene de aggregate, no doc)
-          prodsDestacados.forEach(p => { p.esDestacado = true })
-          listaFinal = [...prodsDestacados, ...prodsNormales]
+        if (aplicables.length > 0) {
+          const planPorId = new Map()
+          const destIdPorProd = new Map()
+          aplicables.forEach(d => {
+            const pid = d.productoId.toString()
+            planPorId.set(pid, d.plan)
+            destIdPorProd.set(pid, d._id)
+          })
+          const ids = [...planPorId.keys()]
+
+          // Promocionados que ya están en la página (cumplen filtros por construcción)
+          const enWindow = listaFinal.filter(p => planPorId.has(p._id.toString()))
+          const idsEnWindow = new Set(enWindow.map(p => p._id.toString()))
+
+          // Promocionados fuera de la página: los traemos y validamos contra los filtros.
+          // En búsqueda por texto no los inyectamos (el match de texto no es confiable en JS).
+          let fueraWindow = []
+          if (!filtros.busqueda) {
+            const faltantes = ids.filter(id => !idsEnWindow.has(id))
+            const traidos = await listarProductosPorIds(faltantes)
+            fueraWindow = traidos.filter(p => cumpleFiltros(p, filtros))
+          }
+
+          let promocionados = [...enWindow, ...fueraWindow]
+
+          if (promocionados.length > 0) {
+            // Ordenar por relevancia para este cliente (perfil de interés) × plan
+            const identity = resolverIdentidad(req)
+            const perfil = await obtenerPerfil(identity)
+            const pesoPlan = { elite: 1, premium: 0.6, basico: 0.3 }
+            promocionados.forEach(p => {
+              const rel = scoreRelevancia(p, perfil)
+              const plan = pesoPlan[planPorId.get(p._id.toString())] || 0.3
+              p.promocionado = true
+              p._rel = rel
+              p._score = rel * 6 + plan * 2
+            })
+            promocionados.sort((a, b) => b._score - a._score)
+            promocionados = promocionados.slice(0, 12)
+
+            const idsProm = new Set(promocionados.map(p => p._id.toString()))
+            const normales = listaFinal.filter(p => !idsProm.has(p._id.toString()))
+            listaFinal = [...promocionados, ...normales]
+
+            // Contabilizar impresiones (y relevantes cuando hubo match con el perfil)
+            const idsDest = promocionados.map(p => destIdPorProd.get(p._id.toString())).filter(Boolean)
+            const idsDestRelevantes = promocionados
+              .filter(p => p._rel > 0)
+              .map(p => destIdPorProd.get(p._id.toString())).filter(Boolean)
+            if (idsDest.length > 0) {
+              Destacado.updateMany({ _id: { $in: idsDest } }, { $inc: { impresiones: 1 } }).catch(() => {})
+            }
+            if (idsDestRelevantes.length > 0) {
+              Destacado.updateMany({ _id: { $in: idsDestRelevantes } }, { $inc: { impresionesRelevantes: 1 } }).catch(() => {})
+            }
+            // Limpiar campos internos antes de responder
+            promocionados.forEach(p => { delete p._score; delete p._rel })
+          }
         }
-      } catch {}
+      } catch (e) {
+        console.warn('Pauta inteligente en catálogo falló:', e.message)
+      }
     }
 
     // Retrocompatibilidad: si no usan cursor, devolver array directo
