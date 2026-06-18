@@ -3,6 +3,7 @@ import Contador from '../models/Contador.js'
 import ConfigSitio from '../models/ConfigSitio.js'
 import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
+import { solicitarCAE } from './arcaService.js'
 
 /**
  * SERVICIO DE FACTURACIÓN
@@ -109,6 +110,18 @@ async function emitir({ tipo, claveIdempotencia, letra, emisor, receptor, items,
 
   const { numero, numeroFormateado } = await numerar(letra)
 
+  // ===== Punto de conexión fiscal (ARCA / proveedor) =====
+  // Hoy `solicitarCAE` devuelve { autorizado:false } → comprobante interno.
+  // Cuando se conecte (FACTURACION_FISCAL=on + adaptador implementado), el
+  // mismo flujo pasa a emitir comprobantes fiscales con CAE, sin tocar nada acá.
+  let fiscalData = { autorizado: false }
+  try {
+    fiscalData = await solicitarCAE({ tipo, letra, puntoVenta: PUNTO_VENTA, numero, emisor, receptor, items, total })
+  } catch (e) {
+    console.warn('Solicitud de CAE falló, se emite como interno:', e.message)
+  }
+  const autorizado = !!fiscalData.autorizado
+
   try {
     const comprobante = await new Comprobante({
       tipo,
@@ -124,8 +137,11 @@ async function emitir({ tipo, claveIdempotencia, letra, emisor, receptor, items,
       iva: 0,
       total,
       ...refs,
-      origen: 'interno',
-      fiscal: false,  // todavía sin CAE: documento interno
+      origen: autorizado ? 'arca' : 'interno',
+      fiscal: autorizado,                       // true sólo si ARCA autorizó (CAE)
+      cae: autorizado ? (fiscalData.cae || '') : '',
+      caeVencimiento: autorizado ? (fiscalData.caeVencimiento || null) : null,
+      pdfUrl: autorizado ? (fiscalData.pdfUrl || '') : '',
       estado: 'emitido',
       fechaEmision: new Date()
     }).save()
