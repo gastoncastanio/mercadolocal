@@ -113,8 +113,11 @@ app.use(cors({
     callback(new Error(`Origen no permitido: ${origin}`))
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  // x-anon-id: header que el frontend envía en todas las requests para perfilar
+  // visitantes anónimos (pauta inteligente). SIN esto, el navegador bloquea TODA
+  // request por preflight CORS y el sitio queda inaccesible.
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-anon-id']
 }))
 
 // ===== SEGURIDAD NIVEL 2: Anti-Ataques =====
