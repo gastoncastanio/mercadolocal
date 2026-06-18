@@ -78,7 +78,7 @@ export default function PromoverProducto() {
     try {
       const [planesRes, productosRes, promosRes, ciudadesRes] = await Promise.all([
         api.get('/destacados/planes'),
-        api.get(`/productos?tiendaId=${(tienda as Tienda)._id}`),
+        api.get('/productos/mis-productos'),
         api.get('/destacados/mis-promociones'),
         api.get('/productos/ciudades').catch(() => ({ data: [] }))
       ])
