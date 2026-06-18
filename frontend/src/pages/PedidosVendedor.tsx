@@ -140,6 +140,18 @@ export default function PedidosVendedor() {
     }
   }
 
+  // Emitir la factura de venta al comprador (la letra depende de la condición
+  // fiscal cargada por el vendedor en /mis-comprobantes).
+  async function emitirFactura(ordenId: string) {
+    try {
+      const res = await api.post(`/comprobantes/venta/${ordenId}`)
+      toast.exito('Factura generada')
+      window.open(`/comprobante/${res.data._id}`, '_blank')
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'No se pudo generar la factura')
+    }
+  }
+
   async function copiarTexto(texto: string, mensajeExito: string) {
     try {
       await navigator.clipboard.writeText(texto)
@@ -418,6 +430,15 @@ export default function PedidosVendedor() {
                     </div>
 
                     <div className="flex gap-2">
+                      {['pagada', 'enviada', 'completada'].includes(orden.estado) && (
+                        <button
+                          onClick={() => emitirFactura(orden._id)}
+                          className="px-5 py-3 bg-white border border-ml-line2 text-ml-ink text-sm font-bold rounded-xl hover:border-ml-line transition-colors"
+                          title="Generar la factura para tu comprador"
+                        >
+                          🧾 Facturar
+                        </button>
+                      )}
                       {orden.estado === 'pagada' && (
                         <button
                           onClick={() => abrirModalEnvio(orden)}

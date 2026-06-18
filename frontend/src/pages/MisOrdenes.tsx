@@ -192,6 +192,41 @@ export default function MisOrdenes() {
     }
   }
 
+  // Botón de arrepentimiento (Ley 24.240): hasta 10 días corridos.
+  async function arrepentirse(ordenId: string) {
+    if (!confirm('¿Querés ejercer tu derecho de arrepentimiento de esta compra? Te contactaremos para coordinar la devolución y el reintegro.')) return
+    try {
+      const res = await api.post(`/privacidad/arrepentimiento/${ordenId}`, {})
+      toast.exito(res.data?.mensaje || 'Registramos tu arrepentimiento')
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'No se pudo registrar el arrepentimiento')
+    }
+  }
+
+  // ¿La compra está dentro de los 10 días corridos para arrepentirse?
+  function dentroDePlazoArrepentimiento(orden: Orden): boolean {
+    const base = orden.fechaConfirmacion || orden.createdAt
+    if (!base) return false
+    const dias = (Date.now() - new Date(base).getTime()) / (1000 * 60 * 60 * 24)
+    return dias <= 10
+  }
+
+  // Ver la factura de venta de una orden (la emite el vendedor). Si todavía no
+  // existe, avisamos sin romper el flujo.
+  async function verFactura(ordenId: string) {
+    try {
+      const res = await api.get(`/comprobantes/venta/${ordenId}`)
+      const facturas = res.data || []
+      if (facturas.length === 0) {
+        toast.info('El vendedor todavía no emitió la factura de esta compra.')
+        return
+      }
+      window.open(`/comprobante/${facturas[0]._id}`, '_blank')
+    } catch {
+      toast.error('No pudimos obtener la factura.')
+    }
+  }
+
   if (cargando) {
     return (
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
@@ -476,6 +511,25 @@ export default function MisOrdenes() {
                         >
                           ¿Tuviste un problema?
                         </Link>
+                      )}
+                      {/* Ver factura de la compra */}
+                      {(isPagada || isEnviada || isCompletada) && (
+                        <button
+                          onClick={() => verFactura(orden._id)}
+                          className="text-xs text-ml-blue hover:underline"
+                        >
+                          🧾 Ver factura
+                        </button>
+                      )}
+                      {/* Botón de arrepentimiento (10 días corridos) */}
+                      {(isPagada || isEnviada || isCompletada) && dentroDePlazoArrepentimiento(orden) && (
+                        <button
+                          onClick={() => arrepentirse(orden._id)}
+                          className="text-xs text-ml-muted hover:text-red-600 hover:underline"
+                          title="Derecho de arrepentimiento — Ley 24.240"
+                        >
+                          ↩️ Arrepentirme
+                        </button>
                       )}
                     </div>
 

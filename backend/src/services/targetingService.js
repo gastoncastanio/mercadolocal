@@ -4,6 +4,7 @@ import Destacado from '../models/Destacado.js'
 import Notificacion from '../models/Notificacion.js'
 import Tienda from '../models/Tienda.js'
 import Coocurrencia from '../models/Coocurrencia.js'
+import Usuario from '../models/Usuario.js'
 import { emitNotificacion } from './socketService.js'
 import { enviarPush } from './pushService.js'
 
@@ -145,6 +146,14 @@ function bump(perfil, campo, claveRaw, peso) {
 async function getOrCreate(identity) {
   const filtro = filtroIdentidad(identity)
   if (!filtro) return null
+  // Derecho de oposición (Ley 25.326): si el usuario logueado se opuso al
+  // perfilado para publicidad, no registramos ninguna señal suya.
+  if (identity.usuarioId) {
+    try {
+      const u = await Usuario.findById(identity.usuarioId).select('preferencias').lean()
+      if (u?.preferencias?.perfilarPublicidad === false) return null
+    } catch { /* si la verificación falla, no bloqueamos el flujo normal */ }
+  }
   let perfil = await PerfilInteres.findOne(filtro)
   if (!perfil) perfil = new PerfilInteres(filtro)
   return perfil

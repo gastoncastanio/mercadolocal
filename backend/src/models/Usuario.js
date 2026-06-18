@@ -83,6 +83,25 @@ const usuarioSchema = new mongoose.Schema({
   ultimoLogin: {
     type: Date,
     default: null
+  },
+  // Preferencias de privacidad (Ley 25.326 — derecho de oposición).
+  preferencias: {
+    // Si es false, el usuario se opuso al perfilado de comportamiento para
+    // publicidad: dejamos de registrar señales y no usamos su actividad.
+    perfilarPublicidad: { type: Boolean, default: true },
+    // Fecha en que aceptó la política de privacidad / consintió el tratamiento.
+    consentimientoFecha: { type: Date, default: null }
+  },
+  // Anonimización por baja de cuenta (derecho de supresión). Cuando el usuario
+  // pide la baja, anonimizamos sus datos personales pero conservamos lo que la
+  // ley fiscal/contable obliga (órdenes, facturas) de forma desvinculada.
+  anonimizado: {
+    type: Boolean,
+    default: false
+  },
+  anonimizadoEn: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true

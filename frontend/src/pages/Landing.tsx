@@ -593,6 +593,8 @@ export default function Landing() {
             <div className="flex flex-col gap-2.5 text-[13.5px] text-white/60">
               <Link to="/ayuda" className="mllink">Centro de ayuda</Link>
               <Link to="/devoluciones" className="mllink">Devoluciones</Link>
+              <Link to="/libro-de-quejas" className="mllink">Libro de Quejas</Link>
+              <Link to="/mis-ordenes" className="mllink">Botón de Arrepentimiento</Link>
               <Link to="/terminos" className="mllink">Términos</Link>
               <Link to="/privacidad" className="mllink">Privacidad</Link>
             </div>

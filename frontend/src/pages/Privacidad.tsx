@@ -50,6 +50,22 @@ export default function Privacidad() {
             </ul>
           </section>
 
+          {/* 2.b Publicidad personalizada / perfilado */}
+          <section>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">2.b Publicidad Personalizada (Pauta Inteligente)</h2>
+            <p>
+              Para mostrarle productos mas relevantes, analizamos su actividad en la Plataforma
+              (productos que mira, busquedas y compras) y construimos un perfil de intereses por
+              categoria y ciudad. <strong>No usamos datos sensibles ni vendemos su informacion.</strong>
+            </p>
+            <p className="mt-2">
+              Este tratamiento se basa en su consentimiento. Puede <strong>oponerse en cualquier momento</strong>:
+              al hacerlo, dejamos de usar su actividad y borramos el perfil construido. Gestionelo desde{' '}
+              <a href="/privacidad-datos" className="text-ml-blue hover:underline">Privacidad y mis datos</a>.
+              Los visitantes sin cuenta pueden rechazarlo desde el aviso de privacidad.
+            </p>
+          </section>
+
           {/* 3. Datos de pago */}
           <section>
             <h2 className="text-xl font-semibold text-ml-ink mb-3">3. Datos de Pago</h2>
@@ -137,8 +153,15 @@ export default function Privacidad() {
                 </p>
               </div>
             </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+              <p className="text-blue-900 font-medium text-sm">
+                Podes ejercer la mayoria de estos derechos vos mismo, al instante, desde{' '}
+                <a href="/privacidad-datos" className="text-ml-blue hover:underline font-semibold">Privacidad y mis datos</a>:
+                descargar tus datos, oponerte al perfilado y dar de baja tu cuenta.
+              </p>
+            </div>
             <p className="mt-3">
-              Para ejercer cualquiera de estos derechos, envie un correo electronico a{' '}
+              Tambien podes ejercerlos enviando un correo a{' '}
               <span className="text-ml-blue">privacidad@mercadolocal.com.ar</span> indicando su nombre completo,
               DNI y el derecho que desea ejercer. Responderemos en un plazo maximo de 10 dias habiles.
             </p>

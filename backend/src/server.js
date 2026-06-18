@@ -39,6 +39,8 @@ import soporteRouter from './routes/soporte.js'
 import moderacionRouter from './routes/moderacion.js'
 import cerebroRouter from './routes/cerebro.js'
 import senalesRouter from './routes/senales.js'
+import comprobantesRouter from './routes/comprobantes.js'
+import privacidadRouter from './routes/privacidad.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
 import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
 import { iniciarCronCerebro } from './services/cronCerebro.js'
@@ -284,6 +286,8 @@ app.use('/api/soporte', soporteRouter)
 app.use('/api/moderacion', moderacionRouter)
 app.use('/api/cerebro', cerebroRouter)
 app.use('/api/senales', senalesRouter)
+app.use('/api/comprobantes', comprobantesRouter)
+app.use('/api/privacidad', privacidadRouter)
 
 // Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
