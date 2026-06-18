@@ -402,7 +402,23 @@ router.get('/mis-ofertas', verificarToken, async (req, res) => {
 // POST /api/centro/ofertas - crear oferta flash (dueño del comercio)
 router.post('/ofertas', verificarToken, async (req, res) => {
   try {
-    const { comercioId, titulo, descripcion, tipoGancho, valorDescuento, inicioEn, finEn, cupoTotal, bloqueHorario, condiciones, desbloquea } = req.body
+    const {
+      comercioId,
+      titulo,
+      descripcion,
+      tipoGancho,
+      valorDescuento,
+      inicioEn,
+      finEn,
+      cupoTotal,
+      bloqueHorario,
+      condiciones,
+      desbloquea,
+      // FASE 3: campos de prepago
+      precioFinal,
+      comisionPorcentaje,
+      requierePrepagoApp
+    } = req.body
 
     if (!comercioId || !titulo || !inicioEn || !finEn) {
       return res.status(400).json({ error: 'Comercio, título, inicio y fin son obligatorios.' })
@@ -414,6 +430,11 @@ router.post('/ofertas', verificarToken, async (req, res) => {
     const fin = new Date(finEn)
     if (isNaN(inicio) || isNaN(fin) || fin <= inicio) {
       return res.status(400).json({ error: 'La ventana temporal es inválida (fin debe ser posterior al inicio).' })
+    }
+
+    // Validar campos de prepago si aplica
+    if (requierePrepagoApp && !precioFinal) {
+      return res.status(400).json({ error: 'Si requiere prepago, precioFinal es obligatorio.' })
     }
 
     const oferta = await OfertaFlash.create({
@@ -428,7 +449,11 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       bloqueHorario: bloqueHorario || 'todos',
       condiciones: condiciones || '',
       desbloquea: desbloquea || {},
-      ciudad: acceso.comercio.ubicacion.ciudad // denormalizado para filtrar el feed
+      ciudad: acceso.comercio.ubicacion.ciudad,
+      // FASE 3: almacena los datos de prepago
+      precioFinal: precioFinal || 0,
+      comisionPorcentaje: comisionPorcentaje || 7,
+      requierePrepagoApp: requierePrepagoApp || false
     })
     res.status(201).json(oferta)
   } catch (error) {
@@ -445,7 +470,7 @@ router.put('/ofertas/:id', verificarToken, async (req, res) => {
     const acceso = await comercioDelUsuario(oferta.comercioId, req.usuario)
     if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
 
-    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea']
+    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea', 'precioFinal', 'comisionPorcentaje', 'requierePrepagoApp']
     for (const c of campos) {
       if (req.body[c] !== undefined) oferta[c] = req.body[c]
     }

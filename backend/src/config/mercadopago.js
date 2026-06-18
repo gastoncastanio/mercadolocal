@@ -2,9 +2,9 @@ import mercadopago from 'mercadopago'
 
 // Configuración de MercadoPago para pagos prepago en Radar del Centro
 export function configurarMercadoPago() {
-  const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+  const accessToken = process.env.MP_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN
   if (!accessToken) {
-    throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado en env')
+    throw new Error('MP_ACCESS_TOKEN o MERCADOPAGO_ACCESS_TOKEN no configurado en env')
   }
   mercadopago.configure({ access_token: accessToken })
 }
