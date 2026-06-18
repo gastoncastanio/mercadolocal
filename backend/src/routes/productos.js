@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
-import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda } from '../services/productoService.js'
+import { crearProducto, obtenerProducto, listarProductos, actualizarProducto, eliminarProducto, productosDetienda, productosDeMiTienda, obtenerCiudadesDisponibles } from '../services/productoService.js'
 import { obtenerMiTienda } from '../services/tiendaService.js'
 import Destacado from '../models/Destacado.js'
 import { emitNuevoProducto, emitProductoActualizado, emitProductoEliminado } from '../services/socketService.js'
@@ -89,6 +89,19 @@ router.get('/mis-productos', verificarToken, soloTieneVendedor, async (req, res)
     const productos = await productosDeMiTienda(tienda._id)
     res.json(productos)
   } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/productos/ciudades - Ciudades con productos disponibles (público)
+// Devuelve [{ ciudad, cantidad }] para poblar el selector de ciudad del catálogo.
+// IMPORTANTE: debe ir ANTES de /:id para que no choque con esa ruta.
+router.get('/ciudades', async (_req, res) => {
+  try {
+    const ciudades = await obtenerCiudadesDisponibles()
+    res.json(ciudades)
+  } catch (error) {
+    console.error('Error obteniendo ciudades:', error)
     res.status(500).json({ error: error.message })
   }
 })

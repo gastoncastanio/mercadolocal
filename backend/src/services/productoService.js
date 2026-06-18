@@ -373,6 +373,48 @@ export async function listarProductos(filtros = {}) {
   return { productos, siguienteCursor, hayMas }
 }
 
+/**
+ * Devuelve las ciudades que realmente tienen productos disponibles para comprar.
+ * Se usa para poblar el selector de ciudad del catálogo (en vez de un input de
+ * texto libre). Agrupa por Producto.ciudad — la misma fuente que usa el filtro
+ * de listarProductos — para que cada ciudad listada devuelva resultados al
+ * seleccionarla. Solo cuenta productos activos, no rechazados, de tiendas con
+ * Mercado Pago vinculado (las únicas que pueden vender).
+ *
+ * @returns {Promise<Array<{ ciudad: string, cantidad: number }>>} ordenado por cantidad desc
+ */
+export async function obtenerCiudadesDisponibles() {
+  const pipeline = [
+    {
+      $match: {
+        activo: true,
+        'moderacion.estado': { $ne: 'rechazado' },
+        ciudad: { $nin: [null, ''] }
+      }
+    },
+    {
+      $lookup: {
+        from: 'tiendas',
+        localField: 'tiendaId',
+        foreignField: '_id',
+        as: 'tienda'
+      }
+    },
+    { $unwind: { path: '$tienda', preserveNullAndEmptyArrays: false } },
+    { $match: { 'tienda.mpVinculado': true, 'tienda.activo': true } },
+    {
+      $group: {
+        _id: '$ciudad',
+        cantidad: { $sum: 1 }
+      }
+    },
+    { $sort: { cantidad: -1, _id: 1 } },
+    { $project: { _id: 0, ciudad: '$_id', cantidad: 1 } }
+  ]
+
+  return await Producto.aggregate(pipeline)
+}
+
 // Productos de una tienda (público): solo si la tienda tiene MP vinculado
 // y solo los aprobados/en revisión (no los rechazados)
 export async function productosDetienda(tiendaId) {
