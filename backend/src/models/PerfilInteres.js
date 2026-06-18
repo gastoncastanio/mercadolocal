@@ -30,6 +30,13 @@ const perfilInteresSchema = new mongoose.Schema({
     of: Number,
     default: {}
   },
+  // Último momento en que el cliente tocó cada categoría. Map: categoria -> fecha.
+  // Es la clave del DECAIMIENTO TEMPORAL: un interés viejo pesa menos que uno fresco.
+  categoriasTs: {
+    type: Map,
+    of: Date,
+    default: {}
+  },
   // Ciudades de los productos que mira (para afinidad geográfica respetando privacidad).
   ciudades: {
     type: Map,
