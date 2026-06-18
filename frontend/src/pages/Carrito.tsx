@@ -99,8 +99,7 @@ export default function Carrito() {
               <h2 className="text-lg font-semibold text-ml-ink">Desglose de costos</h2>
               <CalculadorCostos
                 precioProducto={total}
-                medioPago={null}
-                mostrarVendedor={false}
+                vista="comprador"
                 compact={true}
               />
               <button

@@ -22,6 +22,19 @@ const DEFAULTS = [
   { clave: 'moneda_nombre', valor: 'ARS', tipo: 'texto', categoria: 'Negocio', descripcion: 'Código de moneda (ARS, USD, etc.)' },
   { clave: 'envio_gratis_minimo', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Monto mínimo para envío gratis (0 = deshabilitado)' },
 
+  // Tarifas y costos (alimentan el Calculador de Costos automáticamente)
+  // Cargá acá UNA vez tus tarifas reales de Mercado Pago y se aplican a TODAS las ventas.
+  { clave: 'tarifa_mp_plazo', valor: 'al instante', tipo: 'texto', categoria: 'Tarifas', descripcion: 'Plazo de acreditación elegido en tu cuenta de Mercado Pago (define el % de fee). Ej: "al instante", "en 10 días", "en 18 días".' },
+  { clave: 'tarifa_mp_debito', valor: '3.49', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para pago con débito / dinero en cuenta (%). Mirá tu tarifa en mercadopago.com.ar/costs-section.' },
+  { clave: 'tarifa_mp_credito', valor: '6.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para tarjeta de crédito en 1 pago (%).' },
+  { clave: 'tarifa_mp_credito_cuotas', valor: '6.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para tarjeta de crédito en cuotas (%). No incluye el interés de las cuotas (eso lo paga el comprador).' },
+  { clave: 'tarifa_mp_mercadocredito', valor: '6.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para pagos con Mercado Crédito (%).' },
+  { clave: 'tarifa_iva_comision', valor: '0', tipo: 'numero', categoria: 'Tarifas', descripcion: 'IVA que MercadoLocal suma sobre su comisión (%). Poné 21 si MercadoLocal está inscripto en IVA y factura con IVA al vendedor; 0 si no corresponde.' },
+  { clave: 'tarifa_cuotas_3', valor: '1.15', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 3 cuotas (1 = sin interés). Ej: 1.15 = +15%. Lo cobra el banco/MP, no MercadoLocal.' },
+  { clave: 'tarifa_cuotas_6', valor: '1.30', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 6 cuotas (1 = sin interés). Ej: 1.30 = +30%.' },
+  { clave: 'tarifa_cuotas_12', valor: '1.55', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 12 cuotas (1 = sin interés). Ej: 1.55 = +55%.' },
+  { clave: 'tarifa_retenciones_aviso', valor: 'Según tu condición fiscal y jurisdicción, Mercado Pago puede practicar retenciones de IVA, Ganancias e Ingresos Brutos sobre tus cobros. Consultá tu situación en AFIP/ARCA.', tipo: 'texto', categoria: 'Tarifas', descripcion: 'Aviso informativo sobre retenciones impositivas al vendedor (no se calcula, solo se muestra).' },
+
   // Contacto
   { clave: 'contacto_email', valor: '', tipo: 'texto', categoria: 'Contacto', descripcion: 'Email de contacto/soporte' },
   { clave: 'contacto_whatsapp', valor: '', tipo: 'texto', categoria: 'Contacto', descripcion: 'Número de WhatsApp de soporte (con código país)' },

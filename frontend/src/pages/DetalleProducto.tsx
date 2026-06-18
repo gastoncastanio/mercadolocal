@@ -7,6 +7,7 @@ import Resenas from '../components/Resenas'
 import BotonCompartir from '../components/BotonCompartir'
 import TarjetaProducto from '../components/TarjetaProducto'
 import CalculadoraCuotas from '../components/CalculadoraCuotas'
+import CalculadorCostos from '../components/CalculadorCostos'
 import CotizadorEnvio from '../components/CotizadorEnvio'
 import { trackVista } from '../services/tracking'
 
@@ -445,6 +446,19 @@ export default function DetalleProducto() {
                     )}
                   </>
                 )}
+
+                {/* Desglose de costos transparente */}
+                <details className="mt-4 group">
+                  <summary className="cursor-pointer text-sm font-semibold text-ml-blue hover:text-ml-violet flex items-center gap-1.5 list-none">
+                    <span>💰 Ver desglose de costos</span>
+                    <svg className="w-4 h-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="mt-3">
+                    <CalculadorCostos precioProducto={producto.precio * cantidad} vista="comprador" />
+                  </div>
+                </details>
 
                 {/* Garantia & devoluciones */}
                 <div className="mt-5 pt-4 border-t border-ml-line2 space-y-3">

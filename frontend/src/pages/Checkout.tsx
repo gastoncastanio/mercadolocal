@@ -13,7 +13,6 @@ export default function Checkout() {
   const [notas, setNotas] = useState('')
   const [error, setError] = useState('')
   const [procesando, setProcesando] = useState(false)
-  const [medioPago, setMedioPago] = useState<'debito' | 'credito_1' | 'credito_cuotas' | 'mp_credito' | null>('credito_1')
 
   useEffect(() => {
     cargarCarrito()
@@ -189,24 +188,10 @@ export default function Checkout() {
                 ))}
               </div>
 
-              {/* Seleccionar medio de pago para ver costos exactos */}
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-ml-ink uppercase tracking-wide">Medio de pago (para ver costos exactos)</label>
-                <select value={medioPago || ''} onChange={(e) => setMedioPago(e.target.value as any)}
-                  className="w-full px-3 py-2 text-sm border border-ml-line rounded-lg focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none">
-                  <option value="">Seleccionar...</option>
-                  <option value="debito">💳 Débito (menor fee)</option>
-                  <option value="credito_1">💳 Crédito 1 cuota</option>
-                  <option value="credito_cuotas">💳 Crédito múltiples cuotas</option>
-                  <option value="mp_credito">💵 Mercado Crédito</option>
-                </select>
-              </div>
-
-              {/* Calculador de costos */}
+              {/* Calculador de costos (incluye selector de medio de pago) */}
               <CalculadorCostos
                 precioProducto={total}
-                medioPago={medioPago}
-                mostrarVendedor={false}
+                vista="comprador"
                 compact={false}
               />
 

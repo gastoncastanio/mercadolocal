@@ -7,6 +7,7 @@ import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 import SelectorEntrega from '../components/SelectorEntrega'
+import CalculadorCostos from '../components/CalculadorCostos'
 import { ENTREGA_VACIA, EntregaProducto } from '../types'
 
 const MAX_IMAGENES = 6
@@ -383,6 +384,11 @@ export default function PublicarProducto() {
               />
             </div>
           </div>
+
+          {/* Cuánto recibe el vendedor con este precio (transparencia de costos) */}
+          {Number(form.precio) > 0 && (
+            <CalculadorCostos precioProducto={Number(form.precio)} vista="vendedor" />
+          )}
 
           {/* Condición: nuevo / usado / reacondicionado (alimenta la sección Usados) */}
           <div>

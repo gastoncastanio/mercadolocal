@@ -33,6 +33,24 @@ router.get('/publica', async (req, res) => {
   }
 })
 
+// GET /api/config/tarifas - Tarifas y costos para el calculador (sin auth)
+router.get('/tarifas', async (req, res) => {
+  try {
+    const claves = [
+      'comision_porcentaje', 'moneda_simbolo',
+      'tarifa_mp_plazo', 'tarifa_mp_debito', 'tarifa_mp_credito',
+      'tarifa_mp_credito_cuotas', 'tarifa_mp_mercadocredito',
+      'tarifa_iva_comision',
+      'tarifa_cuotas_3', 'tarifa_cuotas_6', 'tarifa_cuotas_12',
+      'tarifa_retenciones_aviso'
+    ]
+    const config = await obtenerConfigPublica(claves)
+    res.json(config)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // GET /api/config - Todas las configs (solo admin)
 router.get('/', verificarToken, async (req, res) => {
   try {
