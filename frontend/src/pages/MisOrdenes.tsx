@@ -192,6 +192,22 @@ export default function MisOrdenes() {
     }
   }
 
+  // Ver la factura de venta de una orden (la emite el vendedor). Si todavía no
+  // existe, avisamos sin romper el flujo.
+  async function verFactura(ordenId: string) {
+    try {
+      const res = await api.get(`/comprobantes/venta/${ordenId}`)
+      const facturas = res.data || []
+      if (facturas.length === 0) {
+        toast.info('El vendedor todavía no emitió la factura de esta compra.')
+        return
+      }
+      window.open(`/comprobante/${facturas[0]._id}`, '_blank')
+    } catch {
+      toast.error('No pudimos obtener la factura.')
+    }
+  }
+
   if (cargando) {
     return (
       <div className="min-h-screen bg-ml-bg flex items-center justify-center">
@@ -476,6 +492,15 @@ export default function MisOrdenes() {
                         >
                           ¿Tuviste un problema?
                         </Link>
+                      )}
+                      {/* Ver factura de la compra */}
+                      {(isPagada || isEnviada || isCompletada) && (
+                        <button
+                          onClick={() => verFactura(orden._id)}
+                          className="text-xs text-ml-blue hover:underline"
+                        >
+                          🧾 Ver factura
+                        </button>
                       )}
                     </div>
 

@@ -78,6 +78,8 @@ const ModeracionAdmin = lazy(() => import('./pages/ModeracionAdmin'))
 const Cerebro = lazy(() => import('./pages/Cerebro'))
 const PropuestasEquipo = lazy(() => import('./pages/PropuestasEquipo'))
 const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
+const MisComprobantes = lazy(() => import('./pages/MisComprobantes'))
+const ComprobanteView = lazy(() => import('./pages/ComprobanteView'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 function LoadingSpinner() {
@@ -148,6 +150,8 @@ function AppContent() {
           <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><DashboardVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><CentralVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/mis-comprobantes" element={<ConNavbar><RutaPrivada requiereVendedor><MisComprobantes /></RutaPrivada></ConNavbar>} />
+          <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />

@@ -4,6 +4,7 @@ import { verificarToken } from '../middleware/auth.js'
 import { crearPreferencia } from '../services/mercadoPagoService.js'
 import { esPagoDePauta, activarPautaDesdePago } from '../services/pautaService.js'
 import { registrarCompra, notificarClientesIdeales } from '../services/targetingService.js'
+import { emitirComprobantePauta, emitirComprobanteComision } from '../services/facturacionService.js'
 import Orden from '../models/Orden.js'
 import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
 import Producto from '../models/Producto.js'
@@ -142,6 +143,9 @@ router.post('/webhook', async (req, res) => {
           }
           // Pauta inteligente: avisar a los clientes ideales (async, no bloquea)
           notificarClientesIdeales(r.destacado, { motivo: 'nuevo' }).catch(() => {})
+          // Factura C de la pauta (plataforma → vendedor). No bloquea el webhook.
+          emitirComprobantePauta(r.destacado).catch(e =>
+            console.warn('No se pudo emitir comprobante de pauta:', e.message))
         }
         return res.status(200).send('OK')
       }
@@ -223,6 +227,11 @@ router.post('/webhook', async (req, res) => {
           await Tienda.findByIdAndUpdate(tiendaId, {
             $inc: { totalVentas: 1, ganancias: gananciaTienda }
           })
+
+          // Factura C de comisión (plataforma → vendedor) por los items de esta
+          // tienda. Idempotente y no bloqueante.
+          emitirComprobanteComision(ordenActualizada, tiendaId).catch(e =>
+            console.warn('No se pudo emitir comprobante de comisión:', e.message))
         }
 
         // Señal de compra para la pauta inteligente (no bloquea el webhook)

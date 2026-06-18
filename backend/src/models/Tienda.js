@@ -83,6 +83,20 @@ const tiendaSchema = new mongoose.Schema({
   mpCsrfToken: {
     type: String,
     default: null
+  },
+  // Datos fiscales del vendedor. Se usan como RECEPTOR de las facturas que la
+  // plataforma le emite (pauta/comisión) y como EMISOR cuando el vendedor
+  // factura a su comprador. La condición define el tipo de factura que emite:
+  // Monotributo → C; Responsable Inscripto → A/B.
+  datosFiscales: {
+    razonSocial: { type: String, default: '' },
+    cuit: { type: String, default: '' },
+    condicionIVA: {
+      type: String,
+      enum: ['', 'Monotributo', 'Responsable Inscripto', 'Exento', 'Consumidor Final'],
+      default: ''
+    },
+    domicilio: { type: String, default: '' }
   }
 }, {
   timestamps: true

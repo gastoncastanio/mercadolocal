@@ -240,6 +240,10 @@ export async function crearPautaSaldo(args) {
   console.log(`⭐ Pauta (saldo): ${producto.nombre} - ${plan} (${dias}d) - $${precioTotal}`)
   // Pauta inteligente: avisar a los clientes ideales (async, no bloquea)
   notificarClientesIdeales(destacado, { motivo: 'nuevo' }).catch(() => {})
+  // Factura C de la pauta (la plataforma le factura al vendedor). No bloquea.
+  import('./facturacionService.js')
+    .then(m => m.emitirComprobantePauta(destacado))
+    .catch(err => console.warn('No se pudo emitir comprobante de pauta:', err.message))
   return { destacado, producto, planInfo }
 }
 
