@@ -97,6 +97,7 @@ const PerfilProfesionalPage = lazy(() => import('./pages/PerfilProfesionalPage')
 const SolicitudServicioPage = lazy(() => import('./pages/SolicitudServicioPage'))
 const PanelProfesionalPage = lazy(() => import('./pages/PanelProfesionalPage'))
 const MiPerfilProfesionalPage = lazy(() => import('./pages/MiPerfilProfesionalPage'))
+const SuscripcionConfirmadaPage = lazy(() => import('./pages/SuscripcionConfirmadaPage'))
 
 // Bolsa de Trabajo Inversa (Paso 2b)
 const TrabajosPage = lazy(() => import('./pages/TrabajosPage'))
@@ -195,6 +196,7 @@ function RutasConBoundary() {
           <Route path="/servicios/solicitud/:profesionalId" element={<ConNavbar><RutaPrivada><SolicitudServicioPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/panel" element={<ConNavbar><RutaPrivada><PanelProfesionalPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilProfesionalPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/servicios/suscripcion-confirmada" element={<ConNavbar><RutaPrivada><SuscripcionConfirmadaPage /></RutaPrivada></ConNavbar>} />
 
           {/* Bolsa de Trabajo Inversa (Paso 2b) — rutas estáticas antes de :id */}
           <Route path="/trabajos" element={<ConNavbar><TrabajosPage /></ConNavbar>} />

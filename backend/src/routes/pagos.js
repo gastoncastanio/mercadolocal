@@ -12,8 +12,8 @@ import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
 import Carrito from '../models/Carrito.js'
 import Notificacion from '../models/Notificacion.js'
-import Suscripcion from '../models/Suscripcion.js'
 import { obtenerPreapproval } from '../services/mercadoPagoPreapprovalService.js'
+import { activarSuscripcionDestacado, cambiarEstadoSuscripcion } from '../services/serviciosService.js'
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { emitPagoAprobado, emitVentaConfirmada, emitStockActualizado, emitNotificacion } from '../services/socketService.js'
@@ -486,41 +486,15 @@ router.post('/webhook/preapproval', async (req, res) => {
         return res.status(200).send('OK')
       }
 
-      const suscripcion = await Suscripcion.findById(suscripcionId)
-      if (!suscripcion) {
-        console.warn(`⚠️ Webhook preapproval: suscripción ${suscripcionId} no encontrada`)
-        return res.status(200).send('OK')
-      }
-
-      // 2. Mapear status de MP → estado interno, con idempotencia (solo actuar
-      //    si el estado cambia, así un webhook duplicado no re-notifica).
-      if (status === 'authorized' && suscripcion.estado !== 'activa') {
-        await Suscripcion.findByIdAndUpdate(suscripcion._id, {
-          estado: 'activa',
-          proximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        })
-        console.log(`✓ Suscripción ${suscripcion._id} activada (preapproval autorizado)`)
-        emitNotificacion(suscripcion.usuarioId.toString(), {
-          tipo: 'suscripcion',
-          titulo: '¡Suscripción activada!',
-          mensaje: 'Tu suscripción a Destacado está activa. Aparecerás arriba de la lista.'
-        })
-      } else if (status === 'paused' && suscripcion.estado !== 'pausada') {
-        await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'pausada' })
-        console.log(`⏸️ Suscripción ${suscripcion._id} pausada`)
-        emitNotificacion(suscripcion.usuarioId.toString(), {
-          tipo: 'suscripcion',
-          titulo: 'Suscripción pausada',
-          mensaje: 'Tu suscripción a Destacado quedó pausada. Revisá tu medio de pago.'
-        })
-      } else if (status === 'cancelled' && suscripcion.estado !== 'cancelada') {
-        await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'cancelada' })
-        console.log(`⚠️ Suscripción ${suscripcion._id} cancelada`)
-        emitNotificacion(suscripcion.usuarioId.toString(), {
-          tipo: 'suscripcion',
-          titulo: 'Suscripción cancelada',
-          mensaje: 'Tu suscripción a Destacado ha sido cancelada.'
-        })
+      // 2. Aplicar el estado de MP usando los helpers del service. Son la fuente
+      //    única de verdad: activan/desactivan el beneficio "destacado" y son
+      //    idempotentes (un webhook duplicado no re-notifica ni re-aplica).
+      if (status === 'authorized') {
+        await activarSuscripcionDestacado(suscripcionId)
+      } else if (status === 'paused') {
+        await cambiarEstadoSuscripcion(suscripcionId, 'pausada')
+      } else if (status === 'cancelled') {
+        await cambiarEstadoSuscripcion(suscripcionId, 'cancelada')
       }
     }
 
