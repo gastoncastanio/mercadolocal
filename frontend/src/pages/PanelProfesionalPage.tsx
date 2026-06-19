@@ -166,10 +166,11 @@ export default function PanelProfesionalPage() {
 
                 {/* Acciones */}
                 <div className="flex gap-2 flex-wrap">
-                  {/* Chat */}
-                  {['aceptada', 'en_curso', 'completada'].includes(sol.estado) && (
+                  {/* Chat con el cliente (siempre disponible para coordinar; el contacto
+                      externo se mantiene censurado hasta que el servicio se concreta) */}
+                  {sol.clienteId && (
                     <button
-                      onClick={() => navigate(`/mensajes`)}
+                      onClick={() => navigate(`/chat?con=${sol.clienteId!._id}&nombre=${encodeURIComponent(sol.clienteId!.nombre || 'Cliente')}`)}
                       className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg"
                     >
                       💬 Chat

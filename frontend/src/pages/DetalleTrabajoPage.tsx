@@ -173,7 +173,7 @@ export default function DetalleTrabajoPage() {
   }
 
   // Inicia el chat con la otra parte enviando un primer mensaje
-  async function coordinarChat(otroUsuarioId: string) {
+  async function coordinarChat(otroUsuarioId: string, nombre?: string) {
     try {
       await api.post('/mensajes', {
         receptorId: otroUsuarioId,
@@ -182,7 +182,9 @@ export default function DetalleTrabajoPage() {
     } catch {
       // Si falla el primer mensaje igual lo llevamos al chat
     }
-    navigate('/chat')
+    const q = new URLSearchParams({ con: otroUsuarioId })
+    if (nombre) q.append('nombre', nombre)
+    navigate(`/chat?${q.toString()}`)
   }
 
   if (cargando) {
@@ -260,7 +262,7 @@ export default function DetalleTrabajoPage() {
             {soyAsignado && (
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center">
                 <p className="text-blue-800 font-semibold mb-3">🎉 ¡Te asignaron este trabajo!</p>
-                <button onClick={() => coordinarChat(trabajo.clienteId._id)} className="mlbtn ml-grad text-white px-6 py-2.5 rounded-lg font-bold">
+                <button onClick={() => coordinarChat(trabajo.clienteId._id, trabajo.clienteId.nombre)} className="mlbtn ml-grad text-white px-6 py-2.5 rounded-lg font-bold">
                   💬 Coordinar por chat
                 </button>
               </div>

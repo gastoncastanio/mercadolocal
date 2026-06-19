@@ -21,8 +21,14 @@ const mensajeSchema = new mongoose.Schema({
   },
   mensaje: {
     type: String,
-    required: [true, 'El mensaje es obligatorio'],
+    default: '',
     maxlength: 1000
+  },
+  // URL de imagen adjunta (Cloudinary). Permite enviar fotos del trabajo/problema.
+  // Las imágenes no se censuran (solo se censura texto con contacto externo).
+  imagenUrl: {
+    type: String,
+    default: ''
   },
   // Si el mensaje fue censurado (contenía contacto externo pre-venta),
   // guardamos el texto original para auditoría y detección de evasores sistemáticos.
