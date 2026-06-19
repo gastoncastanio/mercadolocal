@@ -325,7 +325,13 @@ export async function obtenerTrabajoConBids(trabajoId, usuarioId) {
     bids = await Bid.find({ trabajoId, profesionalId: usuarioId }).lean()
   }
 
-  return { trabajo, bids, esDueno }
+  // Si el dueño ya reseñó este trabajo, avisamos para no ofrecer reseñar de nuevo
+  let yaResenado = false
+  if (esDueno && trabajo.estado === 'completado') {
+    yaResenado = !!(await ResenaServicio.exists({ clienteId: usuarioId, trabajoId }))
+  }
+
+  return { trabajo, bids, esDueno, yaResenado }
 }
 
 // Profesional oferta por un trabajo. Requiere tener PerfilProfesional.
@@ -368,24 +374,29 @@ export async function crearBid(trabajoId, profesionalId, datos) {
 
 // Cliente acepta una oferta: asigna el profesional y rechaza el resto.
 export async function aceptarBid(trabajoId, bidId, clienteId) {
-  const trabajo = await TrabajoBuscado.findById(trabajoId)
-  if (!trabajo) throw new Error('Trabajo no encontrado')
-  if (trabajo.clienteId.toString() !== clienteId.toString()) {
-    throw new Error('No tenés permiso para gestionar este trabajo')
-  }
-  if (trabajo.estado !== 'activo') throw new Error('El trabajo ya no está activo')
-
+  // Validar la oferta antes de comprometer el estado del trabajo
   const bid = await Bid.findById(bidId)
   if (!bid || bid.trabajoId.toString() !== trabajoId.toString()) {
     throw new Error('Oferta no encontrada')
   }
   if (bid.estado !== 'activa') throw new Error('Esa oferta ya no está disponible')
 
-  // Asignar profesional ganador
-  trabajo.profesionalAsignadoId = bid.profesionalId
-  trabajo.bidGanadora = bid._id
-  trabajo.estado = 'asignado'
-  await trabajo.save()
+  // Asignación atómica: solo tiene éxito si el trabajo sigue activo y es del cliente.
+  // Evita doble asignación ante clics/requests concurrentes.
+  const trabajo = await TrabajoBuscado.findOneAndUpdate(
+    { _id: trabajoId, clienteId, estado: 'activo' },
+    { profesionalAsignadoId: bid.profesionalId, bidGanadora: bid._id, estado: 'asignado' },
+    { new: true }
+  )
+  if (!trabajo) {
+    // O no es suyo, o ya no está activo. Distinguir para un mensaje claro.
+    const existe = await TrabajoBuscado.findById(trabajoId).select('clienteId estado')
+    if (!existe) throw new Error('Trabajo no encontrado')
+    if (existe.clienteId.toString() !== clienteId.toString()) {
+      throw new Error('No tenés permiso para gestionar este trabajo')
+    }
+    throw new Error('El trabajo ya no está activo')
+  }
 
   // Marcar ofertas: ganadora aceptada, resto rechazadas
   bid.estado = 'aceptada'
@@ -395,7 +406,7 @@ export async function aceptarBid(trabajoId, bidId, clienteId) {
     { estado: 'rechazada' }
   )
 
-  // Notificar a ambas partes (desbloquea chat seguro)
+  // Notificar al profesional ganador (desbloquea chat seguro)
   emitNotificacion(bid.profesionalId, {
     tipo: 'trabajo_asignado',
     titulo: '¡Te asignaron un trabajo!',

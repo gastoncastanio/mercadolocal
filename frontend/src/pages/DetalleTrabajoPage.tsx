@@ -84,6 +84,7 @@ export default function DetalleTrabajoPage() {
       setTrabajo(res.data.trabajo)
       setBids(res.data.bids || [])
       setEsDueno(res.data.esDueno)
+      if (res.data.yaResenado) setResenaEnviada(true)
     } catch (e: any) {
       setError(e.response?.data?.error || 'No se pudo cargar el trabajo')
     } finally {
