@@ -91,6 +91,13 @@ const CanjearOferta = lazy(() => import('./pages/CanjearOferta'))
 const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
+// Servicios Locales (Paso 2)
+const ServiciosPage = lazy(() => import('./pages/ServiciosPage'))
+const PerfilProfesionalPage = lazy(() => import('./pages/PerfilProfesionalPage'))
+const SolicitudServicioPage = lazy(() => import('./pages/SolicitudServicioPage'))
+const PanelProfesionalPage = lazy(() => import('./pages/PanelProfesionalPage'))
+const MiPerfilProfesionalPage = lazy(() => import('./pages/MiPerfilProfesionalPage'))
+
 function LoadingSpinner() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -167,6 +174,13 @@ function AppContent() {
           <Route path="/mis-canjes" element={<ConNavbar><RutaPrivada><MisCanjes /></RutaPrivada></ConNavbar>} />
           <Route path="/comercio" element={<ConNavbar><RutaPrivada><PanelComercio /></RutaPrivada></ConNavbar>} />
           <Route path="/comercio/canjear" element={<ConNavbar><RutaPrivada><CanjearOferta /></RutaPrivada></ConNavbar>} />
+
+          {/* Servicios Locales (Paso 2) */}
+          <Route path="/servicios" element={<ConNavbar><ServiciosPage /></ConNavbar>} />
+          <Route path="/servicios/perfil/:usuarioId" element={<ConNavbar><PerfilProfesionalPage /></ConNavbar>} />
+          <Route path="/servicios/solicitud/:profesionalId" element={<ConNavbar><RutaPrivada><SolicitudServicioPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/servicios/panel" element={<ConNavbar><RutaPrivada><PanelProfesionalPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/servicios/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilProfesionalPage /></RutaPrivada></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
