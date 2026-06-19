@@ -390,17 +390,27 @@ export default function DetalleTrabajoPage() {
 
                         {bid.notas && <p className="text-ml-soft text-sm mt-3 pl-14">{bid.notas}</p>}
 
-                        {/* Acción aceptar (solo si trabajo activo) */}
-                        {trabajo.estado === 'activo' && bid.estado === 'activa' && (
-                          <div className="flex justify-end mt-3">
+                        {/* Acciones: analizar al ofertante (perfil + chat) y aceptar */}
+                        <div className="flex flex-wrap items-center justify-end gap-2 mt-3">
+                          {prof && (
+                            <button onClick={() => navigate(`/servicios/perfil/${prof._id}`)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">
+                              Ver perfil
+                            </button>
+                          )}
+                          {prof && (
+                            <button onClick={() => coordinarChat(prof._id, prof.nombre)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">
+                              💬 Chat
+                            </button>
+                          )}
+                          {trabajo.estado === 'activo' && bid.estado === 'activa' && (
                             <button onClick={() => aceptarBid(bid._id)} disabled={accionando} className="mlbtn ml-grad text-white px-5 py-2 rounded-lg text-sm font-bold disabled:opacity-60">
                               Aceptar esta oferta
                             </button>
-                          </div>
-                        )}
-                        {bid.estado === 'aceptada' && (
-                          <p className="text-right text-sm font-semibold text-green-700 mt-2">✓ Oferta aceptada</p>
-                        )}
+                          )}
+                          {bid.estado === 'aceptada' && (
+                            <p className="text-sm font-semibold text-green-700 self-center">✓ Oferta aceptada</p>
+                          )}
+                        </div>
                       </div>
                     )
                   })}
