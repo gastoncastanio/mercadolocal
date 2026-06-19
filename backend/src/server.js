@@ -43,6 +43,7 @@ import comprobantesRouter from './routes/comprobantes.js'
 import centroRouter from './routes/centro.js'
 import privacidadRouter from './routes/privacidad.js'
 import serviciosRouter from './routes/servicios.js'
+import comisionistasRouter from './routes/comisionistas.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
 import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
 import { sembrarBloqueHorario } from './services/seedBloqueHorario.js'
@@ -306,6 +307,7 @@ app.use('/api/comprobantes', comprobantesRouter)
 app.use('/api/privacidad', privacidadRouter)
 app.use('/api/centro', centroRouter)
 app.use('/api/servicios', serviciosRouter)
+app.use('/api/comisionistas', comisionistasRouter)
 
 // Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
