@@ -98,6 +98,12 @@ const SolicitudServicioPage = lazy(() => import('./pages/SolicitudServicioPage')
 const PanelProfesionalPage = lazy(() => import('./pages/PanelProfesionalPage'))
 const MiPerfilProfesionalPage = lazy(() => import('./pages/MiPerfilProfesionalPage'))
 
+// Bolsa de Trabajo Inversa (Paso 2b)
+const TrabajosPage = lazy(() => import('./pages/TrabajosPage'))
+const PostarTrabajoPage = lazy(() => import('./pages/PostarTrabajoPage'))
+const DetalleTrabajoPage = lazy(() => import('./pages/DetalleTrabajoPage'))
+const PanelClienteTrabajos = lazy(() => import('./pages/PanelClienteTrabajos'))
+
 // Mi Cuenta (Paso 2.5)
 const MiCuentaPage = lazy(() => import('./pages/MiCuentaPage'))
 
@@ -184,6 +190,12 @@ function AppContent() {
           <Route path="/servicios/solicitud/:profesionalId" element={<ConNavbar><RutaPrivada><SolicitudServicioPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/panel" element={<ConNavbar><RutaPrivada><PanelProfesionalPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilProfesionalPage /></RutaPrivada></ConNavbar>} />
+
+          {/* Bolsa de Trabajo Inversa (Paso 2b) — rutas estáticas antes de :id */}
+          <Route path="/trabajos" element={<ConNavbar><TrabajosPage /></ConNavbar>} />
+          <Route path="/trabajos/publicar" element={<ConNavbar><RutaPrivada><PostarTrabajoPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/trabajos/mis-publicaciones" element={<ConNavbar><RutaPrivada><PanelClienteTrabajos /></RutaPrivada></ConNavbar>} />
+          <Route path="/trabajos/:id" element={<ConNavbar><RutaPrivada><DetalleTrabajoPage /></RutaPrivada></ConNavbar>} />
 
           {/* Mi Cuenta (Paso 2.5) */}
           <Route path="/mi-cuenta" element={<ConNavbar><RutaPrivada><MiCuentaPage /></RutaPrivada></ConNavbar>} />

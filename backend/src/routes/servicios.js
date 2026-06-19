@@ -13,16 +13,22 @@ const router = Router()
 // POST /api/servicios/perfil - Crear perfil profesional
 router.post('/perfil', verificarToken, async (req, res) => {
   try {
-    const { rubro, descripcion, localidad, zonasCobertura, matricula, fotos, logo } = req.body
+    const { rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto, fotos, logo } = req.body
     if (!rubro || !localidad) {
       return res.status(400).json({ error: 'rubro y localidad son obligatorios' })
     }
     const perfil = await serviciosService.crearPerfilProfesional(req.usuario.id, {
       rubro,
+      nombreNegocio,
       descripcion,
+      experiencia,
+      habilidades,
+      añosExperiencia,
       localidad,
       zonasCobertura,
       matricula,
+      telefonoContacto,
       fotos,
       logo
     })
@@ -61,15 +67,17 @@ router.get('/perfil/:usuarioId', async (req, res) => {
 // PATCH /api/servicios/perfil - Actualizar perfil del usuario logueado
 router.patch('/perfil', verificarToken, async (req, res) => {
   try {
-    const { rubro, descripcion, localidad, zonasCobertura, matricula, fotos, logo } = req.body
-    const perfilActualizado = await serviciosService.actualizarPerfilProfesional(req.usuario.id, {
-      rubro,
-      descripcion,
-      localidad,
-      zonasCobertura,
-      matricula,
-      media: fotos || logo ? { fotos, logo } : undefined
-    })
+    const { rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto, fotos, logo } = req.body
+    const datos = {
+      rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto
+    }
+    // Solo actualizar media si vino algo de fotos/logo
+    if (fotos !== undefined || logo !== undefined) {
+      datos.media = { fotos: fotos || [], logo: logo || '' }
+    }
+    const perfilActualizado = await serviciosService.actualizarPerfilProfesional(req.usuario.id, datos)
     res.json(perfilActualizado.toPublic())
   } catch (error) {
     res.status(400).json({ error: error.message })
@@ -92,6 +100,117 @@ router.get('/buscar', async (req, res) => {
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
+  }
+})
+
+// ===== Bolsa de Trabajo Inversa (TrabajoBuscado + Bid) =====
+
+// POST /api/servicios/trabajo - Cliente publica un trabajo
+router.post('/trabajo', verificarToken, async (req, res) => {
+  try {
+    const { titulo, descripcion, rubro, localidad, presupuestoMin, presupuestoMax, plazoEntrega, skills } = req.body
+    if (!titulo || !descripcion || !rubro || !localidad) {
+      return res.status(400).json({ error: 'titulo, descripcion, rubro y localidad son obligatorios' })
+    }
+    const trabajo = await serviciosService.crearTrabajo(req.usuario.id, {
+      titulo, descripcion, rubro, localidad, presupuestoMin, presupuestoMax, plazoEntrega, skills
+    })
+    res.status(201).json(trabajo)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/servicios/trabajos - Listar trabajos abiertos (browse del profesional)
+router.get('/trabajos', async (req, res) => {
+  try {
+    const { rubro, localidad, estado, skip = 0, limit = 20 } = req.query
+    const { trabajos, total } = await serviciosService.buscarTrabajos({
+      rubro, localidad, estado, skip: parseInt(skip), limit: parseInt(limit)
+    })
+    res.json({ trabajos, total })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/servicios/mis-trabajos - Mis trabajos publicados (dashboard cliente)
+router.get('/mis-trabajos', verificarToken, async (req, res) => {
+  try {
+    const { estado, skip = 0, limit = 50 } = req.query
+    const { trabajos, total } = await serviciosService.trabajosPorCliente(req.usuario.id, {
+      estado, skip: parseInt(skip), limit: parseInt(limit)
+    })
+    res.json({ trabajos, total })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/servicios/trabajo/:id - Detalle del trabajo + ofertas (según rol)
+router.get('/trabajo/:id', verificarToken, async (req, res) => {
+  try {
+    const data = await serviciosService.obtenerTrabajoConBids(req.params.id, req.usuario.id)
+    res.json(data)
+  } catch (error) {
+    res.status(404).json({ error: error.message })
+  }
+})
+
+// POST /api/servicios/trabajo/:id/bid - Profesional oferta por un trabajo
+router.post('/trabajo/:id/bid', verificarToken, async (req, res) => {
+  try {
+    const { precioOfrecido, notas } = req.body
+    const bid = await serviciosService.crearBid(req.params.id, req.usuario.id, { precioOfrecido, notas })
+    res.status(201).json(bid)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/servicios/trabajo/:id/bid/:bidId/aceptar - Cliente acepta una oferta
+router.patch('/trabajo/:id/bid/:bidId/aceptar', verificarToken, async (req, res) => {
+  try {
+    const trabajo = await serviciosService.aceptarBid(req.params.id, req.params.bidId, req.usuario.id)
+    res.json(trabajo)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/servicios/trabajo/:id/cancelar - Cliente cancela el trabajo
+router.patch('/trabajo/:id/cancelar', verificarToken, async (req, res) => {
+  try {
+    const trabajo = await serviciosService.cancelarTrabajo(req.params.id, req.usuario.id)
+    res.json(trabajo)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/servicios/trabajo/:id/completar - Cliente marca trabajo completado
+router.patch('/trabajo/:id/completar', verificarToken, async (req, res) => {
+  try {
+    const trabajo = await serviciosService.completarTrabajo(req.params.id, req.usuario.id)
+    res.json(trabajo)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/servicios/resena/trabajo/:trabajoId - Reseñar trabajo completado
+router.post('/resena/trabajo/:trabajoId', verificarToken, async (req, res) => {
+  try {
+    const { calificacion, comentario } = req.body
+    if (!calificacion) {
+      return res.status(400).json({ error: 'calificacion es obligatoria' })
+    }
+    const resena = await serviciosService.crearResenaTrabajo(req.usuario.id, req.params.trabajoId, {
+      calificacion, comentario
+    })
+    res.status(201).json(resena)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
   }
 })
 
