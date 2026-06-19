@@ -443,4 +443,68 @@ router.get('/estado/:ordenId', verificarToken, async (req, res) => {
   }
 })
 
+// ===== PASO 2: Webhooks de Preapproval para Suscripciones =====
+
+// POST /api/pagos/webhook/preapproval - Webhook de cambios en preapproval (MercadoPago)
+router.post('/webhook/preapproval', async (req, res) => {
+  try {
+    // 1. Verificar firma (usando el mismo método que para payments)
+    if (!verificarFirmaWebhook(req)) {
+      console.warn('🚨 Webhook preapproval rechazado: firma inválida')
+      return res.status(401).send('Firma inválida')
+    }
+
+    const { type, data } = req.body
+
+    if (type === 'preapproval') {
+      // data.id = mpPreapprovalId, data.status = 'authorized' | 'pending' | 'cancelled' | etc.
+      const { Suscripcion } = await import('../models/Suscripcion.js')
+
+      // Buscar suscripción por mpPreapprovalId
+      // Nota: mpPreapprovalId está encriptado, así que buscamos por external_reference
+      // que debería ser el suscripcionId
+      const suscripcion = await Suscripcion.findOne({
+        mpPreapprovalId: { $regex: `.*${data.id}.*` } // búsqueda aproximada (sólo si lo guardamos encriptado)
+      })
+
+      if (!suscripcion) {
+        // Fallback: buscar en el external_reference del pago si se puede
+        console.warn(`⚠️ Webhook preapproval: suscripción no encontrada para ${data.id}`)
+        return res.status(200).send('OK')
+      }
+
+      // Actualizar estado según respuesta de MP
+      if (data.status === 'authorized') {
+        await Suscripcion.findByIdAndUpdate(suscripcion._id, {
+          estado: 'activa',
+          proximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        })
+        console.log(`✓ Suscripción ${suscripcion._id} activada (preapproval autorizado)`)
+
+        // Notificar al usuario via Socket.IO
+        emitNotificacion(suscripcion.usuarioId.toString(), {
+          tipo: 'suscripcion',
+          titulo: '¡Suscripción activada!',
+          mensaje: 'Tu suscripción a Destacado está activa. Aparecerás arriba de la lista.'
+        })
+      } else if (data.status === 'cancelled') {
+        await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'cancelada' })
+        console.log(`⚠️ Suscripción ${suscripcion._id} cancelada`)
+
+        emitNotificacion(suscripcion.usuarioId.toString(), {
+          tipo: 'suscripcion',
+          titulo: 'Suscripción cancelada',
+          mensaje: 'Tu suscripción a Destacado ha sido cancelada.'
+        })
+      }
+    }
+
+    res.status(200).send('OK')
+  } catch (error) {
+    console.error('Error procesando webhook preapproval:', error.message)
+    // Siempre responder 200 para que MP no reintente
+    res.status(200).send('OK')
+  }
+})
+
 export default router

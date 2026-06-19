@@ -32,6 +32,19 @@ router.post('/perfil', verificarToken, async (req, res) => {
   }
 })
 
+// GET /api/servicios/perfil/me - Obtener mi perfil (logueado)
+router.get('/perfil/me', verificarToken, async (req, res) => {
+  try {
+    const perfil = await serviciosService.obtenerPerfilProfesional(req.usuario.id)
+    if (!perfil) {
+      return res.status(404).json({ error: 'No tienes un perfil profesional creado' })
+    }
+    res.json(perfil)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // GET /api/servicios/perfil/:usuarioId - Obtener perfil público
 router.get('/perfil/:usuarioId', async (req, res) => {
   try {
