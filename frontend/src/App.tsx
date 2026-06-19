@@ -108,6 +108,12 @@ const PanelClienteTrabajos = lazy(() => import('./pages/PanelClienteTrabajos'))
 // Mi Cuenta (Paso 2.5)
 const MiCuentaPage = lazy(() => import('./pages/MiCuentaPage'))
 
+// Comisionistas / Viajeros (Paso 3)
+const ComisionistasPage = lazy(() => import('./pages/ComisionistasPage'))
+const DetalleViajePage = lazy(() => import('./pages/DetalleViajePage'))
+const MiPerfilComisionistaPage = lazy(() => import('./pages/MiPerfilComisionistaPage'))
+const MisEnviosPage = lazy(() => import('./pages/MisEnviosPage'))
+
 function LoadingSpinner() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -206,6 +212,12 @@ function RutasConBoundary() {
 
           {/* Mi Cuenta (Paso 2.5) */}
           <Route path="/mi-cuenta" element={<ConNavbar><RutaPrivada><MiCuentaPage /></RutaPrivada></ConNavbar>} />
+
+          {/* Comisionistas / Viajeros (Paso 3) — rutas estáticas antes de :id */}
+          <Route path="/comisionistas" element={<ConNavbar><ComisionistasPage /></ConNavbar>} />
+          <Route path="/comisionistas/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilComisionistaPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/mis-envios" element={<ConNavbar><RutaPrivada><MisEnviosPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/viaje/:id" element={<ConNavbar><DetalleViajePage /></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
