@@ -68,30 +68,34 @@ export async function existeServicioContratadoEntre(userA, userB) {
 }
 
 // Enviar mensaje
-export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje }) {
+export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje, imagenUrl }) {
   const conversacionId = productoId
     ? `${[emisorId, receptorId].sort().join('_')}_${productoId}`
     : `${[emisorId, receptorId].sort().join('_')}`
 
   // Censurar contacto externo si NO hay venta/servicio concretado entre los dos
-  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga o se acepta un servicio)
-  const [hayVenta, hayServicio] = await Promise.all([
-    existeOrdenPagadaEntre(emisorId, receptorId),
-    existeServicioContratadoEntre(emisorId, receptorId)
-  ])
-  const chatDesbloqueado = hayVenta || hayServicio
-
-  let mensajeFinal = mensaje
+  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga o se acepta un servicio).
+  // Solo se censura el TEXTO; las imágenes se permiten siempre (para mostrar el trabajo a cotizar).
+  const texto = mensaje || ''
+  let mensajeFinal = texto
   let mensajeOriginal = ''
   let huboCensura = false
 
-  if (!chatDesbloqueado) {
-    const resultado = censurarContacto(mensaje)
-    if (resultado.huboCensura) {
-      mensajeOriginal = mensaje
-      mensajeFinal = resultado.textoCensurado
-      huboCensura = true
-      console.log(`🔒 Mensaje censurado (${resultado.motivos.join(', ')}) — emisor ${emisorId}`)
+  if (texto) {
+    const [hayVenta, hayServicio] = await Promise.all([
+      existeOrdenPagadaEntre(emisorId, receptorId),
+      existeServicioContratadoEntre(emisorId, receptorId)
+    ])
+    const chatDesbloqueado = hayVenta || hayServicio
+
+    if (!chatDesbloqueado) {
+      const resultado = censurarContacto(texto)
+      if (resultado.huboCensura) {
+        mensajeOriginal = texto
+        mensajeFinal = resultado.textoCensurado
+        huboCensura = true
+        console.log(`🔒 Mensaje censurado (${resultado.motivos.join(', ')}) — emisor ${emisorId}`)
+      }
     }
   }
 
@@ -101,6 +105,7 @@ export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje 
     receptorId,
     productoId: productoId || undefined,
     mensaje: mensajeFinal,
+    imagenUrl: imagenUrl || '',
     mensajeOriginal: huboCensura ? mensajeOriginal : '',
     huboCensura
   })

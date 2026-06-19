@@ -113,10 +113,10 @@ export default function PerfilProfesionalPage() {
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
               {/* Avatar del profesional */}
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center overflow-hidden shrink-0 ring-4 ring-violet-50">
-                {perfil.usuario?.avatar ? (
-                  <img src={perfil.usuario.avatar} alt={nombreMostrar} className="w-full h-full object-cover" />
-                ) : perfil.media?.logo ? (
+                {perfil.media?.logo ? (
                   <img src={perfil.media.logo} alt={nombreMostrar} className="w-full h-full object-cover" />
+                ) : perfil.usuario?.avatar ? (
+                  <img src={perfil.usuario.avatar} alt={nombreMostrar} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-4xl">👤</span>
                 )}

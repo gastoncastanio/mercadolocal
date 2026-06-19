@@ -48,6 +48,7 @@ export default function MiPerfilProfesionalPage() {
   const [guardando, setGuardando] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [subiendoFoto, setSubiendoFoto] = useState(false)
+  const [subiendoLogo, setSubiendoLogo] = useState(false)
   const [error, setError] = useState('')
   const [planSeleccionado, setPlanSeleccionado] = useState('basico')
 
@@ -155,6 +156,22 @@ export default function MiPerfilProfesionalPage() {
     setFormData(prev => ({ ...prev, fotos: prev.fotos.filter(f => f !== url) }))
   }
 
+  async function subirLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0]
+    e.target.value = ''
+    if (!archivo) return
+    setSubiendoLogo(true)
+    setError('')
+    try {
+      const { url } = await subirImagenOptimizada(archivo)
+      setFormData(prev => ({ ...prev, logo: url }))
+    } catch (err: any) {
+      setError(err.message || 'Error al subir la foto de perfil')
+    } finally {
+      setSubiendoLogo(false)
+    }
+  }
+
   function agregarHabilidad() {
     const h = habilidadInput.trim()
     if (h && !formData.habilidades.includes(h)) {
@@ -183,9 +200,10 @@ export default function MiPerfilProfesionalPage() {
     }
   }
 
-  // Datos para mostrar: nombre del negocio o nombre del usuario; avatar del usuario
+  // Datos para mostrar: nombre del negocio o nombre del usuario.
+  // El avatar usa primero el logo del perfil profesional; si no, el avatar de la cuenta.
   const nombreMostrar = perfil?.nombreNegocio || perfil?.usuario?.nombre || usuario?.nombre || 'Profesional'
-  const avatarMostrar = perfil?.usuario?.avatar || usuario?.avatar || ''
+  const avatarMostrar = perfil?.media?.logo || perfil?.usuario?.avatar || usuario?.avatar || ''
 
   if (cargando) {
     return (
@@ -398,6 +416,42 @@ export default function MiPerfilProfesionalPage() {
         {/* Edit Mode */}
         {mode === 'edit' && (
           <form onSubmit={guardarPerfil} className="bg-white rounded-2xl shadow-sm border border-ml-line p-8 space-y-6">
+            {/* Foto de perfil / logo */}
+            <div>
+              <label className="block text-sm font-semibold text-ml-ink mb-2">Foto de perfil / logo</label>
+              <p className="text-xs text-ml-muted mb-3">Esta imagen aparece como tu foto principal en el perfil y en la búsqueda.</p>
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-violet-100">
+                  {formData.logo ? (
+                    <img src={formData.logo} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-3xl">👤</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="px-4 py-2 border border-ml-violet text-ml-violet rounded-lg text-sm font-semibold hover:bg-violet-50 cursor-pointer">
+                    {subiendoLogo ? 'Subiendo...' : (formData.logo ? 'Cambiar' : 'Subir foto')}
+                    <input
+                      type="file"
+                      accept="image/*,.heic,.heif"
+                      onChange={subirLogo}
+                      disabled={subiendoLogo}
+                      className="hidden"
+                    />
+                  </label>
+                  {formData.logo && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, logo: '' }))}
+                      className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-soft hover:bg-ml-bg"
+                    >
+                      Quitar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Nombre del negocio */}
             <div>
               <label className="block text-sm font-semibold text-ml-ink mb-2">Nombre del negocio / cómo te presentás</label>

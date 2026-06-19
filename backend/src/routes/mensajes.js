@@ -7,11 +7,11 @@ const router = Router()
 // POST /api/mensajes - Enviar mensaje
 router.post('/', verificarToken, async (req, res) => {
   try {
-    const { receptorId, productoId, mensaje } = req.body
-    if (!receptorId || !mensaje) {
-      return res.status(400).json({ error: 'receptorId y mensaje son obligatorios' })
+    const { receptorId, productoId, mensaje, imagenUrl } = req.body
+    if (!receptorId || (!mensaje?.trim() && !imagenUrl)) {
+      return res.status(400).json({ error: 'Se requiere receptorId y un mensaje o una imagen' })
     }
-    const nuevoMensaje = await enviarMensaje(req.usuario.id, { receptorId, productoId, mensaje })
+    const nuevoMensaje = await enviarMensaje(req.usuario.id, { receptorId, productoId, mensaje, imagenUrl })
     res.status(201).json(nuevoMensaje)
   } catch (error) {
     res.status(400).json({ error: error.message })
