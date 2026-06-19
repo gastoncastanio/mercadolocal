@@ -12,15 +12,15 @@ interface Sesion {
 
 export default function MiCuentaPage() {
   const navigate = useNavigate()
-  const { usuario, logout } = useAuth()
-  const [tab, setTab] = useState<'personal' | 'seguridad' | 'privacidad'>('personal')
+  const { usuario, logout, esVendedor } = useAuth()
+  const [tab, setTab] = useState<'personal' | 'modos' | 'seguridad' | 'privacidad'>('personal')
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [exito, setExito] = useState('')
 
   // Tab Personal
   const [nombre, setNombre] = useState(usuario?.nombre || '')
-  const [email, setEmail] = useState(usuario?.email || '')
+  const email = usuario?.email || ''
   const [telefono, setTelefono] = useState(usuario?.telefono || '')
   const [direccion, setDireccion] = useState(usuario?.direccion || '')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -222,6 +222,16 @@ export default function MiCuentaPage() {
             👤 Información Personal
           </button>
           <button
+            onClick={() => setTab('modos')}
+            className={`py-4 px-2 font-semibold border-b-2 transition ${
+              tab === 'modos'
+                ? 'border-ml-violet text-ml-violet'
+                : 'border-transparent text-ml-muted hover:text-ml-ink'
+            }`}
+          >
+            🚀 Vender y Ofrecer
+          </button>
+          <button
             onClick={() => setTab('seguridad')}
             className={`py-4 px-2 font-semibold border-b-2 transition ${
               tab === 'seguridad'
@@ -353,6 +363,82 @@ export default function MiCuentaPage() {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Tab: Vender y Ofrecer (Modos de cuenta) */}
+        {tab === 'modos' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+              <h2 className="text-lg font-bold text-ml-ink mb-1">Activá nuevos modos en tu cuenta</h2>
+              <p className="text-sm text-ml-soft">
+                Con la misma cuenta podés comprar, vender productos y ofrecer tus servicios profesionales. Activá lo que necesites.
+              </p>
+            </div>
+
+            {/* Modo Comprador (siempre activo) */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 flex items-start gap-4">
+              <div className="text-3xl">🛍️</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-ml-ink">Comprador</h3>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Activo</span>
+                </div>
+                <p className="text-sm text-ml-muted">Comprá productos y contratá servicios en MercadoLocal.</p>
+              </div>
+            </div>
+
+            {/* Modo Vendedor */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 flex items-start gap-4">
+              <div className="text-3xl">🏪</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-ml-ink">Vender productos</h3>
+                  {esVendedor && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Activo</span>
+                  )}
+                </div>
+                <p className="text-sm text-ml-muted mb-3">
+                  Abrí tu tienda y publicá productos para vender a toda la comunidad.
+                </p>
+                <button
+                  onClick={() => navigate('/mi-tienda')}
+                  className={`px-5 py-2 rounded-lg font-semibold text-sm ${
+                    esVendedor
+                      ? 'border border-ml-violet text-ml-violet hover:bg-violet-50'
+                      : 'mlbtn ml-grad text-white'
+                  }`}
+                >
+                  {esVendedor ? 'Gestionar mi tienda' : 'Abrir mi tienda'}
+                </button>
+              </div>
+            </div>
+
+            {/* Modo Profesional */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 flex items-start gap-4">
+              <div className="text-3xl">🔧</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-bold text-ml-ink">Ofrecer servicios profesionales</h3>
+                  {usuario?.esProfesional && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">Activo</span>
+                  )}
+                </div>
+                <p className="text-sm text-ml-muted mb-3">
+                  Creá tu perfil profesional (plomero, electricista, pintor, etc.) y recibí solicitudes de presupuesto de clientes en tu zona. Publicar es gratis.
+                </p>
+                <button
+                  onClick={() => navigate('/servicios/mi-perfil')}
+                  className={`px-5 py-2 rounded-lg font-semibold text-sm ${
+                    usuario?.esProfesional
+                      ? 'border border-ml-violet text-ml-violet hover:bg-violet-50'
+                      : 'mlbtn ml-grad text-white'
+                  }`}
+                >
+                  {usuario?.esProfesional ? 'Gestionar mi perfil profesional' : 'Activar y crear mi perfil'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Tab: Seguridad */}

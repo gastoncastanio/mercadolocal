@@ -8,6 +8,8 @@ export interface Usuario {
   // nuevas son 'comprador' y activan la venta con tieneVendedor.
   rol: 'comprador' | 'vendedor' | 'admin'
   tieneVendedor?: boolean
+  esProfesional?: boolean
+  esComisionista?: boolean
   avatar: string
   direccion: string
   telefono: string
