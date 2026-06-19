@@ -39,11 +39,41 @@ export default function MiCuentaPage() {
   // Tab Seguridad - Sesiones
   const [sesiones, setSesiones] = useState<Sesion[]>([])
 
+  // Tab Privacidad - Perfilado publicidad (activado por defecto)
+  const [perfilar, setPerfilar] = useState(true)
+
+  useEffect(() => {
+    cargarPreferenciaPerfilado()
+  }, [])
+
   useEffect(() => {
     if (tab === 'seguridad') {
       cargarSesiones()
     }
   }, [tab])
+
+  async function cargarPreferenciaPerfilado() {
+    try {
+      const res = await api.get('/privacidad/preferencias')
+      // Por defecto activado: solo se desactiva si el valor es explícitamente false
+      setPerfilar(res.data?.perfilarPublicidad !== false)
+    } catch {
+      setPerfilar(true)
+    }
+  }
+
+  async function cambiarPerfilado(nuevoValor: boolean) {
+    setPerfilar(nuevoValor)
+    try { localStorage.setItem('ml_no_perfilar', nuevoValor ? '0' : '1') } catch { /* noop */ }
+    try {
+      await api.put('/privacidad/preferencias', { perfilarPublicidad: nuevoValor })
+      setExito(nuevoValor ? 'Activaste la publicidad personalizada' : 'Desactivaste la publicidad personalizada')
+      setTimeout(() => setExito(''), 3000)
+    } catch {
+      setPerfilar(!nuevoValor) // revertir
+      setError('No se pudo guardar la preferencia')
+    }
+  }
 
   async function cargarSesiones() {
     try {
@@ -469,16 +499,23 @@ export default function MiCuentaPage() {
               </p>
 
               <div className="space-y-4">
-                <label className="flex items-center gap-3 p-4 border border-ml-line rounded-lg cursor-pointer hover:bg-ml-bg">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 accent-ml-violet"
-                  />
+                <div className="flex items-start justify-between gap-4 p-4 border border-ml-line rounded-lg">
                   <div>
                     <p className="font-semibold text-ml-ink">Perfilado para Publicidad</p>
                     <p className="text-sm text-ml-muted">Permitir análisis de comportamiento para publicidad personalizada</p>
+                    <p className="text-xs text-ml-muted mt-2">
+                      Estado: <span className="font-semibold text-ml-ink">{perfilar ? 'Activada' : 'Desactivada'}</span>
+                    </p>
                   </div>
-                </label>
+                  <button
+                    type="button"
+                    onClick={() => cambiarPerfilado(!perfilar)}
+                    className={`relative shrink-0 w-12 h-7 rounded-full transition-colors ${perfilar ? 'bg-ml-violet' : 'bg-gray-300'}`}
+                    aria-label="Activar o desactivar publicidad personalizada"
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${perfilar ? 'translate-x-5' : ''}`} />
+                  </button>
+                </div>
               </div>
 
               <div className="mt-8 pt-6 border-t border-ml-line space-y-3">
