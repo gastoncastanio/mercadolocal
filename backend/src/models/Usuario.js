@@ -33,6 +33,14 @@ const usuarioSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  esProfesional: {
+    type: Boolean,
+    default: false
+  },
+  esComisionista: {
+    type: Boolean,
+    default: false
+  },
   avatar: {
     type: String,
     default: ''

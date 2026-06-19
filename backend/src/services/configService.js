@@ -56,6 +56,10 @@ const DEFAULTS = [
   { clave: 'func_resenas_activo', valor: 'true', tipo: 'boolean', categoria: 'Funcionalidades', descripcion: 'Habilitar reseñas de productos' },
   { clave: 'func_registro_vendedor', valor: 'true', tipo: 'boolean', categoria: 'Funcionalidades', descripcion: 'Permitir registro de nuevos vendedores' },
   { clave: 'func_mantenimiento', valor: 'false', tipo: 'boolean', categoria: 'Funcionalidades', descripcion: 'Modo mantenimiento (desactiva el sitio)' },
+
+  // Servicios Locales (Paso 2)
+  { clave: 'suscripcion_profesional_precios', valor: '{"basico":{"precio":500,"duracion":30,"descripcion":"30 días destacado"},"premium":{"precio":1200,"duracion":90,"descripcion":"90 días destacado"}}', tipo: 'html', categoria: 'Servicios', descripcion: 'Planes de suscripción para profesionales (JSON)' },
+  { clave: 'func_servicios_activo', valor: 'true', tipo: 'boolean', categoria: 'Funcionalidades', descripcion: 'Habilitar módulo de Servicios Locales (Paso 2)' },
 ]
 
 // Inicializar configuraciones por defecto

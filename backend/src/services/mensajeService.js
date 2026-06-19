@@ -1,6 +1,7 @@
 import Mensaje from '../models/Mensaje.js'
 import Orden from '../models/Orden.js'
 import Tienda from '../models/Tienda.js'
+import SolicitudServicio from '../models/SolicitudServicio.js'
 import { censurarContacto } from '../utils/validacionContenido.js'
 
 /**
@@ -36,21 +37,45 @@ async function existeOrdenPagadaEntre(userA, userB) {
   return !!orden
 }
 
+/**
+ * Verifica si entre dos usuarios existe una SolicitudServicio aceptada/en_curso/completada.
+ * Si existe, el chat se desbloquea (ya pueden compartir contacto directo).
+ * Si NO existe, los mensajes se censuran.
+ *
+ * @returns {Promise<boolean>}
+ */
+export async function existeServicioContratadoEntre(userA, userB) {
+  const solicitud = await SolicitudServicio.findOne({
+    $or: [
+      // userA es cliente, userB es profesional
+      { clienteId: userA, profesionalId: userB, estado: { $in: ['aceptada', 'en_curso', 'completada'] } },
+      // userB es cliente, userA es profesional
+      { clienteId: userB, profesionalId: userA, estado: { $in: ['aceptada', 'en_curso', 'completada'] } }
+    ]
+  }).select('_id').lean()
+
+  return !!solicitud
+}
+
 // Enviar mensaje
 export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje }) {
   const conversacionId = productoId
     ? `${[emisorId, receptorId].sort().join('_')}_${productoId}`
     : `${[emisorId, receptorId].sort().join('_')}`
 
-  // Censurar contacto externo si NO hay venta concretada entre los dos
-  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga)
-  const hayVenta = await existeOrdenPagadaEntre(emisorId, receptorId)
+  // Censurar contacto externo si NO hay venta/servicio concretado entre los dos
+  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga o se acepta un servicio)
+  const [hayVenta, hayServicio] = await Promise.all([
+    existeOrdenPagadaEntre(emisorId, receptorId),
+    existeServicioContratadoEntre(emisorId, receptorId)
+  ])
+  const chatDesbloqueado = hayVenta || hayServicio
 
   let mensajeFinal = mensaje
   let mensajeOriginal = ''
   let huboCensura = false
 
-  if (!hayVenta) {
+  if (!chatDesbloqueado) {
     const resultado = censurarContacto(mensaje)
     if (resultado.huboCensura) {
       mensajeOriginal = mensaje
