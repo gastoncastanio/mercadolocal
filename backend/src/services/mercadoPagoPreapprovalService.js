@@ -1,4 +1,4 @@
-import { MercadoPagoConfig, Preapproval } from 'mercadopago'
+import { MercadoPagoConfig, PreApproval } from 'mercadopago'
 
 if (!process.env.MP_ACCESS_TOKEN) {
   console.warn('⚠️ MP_ACCESS_TOKEN no configurado - los pagos recurrentes no funcionarán')
@@ -11,7 +11,7 @@ const client = new MercadoPagoConfig({
 
 // Crear preapproval para suscripción mensual
 export async function crearPreapproval(suscripcion, usuarioEmail) {
-  const preapproval = new Preapproval(client)
+  const preapproval = new PreApproval(client)
 
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
   const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
@@ -52,7 +52,7 @@ export async function crearPreapproval(suscripcion, usuarioEmail) {
 // Obtener estado de preapproval
 export async function obtenerPreapproval(preapprovalId) {
   try {
-    const preapproval = new Preapproval(client)
+    const preapproval = new PreApproval(client)
     // MP SDK v2 requiere hacer GET manual a la API
     const response = await client.makeRequest({
       method: 'GET',
