@@ -6,10 +6,16 @@ import { useAuth } from '../context/AuthContext'
 interface Perfil {
   _id: string
   usuarioId: string
+  usuario?: { _id: string; nombre: string; avatar: string }
+  nombreNegocio?: string
   rubro: string
   descripcion: string
+  experiencia?: string
+  habilidades?: string[]
+  añosExperiencia?: number
   localidad: string
   zonasCobertura: string[]
+  telefonoContacto?: string
   verificado: boolean
   calificacion: number
   totalTrabajos: number
@@ -81,7 +87,8 @@ export default function PerfilProfesionalPage() {
     )
   }
 
-  const estrellas = '★'.repeat(Math.round(perfil.calificacion)) + '☆'.repeat(5 - Math.round(perfil.calificacion))
+  // Nombre y avatar a mostrar: nombre del negocio o del usuario; avatar del usuario o logo
+  const nombreMostrar = perfil.nombreNegocio || perfil.usuario?.nombre || 'Profesional'
 
   return (
     <div className="min-h-screen bg-ml-bg">
@@ -100,44 +107,52 @@ export default function PerfilProfesionalPage() {
       {/* Perfil */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
-          {/* Banner */}
-          <div className="h-48 bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center">
-            {perfil.media?.logo ? (
-              <img src={perfil.media.logo} alt={perfil.rubro} className="h-full w-full object-cover" />
-            ) : (
-              <div className="text-6xl">💼</div>
-            )}
-          </div>
-
           {/* Contenido */}
-          <div className="p-8">
-            {/* Encabezado */}
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-extrabold text-ml-ink mb-2">
-                  {perfil.rubro.charAt(0).toUpperCase() + perfil.rubro.slice(1)}
-                </h1>
-                <p className="text-ml-soft mb-4">📍 {perfil.localidad}</p>
+          <div className="p-6 sm:p-8">
+            {/* Encabezado tipo Instagram */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-6">
+              {/* Avatar del profesional */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center overflow-hidden shrink-0 ring-4 ring-violet-50">
+                {perfil.usuario?.avatar ? (
+                  <img src={perfil.usuario.avatar} alt={nombreMostrar} className="w-full h-full object-cover" />
+                ) : perfil.media?.logo ? (
+                  <img src={perfil.media.logo} alt={nombreMostrar} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl">👤</span>
+                )}
+              </div>
 
-                {/* Badges */}
-                <div className="flex gap-3 mb-4 flex-wrap">
+              {/* Info */}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-ml-ink">{nombreMostrar}</h1>
                   {perfil.verificado && (
-                    <span className="bg-green-50 border border-green-200 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                    <span className="bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">
                       ✓ Verificado
                     </span>
                   )}
-                  {perfil.totalTrabajos > 0 && (
-                    <span className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
-                      {perfil.totalTrabajos} trabajo{perfil.totalTrabajos !== 1 ? 's' : ''}
-                    </span>
-                  )}
                 </div>
+                <p className="text-ml-violet font-semibold capitalize mb-1">{perfil.rubro}</p>
+                <p className="text-ml-soft mb-4">📍 {perfil.localidad}</p>
 
-                {/* Calificación */}
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl text-yellow-500">{estrellas}</span>
-                  <span className="text-lg font-semibold text-ml-ink">{perfil.calificacion.toFixed(1)}</span>
-                  <span className="text-ml-muted">({perfil.conteoResenas} reseña{perfil.conteoResenas !== 1 ? 's' : ''})</span>
+                {/* Stats */}
+                <div className="flex items-center justify-center sm:justify-start gap-8">
+                  <div className="text-center">
+                    <p className="text-lg font-extrabold text-ml-ink">
+                      <span className="text-yellow-500">★</span> {perfil.calificacion ? perfil.calificacion.toFixed(1) : '—'}
+                    </p>
+                    <p className="text-xs text-ml-muted">{perfil.conteoResenas} reseña{perfil.conteoResenas !== 1 ? 's' : ''}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-extrabold text-ml-ink">{perfil.totalTrabajos}</p>
+                    <p className="text-xs text-ml-muted">trabajos</p>
+                  </div>
+                  {!!perfil.añosExperiencia && (
+                    <div className="text-center">
+                      <p className="text-lg font-extrabold text-ml-ink">{perfil.añosExperiencia}</p>
+                      <p className="text-xs text-ml-muted">años exp.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -150,17 +165,50 @@ export default function PerfilProfesionalPage() {
                   }
                   navigate(`/servicios/solicitud/${usuarioId}`)
                 }}
-                className="mlbtn ml-grad text-white px-8 py-3 rounded-lg font-bold"
+                className="mlbtn ml-grad text-white px-6 py-3 rounded-lg font-bold shrink-0 w-full sm:w-auto"
               >
                 Solicitar Cotización
               </button>
             </div>
 
+            {/* Habilidades */}
+            {perfil.habilidades && perfil.habilidades.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-6">
+                {perfil.habilidades.map(h => (
+                  <span key={h} className="bg-violet-50 text-ml-violet border border-violet-100 px-3 py-1 rounded-full text-sm font-medium">
+                    {h}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Descripción */}
             {perfil.descripcion && (
-              <div className="mb-8 pb-8 border-b border-ml-line">
+              <div className="mb-6 pb-6 border-b border-ml-line">
                 <h2 className="text-lg font-bold text-ml-ink mb-3">Sobre mí</h2>
                 <p className="text-ml-soft leading-relaxed">{perfil.descripcion}</p>
+              </div>
+            )}
+
+            {/* Experiencia / CV */}
+            {perfil.experiencia && (
+              <div className="mb-6 pb-6 border-b border-ml-line">
+                <h2 className="text-lg font-bold text-ml-ink mb-3">📋 Experiencia y trayectoria</h2>
+                <p className="text-ml-soft leading-relaxed whitespace-pre-line">{perfil.experiencia}</p>
+              </div>
+            )}
+
+            {/* Galería de trabajos */}
+            {perfil.media?.fotos && perfil.media.fotos.length > 0 && (
+              <div className="mb-6 pb-6 border-b border-ml-line">
+                <h2 className="text-lg font-bold text-ml-ink mb-3">📸 Trabajos realizados</h2>
+                <div className="grid grid-cols-3 gap-2">
+                  {perfil.media.fotos.map((url, idx) => (
+                    <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-ml-bg">
+                      <img src={url} alt={`Trabajo ${idx + 1}`} className="w-full h-full object-cover hover:scale-105 transition" />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

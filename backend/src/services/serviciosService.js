@@ -12,10 +12,15 @@ export async function crearPerfilProfesional(usuarioId, datos) {
   const perfil = new PerfilProfesional({
     usuarioId,
     rubro: datos.rubro,
+    nombreNegocio: datos.nombreNegocio || '',
     descripcion: datos.descripcion || '',
+    experiencia: datos.experiencia || '',
+    habilidades: datos.habilidades || [],
+    añosExperiencia: datos.añosExperiencia || 0,
     localidad: datos.localidad,
     zonasCobertura: datos.zonasCobertura || [],
     matricula: datos.matricula || '',
+    telefonoContacto: datos.telefonoContacto || '',
     media: {
       fotos: datos.fotos || [],
       logo: datos.logo || ''
@@ -32,16 +37,22 @@ export async function crearPerfilProfesional(usuarioId, datos) {
 
 export async function obtenerPerfilProfesional(usuarioId) {
   return await PerfilProfesional.findOne({ usuarioId })
+    .populate('usuarioId', 'nombre avatar')
 }
 
 export async function actualizarPerfilProfesional(usuarioId, datos) {
   const perfil = await PerfilProfesional.findOne({ usuarioId })
   if (!perfil) throw new Error('Perfil profesional no encontrado')
 
-  Object.assign(perfil, datos)
+  // Solo asignar campos definidos para no pisar con undefined
+  const campos = ['rubro', 'nombreNegocio', 'descripcion', 'experiencia', 'habilidades',
+    'añosExperiencia', 'localidad', 'zonasCobertura', 'matricula', 'telefonoContacto', 'media']
+  for (const campo of campos) {
+    if (datos[campo] !== undefined) perfil[campo] = datos[campo]
+  }
   await perfil.save()
 
-  return perfil
+  return await perfil.populate('usuarioId', 'nombre avatar')
 }
 
 export async function buscarProfesionales(filtros = {}) {

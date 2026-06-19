@@ -13,16 +13,22 @@ const router = Router()
 // POST /api/servicios/perfil - Crear perfil profesional
 router.post('/perfil', verificarToken, async (req, res) => {
   try {
-    const { rubro, descripcion, localidad, zonasCobertura, matricula, fotos, logo } = req.body
+    const { rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto, fotos, logo } = req.body
     if (!rubro || !localidad) {
       return res.status(400).json({ error: 'rubro y localidad son obligatorios' })
     }
     const perfil = await serviciosService.crearPerfilProfesional(req.usuario.id, {
       rubro,
+      nombreNegocio,
       descripcion,
+      experiencia,
+      habilidades,
+      añosExperiencia,
       localidad,
       zonasCobertura,
       matricula,
+      telefonoContacto,
       fotos,
       logo
     })
@@ -61,15 +67,17 @@ router.get('/perfil/:usuarioId', async (req, res) => {
 // PATCH /api/servicios/perfil - Actualizar perfil del usuario logueado
 router.patch('/perfil', verificarToken, async (req, res) => {
   try {
-    const { rubro, descripcion, localidad, zonasCobertura, matricula, fotos, logo } = req.body
-    const perfilActualizado = await serviciosService.actualizarPerfilProfesional(req.usuario.id, {
-      rubro,
-      descripcion,
-      localidad,
-      zonasCobertura,
-      matricula,
-      media: fotos || logo ? { fotos, logo } : undefined
-    })
+    const { rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto, fotos, logo } = req.body
+    const datos = {
+      rubro, nombreNegocio, descripcion, experiencia, habilidades, añosExperiencia,
+      localidad, zonasCobertura, matricula, telefonoContacto
+    }
+    // Solo actualizar media si vino algo de fotos/logo
+    if (fotos !== undefined || logo !== undefined) {
+      datos.media = { fotos: fotos || [], logo: logo || '' }
+    }
+    const perfilActualizado = await serviciosService.actualizarPerfilProfesional(req.usuario.id, datos)
     res.json(perfilActualizado.toPublic())
   } catch (error) {
     res.status(400).json({ error: error.message })
