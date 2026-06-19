@@ -49,15 +49,14 @@ export async function crearPreapproval(suscripcion, usuarioEmail) {
   }
 }
 
-// Obtener estado de preapproval
+// Obtener estado de preapproval.
+// Devuelve el objeto del preapproval con (entre otros) { id, status,
+// external_reference }. Usamos el recurso PreApproval.get() del SDK v2 (mismo
+// patrón que Payment.get() en el webhook de pagos), más confiable que makeRequest.
 export async function obtenerPreapproval(preapprovalId) {
   try {
     const preapproval = new PreApproval(client)
-    // MP SDK v2 requiere hacer GET manual a la API
-    const response = await client.makeRequest({
-      method: 'GET',
-      url: `/preapprovals/${preapprovalId}`
-    })
+    const response = await preapproval.get({ id: preapprovalId })
     return response
   } catch (error) {
     console.error('❌ Error obteniendo preapproval:', error)

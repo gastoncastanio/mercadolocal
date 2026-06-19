@@ -419,10 +419,8 @@ router.get('/suscripcion/:id', verificarToken, async (req, res) => {
   }
 })
 
-// POST /api/pagos/webhook/preapproval - Webhook de preapproval (MercadoPago)
-// Nota: Esta ruta debería ir en routes/pagos.js, pero la incluyo aquí para referencia
-// router.post('/webhook/preapproval', async (req, res) => {
-//   // Implementar webhook de preapproval
-// })
+// Webhook de preapproval: implementado en routes/pagos.js
+// (POST /api/pagos/webhook/preapproval). El notification_url del preapproval
+// apunta ahí; ver mercadoPagoPreapprovalService.crearPreapproval().
 
 export default router

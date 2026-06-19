@@ -12,6 +12,8 @@ import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
 import Carrito from '../models/Carrito.js'
 import Notificacion from '../models/Notificacion.js'
+import Suscripcion from '../models/Suscripcion.js'
+import { obtenerPreapproval } from '../services/mercadoPagoPreapprovalService.js'
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { emitPagoAprobado, emitVentaConfirmada, emitStockActualizado, emitNotificacion } from '../services/socketService.js'
@@ -462,41 +464,58 @@ router.post('/webhook/preapproval', async (req, res) => {
 
     const { type, data } = req.body
 
-    if (type === 'preapproval') {
-      // data.id = mpPreapprovalId, data.status = 'authorized' | 'pending' | 'cancelled' | etc.
-      const { Suscripcion } = await import('../models/Suscripcion.js')
-
-      // Buscar suscripción por mpPreapprovalId
-      // Nota: mpPreapprovalId está encriptado, así que buscamos por external_reference
-      // que debería ser el suscripcionId
-      const suscripcion = await Suscripcion.findOne({
-        mpPreapprovalId: { $regex: `.*${data.id}.*` } // búsqueda aproximada (sólo si lo guardamos encriptado)
-      })
-
-      if (!suscripcion) {
-        // Fallback: buscar en el external_reference del pago si se puede
-        console.warn(`⚠️ Webhook preapproval: suscripción no encontrada para ${data.id}`)
+    // MP manda 'preapproval' o 'subscription_preapproval' según el evento.
+    if ((type === 'preapproval' || type === 'subscription_preapproval') && data?.id) {
+      // 1. NO confiar en el body: consultar el preapproval a la API de MP.
+      //    De ahí sacamos el status real y el external_reference (= suscripcion._id,
+      //    que seteamos al crear el preapproval). Mismo patrón que el webhook de pagos.
+      let preapproval
+      try {
+        preapproval = await obtenerPreapproval(data.id)
+      } catch (e) {
+        console.error('Webhook preapproval: no se pudo consultar a MP:', e.message)
+        // 200 igual: si devolvemos error, MP reintenta en loop. Ya quedó logueado.
         return res.status(200).send('OK')
       }
 
-      // Actualizar estado según respuesta de MP
-      if (data.status === 'authorized') {
+      const suscripcionId = preapproval?.external_reference
+      const status = preapproval?.status // 'authorized' | 'paused' | 'cancelled' | 'pending'
+
+      if (!suscripcionId) {
+        console.warn(`⚠️ Webhook preapproval ${data.id} sin external_reference`)
+        return res.status(200).send('OK')
+      }
+
+      const suscripcion = await Suscripcion.findById(suscripcionId)
+      if (!suscripcion) {
+        console.warn(`⚠️ Webhook preapproval: suscripción ${suscripcionId} no encontrada`)
+        return res.status(200).send('OK')
+      }
+
+      // 2. Mapear status de MP → estado interno, con idempotencia (solo actuar
+      //    si el estado cambia, así un webhook duplicado no re-notifica).
+      if (status === 'authorized' && suscripcion.estado !== 'activa') {
         await Suscripcion.findByIdAndUpdate(suscripcion._id, {
           estado: 'activa',
           proximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         })
         console.log(`✓ Suscripción ${suscripcion._id} activada (preapproval autorizado)`)
-
-        // Notificar al usuario via Socket.IO
         emitNotificacion(suscripcion.usuarioId.toString(), {
           tipo: 'suscripcion',
           titulo: '¡Suscripción activada!',
           mensaje: 'Tu suscripción a Destacado está activa. Aparecerás arriba de la lista.'
         })
-      } else if (data.status === 'cancelled') {
+      } else if (status === 'paused' && suscripcion.estado !== 'pausada') {
+        await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'pausada' })
+        console.log(`⏸️ Suscripción ${suscripcion._id} pausada`)
+        emitNotificacion(suscripcion.usuarioId.toString(), {
+          tipo: 'suscripcion',
+          titulo: 'Suscripción pausada',
+          mensaje: 'Tu suscripción a Destacado quedó pausada. Revisá tu medio de pago.'
+        })
+      } else if (status === 'cancelled' && suscripcion.estado !== 'cancelada') {
         await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'cancelada' })
         console.log(`⚠️ Suscripción ${suscripcion._id} cancelada`)
-
         emitNotificacion(suscripcion.usuarioId.toString(), {
           tipo: 'suscripcion',
           titulo: 'Suscripción cancelada',
