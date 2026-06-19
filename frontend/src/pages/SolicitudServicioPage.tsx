@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 
 export default function SolicitudServicioPage() {
   const { profesionalId } = useParams<{ profesionalId: string }>()
   const navigate = useNavigate()
-  const { usuario } = useAuth()
   const [rubro, setRubro] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [zona, setZona] = useState('')
