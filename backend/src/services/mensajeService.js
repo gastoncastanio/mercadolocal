@@ -73,22 +73,19 @@ export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje,
     ? `${[emisorId, receptorId].sort().join('_')}_${productoId}`
     : `${[emisorId, receptorId].sort().join('_')}`
 
-  // Censurar contacto externo si NO hay venta/servicio concretado entre los dos
-  // (estilo Mercado Libre: el chat se desbloquea recién cuando se paga o se acepta un servicio).
-  // Solo se censura el TEXTO; las imágenes se permiten siempre (para mostrar el trabajo a cotizar).
+  // Censura de contacto SOLO en el marketplace de productos (modelo por comisión:
+  // evita que comprador y vendedor cierren fuera de la plataforma antes de pagar).
+  // Los servicios y la bolsa de trabajo se monetizan por la suscripción mensual del
+  // profesional, así que ahí el contacto (teléfono/email) fluye libremente.
+  // Las imágenes nunca se censuran (solo el TEXTO).
   const texto = mensaje || ''
   let mensajeFinal = texto
   let mensajeOriginal = ''
   let huboCensura = false
 
-  if (texto) {
-    const [hayVenta, hayServicio] = await Promise.all([
-      existeOrdenPagadaEntre(emisorId, receptorId),
-      existeServicioContratadoEntre(emisorId, receptorId)
-    ])
-    const chatDesbloqueado = hayVenta || hayServicio
-
-    if (!chatDesbloqueado) {
+  if (texto && productoId) {
+    const hayVenta = await existeOrdenPagadaEntre(emisorId, receptorId)
+    if (!hayVenta) {
       const resultado = censurarContacto(texto)
       if (resultado.huboCensura) {
         mensajeOriginal = texto
