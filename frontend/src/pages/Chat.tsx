@@ -324,7 +324,7 @@ export default function Chat() {
 
                       {msg.huboCensura && (
                         <p className={`text-[10px] mt-1 italic ${esMio ? 'text-blue-100' : 'text-ml-muted'}`}>
-                          🔒 Por seguridad, el contacto se desbloquea al concretar el trabajo
+                          🔒 Por seguridad, el contacto se desbloquea al concretar la compra
                         </p>
                       )}
 
@@ -339,9 +339,11 @@ export default function Chat() {
 
             {/* Input */}
             <form onSubmit={enviarTexto} className="bg-white border-t border-ml-line px-4 sm:px-6 py-3">
-              <p className="text-[11px] text-ml-muted text-center mb-2 leading-tight">
-                🔒 Por tu seguridad, los teléfonos, emails y links se ocultan hasta que se concrete el trabajo
-              </p>
+              {convActiva?.productoId && (
+                <p className="text-[11px] text-ml-muted text-center mb-2 leading-tight">
+                  🔒 Por tu seguridad, los teléfonos, emails y links se ocultan hasta que se concrete la compra
+                </p>
+              )}
               <div className="flex gap-2 sm:gap-3 items-center">
                 {/* Adjuntar imagen */}
                 <label className="shrink-0 w-11 h-11 flex items-center justify-center border border-ml-line rounded-xl cursor-pointer hover:bg-ml-bg text-xl" title="Enviar foto">
