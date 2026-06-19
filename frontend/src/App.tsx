@@ -1,5 +1,5 @@
 import { lazy as lazyReact, Suspense, ComponentType } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
 import Navbar from './components/Navbar'
@@ -133,9 +133,14 @@ function ConNavbar({ children }: { children: React.ReactNode }) {
   return <><MarqueeBanner /><Navbar />{children}</>
 }
 
-function AppContent() {
+function RutasConBoundary() {
+  const location = useLocation()
   return (
-    <Router>
+    // Boundary por-ruta: si UNA página crashea, mostramos un fallback acotado en
+    // el área de contenido y, al navegar a otra ruta, se resetea solo (resetKeys
+    // sigue al pathname). Así un error de una página no obliga a recargar toda la
+    // app — el boundary de arriba (en App) queda como red de seguridad global.
+    <ErrorBoundary inline resetKeys={[location.pathname]}>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Publicas */}
@@ -228,6 +233,14 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
+    </ErrorBoundary>
+  )
+}
+
+function AppContent() {
+  return (
+    <Router>
+      <RutasConBoundary />
       <BannerConsentimiento />
     </Router>
   )

@@ -276,7 +276,11 @@ router.post('/webhook', async (req, res) => {
             }).save()
             // Tiempo real + push (app cerrada) al comprador
             emitNotificacion(comprador._id.toString(), notifCompra)
-            await enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
+            // Email de confirmación: fire-and-forget. NO bloqueamos la respuesta
+            // del webhook esperando a Resend; si MP no recibe el 200 rápido,
+            // reintenta (y la idempotencia ya nos protege de doble proceso).
+            enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
+              .catch(e => console.error('Error enviando email de confirmación de compra:', e.message))
           }
 
           for (const tiendaId of tiendaIds) {
@@ -296,7 +300,9 @@ router.post('/webhook', async (req, res) => {
               emitNotificacion(tienda.usuarioId.toString(), notifVenta)
               const vendedor = await Usuario.findById(tienda.usuarioId)
               if (vendedor) {
-                await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+                // Email al vendedor: fire-and-forget (no bloquea el 200 del webhook).
+                enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+                  .catch(e => console.error('Error enviando email de notificación de venta:', e.message))
               }
             }
           }
