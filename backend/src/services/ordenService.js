@@ -66,6 +66,7 @@ export async function crearOrden(usuarioId, datosEntrega) {
       gananciaVendedor,
       estado: 'pendiente',
       direccionEntrega: datosEntrega.direccion,
+      ciudadEntrega: datosEntrega.ciudad || '',
       notasComprador: datosEntrega.notas || '',
       nombreComprador: datosEntrega.nombre || '',
       telefonoComprador: datosEntrega.telefono || ''

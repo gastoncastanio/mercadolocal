@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { subirImagenOptimizada } from '../utils/imageUpload'
+import DeslindeComisionista from '../components/DeslindeComisionista'
 
 interface Perfil {
   _id: string
@@ -12,7 +14,33 @@ interface Perfil {
   dniVerificado: boolean
   calificacion: number
   totalViajes: number
+  documentoVehiculo?: { verificado: boolean }
+  estadoDocumento?: string
+  estaTrabajandoHoy?: boolean
+  horariosActivos?: Record<string, { desde?: string; hasta?: string }>
 }
+
+interface Cotizacion {
+  _id: string
+  estado: string
+  ciudadOrigen: string
+  ciudadDestino: string
+  descripcionCarga: string
+  cotizacion: { monto: number | null; notas: string }
+  incidente?: { reportado: boolean }
+  compradorId?: { _id: string; nombre: string; avatar: string } | null
+  ordenId?: { total: number } | null
+}
+
+const DIAS = [
+  { key: 'lunes', label: 'Lun' },
+  { key: 'martes', label: 'Mar' },
+  { key: 'miercoles', label: 'Mié' },
+  { key: 'jueves', label: 'Jue' },
+  { key: 'viernes', label: 'Vie' },
+  { key: 'sabado', label: 'Sáb' },
+  { key: 'domingo', label: 'Dom' }
+]
 
 interface Viaje {
   _id: string
@@ -56,6 +84,14 @@ export default function MiPerfilComisionistaPage() {
   const [accionando, setAccionando] = useState(false)
   const [codigos, setCodigos] = useState<Record<string, string>>({})
 
+  // Documento, horarios y cotizaciones (integración con el checkout)
+  const [subiendoDoc, setSubiendoDoc] = useState(false)
+  const [tipoDoc, setTipoDoc] = useState('titulo_propiedad')
+  const [horarios, setHorarios] = useState<Record<string, { desde: string; hasta: string }>>({})
+  const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
+  const [montos, setMontos] = useState<Record<string, string>>({})
+  const [notasCot, setNotasCot] = useState<Record<string, string>>({})
+
   // Form de perfil
   const [pf, setPf] = useState({
     nombreServicio: '', descripcion: '', tipo: 'auto', patente: '',
@@ -85,7 +121,16 @@ export default function MiPerfilComisionistaPage() {
         zonas: (res.data.zonasHabituales || []).join(', '),
         telefonoContacto: res.data.telefonoContacto || ''
       })
-      await Promise.all([cargarViajes(), cargarEnvios()])
+      // Horarios activos
+      const h: Record<string, { desde: string; hasta: string }> = {}
+      for (const d of DIAS) {
+        h[d.key] = {
+          desde: res.data.horariosActivos?.[d.key]?.desde || '',
+          hasta: res.data.horariosActivos?.[d.key]?.hasta || ''
+        }
+      }
+      setHorarios(h)
+      await Promise.all([cargarViajes(), cargarEnvios(), cargarCotizaciones()])
     } catch (e: any) {
       if (e.response?.status === 404) {
         setPerfil(null) // todavía no tiene perfil → mostrar form de creación
@@ -102,6 +147,107 @@ export default function MiPerfilComisionistaPage() {
   }
   async function cargarEnvios() {
     try { const r = await api.get('/comisionistas/envios-recibidos'); setEnvios(r.data || []) } catch {}
+  }
+  async function cargarCotizaciones() {
+    try { const r = await api.get('/comisionistas/cotizaciones-recibidas'); setCotizaciones(r.data || []) } catch {}
+  }
+
+  // Subir documento del vehículo (foto del título / cédula / licencia).
+  async function subirDocumento(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0]
+    if (!archivo) return
+    setSubiendoDoc(true)
+    setError('')
+    try {
+      const { url } = await subirImagenOptimizada(archivo)
+      await api.post('/comisionistas/perfil/documento', {
+        url, tipoDocumento: tipoDoc, nombreArchivo: archivo.name
+      })
+      await cargar()
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'No se pudo subir el documento')
+    } finally {
+      setSubiendoDoc(false)
+      e.target.value = ''
+    }
+  }
+
+  // Botón "estoy trabajando ahora".
+  async function toggleTrabajando() {
+    if (!perfil) return
+    setAccionando(true)
+    setError('')
+    try {
+      await api.patch('/comisionistas/perfil/trabajando', { activo: !perfil.estaTrabajandoHoy })
+      await cargar()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo actualizar tu estado')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  async function guardarHorarios() {
+    setAccionando(true)
+    setError('')
+    // Solo enviar días con desde y hasta completos.
+    const payload: Record<string, { desde: string; hasta: string }> = {}
+    for (const d of DIAS) {
+      const h = horarios[d.key]
+      if (h?.desde && h?.hasta) payload[d.key] = { desde: h.desde, hasta: h.hasta }
+    }
+    try {
+      await api.patch('/comisionistas/perfil', { horariosActivos: payload })
+      await cargar()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudieron guardar los horarios')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  // Responder una cotización con un precio.
+  async function responderCotizacion(id: string) {
+    const monto = Number(montos[id])
+    if (!Number.isFinite(monto) || monto < 0) { setError('Ingresá un monto válido'); return }
+    setAccionando(true)
+    setError('')
+    try {
+      await api.patch(`/comisionistas/cotizacion/${id}/responder`, { monto, notas: notasCot[id] || '' })
+      setMontos(prev => ({ ...prev, [id]: '' }))
+      setNotasCot(prev => ({ ...prev, [id]: '' }))
+      await cargarCotizaciones()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo cotizar')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  async function cancelarCotizacion(id: string) {
+    setAccionando(true)
+    try {
+      await api.patch(`/comisionistas/cotizacion/${id}/cancelar`)
+      await cargarCotizaciones()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo cancelar')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  async function reportarIncidente(id: string) {
+    const descripcion = prompt('Describí brevemente qué pasó (rotura, accidente, etc.). El vendedor coordinará el reintegro al cliente:')
+    if (descripcion === null) return
+    setAccionando(true)
+    try {
+      await api.patch(`/comisionistas/cotizacion/${id}/incidente`, { descripcion })
+      await cargarCotizaciones()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo reportar el incidente')
+    } finally {
+      setAccionando(false)
+    }
   }
 
   async function guardarPerfil(e: React.FormEvent) {
@@ -254,6 +400,139 @@ export default function MiPerfilComisionistaPage() {
         {/* Resto del panel solo si ya tiene perfil */}
         {perfil && (
           <>
+            {/* Documentación legal del vehículo + estado de trabajo */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
+              <h2 className="text-lg font-bold text-ml-ink">Documentación del vehículo</h2>
+              <p className="text-xs text-ml-muted leading-relaxed">
+                Para poder trabajar trasladando compras del marketplace tenés que cargar la documentación de tu vehículo.
+                Verificamos que el vehículo esté <strong>a tu nombre</strong> o que tengas <strong>permiso para conducirlo</strong>.
+                Hasta que un administrador lo verifique, no vas a aparecer en el panel de comisionistas en vivo.
+              </p>
+
+              {/* Estado del documento */}
+              {perfil.estadoDocumento === 'verificado' ? (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800 font-semibold">✓ Documento verificado. Ya podés trabajar.</div>
+              ) : perfil.estadoDocumento === 'pendiente' && perfil.documentoVehiculo && !perfil.documentoVehiculo.verificado ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">⏳ Tu documento está en revisión. Te avisamos cuando se verifique.</div>
+              ) : perfil.estadoDocumento === 'rechazado' ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">✕ Tu documento fue rechazado. Subí uno nuevo, válido y legible.</div>
+              ) : (
+                <div className="bg-ml-bg border border-ml-line rounded-lg p-3 text-sm text-ml-muted">Todavía no cargaste la documentación de tu vehículo.</div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-ml-ink mb-2">Tipo de documento</label>
+                  <select value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet">
+                    <option value="titulo_propiedad">Título de propiedad (a mi nombre)</option>
+                    <option value="cédula_estacionamiento">Cédula azul / autorización para conducir</option>
+                    <option value="licencia_conducir">Licencia de conducir</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <label className="w-full">
+                    <span className="block w-full text-center py-2 border-2 border-dashed border-ml-line rounded-lg cursor-pointer text-sm font-semibold text-ml-violet hover:bg-violet-50">
+                      {subiendoDoc ? 'Subiendo...' : '📎 Subir foto del documento'}
+                    </span>
+                    <input type="file" accept="image/*" onChange={subirDocumento} disabled={subiendoDoc} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              {/* Botón de trabajar */}
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-ml-line flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold text-ml-ink">Estado de trabajo</p>
+                  <p className="text-xs text-ml-muted">{perfil.estaTrabajandoHoy ? 'Estás visible para los compradores ahora.' : 'No estás trabajando ahora.'}</p>
+                </div>
+                <button
+                  onClick={toggleTrabajando}
+                  disabled={accionando || perfil.estadoDocumento !== 'verificado'}
+                  className={`px-5 py-2.5 rounded-lg font-bold text-sm transition-colors disabled:opacity-50 ${perfil.estaTrabajandoHoy ? 'bg-green-600 text-white hover:bg-green-700' : 'mlbtn ml-grad text-white'}`}
+                  title={perfil.estadoDocumento !== 'verificado' ? 'Necesitás el documento verificado' : ''}
+                >
+                  {perfil.estaTrabajandoHoy ? '🟢 Trabajando — Tocá para parar' : '▶ Empezar a trabajar'}
+                </button>
+              </div>
+            </div>
+
+            {/* Horarios activos */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
+              <h2 className="text-lg font-bold text-ml-ink">Mis horarios</h2>
+              <p className="text-xs text-ml-muted">Indicá en qué franja horaria solés estar disponible cada día (opcional, informativo para los compradores).</p>
+              <div className="space-y-2">
+                {DIAS.map(d => (
+                  <div key={d.key} className="flex items-center gap-3">
+                    <span className="w-10 text-sm font-semibold text-ml-ink">{d.label}</span>
+                    <input type="time" value={horarios[d.key]?.desde || ''} onChange={(e) => setHorarios(prev => ({ ...prev, [d.key]: { ...prev[d.key], desde: e.target.value } }))} className="px-2 py-1.5 border border-ml-line rounded-lg text-sm" />
+                    <span className="text-ml-muted text-sm">a</span>
+                    <input type="time" value={horarios[d.key]?.hasta || ''} onChange={(e) => setHorarios(prev => ({ ...prev, [d.key]: { ...prev[d.key], hasta: e.target.value } }))} className="px-2 py-1.5 border border-ml-line rounded-lg text-sm" />
+                  </div>
+                ))}
+              </div>
+              <button onClick={guardarHorarios} disabled={accionando} className="px-5 py-2 border border-ml-line rounded-lg font-semibold text-sm hover:bg-ml-bg disabled:opacity-50">Guardar horarios</button>
+            </div>
+
+            {/* Deslinde legal informativo */}
+            <DeslindeComisionista />
+
+            {/* Cotizaciones recibidas (comisionista en vivo) */}
+            {cotizaciones.length > 0 && (
+              <div>
+                <h2 className="text-lg font-bold text-ml-ink mb-3">Solicitudes de cotización ({cotizaciones.length})</h2>
+                <div className="space-y-3">
+                  {cotizaciones.map(c => (
+                    <div key={c._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-5">
+                      <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <img src={c.compradorId?.avatar || 'https://via.placeholder.com/36'} alt="" className="w-9 h-9 rounded-full object-cover" />
+                          <div>
+                            <p className="text-sm font-semibold text-ml-ink">{c.compradorId?.nombre || 'Comprador'}</p>
+                            <p className="text-xs text-ml-muted">{c.ciudadOrigen || '—'} → {c.ciudadDestino || '—'}</p>
+                          </div>
+                        </div>
+                        <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold border bg-ml-bg text-ml-soft border-ml-line capitalize">{c.estado}</span>
+                      </div>
+                      {c.descripcionCarga && <p className="text-xs text-ml-muted mb-2">📦 {c.descripcionCarga}</p>}
+
+                      {/* Formulario de cotización */}
+                      {['pendiente', 'cotizada'].includes(c.estado) && (
+                        <div className="flex gap-2 items-end flex-wrap pt-2 border-t border-ml-line">
+                          <div className="w-28">
+                            <label className="block text-xs font-semibold text-ml-muted mb-1">Precio $</label>
+                            <input type="number" min={0} value={montos[c._id] || ''} onChange={(e) => setMontos(prev => ({ ...prev, [c._id]: e.target.value }))} className="w-full px-3 py-2 border border-ml-line rounded-lg" />
+                          </div>
+                          <div className="flex-1 min-w-[140px]">
+                            <label className="block text-xs font-semibold text-ml-muted mb-1">Notas (opcional)</label>
+                            <input value={notasCot[c._id] || ''} onChange={(e) => setNotasCot(prev => ({ ...prev, [c._id]: e.target.value }))} placeholder="Ej: paso a la tarde" className="w-full px-3 py-2 border border-ml-line rounded-lg" />
+                          </div>
+                          <button onClick={() => responderCotizacion(c._id)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold">{c.estado === 'cotizada' ? 'Actualizar' : 'Cotizar'}</button>
+                        </div>
+                      )}
+
+                      {c.estado === 'aceptada' && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-2 text-sm text-green-800">
+                          ✓ El comprador aceptó tu cotización de <strong>${c.cotizacion?.monto?.toLocaleString('es-AR')}</strong>. Coordiná el traslado por chat.
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2 justify-end mt-2">
+                        {c.compradorId && ['cotizada', 'aceptada'].includes(c.estado) && (
+                          <button onClick={() => navigate(`/chat?con=${c.compradorId!._id}&nombre=${encodeURIComponent(c.compradorId!.nombre)}`)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
+                        )}
+                        {c.estado === 'aceptada' && !c.incidente?.reportado && (
+                          <button onClick={() => reportarIncidente(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-amber-700 hover:text-amber-800">⚠️ Reportar problema</button>
+                        )}
+                        {!['rechazada', 'cancelada'].includes(c.estado) && (
+                          <button onClick={() => cancelarCotizacion(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-red-600">Rechazar</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Publicar viaje */}
             <form onSubmit={publicarViaje} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
               <h2 className="text-lg font-bold text-ml-ink">Publicar un viaje</h2>

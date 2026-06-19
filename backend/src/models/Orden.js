@@ -106,6 +106,21 @@ const ordenSchema = new mongoose.Schema({
   fechaEnvio: {
     type: Date,
     default: null
+  },
+  // Integración con módulo de comisionistas (envío "en vivo")
+  comisionistaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Usuario',
+    default: null
+  },
+  envioComisionistaId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'EnvioComisionista',
+    default: null
+  },
+  ciudadEntrega: {
+    type: String,
+    default: '' // Extraída de direccionEntrega, usada para filtrar comisionistas
   }
 }, {
   timestamps: true

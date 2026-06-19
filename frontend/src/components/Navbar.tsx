@@ -251,6 +251,9 @@ export default function Navbar() {
                           <Link to="/comisionistas/mis-envios" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                             📦 Mis envíos
                           </Link>
+                          <Link to="/comisionistas/mis-cotizaciones" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                            🚚 Mis cotizaciones
+                          </Link>
                           {esVendedor && (
                             <>
                               <div className="border-t my-1 mx-3 border-ml-line2"></div>
@@ -501,6 +504,7 @@ export default function Navbar() {
                   <Link to="/trabajos/mis-publicaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🗂️ Mis publicaciones de trabajo</Link>
                   <Link to="/comisionistas/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🧳 Mi perfil de comisionista</Link>
                   <Link to="/comisionistas/mis-envios" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📦 Mis envíos</Link>
+                  <Link to="/comisionistas/mis-cotizaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🚚 Mis cotizaciones</Link>
                 </>
               )}
 

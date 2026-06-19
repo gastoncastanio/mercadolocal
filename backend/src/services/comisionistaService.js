@@ -1,6 +1,8 @@
 import PerfilComisionista from '../models/PerfilComisionista.js'
 import Viaje from '../models/Viaje.js'
 import EnvioComisionista from '../models/EnvioComisionista.js'
+import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
+import Orden from '../models/Orden.js'
 import Usuario from '../models/Usuario.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
 import { emitNotificacion } from './socketService.js'
@@ -39,7 +41,7 @@ export async function actualizarPerfilComisionista(usuarioId, datos) {
   const perfil = await PerfilComisionista.findOne({ usuarioId })
   if (!perfil) throw new Error('Perfil de comisionista no encontrado')
 
-  const campos = ['nombreServicio', 'descripcion', 'vehiculo', 'zonasHabituales', 'telefonoContacto']
+  const campos = ['nombreServicio', 'descripcion', 'vehiculo', 'zonasHabituales', 'telefonoContacto', 'horariosActivos']
   for (const campo of campos) {
     if (datos[campo] !== undefined) perfil[campo] = datos[campo]
   }
@@ -47,6 +49,114 @@ export async function actualizarPerfilComisionista(usuarioId, datos) {
 
   await perfil.populate('usuarioId', 'nombre avatar')
   return perfil.toPublic()
+}
+
+/**
+ * Carga/actualiza el documento del vehículo. Al subir uno nuevo, el estado vuelve
+ * a 'pendiente' (lo revisa un admin que verifica que el vehículo esté a su nombre
+ * o que tenga permiso para conducirlo). Sin documento verificado, el comisionista
+ * NO aparece en el panel "en vivo" del checkout.
+ */
+export async function cargarDocumentoVehiculo(usuarioId, { url, tipoDocumento, nombreArchivo }) {
+  if (!url) throw new Error('Falta el documento')
+  const perfil = await PerfilComisionista.findOne({ usuarioId })
+  if (!perfil) throw new Error('Perfil de comisionista no encontrado')
+
+  perfil.documentoVehiculo = {
+    url,
+    tipoDocumento: tipoDocumento || 'titulo_propiedad',
+    nombreArchivo: nombreArchivo || ''
+  }
+  perfil.estadoDocumento = 'pendiente'
+  await perfil.save()
+
+  await perfil.populate('usuarioId', 'nombre avatar')
+  return perfil.toPublic()
+}
+
+/**
+ * Botón "Estoy trabajando" — el comisionista marca/desmarca que está activo ahora.
+ * Requiere documento verificado para poder aparecer en el panel en vivo.
+ */
+export async function marcarTrabajandoHoy(usuarioId, activo) {
+  const perfil = await PerfilComisionista.findOne({ usuarioId })
+  if (!perfil) throw new Error('Perfil de comisionista no encontrado')
+
+  if (activo && perfil.estadoDocumento !== 'verificado') {
+    throw new Error('Necesitás tener el documento del vehículo verificado para empezar a trabajar')
+  }
+
+  perfil.estaTrabajandoHoy = !!activo
+  await perfil.save()
+
+  await perfil.populate('usuarioId', 'nombre avatar')
+  return perfil.toPublic()
+}
+
+// ===== Admin: verificación de documentos de vehículo =====
+
+// Lista perfiles con documento cargado a la espera de revisión.
+export async function documentosPendientes() {
+  return await PerfilComisionista.find({
+    'documentoVehiculo.url': { $ne: '' },
+    estadoDocumento: 'pendiente'
+  })
+    .sort({ updatedAt: 1 })
+    .populate('usuarioId', 'nombre avatar email')
+    .lean()
+}
+
+// El admin aprueba o rechaza el documento del vehículo.
+export async function verificarDocumento(perfilId, aprobado) {
+  const perfil = await PerfilComisionista.findById(perfilId)
+  if (!perfil) throw new Error('Perfil no encontrado')
+
+  perfil.estadoDocumento = aprobado ? 'verificado' : 'rechazado'
+  // Si se rechaza, no puede seguir apareciendo como trabajando.
+  if (!aprobado) perfil.estaTrabajandoHoy = false
+  await perfil.save()
+
+  emitNotificacion(perfil.usuarioId.toString(), {
+    tipo: 'comisionista',
+    titulo: aprobado ? 'Documento verificado' : 'Documento rechazado',
+    mensaje: aprobado
+      ? 'Tu documento fue verificado. Ya podés empezar a trabajar.'
+      : 'Tu documento fue rechazado. Subí uno nuevo, válido y legible.',
+    enlace: '/comisionistas/mi-perfil'
+  })
+  return perfil.toPublic()
+}
+
+/**
+ * Panel "en vivo" del checkout: comisionistas que están trabajando AHORA, con el
+ * documento verificado. Si se pasa una ciudad de destino, prioriza a los que la
+ * tienen entre sus zonas habituales (pero igual muestra al resto, ordenados).
+ */
+export async function comisionistasEnVivo({ ciudadDestino } = {}) {
+  const query = {
+    activo: true,
+    estaTrabajandoHoy: true,
+    estadoDocumento: 'verificado'
+  }
+  const perfiles = await PerfilComisionista.find(query)
+    .sort({ calificacion: -1, totalViajes: -1 })
+    .limit(50)
+    .populate('usuarioId', 'nombre avatar')
+
+  let resultado = perfiles.map(p => p.toPublic())
+
+  // Si hay ciudad de destino, ordena primero los que la cubren.
+  if (ciudadDestino) {
+    const norm = ciudadDestino.trim().toLowerCase()
+    resultado = resultado
+      .map(p => ({
+        ...p,
+        cubreDestino: (p.zonasHabituales || []).some(z => z.trim().toLowerCase() === norm)
+      }))
+      .sort((a, b) => Number(b.cubreDestino) - Number(a.cubreDestino))
+  }
+
+  return resultado
 }
 
 // ===== Viaje =====
@@ -310,4 +420,177 @@ export async function cancelarEnvio(usuarioId, envioId) {
     enlace: '/comisionistas/panel'
   })
   return actualizado
+}
+
+// ===== SolicitudCotizacion (comisionista en vivo desde el checkout) =====
+
+/**
+ * El comprador, tras pagar una orden, le pide cotización a un comisionista que
+ * está trabajando ahora. Requiere aceptar el deslinde de responsabilidad.
+ */
+export async function solicitarCotizacion(compradorId, { ordenId, comisionistaId, descripcionCarga, terminosAceptados }) {
+  if (!terminosAceptados) {
+    throw new Error('Tenés que aceptar los términos del servicio de traslado para continuar')
+  }
+  if (!ordenId || !comisionistaId) throw new Error('Faltan datos de la solicitud')
+  if (comisionistaId.toString() === compradorId.toString()) {
+    throw new Error('No podés pedirte cotización a vos mismo')
+  }
+
+  const orden = await Orden.findById(ordenId)
+  if (!orden) throw new Error('Orden no encontrada')
+  if (orden.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+  if (orden.estado === 'pendiente') throw new Error('La orden todavía no está paga')
+
+  // El comisionista debe estar activo y verificado.
+  const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId })
+  if (!perfil || !perfil.activo || perfil.estadoDocumento !== 'verificado') {
+    throw new Error('El comisionista no está disponible')
+  }
+
+  // Vendedor (para coordinar el retiro): primer item de la orden.
+  let vendedorId = null
+  let ciudadOrigen = orden.ciudadEntrega || ''
+  const primerItem = orden.items?.[0]
+  if (primerItem?.tiendaId) {
+    const { default: Tienda } = await import('../models/Tienda.js')
+    const tienda = await Tienda.findById(primerItem.tiendaId).select('usuarioId ciudad').lean()
+    if (tienda) {
+      vendedorId = tienda.usuarioId
+      ciudadOrigen = tienda.ciudad || ciudadOrigen
+    }
+  }
+
+  try {
+    const solicitud = await new SolicitudCotizacion({
+      ordenId,
+      compradorId,
+      comisionistaId,
+      vendedorId,
+      ciudadOrigen,
+      ciudadDestino: orden.ciudadEntrega || '',
+      descripcionCarga: descripcionCarga || (orden.items || []).map(i => i.nombre).join(', '),
+      terminosAceptados: true
+    }).save()
+
+    emitNotificacion(comisionistaId.toString(), {
+      tipo: 'cotizacion',
+      titulo: 'Nueva solicitud de cotización',
+      mensaje: 'Un comprador te pidió cotización para un traslado.',
+      enlace: '/comisionistas/mi-perfil'
+    })
+
+    return solicitud
+  } catch (err) {
+    if (err.code === 11000) throw new Error('Ya le pediste cotización a este comisionista por esta orden')
+    throw err
+  }
+}
+
+// Solicitudes que recibió un comisionista (para cotizar).
+export async function cotizacionesRecibidas(comisionistaId) {
+  return await SolicitudCotizacion.find({ comisionistaId })
+    .sort({ createdAt: -1 })
+    .populate('compradorId', 'nombre avatar')
+    .populate('ordenId', 'total items')
+    .lean()
+}
+
+// Solicitudes que envió un comprador.
+export async function misCotizaciones(compradorId) {
+  return await SolicitudCotizacion.find({ compradorId })
+    .sort({ createdAt: -1 })
+    .populate('comisionistaId', 'nombre avatar')
+    .lean()
+}
+
+// El comisionista responde con un precio.
+export async function responderCotizacion(comisionistaId, solicitudId, { monto, notas }) {
+  const montoNum = Number(monto)
+  if (!Number.isFinite(montoNum) || montoNum < 0) throw new Error('Monto inválido')
+
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.comisionistaId.toString() !== comisionistaId.toString()) throw new Error('No autorizado')
+  if (!['pendiente', 'cotizada'].includes(solicitud.estado)) {
+    throw new Error('Esta solicitud ya no admite cotización')
+  }
+
+  solicitud.cotizacion = { monto: montoNum, notas: notas || '', fecha: new Date() }
+  solicitud.estado = 'cotizada'
+  await solicitud.save()
+
+  emitNotificacion(solicitud.compradorId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Cotización recibida',
+    mensaje: `Un comisionista te cotizó $${montoNum.toLocaleString('es-AR')} por el traslado.`,
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+  return solicitud
+}
+
+// El comprador acepta la cotización: desbloquea la coordinación por chat.
+export async function aceptarCotizacion(compradorId, solicitudId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+  if (solicitud.estado !== 'cotizada') throw new Error('La solicitud todavía no fue cotizada')
+
+  solicitud.estado = 'aceptada'
+  await solicitud.save()
+
+  emitNotificacion(solicitud.comisionistaId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Cotización aceptada',
+    mensaje: 'Un comprador aceptó tu cotización. Coordinen el traslado por chat.',
+    enlace: '/comisionistas/mi-perfil'
+  })
+  return solicitud
+}
+
+// Rechazar/cancelar una cotización (cualquiera de las partes).
+export async function cancelarCotizacion(usuarioId, solicitudId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+
+  const esComprador = solicitud.compradorId.toString() === usuarioId.toString()
+  const esComisionista = solicitud.comisionistaId.toString() === usuarioId.toString()
+  if (!esComprador && !esComisionista) throw new Error('No autorizado')
+  if (['rechazada', 'cancelada'].includes(solicitud.estado)) return solicitud
+
+  solicitud.estado = esComisionista ? 'rechazada' : 'cancelada'
+  await solicitud.save()
+
+  const otraParte = esComprador ? solicitud.comisionistaId : solicitud.compradorId
+  emitNotificacion(otraParte.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Cotización cancelada',
+    mensaje: 'Una solicitud de cotización fue cancelada.',
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+  return solicitud
+}
+
+/**
+ * El comisionista reporta un incidente (rotura, accidente). MercadoLocal solo
+ * deja constancia: el reintegro al comprador lo resuelve el vendedor con el
+ * comisionista. Notifica a comprador y vendedor.
+ */
+export async function reportarIncidente(comisionistaId, solicitudId, descripcion) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.comisionistaId.toString() !== comisionistaId.toString()) throw new Error('No autorizado')
+
+  solicitud.incidente = { reportado: true, descripcion: descripcion || '', fecha: new Date() }
+  await solicitud.save()
+
+  const aviso = {
+    tipo: 'incidente',
+    titulo: 'Incidente en el traslado',
+    mensaje: 'El comisionista reportó un problema con el traslado. El vendedor coordina el reintegro.',
+    enlace: '/comisionistas/mis-cotizaciones'
+  }
+  emitNotificacion(solicitud.compradorId.toString(), aviso)
+  if (solicitud.vendedorId) emitNotificacion(solicitud.vendedorId.toString(), aviso)
+  return solicitud
 }

@@ -265,6 +265,17 @@ function SeccionInicio() {
           <h3 className="font-semibold text-ml-ink group-hover:text-amber-600">Solicitudes legales</h3>
           <p className="text-xs text-ml-muted mt-1">Datos, bajas, quejas y arrepentimientos</p>
         </a>
+        <a
+          href="/admin/comisionistas"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">🪪</span>
+            <span className="text-xs bg-violet-100 text-ml-violet px-2 py-0.5 rounded-full">Verificación</span>
+          </div>
+          <h3 className="font-semibold text-ml-ink group-hover:text-ml-violet">Comisionistas</h3>
+          <p className="text-xs text-ml-muted mt-1">Verificar documentos de vehículos</p>
+        </a>
       </div>
     </div>
   )

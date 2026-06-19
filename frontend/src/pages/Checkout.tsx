@@ -8,6 +8,7 @@ export default function Checkout() {
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [direccion, setDireccion] = useState(usuario?.direccion || '')
+  const [ciudad, setCiudad] = useState((usuario as any)?.ciudad || '')
   const [nombre, setNombre] = useState(usuario?.nombre || '')
   const [telefono, setTelefono] = useState(usuario?.telefono || '')
   const [notas, setNotas] = useState('')
@@ -57,7 +58,7 @@ export default function Checkout() {
     try {
       // 1. Crear la(s) orden(es). El backend separa el carrito por vendedor,
       //    así que puede devolver varias órdenes (una por vendedor).
-      const resOrden = await api.post('/ordenes/crear', { direccion, nombre, telefono, notas })
+      const resOrden = await api.post('/ordenes/crear', { direccion, ciudad, nombre, telefono, notas })
       const ordenes: any[] = resOrden.data?.ordenes || []
 
       if (ordenes.length === 0) {
@@ -120,7 +121,14 @@ export default function Checkout() {
               <div>
                 <label className="block text-sm font-medium text-ml-ink mb-1">Dirección de entrega</label>
                 <input type="text" value={direccion} onChange={e => setDireccion(e.target.value)} required
-                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Calle, número, ciudad" />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Calle y número" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Ciudad de entrega</label>
+                <input type="text" value={ciudad} onChange={e => setCiudad(e.target.value)}
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Ej: Neuquén" />
+                <p className="text-xs text-ml-muted mt-1">La usamos para sugerirte comisionistas que llegan a tu zona.</p>
               </div>
 
               <div>
@@ -141,6 +149,11 @@ export default function Checkout() {
                   <span className="font-semibold">📦 Sobre el envío:</span> el costo NO está incluido en este pago.
                   Una vez confirmada la compra, vas a poder coordinar el envío o retiro directamente con el
                   vendedor por WhatsApp (las formas de entrega están en cada producto).
+                </p>
+                <p className="text-xs text-ml-ink leading-relaxed mt-2">
+                  <span className="font-semibold">🚚 Comisionista en vivo:</span> después de pagar, en
+                  "Mis pedidos" vas a poder pedirle cotización a un comisionista que esté trabajando ahora
+                  para que te lleve la compra. El traslado se acuerda entre vos, el vendedor y el comisionista.
                 </p>
               </div>
 

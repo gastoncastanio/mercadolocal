@@ -89,6 +89,7 @@ const MisCanjes = lazy(() => import('./pages/MisCanjes'))
 const PanelComercio = lazy(() => import('./pages/PanelComercio'))
 const CanjearOferta = lazy(() => import('./pages/CanjearOferta'))
 const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
+const VerificarComisionistas = lazy(() => import('./pages/admin/VerificarComisionistas'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 // Servicios Locales (Paso 2)
@@ -113,6 +114,7 @@ const ComisionistasPage = lazy(() => import('./pages/ComisionistasPage'))
 const DetalleViajePage = lazy(() => import('./pages/DetalleViajePage'))
 const MiPerfilComisionistaPage = lazy(() => import('./pages/MiPerfilComisionistaPage'))
 const MisEnviosPage = lazy(() => import('./pages/MisEnviosPage'))
+const MisCotizacionesPage = lazy(() => import('./pages/MisCotizacionesPage'))
 
 function LoadingSpinner() {
   return (
@@ -217,6 +219,7 @@ function RutasConBoundary() {
           <Route path="/comisionistas" element={<ConNavbar><ComisionistasPage /></ConNavbar>} />
           <Route path="/comisionistas/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilComisionistaPage /></RutaPrivada></ConNavbar>} />
           <Route path="/comisionistas/mis-envios" element={<ConNavbar><RutaPrivada><MisEnviosPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/mis-cotizaciones" element={<ConNavbar><RutaPrivada><MisCotizacionesPage /></RutaPrivada></ConNavbar>} />
           <Route path="/comisionistas/viaje/:id" element={<ConNavbar><DetalleViajePage /></ConNavbar>} />
 
           {/* Solo admin */}
@@ -225,6 +228,7 @@ function RutasConBoundary() {
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/solicitudes-legales" element={<ConNavbar><RutaPrivada roles={['admin']}><SolicitudesLegales /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/comisionistas" element={<ConNavbar><RutaPrivada roles={['admin']}><VerificarComisionistas /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Ayuda */}

@@ -13,12 +13,12 @@ const router = Router()
 // POST /api/ordenes/crear - Crear orden desde carrito
 router.post('/crear', verificarToken, async (req, res) => {
   try {
-    const { direccion, notas, nombre, telefono } = req.body
+    const { direccion, ciudad, notas, nombre, telefono } = req.body
     if (!direccion) {
       return res.status(400).json({ error: 'La dirección de entrega es obligatoria' })
     }
     // crearOrden devuelve un array de órdenes: una por vendedor del carrito.
-    const ordenes = await crearOrden(req.usuario.id, { direccion, notas, nombre, telefono })
+    const ordenes = await crearOrden(req.usuario.id, { direccion, ciudad, notas, nombre, telefono })
 
     // Adjuntar el nombre de la tienda a cada orden para que el frontend pueda
     // mostrar "Pagando a [vendedor]" en la cola de pagos multi-vendedor.

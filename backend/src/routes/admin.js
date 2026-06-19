@@ -4,6 +4,7 @@ import { todasLasOrdenes, estadisticasAdmin } from '../services/ordenService.js'
 import { listarTiendas } from '../services/tiendaService.js'
 import Producto from '../models/Producto.js'
 import Usuario from '../models/Usuario.js'
+import { documentosPendientes, verificarDocumento } from '../services/comisionistaService.js'
 
 const router = Router()
 
@@ -235,6 +236,28 @@ router.post('/ordenes-limpieza/ejecutar', verificarToken, soloAdmin, async (req,
   } catch (error) {
     console.error('Error limpiando órdenes:', error)
     res.status(500).json({ error: error.message })
+  }
+})
+
+// ===== Verificación de documentos de comisionistas =====
+
+// GET /api/admin/comisionistas/documentos - Documentos pendientes de revisión
+router.get('/comisionistas/documentos', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const pendientes = await documentosPendientes()
+    res.json(pendientes)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PATCH /api/admin/comisionistas/:perfilId/verificar - Aprobar/rechazar documento
+router.patch('/comisionistas/:perfilId/verificar', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const perfil = await verificarDocumento(req.params.perfilId, req.body.aprobado === true)
+    res.json(perfil)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
   }
 })
 

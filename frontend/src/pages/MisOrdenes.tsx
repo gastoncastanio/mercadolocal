@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { Orden } from '../types'
+import PanelComisionistasEnVivo from '../components/PanelComisionistasEnVivo'
 
 // ============================================================
 // Helpers
@@ -119,6 +120,7 @@ export default function MisOrdenes() {
   const [cargando, setCargando] = useState(true)
   const [pagando, setPagando] = useState<string | null>(null)
   const [confirmandoOrden, setConfirmandoOrden] = useState<Orden | null>(null)
+  const [comisionistaOrden, setComisionistaOrden] = useState<string | null>(null)
 
   useEffect(() => {
     cargarOrdenes()
@@ -496,6 +498,43 @@ export default function MisOrdenes() {
                       <p className="text-sm text-ml-ink">📍 {orden.direccionEntrega}</p>
                       {orden.notasComprador && (
                         <p className="text-xs text-ml-muted mt-1">Notas: {orden.notasComprador}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Comisionista en vivo — solo para órdenes pagadas o enviadas */}
+                  {(isPagada || isEnviada) && (
+                    <div className="px-5 py-4 border-b border-ml-line2">
+                      <button
+                        onClick={() => setComisionistaOrden(comisionistaOrden === orden._id ? null : orden._id)}
+                        className="w-full flex items-center justify-between gap-2 text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">🚚</span>
+                          <div>
+                            <p className="text-sm font-bold text-ml-ink">Comisionista en vivo</p>
+                            <p className="text-xs text-ml-muted">Pedí que un viajero te lleve la compra ahora mismo</p>
+                          </div>
+                        </div>
+                        <span className="text-ml-violet text-sm font-semibold shrink-0">
+                          {comisionistaOrden === orden._id ? 'Ocultar ▲' : 'Ver ▼'}
+                        </span>
+                      </button>
+
+                      {comisionistaOrden === orden._id && (
+                        <div className="mt-4">
+                          <PanelComisionistasEnVivo
+                            ordenId={orden._id}
+                            ciudadDestino={(orden as any).ciudadEntrega || tiendaPrincipal?.ciudad}
+                            onSolicitado={() => toast.exito('Solicitud enviada. Te avisamos cuando te coticen.')}
+                          />
+                          <Link
+                            to="/comisionistas/mis-cotizaciones"
+                            className="block text-center text-xs text-ml-blue hover:underline mt-3"
+                          >
+                            Ver mis solicitudes de cotización →
+                          </Link>
+                        </div>
                       )}
                     </div>
                   )}
