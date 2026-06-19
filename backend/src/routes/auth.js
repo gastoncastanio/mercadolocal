@@ -290,6 +290,114 @@ router.put('/perfil', verificarToken, async (req, res) => {
   }
 })
 
+// PATCH /api/auth/contrasena - Cambiar contrase\u00f1a
+router.patch('/contrasena', verificarToken, async (req, res) => {
+  try {
+    const { contrase\u00f1aActual, contrase\u00f1aNueva, contrase\u00f1aConfirm } = req.body
+
+    if (!contrase\u00f1aActual || !contrase\u00f1aNueva || !contrase\u00f1aConfirm) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos' })
+    }
+
+    if (contrase\u00f1aNueva !== contrase\u00f1aConfirm) {
+      return res.status(400).json({ error: 'Las contrase\u00f1as no coinciden' })
+    }
+
+    if (!contrase\u00f1aFuerte(contrase\u00f1aNueva)) {
+      return res.status(400).json({ error: 'La contrase\u00f1a debe tener al menos 8 caracteres y un n\u00famero' })
+    }
+
+    if (contrase\u00f1aActual === contrase\u00f1aNueva) {
+      return res.status(400).json({ error: 'La nueva contrase\u00f1a debe ser diferente a la actual' })
+    }
+
+    const usuario = await Usuario.findById(req.usuario.id)
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    }
+
+    const contrase\u00f1aValida = await usuario.compararContrase\u00f1a(contrase\u00f1aActual)
+    if (!contrase\u00f1aValida) {
+      return res.status(401).json({ error: 'La contrase\u00f1a actual es incorrecta' })
+    }
+
+    usuario.contrase\u00f1a = contrase\u00f1aNueva
+    await usuario.save()
+
+    res.json({ mensaje: 'Contrase\u00f1a actualizada correctamente' })
+  } catch (error) {
+    console.error('Error cambiando contrase\u00f1a:', error.message)
+    res.status(500).json({ error: 'Error al cambiar la contrase\u00f1a' })
+  }
+})
+
+// PATCH /api/auth/email - Cambiar email
+router.patch('/email', verificarToken, async (req, res) => {
+  try {
+    const { emailNuevo, contrase\u00f1a } = req.body
+
+    if (!emailNuevo || !contrase\u00f1a) {
+      return res.status(400).json({ error: 'Email y contrase\u00f1a son requeridos' })
+    }
+
+    if (!emailValido(emailNuevo)) {
+      return res.status(400).json({ error: 'Email inv\u00e1lido' })
+    }
+
+    const usuario = await Usuario.findById(req.usuario.id)
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    }
+
+    const contrase\u00f1aValida = await usuario.compararContrase\u00f1a(contrase\u00f1a)
+    if (!contrase\u00f1aValida) {
+      return res.status(401).json({ error: 'La contrase\u00f1a es incorrecta' })
+    }
+
+    const emailExistente = await Usuario.findOne({ email: emailNuevo.toLowerCase() })
+    if (emailExistente && emailExistente._id.toString() !== usuario._id.toString()) {
+      return res.status(409).json({ error: 'El email ya est\u00e1 en uso' })
+    }
+
+    usuario.email = emailNuevo.toLowerCase()
+    await usuario.save()
+
+    res.json({ mensaje: 'Email actualizado correctamente', email: usuario.email })
+  } catch (error) {
+    console.error('Error cambiando email:', error.message)
+    res.status(500).json({ error: 'Error al cambiar el email' })
+  }
+})
+
+// GET /api/auth/sesiones - Listar sesiones activas
+router.get('/sesiones', verificarToken, async (req, res) => {
+  try {
+    const usuario = await Usuario.findById(req.usuario.id)
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuario no encontrado' })
+    }
+
+    const ahora = new Date()
+    const sesiones = usuario.refreshTokens
+      .filter(token => new Date(token.expira) > ahora)
+      .map((token, idx) => {
+        const dispositivo = token.dispositivo || 'Dispositivo desconocido'
+        const ultimoAcceso = token.creadoEn || token.expira
+        return {
+          id: idx,
+          dispositivo,
+          ultimoAcceso: new Date(ultimoAcceso).toLocaleDateString('es-AR'),
+          actual: token === usuario.refreshTokens[0]
+        }
+      })
+
+    res.json({ sesiones })
+  } catch (error) {
+    console.error('Error obteniendo sesiones:', error.message)
+    res.status(500).json({ error: 'Error al obtener sesiones' })
+  }
+})
+
 // POST /api/auth/recuperar - Solicitar recuperaci\u00f3n de contrase\u00f1a
 router.post('/recuperar', async (req, res) => {
   try {

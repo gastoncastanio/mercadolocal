@@ -98,6 +98,9 @@ const SolicitudServicioPage = lazy(() => import('./pages/SolicitudServicioPage')
 const PanelProfesionalPage = lazy(() => import('./pages/PanelProfesionalPage'))
 const MiPerfilProfesionalPage = lazy(() => import('./pages/MiPerfilProfesionalPage'))
 
+// Mi Cuenta (Paso 2.5)
+const MiCuentaPage = lazy(() => import('./pages/MiCuentaPage'))
+
 function LoadingSpinner() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -181,6 +184,9 @@ function AppContent() {
           <Route path="/servicios/solicitud/:profesionalId" element={<ConNavbar><RutaPrivada><SolicitudServicioPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/panel" element={<ConNavbar><RutaPrivada><PanelProfesionalPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilProfesionalPage /></RutaPrivada></ConNavbar>} />
+
+          {/* Mi Cuenta (Paso 2.5) */}
+          <Route path="/mi-cuenta" element={<ConNavbar><RutaPrivada><MiCuentaPage /></RutaPrivada></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
