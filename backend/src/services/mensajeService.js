@@ -2,6 +2,7 @@ import Mensaje from '../models/Mensaje.js'
 import Orden from '../models/Orden.js'
 import Tienda from '../models/Tienda.js'
 import SolicitudServicio from '../models/SolicitudServicio.js'
+import TrabajoBuscado from '../models/TrabajoBuscado.js'
 import { censurarContacto } from '../utils/validacionContenido.js'
 
 /**
@@ -45,16 +46,25 @@ async function existeOrdenPagadaEntre(userA, userB) {
  * @returns {Promise<boolean>}
  */
 export async function existeServicioContratadoEntre(userA, userB) {
-  const solicitud = await SolicitudServicio.findOne({
-    $or: [
-      // userA es cliente, userB es profesional
-      { clienteId: userA, profesionalId: userB, estado: { $in: ['aceptada', 'en_curso', 'completada'] } },
-      // userB es cliente, userA es profesional
-      { clienteId: userB, profesionalId: userA, estado: { $in: ['aceptada', 'en_curso', 'completada'] } }
-    ]
-  }).select('_id').lean()
+  const [solicitud, trabajo] = await Promise.all([
+    SolicitudServicio.findOne({
+      $or: [
+        // userA es cliente, userB es profesional
+        { clienteId: userA, profesionalId: userB, estado: { $in: ['aceptada', 'en_curso', 'completada'] } },
+        // userB es cliente, userA es profesional
+        { clienteId: userB, profesionalId: userA, estado: { $in: ['aceptada', 'en_curso', 'completada'] } }
+      ]
+    }).select('_id').lean(),
+    // Bolsa de trabajo: chat desbloqueado al asignarse el trabajo a un profesional
+    TrabajoBuscado.findOne({
+      $or: [
+        { clienteId: userA, profesionalAsignadoId: userB, estado: { $in: ['asignado', 'completado'] } },
+        { clienteId: userB, profesionalAsignadoId: userA, estado: { $in: ['asignado', 'completado'] } }
+      ]
+    }).select('_id').lean()
+  ])
 
-  return !!solicitud
+  return !!solicitud || !!trabajo
 }
 
 // Enviar mensaje

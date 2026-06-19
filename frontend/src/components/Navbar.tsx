@@ -230,6 +230,12 @@ export default function Navbar() {
                           <Link to="/servicios/panel" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
                             📋 Solicitudes recibidas
                           </Link>
+                          <Link to="/trabajos" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                            📣 Bolsa de trabajo
+                          </Link>
+                          <Link to="/trabajos/mis-publicaciones" onClick={() => setMenuUsuario(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                            🗂️ Mis publicaciones
+                          </Link>
                           {esVendedor && (
                             <>
                               <div className="border-t my-1 mx-3 border-ml-line2"></div>
@@ -466,12 +472,14 @@ export default function Navbar() {
               <Link to="/mas-vendidos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Más vendidos</Link>
               <Link to="/radar" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">📍 Radar del Centro</Link>
               <Link to="/servicios" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">🔧 Servicios</Link>
+              <Link to="/trabajos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">📣 Bolsa de trabajo</Link>
               {estaLogueado && (
                 <>
                   <Link to="/mis-canjes" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🎟️ Mis canjes</Link>
                   <Link to="/comercio" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🏬 Mi comercio</Link>
                   <Link to="/servicios/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">💼 Mi perfil profesional</Link>
                   <Link to="/servicios/panel" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📋 Solicitudes recibidas</Link>
+                  <Link to="/trabajos/mis-publicaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🗂️ Mis publicaciones de trabajo</Link>
                 </>
               )}
 

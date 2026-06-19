@@ -1,7 +1,10 @@
 import PerfilProfesional from '../models/PerfilProfesional.js'
 import SolicitudServicio from '../models/SolicitudServicio.js'
 import ResenaServicio from '../models/ResenaServicio.js'
+import TrabajoBuscado from '../models/TrabajoBuscado.js'
+import Bid from '../models/Bid.js'
 import Usuario from '../models/Usuario.js'
+import { emitNotificacion } from './socketService.js'
 
 // ===== PerfilProfesional =====
 export async function crearPerfilProfesional(usuarioId, datos) {
@@ -236,6 +239,276 @@ export async function actualizarCalificacionProfesional(profesionalId) {
   return promedioRedondeado
 }
 
+// ===== Bolsa de Trabajo Inversa (TrabajoBuscado + Bid) =====
+
+// Cliente publica un trabajo. Abierto a cualquier usuario registrado.
+export async function crearTrabajo(clienteId, datos) {
+  if (datos.presupuestoMin != null && datos.presupuestoMax != null &&
+    Number(datos.presupuestoMin) > Number(datos.presupuestoMax)) {
+    throw new Error('El presupuesto mínimo no puede ser mayor al máximo')
+  }
+
+  const trabajo = new TrabajoBuscado({
+    clienteId,
+    titulo: datos.titulo,
+    descripcion: datos.descripcion,
+    rubro: datos.rubro,
+    localidad: datos.localidad,
+    presupuestoMin: datos.presupuestoMin ?? null,
+    presupuestoMax: datos.presupuestoMax ?? null,
+    plazoEntrega: datos.plazoEntrega || null,
+    skills: datos.skills || []
+  })
+
+  await trabajo.save()
+  return trabajo
+}
+
+// Listar trabajos abiertos (browse del profesional). Incluye contador de ofertas.
+export async function buscarTrabajos(filtros = {}) {
+  const { rubro, localidad, estado = 'activo', skip = 0, limit = 20 } = filtros
+
+  const query = {}
+  if (estado) query.estado = estado
+  if (rubro) query.rubro = rubro
+  if (localidad) query.localidad = localidad
+
+  const trabajos = await TrabajoBuscado.find(query)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('clienteId', 'nombre avatar')
+    .lean()
+
+  // Contar ofertas por trabajo
+  const ids = trabajos.map(t => t._id)
+  const conteos = await Bid.aggregate([
+    { $match: { trabajoId: { $in: ids } } },
+    { $group: { _id: '$trabajoId', total: { $sum: 1 } } }
+  ])
+  const mapaConteos = new Map(conteos.map(c => [c._id.toString(), c.total]))
+  for (const t of trabajos) {
+    t.bidCount = mapaConteos.get(t._id.toString()) || 0
+  }
+
+  const total = await TrabajoBuscado.countDocuments(query)
+  return { trabajos, total }
+}
+
+// Obtener un trabajo. Si el usuario es el cliente dueño, incluye todas las ofertas.
+// Si es otro usuario (profesional), incluye solo su propia oferta (si existe).
+export async function obtenerTrabajoConBids(trabajoId, usuarioId) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+    .populate('clienteId', 'nombre avatar')
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+
+  const esDueno = trabajo.clienteId._id.toString() === usuarioId.toString()
+
+  let bids
+  if (esDueno) {
+    // Todas las ofertas, con datos del profesional + su calificación
+    bids = await Bid.find({ trabajoId })
+      .sort({ precioOfrecido: 1, createdAt: 1 })
+      .populate('profesionalId', 'nombre avatar')
+      .lean()
+    // Adjuntar calificación/totalTrabajos del perfil del profesional
+    const profIds = bids.map(b => b.profesionalId?._id).filter(Boolean)
+    const perfiles = await PerfilProfesional.find({ usuarioId: { $in: profIds } })
+      .select('usuarioId calificacion totalTrabajos conteoResenas rubro').lean()
+    const mapaPerfiles = new Map(perfiles.map(p => [p.usuarioId.toString(), p]))
+    for (const b of bids) {
+      const perfil = b.profesionalId && mapaPerfiles.get(b.profesionalId._id.toString())
+      b.perfilProfesional = perfil || null
+    }
+  } else {
+    // Solo la oferta propia del profesional que consulta
+    bids = await Bid.find({ trabajoId, profesionalId: usuarioId }).lean()
+  }
+
+  return { trabajo, bids, esDueno }
+}
+
+// Profesional oferta por un trabajo. Requiere tener PerfilProfesional.
+export async function crearBid(trabajoId, profesionalId, datos) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+  if (trabajo.estado !== 'activo') throw new Error('Este trabajo ya no recibe ofertas')
+  if (trabajo.clienteId.toString() === profesionalId.toString()) {
+    throw new Error('No podés ofertar en tu propio trabajo')
+  }
+
+  const perfil = await PerfilProfesional.findOne({ usuarioId: profesionalId }).select('_id')
+  if (!perfil) throw new Error('Necesitás un perfil profesional para ofertar')
+
+  if (datos.precioOfrecido == null || Number(datos.precioOfrecido) <= 0) {
+    throw new Error('El precio ofrecido debe ser mayor a cero')
+  }
+
+  const yaOferto = await Bid.findOne({ trabajoId, profesionalId }).select('_id')
+  if (yaOferto) throw new Error('Ya ofertaste en este trabajo')
+
+  const bid = new Bid({
+    trabajoId,
+    profesionalId,
+    precioOfrecido: datos.precioOfrecido,
+    notas: datos.notas || ''
+  })
+  await bid.save()
+
+  // Notificar al cliente que recibió una oferta
+  emitNotificacion(trabajo.clienteId, {
+    tipo: 'trabajo_oferta',
+    titulo: 'Nueva oferta en tu trabajo',
+    mensaje: `Recibiste una oferta de $${Number(datos.precioOfrecido).toLocaleString('es-AR')} en "${trabajo.titulo}"`,
+    enlace: `/trabajos/${trabajoId}`
+  })
+
+  return bid
+}
+
+// Cliente acepta una oferta: asigna el profesional y rechaza el resto.
+export async function aceptarBid(trabajoId, bidId, clienteId) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+  if (trabajo.clienteId.toString() !== clienteId.toString()) {
+    throw new Error('No tenés permiso para gestionar este trabajo')
+  }
+  if (trabajo.estado !== 'activo') throw new Error('El trabajo ya no está activo')
+
+  const bid = await Bid.findById(bidId)
+  if (!bid || bid.trabajoId.toString() !== trabajoId.toString()) {
+    throw new Error('Oferta no encontrada')
+  }
+  if (bid.estado !== 'activa') throw new Error('Esa oferta ya no está disponible')
+
+  // Asignar profesional ganador
+  trabajo.profesionalAsignadoId = bid.profesionalId
+  trabajo.bidGanadora = bid._id
+  trabajo.estado = 'asignado'
+  await trabajo.save()
+
+  // Marcar ofertas: ganadora aceptada, resto rechazadas
+  bid.estado = 'aceptada'
+  await bid.save()
+  await Bid.updateMany(
+    { trabajoId, _id: { $ne: bid._id } },
+    { estado: 'rechazada' }
+  )
+
+  // Notificar a ambas partes (desbloquea chat seguro)
+  emitNotificacion(bid.profesionalId, {
+    tipo: 'trabajo_asignado',
+    titulo: '¡Te asignaron un trabajo!',
+    mensaje: `Tu oferta fue aceptada en "${trabajo.titulo}". Ya podés coordinar por chat.`,
+    enlace: `/trabajos/${trabajoId}`
+  })
+
+  return trabajo
+}
+
+// Cliente cancela su trabajo.
+export async function cancelarTrabajo(trabajoId, clienteId) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+  if (trabajo.clienteId.toString() !== clienteId.toString()) {
+    throw new Error('No tenés permiso para gestionar este trabajo')
+  }
+  if (['completado', 'cancelado'].includes(trabajo.estado)) {
+    throw new Error('El trabajo ya está cerrado')
+  }
+
+  trabajo.estado = 'cancelado'
+  await trabajo.save()
+  await Bid.updateMany({ trabajoId, estado: 'activa' }, { estado: 'rechazada' })
+  return trabajo
+}
+
+// Cliente marca el trabajo como completado (tras la entrega manual).
+export async function completarTrabajo(trabajoId, clienteId) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+  if (trabajo.clienteId.toString() !== clienteId.toString()) {
+    throw new Error('No tenés permiso para gestionar este trabajo')
+  }
+  if (trabajo.estado !== 'asignado') {
+    throw new Error('Solo se puede completar un trabajo asignado')
+  }
+
+  trabajo.estado = 'completado'
+  await trabajo.save()
+
+  if (trabajo.profesionalAsignadoId) {
+    emitNotificacion(trabajo.profesionalAsignadoId, {
+      tipo: 'trabajo_completado',
+      titulo: 'Trabajo completado',
+      mensaje: `"${trabajo.titulo}" fue marcado como completado. ¡Gracias!`,
+      enlace: `/trabajos/${trabajoId}`
+    })
+  }
+
+  return trabajo
+}
+
+// Mis trabajos como cliente (dashboard).
+export async function trabajosPorCliente(clienteId, filtros = {}) {
+  const { estado, skip = 0, limit = 50 } = filtros
+  const query = { clienteId }
+  if (estado) query.estado = estado
+
+  const trabajos = await TrabajoBuscado.find(query)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('profesionalAsignadoId', 'nombre avatar')
+    .lean()
+
+  const ids = trabajos.map(t => t._id)
+  const conteos = await Bid.aggregate([
+    { $match: { trabajoId: { $in: ids } } },
+    { $group: { _id: '$trabajoId', total: { $sum: 1 } } }
+  ])
+  const mapaConteos = new Map(conteos.map(c => [c._id.toString(), c.total]))
+  for (const t of trabajos) {
+    t.bidCount = mapaConteos.get(t._id.toString()) || 0
+  }
+
+  const total = await TrabajoBuscado.countDocuments(query)
+  return { trabajos, total }
+}
+
+// Cliente reseña al profesional que completó un trabajo de la bolsa.
+export async function crearResenaTrabajo(clienteId, trabajoId, datos) {
+  const trabajo = await TrabajoBuscado.findById(trabajoId)
+  if (!trabajo) throw new Error('Trabajo no encontrado')
+  if (trabajo.clienteId.toString() !== clienteId.toString()) {
+    throw new Error('Este trabajo no te pertenece')
+  }
+  if (trabajo.estado !== 'completado') {
+    throw new Error('Solo podés reseñar trabajos completados')
+  }
+  if (!trabajo.profesionalAsignadoId) {
+    throw new Error('El trabajo no tiene un profesional asignado')
+  }
+
+  const resenaExistente = await ResenaServicio.findOne({ clienteId, trabajoId })
+  if (resenaExistente) throw new Error('Ya dejaste una reseña para este trabajo')
+
+  const resena = new ResenaServicio({
+    clienteId,
+    profesionalId: trabajo.profesionalAsignadoId,
+    tipo: 'trabajo',
+    trabajoId,
+    calificacion: datos.calificacion,
+    comentario: datos.comentario || ''
+  })
+  await resena.save()
+
+  // Recalcular calificación promedio (cuenta servicios + trabajos)
+  await actualizarCalificacionProfesional(trabajo.profesionalAsignadoId)
+
+  return resena
+}
+
 export default {
   crearPerfilProfesional,
   obtenerPerfilProfesional,
@@ -248,5 +521,14 @@ export default {
   crearResenaServicio,
   responderResenaServicio,
   resenasPorProfesional,
-  actualizarCalificacionProfesional
+  actualizarCalificacionProfesional,
+  crearTrabajo,
+  buscarTrabajos,
+  obtenerTrabajoConBids,
+  crearBid,
+  aceptarBid,
+  cancelarTrabajo,
+  completarTrabajo,
+  trabajosPorCliente,
+  crearResenaTrabajo
 }
