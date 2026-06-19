@@ -4,7 +4,7 @@ import api from '../services/api'
 
 interface Solicitud {
   _id: string
-  clienteId: { _id: string; nombre: string; avatar: string }
+  clienteId: { _id: string; nombre: string; avatar: string } | null
   rubro: string
   descripcion: string
   zona: string
@@ -131,12 +131,12 @@ export default function PanelProfesionalPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <img
-                        src={sol.clienteId.avatar || 'https://via.placeholder.com/40'}
-                        alt={sol.clienteId.nombre}
-                        className="w-12 h-12 rounded-full"
+                        src={sol.clienteId?.avatar || 'https://via.placeholder.com/40'}
+                        alt={sol.clienteId?.nombre || 'Cliente'}
+                        className="w-12 h-12 rounded-full object-cover bg-ml-bg"
                       />
                       <div>
-                        <p className="font-semibold text-ml-ink">{sol.clienteId.nombre}</p>
+                        <p className="font-semibold text-ml-ink">{sol.clienteId?.nombre || 'Cliente'}</p>
                         <p className="text-xs text-ml-muted">{sol.rubro} • {sol.zona}</p>
                       </div>
                     </div>
@@ -157,7 +157,7 @@ export default function PanelProfesionalPage() {
                 <p className="text-ml-soft mb-4">{sol.descripcion}</p>
 
                 {/* Cotización */}
-                {sol.cotizacion && (
+                {sol.cotizacion && typeof sol.cotizacion.monto === 'number' && (
                   <div className="bg-ml-bg border border-ml-line rounded-lg p-3 mb-4">
                     <p className="font-semibold text-ml-ink mb-1">Cotización: ${sol.cotizacion.monto.toLocaleString('es-AR')}</p>
                     {sol.cotizacion.notas && <p className="text-sm text-ml-soft">{sol.cotizacion.notas}</p>}
