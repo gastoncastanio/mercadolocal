@@ -9,7 +9,6 @@ interface DespatxadorBloqueHorarioProps {
   bloque: BloqueHorario | null
   coords: Coord | null
   ciudad: string
-  offsetMs: number
   cargando?: boolean
 }
 
@@ -20,7 +19,7 @@ interface OfertaPorBloque extends OfertaFlash {
   distancia?: number
 }
 
-export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, offsetMs, cargando = false }: DespatxadorBloqueHorarioProps) {
+export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, cargando = false }: DespatxadorBloqueHorarioProps) {
   const [ofertas, setOfertas] = useState<OfertaPorBloque[]>([])
   const [cargandoOfertas, setCargandoOfertas] = useState(false)
   const [error, setError] = useState('')
@@ -79,7 +78,7 @@ export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, offse
       ) : bloque.tipoDispatcher === 'cruzada' ? (
         <>
           {/* Carrusel de recompensa cruzada */}
-          <CarruselRecompensaCruzada ofertas={ofertas} offsetMs={offsetMs} />
+          <CarruselRecompensaCruzada ofertas={ofertas} />
 
           {/* Feed regular de todas las ofertas */}
           <div className="mt-8">

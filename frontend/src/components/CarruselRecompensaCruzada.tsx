@@ -3,11 +3,10 @@ import { OfertaFlash } from './TarjetaOfertaFlash'
 
 interface CarruselRecompensaCruzadaProps {
   ofertas: (OfertaFlash & { comercioNombre?: string })[]
-  offsetMs: number
   titulo?: string
 }
 
-export default function CarruselRecompensaCruzada({ ofertas, offsetMs, titulo = '🔗 Rutas de Recompensa Cruzada' }: CarruselRecompensaCruzadaProps) {
+export default function CarruselRecompensaCruzada({ ofertas, titulo = '🔗 Rutas de Recompensa Cruzada' }: CarruselRecompensaCruzadaProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)

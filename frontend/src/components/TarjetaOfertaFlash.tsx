@@ -154,10 +154,6 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
             precioFinal={oferta.precioFinal}
             comisionPorcentaje={oferta.comisionPorcentaje}
             onClose={() => setMostrarCheckout(false)}
-            onSuccess={() => {
-              setMostrarCheckout(false)
-              // El usuario será redirigido a MercadoPago desde CheckoutOferta
-            }}
           />
         )}
       </div>

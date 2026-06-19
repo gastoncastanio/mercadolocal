@@ -6,7 +6,7 @@ import CanjeAtribuido from '../models/CanjeAtribuido.js'
 import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
 import { bloqueActual, obtenerBloques } from '../utils/bloqueHorario.js'
-import { crearPreferenciaOferta } from '../config/mercadopago.js'
+import { crearPreferenciaOferta, obtenerPago, buscarPagoPorReferencia } from '../config/mercadopago.js'
 
 const router = Router()
 
@@ -284,7 +284,12 @@ router.post('/ofertas/:id/reclamar', verificarToken, async (req, res) => {
 router.get('/mis-canjes', verificarToken, async (req, res) => {
   try {
     const ahora = new Date()
-    const canjes = await CanjeAtribuido.find({ usuarioId: req.usuario.id })
+    // Excluimos los prepago que quedaron sin pagar (checkout abandonado): no son canjes
+    // reales, solo registros temporales a la espera de pago.
+    const canjes = await CanjeAtribuido.find({
+      usuarioId: req.usuario.id,
+      estadoPago: { $ne: 'pendiente_pago' }
+    })
       .sort({ createdAt: -1 })
       .limit(50)
       .populate('comercioId', 'nombre rubro ubicacion')
@@ -704,39 +709,53 @@ router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
   }
 })
 
-// POST /api/centro/webhook/mercadopago - webhook de MercadoPago para confirmación de pago
-// MercadoPago notifica acá cuando un pago se completa
+// POST /api/centro/webhook/mercadopago - webhook de MercadoPago.
+// MercadoPago avisa acá cuando cambia un pago. Marcamos el canje como pagado
+// (red de seguridad: si el usuario cierra el navegador, igual queda confirmado).
+// El código en claro NO se genera acá (no hay sesión del usuario); se entrega en
+// confirmar-pago. Por eso solo marcamos estadoPago, dejando codigoHash vacío.
 router.post('/webhook/mercadopago', async (req, res) => {
+  // Respondemos 200 siempre y rápido: MP reintenta si no recibe 200.
   try {
-    // MercadoPago envía: type = 'payment', data.id = payment_id
-    // También podemos usar external_reference que es nuestro canjeId
-    const { type, data } = req.body
+    const tipo = req.body?.type || req.query?.type
+    const paymentId = req.body?.data?.id || req.query['data.id'] || req.query.id
 
-    if (type !== 'payment' || !data.id) {
-      return res.json({ status: 'ok' }) // Ignorar eventos que no nos importan
+    if (tipo !== 'payment' || !paymentId) {
+      return res.status(200).send('OK')
     }
 
-    // Buscar el canje por el ID del payment de MercadoPago
-    // Nota: aquí necesitaríamos hacer un request a MP para obtener el payment completo
-    // e identificar cuál es el canjeId (external_reference). Por ahora, asumimos
-    // que la app hace polling del estado o que existe otro mecanismo.
+    const pago = await obtenerPago(paymentId)
+    if (!pago || pago.status !== 'approved') {
+      return res.status(200).send('OK')
+    }
 
-    // TODO: Implementar polling/confirmación después del redirect desde MP
-    res.json({ status: 'ok' })
+    // external_reference = canjeId (lo seteamos al crear la preferencia)
+    const canjeId = pago.external_reference
+    const canje = await CanjeAtribuido.findById(canjeId)
+    if (!canje) {
+      console.warn(`⚠️ Webhook centro: canje ${canjeId} no encontrado`)
+      return res.status(200).send('OK')
+    }
+
+    // Idempotente: si ya está pagado, no hacemos nada.
+    if (canje.estadoPago === 'pendiente_pago') {
+      canje.estadoPago = 'pagado'
+      await canje.save()
+      console.log(`✅ Webhook centro: canje ${canjeId} marcado como pagado`)
+    }
+    return res.status(200).send('OK')
   } catch (error) {
-    console.error('Error en webhook MercadoPago:', error)
-    res.json({ status: 'error' })
+    console.error('Error en webhook MercadoPago (centro):', error?.message || error)
+    return res.status(200).send('OK')
   }
 })
 
-// GET /api/centro/canje/:id/estado-pago - obtiene el estado del pago de un canje
-// El cliente hace polling después del redirect de MP
+// GET /api/centro/canje/:id/estado-pago - estado del pago (solo lectura, sin código).
+// El cliente lo usa para saber si ya está pagado; el código se pide con confirmar-pago.
 router.get('/canje/:id/estado-pago', verificarToken, async (req, res) => {
   try {
     const canje = await CanjeAtribuido.findById(req.params.id)
     if (!canje) return res.status(404).json({ error: 'Canje no encontrado' })
-
-    // Verificar que el usuario es el dueño del canje
     if (canje.usuarioId.toString() !== req.usuario.id) {
       return res.status(403).json({ error: 'No autorizado' })
     }
@@ -746,43 +765,54 @@ router.get('/canje/:id/estado-pago', verificarToken, async (req, res) => {
       estadoPago: canje.estadoPago,
       estado: canje.estado,
       pagado: canje.estadoPago === 'pagado',
-      codigo: canje.estadoPago === 'pagado' ? generarCodigoCanje().codigo : null
+      // ¿el código ya se entregó? (si sí, vive solo en el caché del cliente)
+      codigoEntregado: !!canje.codigoHash
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-// POST /api/centro/canje/:id/confirmar-pago - el cliente confirma que pagó en MP
-// (después de ser redirigido back a la app con success=true)
+// POST /api/centro/canje/:id/confirmar-pago - tras volver de MP, el cliente pide su código.
+// Validamos el pago CONTRA MercadoPago (no confiamos en el cliente). El código en claro
+// se genera y se devuelve UNA sola vez; después solo vive en el caché del navegador.
 router.post('/canje/:id/confirmar-pago', verificarToken, async (req, res) => {
   try {
     const canje = await CanjeAtribuido.findById(req.params.id)
     if (!canje) return res.status(404).json({ error: 'Canje no encontrado' })
-
     if (canje.usuarioId.toString() !== req.usuario.id) {
       return res.status(403).json({ error: 'No autorizado' })
     }
 
-    // Validar que el pago esté en estado correcto en MP (aquí entraría llamada a MP API)
-    // Por ahora, aceptamos que el cliente dice que pagó
-    if (canje.estadoPago === 'pagado') {
-      return res.json({ error: 'El pago ya fue confirmado.' })
+    // Si el código ya fue generado y entregado, no podemos volver a mostrarlo en claro
+    // (solo guardamos el hash). El cliente debe usar su caché local.
+    if (canje.codigoHash) {
+      return res.json({ canjeId: canje._id, pagado: true, yaConfirmado: true, codigo: null })
     }
 
-    // Generar código de canje y hashear
-    const { codigo, codigoHash } = generarCodigoCanje()
+    // Validar el pago realmente en MercadoPago (por external_reference = canjeId).
+    let aprobado = canje.estadoPago === 'pagado'
+    if (!aprobado) {
+      const pago = await buscarPagoPorReferencia(canje._id.toString())
+      aprobado = pago?.status === 'approved'
+    }
+    if (!aprobado) {
+      return res.json({ canjeId: canje._id, pagado: false, codigo: null })
+    }
 
-    // Actualizar el canje con el código
+    // Pago confirmado: generamos el código de canje y guardamos solo su hash.
+    const { codigo, codigoHash } = generarCodigoCanje()
     canje.estadoPago = 'pagado'
     canje.codigoHash = codigoHash
+    // Renovamos la ventana de canje desde la confirmación del pago (30 min para ir al local).
+    canje.expiraEn = new Date(Date.now() + VENTANA_CANJE_MIN * 60 * 1000)
     await canje.save()
 
-    // Guardar el código en caché local del cliente (como en Phase 2)
     res.json({
       canjeId: canje._id,
-      codigo, // única vez que viaja en claro
-      estado: 'pagado'
+      pagado: true,
+      codigo, // ⚠️ única vez que viaja en claro
+      expiraEn: canje.expiraEn
     })
   } catch (error) {
     res.status(500).json({ error: error.message })

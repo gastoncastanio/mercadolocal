@@ -57,10 +57,14 @@ const canjeAtribuidoSchema = new mongoose.Schema({
   ticketValor: { type: Number, default: null },
 
   // FASE 3: campos de pago prepago (MercadoPago)
+  // 'no_aplica'      → canje legacy postpago (Phase 2, código QR sin pago en app)
+  // 'pendiente_pago' → prepago iniciado, esperando confirmación de MercadoPago
+  // 'pagado'         → pago confirmado, código generado
+  // 'reembolsado'    → pago devuelto
   estadoPago: {
     type: String,
-    enum: ['pendiente_pago', 'pagado', 'reembolsado'],
-    default: 'pendiente_pago',
+    enum: ['no_aplica', 'pendiente_pago', 'pagado', 'reembolsado'],
+    default: 'no_aplica',
     index: true
   },
   // ID de preferencia de MercadoPago para este canje

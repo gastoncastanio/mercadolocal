@@ -7,7 +7,6 @@ interface CheckoutOfertaProps {
   precioFinal: number
   comisionPorcentaje: number
   onClose: () => void
-  onSuccess: (codigo: string) => void
 }
 
 export default function CheckoutOferta({
@@ -15,8 +14,7 @@ export default function CheckoutOferta({
   titulo,
   precioFinal,
   comisionPorcentaje,
-  onClose,
-  onSuccess
+  onClose
 }: CheckoutOfertaProps) {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')

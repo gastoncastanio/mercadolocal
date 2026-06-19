@@ -4,6 +4,7 @@ import api from '../services/api'
 import { Coord, obtenerUbicacion, ordenarPorCercania, formatearDistancia } from '../utils/geo'
 import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlash'
 import DespatxadorBloqueHorario from '../components/DespatxadorBloqueHorario'
+import RetornoPagoOferta from '../components/RetornoPagoOferta'
 import { calcularOffset } from '../utils/canjes'
 import { useBloqueHorario } from '../hooks/useBloqueHorario'
 
@@ -110,6 +111,8 @@ export default function RadarCentro() {
   if (estado === 'intro' || estado === 'pidiendo' || estado === 'error') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-ml-violet/10 via-ml-bg to-ml-bg flex items-center justify-center px-4 py-10">
+        {/* Retorno de pago de MercadoPago (overlay si volvió de un checkout) */}
+        <RetornoPagoOferta />
         <div className="max-w-md w-full bg-white rounded-3xl shadow-lg border border-ml-line overflow-hidden">
           {/* Hero */}
           <div className="bg-gradient-to-br from-ml-violet to-ml-blue p-8 text-center text-white">
@@ -169,10 +172,15 @@ export default function RadarCentro() {
   }
 
   // ===== Feed por cercanía =====
-  const ciudad = coords?.ciudad || 'Rosario'
+  // Ciudad vacía = el backend devuelve todas las localidades. El selector
+  // multi-ciudad (módulo aparte) la setea más adelante; en el piloto (Lobos)
+  // todas las ofertas son de la misma localidad.
+  const ciudad = ''
 
   return (
     <div className="min-h-screen bg-ml-bg">
+      {/* Retorno de pago de MercadoPago (overlay si volvió de un checkout) */}
+      <RetornoPagoOferta />
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -202,7 +210,6 @@ export default function RadarCentro() {
             bloque={bloqueActual}
             coords={coords}
             ciudad={ciudad}
-            offsetMs={offsetMs}
             cargando={cargandoComercios}
           />
         )}
