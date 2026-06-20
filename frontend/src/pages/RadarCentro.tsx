@@ -145,7 +145,8 @@ export default function RadarCentro() {
     return {
       nombre: c?.nombre,
       logo: c?.media?.logo,
-      verificado: c?.verificado || c?.estadoPrograma === 'fundador',
+      // Verificado solo si el admin lo otorgó (no se infiere de 'fundador').
+      verificado: c?.verificado,
       distanciaTexto: c ? formatearDistancia(c.distancia) : undefined
     }
   }
@@ -354,11 +355,14 @@ export default function RadarCentro() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="font-bold text-ml-ink text-base">{c.nombre}</h3>
-                                {(c.verificado || c.estadoPrograma === 'fundador') && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-ml-blue font-semibold" title="Comercio verificado">
+                                {c.verificado && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-ml-blue font-semibold" title="Comercio verificado por Mercado Local">
                                     <span className="bg-ml-blue text-white rounded-full w-3.5 h-3.5 inline-flex items-center justify-center text-[8px]">✓</span>
                                     Verificado
                                   </span>
+                                )}
+                                {c.estadoPrograma === 'fundador' && (
+                                  <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
                                 )}
                               </div>
                               <p className="text-xs text-ml-soft mt-0.5">{c.rubro}</p>

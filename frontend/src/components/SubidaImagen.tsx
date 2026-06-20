@@ -12,7 +12,10 @@ interface EncuadreProps {
   imagen: string
   posicion: string
   onChange: (imagen: string, posicion: string) => void
-  aspecto?: string // clase tailwind, ej "aspect-[16/9]"
+  // Tamaño del marco de encuadre. Por defecto replica la portada real de la
+  // tarjeta del Radar (h-40 w-full) para que lo que se ve acá sea lo que se ve
+  // en el feed (WYSIWYG); con object-cover un aspecto distinto recortaría diferente.
+  marco?: string
   label?: string
 }
 
@@ -22,7 +25,7 @@ interface EncuadreProps {
  * (object-position "X% Y%") para que la foto se vea bien encuadrada en la tarjeta
  * del Radar. El usuario arrastra el foco o usa los deslizadores.
  */
-export function SubidaImagenEncuadre({ imagen, posicion, onChange, aspecto = 'aspect-[16/9]', label = 'Foto del producto' }: EncuadreProps) {
+export function SubidaImagenEncuadre({ imagen, posicion, onChange, marco = 'h-40 w-full', label = 'Foto del producto' }: EncuadreProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const marcoRef = useRef<HTMLDivElement>(null)
   const [progreso, setProgreso] = useState<UploadProgress | null>(null)
@@ -66,7 +69,7 @@ export function SubidaImagenEncuadre({ imagen, posicion, onChange, aspecto = 'as
           {/* Marco de encuadre: arrastrá para elegir qué parte se ve */}
           <div
             ref={marcoRef}
-            className={`relative w-full ${aspecto} rounded-xl overflow-hidden border border-ml-line bg-ml-bg cursor-move select-none touch-none`}
+            className={`relative ${marco} rounded-xl overflow-hidden border border-ml-line bg-ml-bg cursor-move select-none touch-none`}
             onPointerDown={e => { setArrastrando(true); e.currentTarget.setPointerCapture(e.pointerId); moverFoco(e.clientX, e.clientY) }}
             onPointerMove={e => { if (arrastrando) moverFoco(e.clientX, e.clientY) }}
             onPointerUp={() => setArrastrando(false)}
@@ -109,7 +112,7 @@ export function SubidaImagenEncuadre({ imagen, posicion, onChange, aspecto = 'as
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={subiendo}
-          className={`w-full ${aspecto} rounded-xl border-2 border-dashed border-ml-line flex flex-col items-center justify-center gap-1 text-ml-muted hover:border-ml-violet hover:text-ml-violet transition-colors disabled:opacity-60`}
+          className={`${marco} rounded-xl border-2 border-dashed border-ml-line flex flex-col items-center justify-center gap-1 text-ml-muted hover:border-ml-violet hover:text-ml-violet transition-colors disabled:opacity-60`}
         >
           {subiendo ? (
             <>
@@ -127,7 +130,7 @@ export function SubidaImagenEncuadre({ imagen, posicion, onChange, aspecto = 'as
       )}
 
       {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{error}</p>}
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={elegirArchivo} />
+      <input ref={inputRef} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={elegirArchivo} />
     </div>
   )
 }
@@ -187,7 +190,7 @@ export function SubidaLogo({ logo, onChange, label = 'Logo del comercio' }: Logo
         {subiendo && <p className="text-[10px] text-ml-muted">{progreso?.mensaje} {progreso?.porcentaje}%</p>}
         {error && <p className="text-[10px] text-red-600">{error}</p>}
       </div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={elegirArchivo} />
+      <input ref={inputRef} type="file" accept="image/*,.heic,.heif" className="hidden" onChange={elegirArchivo} />
     </div>
   )
 }

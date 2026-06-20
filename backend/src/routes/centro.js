@@ -121,9 +121,16 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
       return res.status(403).json({ error: 'No autorizado' })
     }
 
-    const campos = ['nombre', 'rubro', 'descripcion', 'bloqueHorarioPrioritario', 'tiempoPrepEstimado', 'contacto', 'media', 'activo']
+    const campos = ['nombre', 'rubro', 'descripcion', 'bloqueHorarioPrioritario', 'tiempoPrepEstimado', 'contacto', 'activo']
     for (const c of campos) {
       if (req.body[c] !== undefined) comercio[c] = req.body[c]
+    }
+    // media se mergea campo a campo: un PUT con solo {logo} no debe borrar
+    // videoLoopUrl/posterUrl/fotos (micro-contenido de Fase 4).
+    if (req.body.media && typeof req.body.media === 'object') {
+      for (const k of ['logo', 'videoLoopUrl', 'posterUrl', 'fotos']) {
+        if (req.body.media[k] !== undefined) comercio.media[k] = req.body.media[k]
+      }
     }
     // La verificación es un acto del admin (otorga confianza), no del dueño.
     if (req.body.verificado !== undefined && req.usuario.rol === 'admin') {
@@ -833,7 +840,9 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
       ...o.toPublic(ahora),
       comercioNombre: o.comercioId?.nombre,
       comercioLogo: o.comercioId?.media?.logo || '',
-      comercioVerificado: o.comercioId?.verificado || o.comercioId?.estadoPrograma === 'fundador',
+      // Verificado = acto explícito del admin (no se infiere de 'fundador', que es
+      // un estado de programa distinto). Consistente con el feed y el broadcast.
+      comercioVerificado: !!o.comercioId?.verificado,
       comercioLat: o.comercioId?.ubicacion?.lat,
       comercioLng: o.comercioId?.ubicacion?.lng
     }))

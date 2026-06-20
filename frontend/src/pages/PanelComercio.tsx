@@ -15,7 +15,7 @@ interface Comercio {
   verificado?: boolean
   activo: boolean
   contacto?: { whatsapp?: string; instagram?: string }
-  media?: { logo?: string; posterUrl?: string; fotos?: string[] }
+  media?: { logo?: string; videoLoopUrl?: string; posterUrl?: string; fotos?: string[] }
 }
 
 interface Oferta {
