@@ -163,33 +163,44 @@ export default function PanelContador() {
     <div className="min-h-screen bg-ml-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-ml-ink">📊 Panel del Contador</h1>
-            <p className="text-sm text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-ml-ink">📊 Panel del Contador</h1>
+              <p className="text-sm text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
+            </div>
+            <Link to="/admin" className="hidden sm:block text-sm text-ml-soft hover:text-ml-ink px-3 py-2 self-start">← Admin</Link>
           </div>
-          <div className="flex items-center gap-2 flex-wrap print:hidden">
-            <Link to="/admin" className="text-sm text-ml-soft hover:text-ml-ink px-3 py-2">← Admin</Link>
-            <select
-              value={mes}
-              onChange={e => setMes(parseInt(e.target.value))}
-              className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-            </select>
-            <select
-              value={anio}
-              onChange={e => setAnio(parseInt(e.target.value))}
-              className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {[ahora.getFullYear(), ahora.getFullYear() - 1, ahora.getFullYear() - 2].map(y =>
-                <option key={y} value={y}>{y}</option>
-              )}
-            </select>
-            <button onClick={importarHistorico} disabled={setupBusy} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 disabled:opacity-50" title="Volver a importar el histórico (no duplica)">↻ Sincronizar</button>
-            <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90">➕ Gasto</button>
-            <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">⚙️ Config</button>
-            <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">🖨️ PDF</button>
+
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 print:hidden">
+            {/* Date and Sync Controls */}
+            <div className="flex items-center gap-2">
+              <select
+                value={mes}
+                onChange={e => setMes(parseInt(e.target.value))}
+                className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white flex-1 sm:flex-none"
+              >
+                {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+              <select
+                value={anio}
+                onChange={e => setAnio(parseInt(e.target.value))}
+                className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white flex-1 sm:flex-none"
+              >
+                {[ahora.getFullYear(), ahora.getFullYear() - 1, ahora.getFullYear() - 2].map(y =>
+                  <option key={y} value={y}>{y}</option>
+                )}
+              </select>
+              <button onClick={importarHistorico} disabled={setupBusy} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap" title="Volver a importar el histórico (no duplica)">↻</button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90 flex-1 sm:flex-none">➕ Gasto</button>
+              <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 flex-1 sm:flex-none">⚙️</button>
+              <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 flex-1 sm:flex-none">🖨️</button>
+            </div>
           </div>
         </div>
 
