@@ -139,3 +139,13 @@ export async function obtenerComisionMinima() {
   const valor = await obtenerConfig('comision_minima')
   return valor ? parseFloat(valor) : 0
 }
+
+// Calcular comisión con piso mínimo garantizado
+// Asegura que la comisión nunca cae por debajo del mínimo (previene
+// márgenes negativos con descuentos coopérativos)
+export async function calcularComisionConPiso(monto, tipo = 'venta') {
+  const porcentaje = await obtenerPorcentajeComision(tipo)
+  const porcentajeComision = Math.round(monto * porcentaje / 100 * 100) / 100
+  const comisionMinima = await obtenerComisionMinima()
+  return Math.max(porcentajeComision, comisionMinima)
+}
