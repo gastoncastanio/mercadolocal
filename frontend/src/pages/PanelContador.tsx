@@ -131,7 +131,15 @@ export default function PanelContador() {
     setSetupMsg('Importando histórico…')
     try {
       const res = await api.post('/contador/backfill')
-      setSetupMsg(`✅ ${res.data.asientosNuevos} movimientos nuevos importados.`)
+      const { asientosNuevos = 0, ventasError = 0, pautasError = 0, erroresDetalle = [] } = res.data || {}
+      const errores = ventasError + pautasError
+      if (errores > 0) {
+        setSetupMsg(`⚠️ ${asientosNuevos} importados, pero ${errores} fallaron${erroresDetalle[0] ? `: ${erroresDetalle[0]}` : '.'}`)
+      } else if (asientosNuevos === 0) {
+        setSetupMsg('✅ Todo ya estaba sincronizado (nada nuevo para importar).')
+      } else {
+        setSetupMsg(`✅ ${asientosNuevos} movimientos nuevos importados.`)
+      }
       await cargar()
     } catch (e: any) {
       setSetupMsg('❌ ' + (e?.response?.data?.error || 'No se pudo importar.'))

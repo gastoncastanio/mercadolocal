@@ -259,6 +259,13 @@ connectDB().then(async () => {
   sembrarBloqueHorario()
     .catch(err => console.warn('Seed bloques horarios:', err.message))
 
+  // Sembrar el plan de cuentas contable (idempotente). CRÍTICO: sin esto, los
+  // asientos del webhook de pagos fallan en silencio ("Cuenta no encontrada").
+  import('./services/contabilidadService.js')
+    .then(m => m.seedPlanCuentas())
+    .then(r => console.log(`📒 Plan de cuentas: ${r.creadas} creadas, ${r.existentes} existentes (total ${r.total})`))
+    .catch(err => console.warn('Seed plan de cuentas:', err.message))
+
   // Cron del cerebro: reporte diario CEO + ascensos automáticos
   // Deshabilitado temporalmente: Gemini API en quota exceeded
   // iniciarCronCerebro()

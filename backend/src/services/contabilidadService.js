@@ -15,6 +15,54 @@ import Comprobante from '../models/Comprobante.js'
  * - Trazabilidad: audit trail completo
  */
 
+// ===== PLAN DE CUENTAS (fuente única de verdad) =====
+
+/**
+ * Plan de cuentas canónico. Lo usa el seed de arranque, el endpoint
+ * /init-plan-cuentas y el backfill. Mantener acá para que NUNCA diverja.
+ */
+export const PLAN_CUENTAS = [
+  { codigo: '1.1.1', nombre: 'Caja MercadoPago (Disponible)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
+  { codigo: '1.1.2', nombre: 'MercadoPago a Liberar (Clearing)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
+  { codigo: '1.1.3', nombre: 'Caja Banco', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
+  { codigo: '1.2.1', nombre: 'Cuentas por Cobrar', tipo: 'ASSET', esSistema: false, moneda: 'ARS' },
+  { codigo: '2.1.1', nombre: 'Cuentas por Pagar a Vendedores', tipo: 'LIABILITY', esSistema: true, moneda: 'ARS' },
+  { codigo: '2.1.2', nombre: 'IVA Débito Fiscal', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
+  { codigo: '2.1.3', nombre: 'Provisión Impuestos (ARCA/IIBB)', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
+  { codigo: '3.1.1', nombre: 'Capital', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
+  { codigo: '3.1.2', nombre: 'Resultados Acumulados', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
+  { codigo: '4.1.1', nombre: 'Comisiones por Venta', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
+  { codigo: '4.1.2', nombre: 'Comisiones por Traslado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
+  { codigo: '4.1.3', nombre: 'Suscripciones Destacado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
+  { codigo: '4.1.4', nombre: 'Pauta Publicitaria', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
+  { codigo: '4.1.5', nombre: 'Otros Ingresos', tipo: 'REVENUE', esSistema: false, moneda: 'ARS' },
+  { codigo: '5.1.1', nombre: 'Costo Procesamiento MercadoPago', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
+  { codigo: '5.2.1', nombre: 'Marketing / Pauta Publicitaria', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
+  { codigo: '5.2.2', nombre: 'Hosting e Infraestructura', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
+  { codigo: '5.2.3', nombre: 'Honorarios Contables / Bancarios', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
+  { codigo: '5.2.4', nombre: 'Otros Gastos Operativos', tipo: 'EXPENSE', esSistema: false, moneda: 'ARS' }
+]
+
+/**
+ * Siembra el plan de cuentas de forma idempotente (upsert por código).
+ * Seguro de correr en cada arranque y antes del backfill. NO pisa la cuenta
+ * si ya existe con datos editados (solo asegura que exista y esté activa).
+ */
+export async function seedPlanCuentas() {
+  let creadas = 0
+  let existentes = 0
+  for (const cuenta of PLAN_CUENTAS) {
+    const previa = await CuentaContable.findOne({ codigo: cuenta.codigo }).select('_id').lean()
+    await CuentaContable.findOneAndUpdate(
+      { codigo: cuenta.codigo },
+      { $setOnInsert: { ...cuenta }, $set: { activa: true } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    )
+    previa ? existentes++ : creadas++
+  }
+  return { creadas, existentes, total: PLAN_CUENTAS.length }
+}
+
 // ===== HELPERS: Búsqueda de cuentas =====
 
 export async function obtenerCuenta(codigo) {
@@ -413,14 +461,22 @@ export async function cuadre(hastaFecha = new Date()) {
     }
   }
 
-  // 2. Calcular ecuación contable: ACTIVO = PASIVO + PATRIMONIO
+  // 2. Calcular ecuación contable ampliada:
+  //    ACTIVO = PASIVO + PATRIMONIO + (INGRESOS − EGRESOS)
+  //    El término (INGRESOS − EGRESOS) es el "resultado del ejercicio": ganancia
+  //    aún no cerrada contra patrimonio. Sin incluirlo, la ecuación NUNCA cuadra
+  //    apenas haya un ingreso (cada venta acredita REVENUE contra un ASSET).
   const cuentasActivo = await CuentaContable.find({ tipo: 'ASSET', activa: true }).select('codigo').lean()
   const cuentasPasivo = await CuentaContable.find({ tipo: 'LIABILITY', activa: true }).select('codigo').lean()
   const cuentasPatrimonio = await CuentaContable.find({ tipo: 'EQUITY', activa: true }).select('codigo').lean()
+  const cuentasIngreso = await CuentaContable.find({ tipo: 'REVENUE', activa: true }).select('codigo').lean()
+  const cuentasEgreso = await CuentaContable.find({ tipo: 'EXPENSE', activa: true }).select('codigo').lean()
 
   let totalActivos = 0
   let totalPasivos = 0
   let totalPatrimonio = 0
+  let totalIngresos = 0
+  let totalEgresos = 0
 
   for (const c of cuentasActivo) {
     const bal = await balanceCuenta(c.codigo, hastaFecha)
@@ -437,7 +493,25 @@ export async function cuadre(hastaFecha = new Date()) {
     totalPatrimonio += bal.saldo
   }
 
-  const diferencia = Math.abs(totalActivos - (totalPasivos + totalPatrimonio))
+  for (const c of cuentasIngreso) {
+    const bal = await balanceCuenta(c.codigo, hastaFecha)
+    totalIngresos += bal.saldo // REVENUE: saldo = haber − debe
+  }
+
+  for (const c of cuentasEgreso) {
+    const bal = await balanceCuenta(c.codigo, hastaFecha)
+    totalEgresos += bal.saldo // EXPENSE: saldo = debe − haber... ver nota
+  }
+
+  // OJO con el signo: balanceCuenta() para EXPENSE devuelve haber − debe (regla
+  // genérica "no-ASSET"), que para un gasto normal (debe) da NEGATIVO. El
+  // resultado del ejercicio es INGRESOS + (saldo egresos, ya negativo) cuando se
+  // suma directo. Para que represente "ingresos − egresos", usamos los saldos tal
+  // como vienen: resultado = totalIngresos + totalEgresos (egresos ya negativos).
+  const resultadoEjercicio = totalIngresos + totalEgresos
+  const ladoDerecho = totalPasivos + totalPatrimonio + resultadoEjercicio
+
+  const diferencia = Math.abs(totalActivos - ladoDerecho)
   const cuadra = diferencia < 0.02 // Tolerancia 2 centavos por redondeos
 
   return {
@@ -445,8 +519,9 @@ export async function cuadre(hastaFecha = new Date()) {
     totalActivos: Math.round(totalActivos * 100) / 100,
     totalPasivos: Math.round(totalPasivos * 100) / 100,
     totalPatrimonio: Math.round(totalPatrimonio * 100) / 100,
+    resultadoEjercicio: Math.round(resultadoEjercicio * 100) / 100,
     diferencia: Math.round(diferencia * 100) / 100,
-    ecuacion: `${Math.round(totalActivos * 100) / 100} = ${Math.round((totalPasivos + totalPatrimonio) * 100) / 100}`
+    ecuacion: `${Math.round(totalActivos * 100) / 100} = ${Math.round(ladoDerecho * 100) / 100}`
   }
 }
 
@@ -547,11 +622,17 @@ async function detectarDescuadres() {
  * Se puede correr cuantas veces quieras.
  */
 export async function backfillAsientos() {
-  const antes = await AsientoContable.estimatedDocumentCount()
+  // 0. Garantizar que el plan de cuentas exista. Sin esto, cada asiento falla
+  //    con "Cuenta no encontrada" y el backfill no genera nada en silencio.
+  await seedPlanCuentas()
+
+  // Conteo exacto (countDocuments, NO estimatedDocumentCount que es aproximado).
+  const antes = await AsientoContable.countDocuments()
 
   // 1. Ventas (desde la auditoría financiera)
   const auditorias = await AuditoriaFinanciera.find({ tipo: 'pago_aprobado' }).lean()
   let ventasError = 0
+  const erroresDetalle = []
   for (const aud of auditorias) {
     try {
       const fecha = aud.createdAt || new Date()
@@ -573,6 +654,7 @@ export async function backfillAsientos() {
       }
     } catch (e) {
       ventasError++
+      if (erroresDetalle.length < 5) erroresDetalle.push(`venta ${aud.ordenId}: ${e.message}`)
       console.warn(`Backfill venta ${aud.ordenId}:`, e.message)
     }
   }
@@ -589,22 +671,26 @@ export async function backfillAsientos() {
       })
     } catch (e) {
       pautasError++
+      if (erroresDetalle.length < 5) erroresDetalle.push(`pauta ${c._id}: ${e.message}`)
       console.warn(`Backfill pauta ${c._id}:`, e.message)
     }
   }
 
-  const despues = await AsientoContable.estimatedDocumentCount()
+  const despues = await AsientoContable.countDocuments()
 
   return {
     ventasProcesadas: auditorias.length,
     pautasProcesadas: pautas.length,
     asientosNuevos: despues - antes,
     ventasError,
-    pautasError
+    pautasError,
+    erroresDetalle
   }
 }
 
 export default {
+  seedPlanCuentas,
+  PLAN_CUENTAS,
   registrarAsiento,
   asientoVentaSplit,
   asientoVentaSinSplit,

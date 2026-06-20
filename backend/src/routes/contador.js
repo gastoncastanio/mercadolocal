@@ -23,48 +23,15 @@ function parsearPeriodo(query) {
  */
 router.post('/init-plan-cuentas', verificarToken, soloAdmin, async (req, res) => {
   try {
-    const PLAN_CUENTAS = [
-      { codigo: '1.1.1', nombre: 'Caja MercadoPago (Disponible)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.1.2', nombre: 'MercadoPago a Liberar (Clearing)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.1.3', nombre: 'Caja Banco', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.2.1', nombre: 'Cuentas por Cobrar', tipo: 'ASSET', esSistema: false, moneda: 'ARS' },
-      { codigo: '2.1.1', nombre: 'Cuentas por Pagar a Vendedores', tipo: 'LIABILITY', esSistema: true, moneda: 'ARS' },
-      { codigo: '2.1.2', nombre: 'IVA Débito Fiscal', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '2.1.3', nombre: 'Provisión Impuestos (ARCA/IIBB)', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '3.1.1', nombre: 'Capital', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '3.1.2', nombre: 'Resultados Acumulados', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '4.1.1', nombre: 'Comisiones por Venta', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.2', nombre: 'Comisiones por Traslado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.3', nombre: 'Suscripciones Destacado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.4', nombre: 'Pauta Publicitaria', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.5', nombre: 'Otros Ingresos', tipo: 'REVENUE', esSistema: false, moneda: 'ARS' },
-      { codigo: '5.1.1', nombre: 'Costo Procesamiento MercadoPago', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.1', nombre: 'Marketing / Pauta Publicitaria', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.2', nombre: 'Hosting e Infraestructura', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.3', nombre: 'Honorarios Contables / Bancarios', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.4', nombre: 'Otros Gastos Operativos', tipo: 'EXPENSE', esSistema: false, moneda: 'ARS' }
-    ]
-
-    let creadas = 0
-    let actualizadas = 0
-
-    for (const cuenta of PLAN_CUENTAS) {
-      const resultado = await CuentaContable.findOneAndUpdate(
-        { codigo: cuenta.codigo },
-        cuenta,
-        { upsert: true, new: true }
-      )
-      resultado.isNew ? creadas++ : actualizadas++
-    }
-
+    const resultado = await contabilidadService.seedPlanCuentas()
     res.json({
       mensaje: 'Plan de cuentas inicializado',
-      creadas,
-      actualizadas
+      creadas: resultado.creadas,
+      actualizadas: resultado.existentes
     })
   } catch (error) {
     console.error('Error inicializando plan de cuentas:', error)
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: 'No se pudo inicializar el plan de cuentas' })
   }
 })
 
