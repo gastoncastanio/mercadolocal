@@ -234,6 +234,16 @@ router.post('/ofertas/:id/reclamar', verificarToken, async (req, res) => {
       return res.status(409).json({ error: 'La oferta ya no está vigente.' })
     }
 
+    // Limpieza perezosa: marcamos como 'expirado' cualquier reclamo de este
+    // usuario para esta oferta cuya ventana ya venció pero que quedó en 'emitido'
+    // (nada lo había transicionado). Esto LIBERA el slot del índice único parcial:
+    // sin esto, un código vencido bloquea para siempre volver a reclamar la oferta
+    // (deadlock: el canje vencido ocupa el slot único aunque ya no sirva).
+    await CanjeAtribuido.updateMany(
+      { usuarioId: req.usuario.id, ofertaId: oferta._id, estado: 'emitido', expiraEn: { $lte: ahora } },
+      { $set: { estado: 'expirado' } }
+    )
+
     // ¿El usuario ya tiene un reclamo vigente de esta oferta? (evita duplicados)
     const yaReclamada = await CanjeAtribuido.findOne({
       usuarioId: req.usuario.id,
@@ -901,14 +911,24 @@ router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
       return res.status(400).json({ error: 'Esta oferta no requiere prepago.' })
     }
 
-    // Evitar acaparamiento: ¿el usuario ya tiene un canje pendiente de pago?
+    // Limpieza perezosa: un checkout abandonado (pago nunca confirmado) cuya
+    // ventana venció queda en 'emitido'/'pendiente_pago'. Sin transicionarlo,
+    // bloquea PARA SIEMPRE tanto re-pagar (guard de abajo) como reclamar (índice
+    // único parcial sobre estado 'emitido'). Lo expiramos para liberar ambos.
+    await CanjeAtribuido.updateMany(
+      { usuarioId: req.usuario.id, ofertaId: oferta._id, estado: 'emitido', estadoPago: 'pendiente_pago', expiraEn: { $lte: ahora } },
+      { $set: { estado: 'expirado' } }
+    )
+
+    // Evitar acaparamiento: ¿el usuario ya tiene un canje pendiente de pago VIGENTE?
     const yaReclamo = await CanjeAtribuido.findOne({
       usuarioId: req.usuario.id,
       ofertaId: oferta._id,
-      estadoPago: 'pendiente_pago'
+      estadoPago: 'pendiente_pago',
+      expiraEn: { $gt: ahora }
     })
     if (yaReclamo) {
-      return res.status(409).json({ error: 'Ya tenés un pago pendiente para esta oferta.' })
+      return res.status(409).json({ error: 'Ya tenés un pago pendiente para esta oferta. Esperá unos minutos o revisá "Mis canjes".' })
     }
 
     // Crear registro de canje (aún sin pago confirmado)
