@@ -1,5 +1,28 @@
 # 📊 Guía de Uso — Sistema Contable de MercadoLocal
 
+## Pruebas
+
+### Invariante contable (corre en cualquier lado, sin DB)
+```bash
+node src/scripts/test-contabilidad-invariantes.js
+```
+Prueba que es **matemáticamente imposible** guardar un asiento descuadrado.
+12 casos, corre en memoria (no necesita MongoDB).
+
+### Prueba end-to-end completa (necesita un MongoDB)
+```bash
+# Opción A: contra una base de test local o Atlas
+MONGODB_TEST_URI="mongodb+srv://...tu-base-de-test" node src/scripts/test-contabilidad-e2e.js
+
+# Opción B: con Mongo en memoria (descarga binario; requiere red a fastdl.mongodb.org)
+node src/scripts/test-contabilidad-e2e.js
+```
+Simula ventas split/sin-split, suscripción, pauta, OPEX, idempotencia y verifica
+el cuadre global. ⚠️ La opción A **limpia las colecciones contables** de esa base
+(usar SIEMPRE una base de test, no producción).
+
+---
+
 ## Inicio rápido (primeros pasos)
 
 ### 1. Seeding del plan de cuentas (una sola vez)

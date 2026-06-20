@@ -1,4 +1,3 @@
-import mongoose from 'mongoose'
 import CuentaContable from '../models/CuentaContable.js'
 import AsientoContable from '../models/AsientoContable.js'
 import GastoOperativo from '../models/GastoOperativo.js'
@@ -58,57 +57,54 @@ export async function registrarAsiento(args) {
     throw new Error('Datos insuficientes para registrar asiento')
   }
 
-  const session = await mongoose.startSession()
-  session.startTransaction()
+  // 1. IDEMPOTENCIA (lectura rápida): si ya existe, devolverlo sin reprocesar.
+  const existente = await AsientoContable.findOne({ referenciaId })
+  if (existente) return existente.toObject()
 
+  // 2. Resolver códigos a IDs de cuenta + preparar líneas
+  const lineasResueltas = []
+  let totalDebe = 0
+  let totalHaber = 0
+
+  for (const linea of lineas) {
+    const cuenta = await obtenerCuenta(linea.codigoCuenta)
+    const debe = Math.round((linea.debe || 0) * 100) / 100
+    const haber = Math.round((linea.haber || 0) * 100) / 100
+
+    // Validar: debe XOR haber
+    if ((debe > 0 && haber > 0) || (debe === 0 && haber === 0)) {
+      throw new Error(`Línea ${linea.codigoCuenta}: debe ser débito XOR crédito`)
+    }
+
+    lineasResueltas.push({
+      cuentaId: cuenta._id,
+      codigoCuenta: cuenta.codigo,
+      debe,
+      haber,
+      descripcion: linea.descripcion || '',
+      fuente: linea.fuente || 'manual',
+      metadata: linea.metadata || {}
+    })
+
+    totalDebe += debe
+    totalHaber += haber
+  }
+
+  // 3. Validar que cuadre (el schema lo revalida igual antes de guardar)
+  totalDebe = Math.round(totalDebe * 100) / 100
+  totalHaber = Math.round(totalHaber * 100) / 100
+
+  if (Math.abs(totalDebe - totalHaber) > 0.01) {
+    throw new Error(`Asiento descuadrado: débito $${totalDebe} ≠ crédito $${totalHaber}`)
+  }
+
+  // 4. Crear y guardar el asiento. Es UN solo documento (líneas embebidas), así
+  //    que el save es atómico de por sí: no hace falta una transacción multi-doc
+  //    (que además requeriría replica set). La idempotencia ante carreras la
+  //    garantiza el índice único de `referenciaId` (capturamos el E11000).
+  let asiento
   try {
-    // 1. IDEMPOTENCIA: verificar si ya existe
-    const existente = await AsientoContable.findOne({ referenciaId }).session(session)
-    if (existente) {
-      await session.abortTransaction()
-      session.endSession()
-      return existente.toObject()
-    }
-
-    // 2. Resolver códigos a IDs de cuenta + prepara líneas
-    const lineasResueltas = []
-    let totalDebe = 0
-    let totalHaber = 0
-
-    for (const linea of lineas) {
-      const cuenta = await obtenerCuenta(linea.codigoCuenta)
-      const debe = Math.round((linea.debe || 0) * 100) / 100
-      const haber = Math.round((linea.haber || 0) * 100) / 100
-
-      // Validar: debe XOR haber
-      if ((debe > 0 && haber > 0) || (debe === 0 && haber === 0)) {
-        throw new Error(`Línea ${linea.codigoCuenta}: debe ser débito XOR crédito`)
-      }
-
-      lineasResueltas.push({
-        cuentaId: cuenta._id,
-        codigoCuenta: cuenta.codigo,
-        debe,
-        haber,
-        descripcion: linea.descripcion || '',
-        fuente: linea.fuente || 'manual',
-        metadata: linea.metadata || {}
-      })
-
-      totalDebe += debe
-      totalHaber += haber
-    }
-
-    // 3. Validar que cuadre
-    totalDebe = Math.round(totalDebe * 100) / 100
-    totalHaber = Math.round(totalHaber * 100) / 100
-
-    if (Math.abs(totalDebe - totalHaber) > 0.01) {
-      throw new Error(`Asiento descuadrado: débito $${totalDebe} ≠ crédito $${totalHaber}`)
-    }
-
-    // 4. Crear asiento
-    const asiento = new AsientoContable({
+    asiento = await new AsientoContable({
       referenciaId,
       tipo,
       descripcion,
@@ -121,34 +117,26 @@ export async function registrarAsiento(args) {
       ipAddress,
       creadoPor,
       referencias
-    })
-
-    await asiento.save({ session })
-
-    // 5. Actualizar cache de saldos en CuentaContable (async, post-transacción)
-    session.endSession()
-
-    // Recalcular saldos de cuentas afectadas (async, no bloquea)
-    actualizarSaldosCacheados(lineasResueltas.map(l => l.cuentaId)).catch(e => {
-      console.warn('Error actualizando cache de saldos:', e.message)
-    })
-
-    // 6. Regenerar resumen diario (async)
-    regenerarResumenDiario(asiento.fechaContable).catch(e => {
-      console.warn('Error regenerando resumen diario:', e.message)
-    })
-
-    // 7. Verificar descuadres y alertar si hay (async)
-    detectarDescuadres().catch(e => {
-      console.warn('Error detectando descuadres:', e.message)
-    })
-
-    return asiento.toObject()
-  } catch (error) {
-    await session.abortTransaction()
-    session.endSession()
-    throw error
+    }).save()
+  } catch (err) {
+    // Carrera: dos webhooks simultáneos con el mismo referenciaId. El índice
+    // único hace fallar al segundo → devolvemos el que sí se guardó.
+    if (err.code === 11000) {
+      const yaGuardado = await AsientoContable.findOne({ referenciaId })
+      if (yaGuardado) return yaGuardado.toObject()
+    }
+    throw err
   }
+
+  // 5. Mantenimiento async (no bloquea, no rompe el registro si falla):
+  actualizarSaldosCacheados(lineasResueltas.map(l => l.cuentaId)).catch(e =>
+    console.warn('Error actualizando cache de saldos:', e.message))
+  regenerarResumenDiario(asiento.fechaContable).catch(e =>
+    console.warn('Error regenerando resumen diario:', e.message))
+  detectarDescuadres().catch(e =>
+    console.warn('Error detectando descuadres:', e.message))
+
+  return asiento.toObject()
 }
 
 // ===== HELPERS: Asientos específicos por tipo de evento =====

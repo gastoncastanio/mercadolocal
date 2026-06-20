@@ -56,9 +56,8 @@ const asientoContableSchema = new mongoose.Schema({
   referenciaId: {
     type: String,
     required: true,
-    unique: true,
-    trim: true,
-    index: true
+    unique: true, // unique ya crea el índice
+    trim: true
   },
 
   // Tipo de transacción (para categorizar y filtrar)
@@ -243,7 +242,7 @@ asientoContableSchema.pre('validate', function(next) {
 })
 
 // ===== ÍNDICES para búsqueda rápida =====
-asientoContableSchema.index({ referenciaId: 1 })
+// (referenciaId ya tiene índice único por `unique: true` en el campo)
 asientoContableSchema.index({ tipo: 1, fechaContable: -1 })
 asientoContableSchema.index({ estado: 1, cuadra: 1 })
 asientoContableSchema.index({ 'referencias.ordenId': 1 })

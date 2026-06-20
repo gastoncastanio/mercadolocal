@@ -5,9 +5,8 @@ const cuentaContableSchema = new mongoose.Schema({
   codigo: {
     type: String,
     required: true,
-    unique: true,
-    trim: true,
-    index: true
+    unique: true, // unique ya crea el índice
+    trim: true
   },
 
   // Nombre de la cuenta (ej: "Caja MercadoPago")

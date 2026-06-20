@@ -11,8 +11,7 @@ const resumenDiarioContableSchema = new mongoose.Schema({
   fecha: {
     type: Date,
     required: true,
-    unique: true,
-    index: true
+    unique: true // unique ya crea el índice
   },
 
   // Totales de ingresos por categoría
