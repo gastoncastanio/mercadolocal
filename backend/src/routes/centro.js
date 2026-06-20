@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { verificarToken } from '../middleware/auth.js'
 import ComercioCentro from '../models/ComercioCentro.js'
 import OfertaFlash from '../models/OfertaFlash.js'
@@ -14,9 +15,53 @@ const router = Router()
 // Minutos que el cliente tiene para llegar al mostrador y canjear su código.
 const VENTANA_CANJE_MIN = 30
 
+// ===== Rate limiters específicos del Radar =====
+// Todas estas rutas van detrás de verificarToken, así que limitamos POR USUARIO
+// (no por IP): evita que un script acapare cupos, brute-force de códigos o spamee
+// el Radar, sin penalizar a varios usuarios detrás de una misma IP (NAT/oficina).
+// Estas rutas corren siempre detrás de verificarToken ⇒ req.usuario.id existe.
+// No usamos req.ip de fallback a propósito (evita ERR_ERL_KEY_GEN_IPV6 de v8 y la
+// posibilidad de evadir el límite rotando IPs); 'sin-usuario' es solo defensivo.
+const porUsuario = (req) => req.usuario?.id || 'sin-usuario'
+const mkLimiter = (max, msg) => rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max,
+  keyGenerator: porUsuario,
+  message: { error: msg },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+// Reclamar/reservar ofertas: 30/15min (navegar y reclamar varias es normal; un
+// script que acapara cupos, no).
+const reclamarLimiter = mkLimiter(30, 'Estás reclamando demasiadas ofertas muy rápido. Esperá unos minutos.')
+// Validar códigos en el mostrador (lo hace el comercio): tope alto para una caja
+// con mucho movimiento, pero corta un flood.
+const canjearLimiter = mkLimiter(120, 'Demasiadas validaciones seguidas. Esperá un momento.')
+// Iniciar checkout de prepago: pocos por usuario (un abandono no debe spamear MP).
+const checkoutLimiter = mkLimiter(20, 'Demasiados intentos de pago. Esperá unos minutos.')
+// Lanzar Liquidación Relámpago (lo hace el comercio): no debe martillar el Radar.
+const liquidacionLimiter = mkLimiter(12, 'Estás lanzando liquidaciones muy seguido. Esperá unos minutos.')
+
 // Redondea coordenadas a ~4 decimales (~11 m) para no exponer ubicación exacta
 function redondearCoord(n) {
   return Math.round(Number(n) * 10000) / 10000
+}
+
+// Escapa los metacaracteres de regex de un texto del usuario. Sin esto, un
+// `?ciudad=(a+)+$` se interpreta como regex y abre la puerta a ReDoS (backtracking
+// catastrófico que clava la CPU). Devuelve un regex de igualdad exacta, case-insensitive.
+function ciudadExacta(valor) {
+  const limpio = String(valor || '').trim().slice(0, 100)
+  const escapado = limpio.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escapado}$`, 'i')
+}
+
+// Valida que lat/lng sean números dentro del rango geográfico real. Coordenadas
+// fuera de rango (o NaN) romperían el cálculo de distancia Haversine en el cliente.
+function coordsValidas(lat, lng) {
+  const la = Number(lat)
+  const ln = Number(lng)
+  return Number.isFinite(la) && Number.isFinite(ln) && la >= -90 && la <= 90 && ln >= -180 && ln <= 180
 }
 
 // Carga un comercio y verifica que el usuario logueado sea su dueño (o admin).
@@ -42,7 +87,7 @@ router.get('/comercios', async (req, res) => {
   try {
     const filtro = { activo: true }
     if (req.query.ciudad) {
-      filtro['ubicacion.ciudad'] = new RegExp(`^${String(req.query.ciudad).trim()}$`, 'i')
+      filtro['ubicacion.ciudad'] = ciudadExacta(req.query.ciudad)
     }
     const comercios = await ComercioCentro.find(filtro).limit(200)
     res.json(comercios.map(c => c.toPublic()))
@@ -85,6 +130,9 @@ router.post('/comercios', verificarToken, async (req, res) => {
 
     if (!nombre || !ubicacion || ubicacion.lat == null || ubicacion.lng == null || !ubicacion.ciudad) {
       return res.status(400).json({ error: 'Nombre, ciudad y coordenadas (lat/lng) son obligatorios' })
+    }
+    if (!coordsValidas(ubicacion.lat, ubicacion.lng)) {
+      return res.status(400).json({ error: 'Coordenadas inválidas (lat −90..90, lng −180..180).' })
     }
 
     const comercio = await ComercioCentro.create({
@@ -139,6 +187,14 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
     let cambioCiudad = false
     if (req.body.ubicacion) {
       const u = req.body.ubicacion
+      // Validar contra el valor efectivo (el nuevo si vino, si no el actual).
+      if (u.lat != null || u.lng != null) {
+        const latEf = u.lat != null ? u.lat : comercio.ubicacion.lat
+        const lngEf = u.lng != null ? u.lng : comercio.ubicacion.lng
+        if (!coordsValidas(latEf, lngEf)) {
+          return res.status(400).json({ error: 'Coordenadas inválidas (lat −90..90, lng −180..180).' })
+        }
+      }
       if (u.lat != null) comercio.ubicacion.lat = redondearCoord(u.lat)
       if (u.lng != null) comercio.ubicacion.lng = redondearCoord(u.lng)
       if (u.direccion !== undefined) comercio.ubicacion.direccion = u.direccion
@@ -167,6 +223,26 @@ router.delete('/comercios/:id', verificarToken, async (req, res) => {
     const acceso = await comercioDelUsuario(req.params.id, req.usuario)
     if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
 
+    // Protección al consumidor: si hay canjes PAGADOS y todavía no canjeados, el
+    // comercio les debe el producto (haya o no vencido la ventana). No se puede
+    // borrar el local hasta honrarlos (o reembolsar).
+    const pagadosVivos = await CanjeAtribuido.countDocuments({
+      comercioId: acceso.comercio._id,
+      estadoPago: 'pagado',
+      estado: { $ne: 'canjeado' }
+    })
+    if (pagadosVivos > 0) {
+      return res.status(409).json({
+        error: `No podés eliminar el local: hay ${pagadosVivos} canje(s) pagado(s) sin usar. Atendelos o reembolsalos antes de borrar.`
+      })
+    }
+
+    // Expiramos los reclamos sin pagar que quedaran vivos (legacy postpago) para no
+    // dejar códigos "emitido" apuntando a un comercio inexistente.
+    await CanjeAtribuido.updateMany(
+      { comercioId: acceso.comercio._id, estado: 'emitido' },
+      { $set: { estado: 'expirado' } }
+    )
     await OfertaFlash.deleteMany({ comercioId: acceso.comercio._id })
     await acceso.comercio.deleteOne()
     res.json({ ok: true, mensaje: 'Local y ofertas eliminados.' })
@@ -191,7 +267,7 @@ router.get('/ofertas', async (req, res) => {
       finEn: { $gte: ahora }
     }
     if (req.query.ciudad) {
-      filtro.ciudad = new RegExp(`^${String(req.query.ciudad).trim()}$`, 'i')
+      filtro.ciudad = ciudadExacta(req.query.ciudad)
     }
     if (req.query.bloque && req.query.bloque !== 'todos') {
       filtro.bloqueHorario = { $in: [String(req.query.bloque), 'todos'] }
@@ -225,7 +301,7 @@ router.get('/ofertas/:id', async (req, res) => {
 
 // POST /api/centro/ofertas/:id/reclamar - el usuario reclama un código de canje
 // Requiere login (fricción cero hasta acá; recién al reclamar pedimos cuenta).
-router.post('/ofertas/:id/reclamar', verificarToken, async (req, res) => {
+router.post('/ofertas/:id/reclamar', verificarToken, reclamarLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const oferta = await OfertaFlash.findById(req.params.id)
@@ -318,18 +394,28 @@ router.get('/mis-canjes', verificarToken, async (req, res) => {
       .populate('comercioId', 'nombre rubro ubicacion')
       .populate('ofertaId', 'titulo descripcion tipoGancho valorDescuento')
 
-    const data = canjes.map(c => ({
-      _id: c._id,
-      estado: c.estado === 'emitido' && ahora > c.expiraEn ? 'expirado' : c.estado,
-      emitidoEn: c.emitidoEn,
-      expiraEn: c.expiraEn,
-      canjeadoEn: c.canjeadoEn,
-      vigente: c.estaVigente(ahora),
-      tipoReclamo: c.tipoReclamo,
-      cuponPorcentaje: c.cuponPorcentaje,
-      comercio: c.comercioId,
-      oferta: c.ofertaId
-    }))
+    const data = canjes.map(c => {
+      // Pagó pero el código nunca se generó (cerró el navegador al volver de MP).
+      // No es un canje "expirado": es plata que el usuario puede recuperar pidiendo
+      // su código (confirmar-pago lo regenera y renueva la ventana).
+      const pagadoSinCodigo = c.estadoPago === 'pagado' && !c.codigoHash
+      return {
+        _id: c._id,
+        estado: pagadoSinCodigo
+          ? 'pagado_sin_codigo'
+          : (c.estado === 'emitido' && ahora > c.expiraEn ? 'expirado' : c.estado),
+        emitidoEn: c.emitidoEn,
+        expiraEn: c.expiraEn,
+        canjeadoEn: c.canjeadoEn,
+        vigente: c.estaVigente(ahora),
+        estadoPago: c.estadoPago,
+        pagadoSinCodigo,
+        tipoReclamo: c.tipoReclamo,
+        cuponPorcentaje: c.cuponPorcentaje,
+        comercio: c.comercioId,
+        oferta: c.ofertaId
+      }
+    })
     res.json({ serverNow: ahora, canjes: data })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -338,7 +424,7 @@ router.get('/mis-canjes', verificarToken, async (req, res) => {
 
 // POST /api/centro/canjear - el COMERCIO valida un código en el mostrador.
 // Body: { codigo, ticketValor? }. Requiere ser dueño del comercio de la oferta.
-router.post('/canjear', verificarToken, async (req, res) => {
+router.post('/canjear', verificarToken, canjearLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const { codigo, ticketValor } = req.body
@@ -465,9 +551,19 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       return res.status(400).json({ error: 'La ventana temporal es inválida (fin debe ser posterior al inicio).' })
     }
 
-    // Validar campos de prepago si aplica
-    if (requierePrepagoApp && !precioFinal) {
-      return res.status(400).json({ error: 'Si requiere prepago, precioFinal es obligatorio.' })
+    // Validar campos de prepago si aplica: precio con tope razonable (evita
+    // ofertas malformadas que MercadoPago rechazaría, o cobros absurdos).
+    if (requierePrepagoApp) {
+      const precio = Number(precioFinal)
+      if (!Number.isFinite(precio) || precio <= 0 || precio > 1000000) {
+        return res.status(400).json({ error: 'El precio de prepago debe estar entre $1 y $1.000.000.' })
+      }
+      if (comisionPorcentaje != null) {
+        const com = Number(comisionPorcentaje)
+        if (!Number.isFinite(com) || com < 0 || com > 100) {
+          return res.status(400).json({ error: 'La comisión debe estar entre 0% y 100%.' })
+        }
+      }
     }
 
     const oferta = await OfertaFlash.create({
@@ -501,7 +597,7 @@ router.post('/ofertas', verificarToken, async (req, res) => {
 // El comercio liquida stock que sobra (facturas, platos del día) en una ventana
 // corta. Crea una OfertaFlash de duración limitada y la difunde EN VIVO al Radar
 // de la ciudad; cada cliente filtra por su propia distancia (privacy-first).
-router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) => {
+router.post('/ofertas/liquidacion-relampago', verificarToken, liquidacionLimiter, async (req, res) => {
   try {
     const { comercioId, titulo, descripcion, imagen, imagenPosicion, valorDescuento, cupoTotal, duracionMin, condiciones } = req.body
 
@@ -594,7 +690,7 @@ router.get('/cruzada/sugerencias', async (req, res) => {
       bloqueHorario: siguiente,
       'cuponCruzado.activo': true
     }
-    if (ciudad) filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+    if (ciudad) filtro.ciudad = ciudadExacta(ciudad)
 
     // Mejor gancho primero: mayor % de cupón, luego la que arranca antes.
     const oferta = await OfertaFlash.findOne(filtro)
@@ -626,7 +722,7 @@ router.get('/cruzada/sugerencias', async (req, res) => {
 // POST /api/centro/cruzada/reservar - el cliente confirma el gancho del bloque
 // siguiente. Genera un canje con el cupón extra y AVISA al comercio para que
 // prepare la mesa "con invitación especial de Mercado Local".
-router.post('/cruzada/reservar', verificarToken, async (req, res) => {
+router.post('/cruzada/reservar', verificarToken, reclamarLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const { ofertaId } = req.body
@@ -842,7 +938,7 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
       bloqueHorario: { $in: [nombre, 'todos'] }
     }
     if (ciudad) {
-      filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+      filtro.ciudad = ciudadExacta(ciudad)
     }
 
     const ofertas = await OfertaFlash.find(filtro)
@@ -903,7 +999,7 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
 
 // POST /api/centro/ofertas/:id/checkout - inicia pago prepago para una oferta
 // Crea una preferencia de MercadoPago y devuelve la URL para redirigir al usuario
-router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
+router.post('/ofertas/:id/checkout', verificarToken, checkoutLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const oferta = await OfertaFlash.findById(req.params.id)

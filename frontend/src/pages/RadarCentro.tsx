@@ -47,7 +47,7 @@ export default function RadarCentro() {
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null)
   const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
   const { alerta: alertaClima, cargando: cargandoClima } = useWeatherAlert(coords)
-  const { on, off, emit } = useSocket()
+  const { on, off, emit, socket } = useSocket()
 
   // Si ya dio consentimiento antes, activar radar automáticamente
   useEffect(() => {
@@ -62,7 +62,11 @@ export default function RadarCentro() {
   // decidimos si mostrar la alerta según NUESTRA distancia (privacy-first).
   useEffect(() => {
     if (estado !== 'listo' || !coords) return
-    emit('radar:join', '')
+    // El server pierde las salas en cada desconexión: nos re-unimos también en
+    // cada (re)conexión, no solo al montar. Si no, tras un reconnect (común en
+    // móvil) dejaríamos de recibir las liquidaciones en vivo.
+    const unirse = () => emit('radar:join', '')
+    unirse()
 
     const onLiquidacion = (data: Liquidacion & { comercio: Coord & { nombre: string }; radioMetros: number }) => {
       if (!data?.comercio) return
@@ -74,11 +78,13 @@ export default function RadarCentro() {
     }
 
     on('liquidacion:nueva', onLiquidacion)
+    socket?.on('connect', unirse)
     return () => {
       off('liquidacion:nueva')
+      socket?.off('connect', unirse)
       emit('radar:leave', '')
     }
-  }, [estado, coords, on, off, emit])
+  }, [estado, coords, on, off, emit, socket])
 
   async function activarRadarAuto() {
     setRadarOn(true)
@@ -270,7 +276,7 @@ export default function RadarCentro() {
 
         {/* Alerta EN VIVO de Liquidación Relámpago (anti-desperdicio) */}
         {liquidacion && (
-          <AlertaLiquidacion liquidacion={liquidacion} onCerrar={() => setLiquidacion(null)} />
+          <AlertaLiquidacion liquidacion={liquidacion} onCerrar={() => setLiquidacion(null)} offsetMs={offsetMs} />
         )}
 
         <div className="flex items-center justify-end gap-2 mb-5">

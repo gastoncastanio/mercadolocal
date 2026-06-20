@@ -207,14 +207,53 @@ router.post('/webhook', async (req, res) => {
           console.log(`💰 Pago estándar aprobado: orden ${ordenId} | Total: $${ordenActualizada.total}`)
         }
 
-        // Descontar stock (solo cuando el pago se confirma)
+        // Descontar stock ATÓMICAMENTE (solo al confirmar pago). El filtro
+        // `stock >= cantidad` evita vender de más: si entre crear la orden y
+        // acreditarse el pago otra compra agotó el stock, el decremento no aplica.
+        // Como el pago YA se cobró, NO rechazamos la orden: registramos la
+        // incidencia para que el vendedor reponga o reembolse, y dejamos el stock
+        // en 0 (nunca negativo) para no encadenar más sobreventas.
+        const itemsSinStock = []
         for (const item of ordenActualizada.items) {
-          const prodActualizado = await Producto.findByIdAndUpdate(item.productoId, {
-            $inc: { stock: -item.cantidad, totalVentas: item.cantidad }
-          }, { new: true })
-          // Emitir stock actualizado en tiempo real
+          const prodActualizado = await Producto.findOneAndUpdate(
+            { _id: item.productoId, stock: { $gte: item.cantidad } },
+            { $inc: { stock: -item.cantidad, totalVentas: item.cantidad } },
+            { new: true }
+          )
           if (prodActualizado) {
             emitStockActualizado(item.productoId.toString(), prodActualizado.stock)
+          } else {
+            // Sobreventa: cuánto había realmente (para que el vendedor lo vea).
+            const prod = await Producto.findById(item.productoId).select('stock')
+            const disponible = prod ? Math.max(0, prod.stock) : 0
+            await Producto.findByIdAndUpdate(item.productoId, {
+              $set: { stock: 0 },
+              $inc: { totalVentas: item.cantidad }
+            })
+            emitStockActualizado(item.productoId.toString(), 0)
+            itemsSinStock.push({ productoId: item.productoId, nombre: item.nombre, pedido: item.cantidad, disponible })
+          }
+        }
+
+        // Si hubo sobreventa, marcar la orden y avisar a los vendedores afectados.
+        if (itemsSinStock.length > 0) {
+          ordenActualizada.incidenciaStock = { hay: true, items: itemsSinStock }
+          await ordenActualizada.save()
+          const tiendasAfectadas = [...new Set(
+            ordenActualizada.items
+              .filter(i => itemsSinStock.some(s => s.productoId.toString() === i.productoId.toString()))
+              .map(i => i.tiendaId.toString())
+          )]
+          for (const tid of tiendasAfectadas) {
+            const tienda = await Tienda.findById(tid).select('usuarioId')
+            if (tienda?.usuarioId) {
+              emitNotificacion(tienda.usuarioId.toString(), {
+                tipo: 'incidencia_stock',
+                titulo: '⚠️ Venta sin stock suficiente',
+                mensaje: 'Una orden pagada incluye productos que quedaron sin stock. Revisá el pedido para reponer o reembolsar al comprador.',
+                enlace: '/mis-ventas'
+              })
+            }
           }
         }
 
@@ -416,15 +455,18 @@ router.post('/confirmar-recepcion/:ordenId', verificarToken, async (req, res) =>
       return res.status(403).json({ error: 'No autorizado' })
     }
 
-    if (orden.estado !== 'enviada') {
-      return res.status(400).json({ error: 'La orden debe estar en estado "enviada" para confirmar recepción' })
+    // Transición atómica: el filtro por estado evita una carrera (ej. un admin
+    // revirtiendo la orden justo en este momento) que dejaría un estado inconsistente.
+    const ordenActualizada = await Orden.findOneAndUpdate(
+      { _id: orden._id, compradorId: req.usuario.id, estado: 'enviada' },
+      { $set: { estado: 'completada', fechaConfirmacion: new Date() } },
+      { new: true }
+    )
+    if (!ordenActualizada) {
+      return res.status(409).json({ error: 'La orden debe estar en estado "enviada" para confirmar recepción' })
     }
 
-    orden.estado = 'completada'
-    orden.fechaConfirmacion = new Date()
-    await orden.save()
-
-    console.log(`✅ Comprador confirmó recepción: orden ${orden._id}`)
+    console.log(`✅ Comprador confirmó recepción: orden ${ordenActualizada._id}`)
 
     res.json({ mensaje: 'Recepción confirmada. ¡Gracias por tu compra!' })
   } catch (error) {
@@ -443,9 +485,6 @@ router.get('/estado/:ordenId', verificarToken, async (req, res) => {
 
     // Verificar que el usuario sea el comprador, un vendedor de la orden, o admin
     const esComprador = orden.compradorId.toString() === req.usuario.id
-    const esVendedorDeOrden = orden.items.some(
-      item => item.tiendaId && item.tiendaId.toString()
-    )
     let esVendedorAutorizado = false
     if (!esComprador && (req.usuario.tieneVendedor || req.usuario.rol === 'vendedor')) {
       const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })

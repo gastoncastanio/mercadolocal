@@ -94,6 +94,18 @@ const ordenSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Sobreventa: si al confirmar el pago no había stock suficiente para algún item
+  // (otra compra concurrente lo agotó), se marca acá. El pago YA se cobró, así que
+  // nunca rechazamos la orden: el vendedor repone o reembolsa estos items.
+  incidenciaStock: {
+    hay: { type: Boolean, default: false },
+    items: [{
+      productoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Producto' },
+      nombre: String,
+      pedido: Number,      // cuánto se vendió
+      disponible: Number   // cuánto había realmente
+    }]
+  },
   // Datos del envío (cuando el vendedor marca como "enviada")
   codigoSeguimiento: {
     type: String,

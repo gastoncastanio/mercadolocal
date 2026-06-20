@@ -95,8 +95,9 @@ const ofertaFlashSchema = new mongoose.Schema({
   ciudad: { type: String, default: '', index: true },
 
   // FASE 3: Monetización prepago
-  // Precio final que paga el usuario en la app (incluye comisión visible)
-  precioFinal: { type: Number, default: 0, min: 0 },
+  // Precio final que paga el usuario en la app (incluye comisión visible).
+  // Tope defensivo: evita cobros absurdos por error de carga (1 millón ARS).
+  precioFinal: { type: Number, default: 0, min: 0, max: 1000000 },
   // % de comisión que nos quedamos (6% mañana, 9% tarde, 5% noche)
   comisionPorcentaje: { type: Number, default: 7, min: 0, max: 100 },
   // Si requiere pago prepago en app (vs legacy: código QR postpago)
