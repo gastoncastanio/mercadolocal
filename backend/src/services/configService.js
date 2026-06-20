@@ -18,7 +18,7 @@ const DEFAULTS = [
 
   // Negocio
   { clave: 'comision_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión por venta de productos (%)' },
-  { clave: 'comision_por_categoria', valor: '{}', tipo: 'json', categoria: 'Negocio', descripcion: 'Comisión por categoría de producto (JSON: {"electronica": 8, "ropa": 12}). Vacío = usa comision_porcentaje para todas.' },
+  { clave: 'comision_por_categoria', valor: '{}', tipo: 'html', categoria: 'Negocio', descripcion: 'Comisión por categoría de producto (JSON: {"electronica": 8, "ropa": 12}). Vacío = usa comision_porcentaje para todas.' },
   { clave: 'comision_traslado_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión sobre traslados de comisionistas (%)' },
   { clave: 'comision_minima', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Comisión mínima en ARS (piso absoluto, incluso con descuentos coopérativos)' },
   { clave: 'moneda_simbolo', valor: '$', tipo: 'texto', categoria: 'Negocio', descripcion: 'Símbolo de moneda' },

@@ -90,6 +90,8 @@ const PanelComercio = lazy(() => import('./pages/PanelComercio'))
 const CanjearOferta = lazy(() => import('./pages/CanjearOferta'))
 const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
 const VerificarComisionistas = lazy(() => import('./pages/admin/VerificarComisionistas'))
+const OfertasCompartidasVendedor = lazy(() => import('./pages/OfertasCompartidasVendedor'))
+const OfertasCompartidasAdmin = lazy(() => import('./pages/OfertasCompartidasAdmin'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 // Servicios Locales (Paso 2)
@@ -189,6 +191,7 @@ function RutasConBoundary() {
           <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><DashboardVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><CentralVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/mi-tienda/ofertas-compartidas" element={<ConNavbar><RutaPrivada requiereVendedor><OfertasCompartidasVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/mis-comprobantes" element={<ConNavbar><RutaPrivada requiereVendedor><MisComprobantes /></RutaPrivada></ConNavbar>} />
           <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />
           <Route path="/privacidad-datos" element={<ConNavbar><RutaPrivada><MisDatosPrivacidad /></RutaPrivada></ConNavbar>} />
@@ -226,6 +229,7 @@ function RutasConBoundary() {
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
           <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/ofertas-compartidas" element={<ConNavbar><RutaPrivada roles={['admin']}><OfertasCompartidasAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/solicitudes-legales" element={<ConNavbar><RutaPrivada roles={['admin']}><SolicitudesLegales /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/comisionistas" element={<ConNavbar><RutaPrivada roles={['admin']}><VerificarComisionistas /></RutaPrivada></ConNavbar>} />

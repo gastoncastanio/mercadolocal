@@ -257,6 +257,12 @@ router.post('/webhook', async (req, res) => {
           ordenActualizada.items
         ).catch(() => {})
 
+        // Oferta Compartida: descontar el aporte de la plataforma del
+        // presupuesto y finalizar la oferta si se agotó (no bloquea el webhook).
+        import('../services/ofertaCompartidaService.js')
+          .then(m => m.registrarVentaConOferta(ordenActualizada))
+          .catch(e => console.warn('No se pudo registrar venta con oferta compartida:', e.message))
+
         // 4. AUDITORÍA: Registrar transacción financiera
         try {
           await new AuditoriaFinanciera({

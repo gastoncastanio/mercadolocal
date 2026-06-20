@@ -211,6 +211,17 @@ function SeccionInicio() {
           <p className="text-xs text-ml-muted mt-1">Planes y precios publicitarios</p>
         </a>
         <a
+          href="/admin/ofertas-compartidas"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">🤝</span>
+            <span className="text-xs bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full">Co-op</span>
+          </div>
+          <h3 className="font-semibold text-ml-ink group-hover:text-ml-blue">Ofertas Compartidas</h3>
+          <p className="text-xs text-ml-muted mt-1">Descuentos co-financiados con vendedores</p>
+        </a>
+        <a
           href="/admin/configuracion-fiscal"
           className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
         >

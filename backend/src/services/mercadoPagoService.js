@@ -26,7 +26,21 @@ export async function crearPreferencia(orden, compradorEmail) {
 
   // Calcular el marketplace_fee (tu comisión)
   const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
-  const marketplaceFee = Math.round(orden.total * porcentajeComision / 100 * 100) / 100
+  let marketplaceFee = Math.round(orden.total * porcentajeComision / 100 * 100) / 100
+
+  // Oferta Compartida: si algún item está en una oferta co-financiada, la
+  // plataforma absorbe su aporte reduciendo el fee (con piso mínimo para no
+  // terminar con margen negativo).
+  try {
+    const { calcularAportePlataformaOrden } = await import('./ofertaCompartidaService.js')
+    const { aporteTotal } = await calcularAportePlataformaOrden(orden)
+    if (aporteTotal > 0) {
+      const comisionMinima = await configService.obtenerComisionMinima()
+      marketplaceFee = Math.max(Math.round((marketplaceFee - aporteTotal) * 100) / 100, comisionMinima)
+    }
+  } catch (e) {
+    console.error('Error calculando aporte de oferta compartida:', e.message)
+  }
 
   // Agrupar items por tienda para determinar el vendedor
   const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]

@@ -493,6 +493,19 @@ export default function MiTienda() {
           </div>
         )}
 
+        {/* Acceso a Ofertas Compartidas */}
+        <Link
+          to="/mi-tienda/ofertas-compartidas"
+          className="flex items-center gap-3 p-4 mb-6 rounded-2xl border border-rose-200 bg-gradient-to-r from-pink-50 to-rose-50 hover:shadow-md transition-shadow"
+        >
+          <span className="text-3xl">🤝</span>
+          <div className="flex-1">
+            <p className="font-bold text-ml-ink">Ofertas Compartidas</p>
+            <p className="text-xs text-ml-muted">La plataforma co-financia descuentos con vos. Revisá tus propuestas.</p>
+          </div>
+          <span className="text-rose-500 font-bold">→</span>
+        </Link>
+
         {/* Productos */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-ml-ink">Mis Productos ({productos.length})</h2>
