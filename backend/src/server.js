@@ -37,6 +37,7 @@ import mpOauthRouter from './routes/mpOauth.js'
 import statsRouter from './routes/stats.js'
 import soporteRouter from './routes/soporte.js'
 import moderacionRouter from './routes/moderacion.js'
+import contadorRouter from './routes/contador.js'
 import cerebroRouter from './routes/cerebro.js'
 import senalesRouter from './routes/senales.js'
 import comprobantesRouter from './routes/comprobantes.js'
@@ -302,6 +303,7 @@ app.use('/api/mp', mpOauthRouter)
 app.use('/api/stats', statsRouter)
 app.use('/api/soporte', soporteRouter)
 app.use('/api/moderacion', moderacionRouter)
+app.use('/api/contador', contadorRouter)
 app.use('/api/cerebro', cerebroRouter)
 app.use('/api/senales', senalesRouter)
 app.use('/api/comprobantes', comprobantesRouter)

@@ -18,6 +18,7 @@ import { activarSuscripcionDestacado, cambiarEstadoSuscripcion } from '../servic
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { emitPagoAprobado, emitVentaConfirmada, emitStockActualizado, emitNotificacion } from '../services/socketService.js'
+import * as contabilidadService from '../services/contabilidadService.js'
 
 const router = Router()
 
@@ -149,6 +150,17 @@ router.post('/webhook', async (req, res) => {
           // Factura C de la pauta (plataforma → vendedor). No bloquea el webhook.
           emitirComprobantePauta(r.destacado).catch(e =>
             console.warn('No se pudo emitir comprobante de pauta:', e.message))
+
+          // Asiento contable de pauta (fire-and-forget). Es ingreso por PAUTA
+          // (cuenta 4.1.4), no comisión. El dinero entra entero (sin split).
+          contabilidadService.asientoPauta({
+            destacadoId: r.destacado._id,
+            tiendaId: r.destacado.tiendaId,
+            vendedorId: (await Tienda.findById(r.destacado.tiendaId))?.usuarioId,
+            monto: r.destacado.precioTotal,
+            fecha: new Date(),
+            creadoPor: null
+          }).catch(e => console.warn('Error registrando asiento pauta:', e.message))
         }
         return res.status(200).send('OK')
       }
@@ -323,6 +335,42 @@ router.post('/webhook', async (req, res) => {
           }).save()
         } catch (auditErr) {
           console.error('Error guardando auditoría:', auditErr.message)
+        }
+
+        // 5. CONTABILIDAD: Registrar asiento (fire-and-forget, nunca bloquea)
+        try {
+          if (ordenActualizada.usaSplit) {
+            // Venta con split: solo entra la comisión
+            contabilidadService.asientoVentaSplit({
+              ordenId: ordenActualizada._id,
+              tiendaId: tiendaIds[0],
+              vendedorId: (await Tienda.findById(tiendaIds[0]))?.usuarioId,
+              montoComision: ordenActualizada.comision,
+              fecha: new Date(),
+              creadoPor: null
+            }).catch(e => console.warn('Error registrando asiento venta split:', e.message))
+          } else {
+            // Venta sin split: entra todo, le debés al vendedor
+            for (const tiendaId of tiendaIds) {
+              const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
+              const montoTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
+              const comisionTienda = Math.round(montoTienda * porcentajeComision / 100 * 100) / 100
+              const payoutVendedor = montoTienda - comisionTienda
+
+              contabilidadService.asientoVentaSinSplit({
+                ordenId: ordenActualizada._id,
+                tiendaId,
+                vendedorId: (await Tienda.findById(tiendaId))?.usuarioId,
+                montoTotal: montoTienda,
+                montoComision: comisionTienda,
+                montoPayout: payoutVendedor,
+                fecha: new Date(),
+                creadoPor: null
+              }).catch(e => console.warn('Error registrando asiento venta sin split:', e.message))
+            }
+          }
+        } catch (contabErr) {
+          console.warn('Error en bloque de contabilidad:', contabErr.message)
         }
 
         // Notificar al comprador, vendedor y admin
