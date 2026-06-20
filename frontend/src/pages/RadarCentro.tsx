@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { Coord, obtenerUbicacion, ordenarPorCercania, formatearDistancia } from '../utils/geo'
+import { Coord, obtenerUbicacion, ordenarPorCercania, formatearDistancia, distanciaMetros } from '../utils/geo'
 import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlash'
 import DespatxadorBloqueHorario from '../components/DespatxadorBloqueHorario'
 import RetornoPagoOferta from '../components/RetornoPagoOferta'
+import AlertaLiquidacion, { Liquidacion } from '../components/AlertaLiquidacion'
 import { calcularOffset } from '../utils/canjes'
 import { useBloqueHorario, TEMA_NEUTRO } from '../hooks/useBloqueHorario'
+import { useSocket } from '../hooks/useSocket'
 
 interface Comercio {
   _id: string
@@ -39,7 +41,9 @@ export default function RadarCentro() {
   const [offsetMs, setOffsetMs] = useState(0)
   const [cargandoComercios, setCargandoComercios] = useState(false)
   const [coords, setCoords] = useState<Coord | null>(null)
+  const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null)
   const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
+  const { on, off, emit } = useSocket()
 
   // Si ya dio consentimiento antes, activar radar automáticamente
   useEffect(() => {
@@ -48,6 +52,29 @@ export default function RadarCentro() {
       activarRadarAuto()
     }
   }, [])
+
+  // Anti-desperdicio EN VIVO: nos unimos al Radar de la ciudad y escuchamos
+  // "Liquidación Relámpago". El server difunde las coords del comercio; nosotros
+  // decidimos si mostrar la alerta según NUESTRA distancia (privacy-first).
+  useEffect(() => {
+    if (estado !== 'listo' || !coords) return
+    emit('radar:join', '')
+
+    const onLiquidacion = (data: Liquidacion & { comercio: Coord & { nombre: string }; radioMetros: number }) => {
+      if (!data?.comercio) return
+      const dist = distanciaMetros(coords, { lat: data.comercio.lat, lng: data.comercio.lng })
+      if (dist > (data.radioMetros || 1500)) return // fuera de las ~15 cuadras
+      setLiquidacion({ ...data, distancia: dist })
+      // Vibración háptica si el dispositivo lo soporta
+      if ('vibrate' in navigator) navigator.vibrate?.([120, 60, 120])
+    }
+
+    on('liquidacion:nueva', onLiquidacion)
+    return () => {
+      off('liquidacion:nueva')
+      emit('radar:leave', '')
+    }
+  }, [estado, coords, on, off, emit])
 
   async function activarRadarAuto() {
     setRadarOn(true)
@@ -229,6 +256,11 @@ export default function RadarCentro() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Alerta EN VIVO de Liquidación Relámpago (anti-desperdicio) */}
+        {liquidacion && (
+          <AlertaLiquidacion liquidacion={liquidacion} onCerrar={() => setLiquidacion(null)} />
+        )}
+
         <div className="flex items-center justify-end gap-2 mb-5">
           <button
             onClick={() => coords && cargarComercios(coords)}
