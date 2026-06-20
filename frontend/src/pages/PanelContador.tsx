@@ -204,6 +204,30 @@ export default function PanelContador() {
           </div>
         </div>
 
+        {/* Detector de desincronización: la auditoría tiene comisiones que el
+            libro mayor todavía no registró (asientos faltantes → tocar Sincronizar). */}
+        {data && (data.breakEven.comisionesActual - data.margenBruto.ingresoComisiones) > 1 && (
+          <div className="mb-6 rounded-xl p-4 bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
+            <span className="text-2xl">⚠️</span>
+            <div className="text-sm flex-1">
+              <p className="font-semibold text-amber-800">Hay ventas sin sincronizar en el libro mayor</p>
+              <p className="text-amber-700">
+                La auditoría registró {pesos(data.breakEven.comisionesActual)} de comisiones, pero el libro mayor
+                solo tiene {pesos(data.margenBruto.ingresoComisiones)}. Faltan asientos por{' '}
+                {pesos(data.breakEven.comisionesActual - data.margenBruto.ingresoComisiones)}. Sincronizá para reconstruirlos.
+              </p>
+            </div>
+            <button
+              onClick={importarHistorico}
+              disabled={setupBusy}
+              className="text-sm px-4 py-2 bg-amber-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 whitespace-nowrap self-start"
+            >
+              {setupBusy ? 'Sincronizando…' : '↻ Sincronizar ahora'}
+            </button>
+            {setupMsg && <p className="text-xs text-amber-700 w-full sm:w-auto">{setupMsg}</p>}
+          </div>
+        )}
+
         {/* Estado de cuadre (banner) */}
         {data && (
           <div className={`mb-6 rounded-xl p-4 flex items-center gap-3 ${
