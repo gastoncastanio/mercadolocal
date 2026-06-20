@@ -5,10 +5,12 @@ export interface Liquidacion {
   ofertaId: string
   titulo: string
   descripcion?: string
+  imagen?: string
+  imagenPosicion?: string
   valorDescuento?: number
   finEn: string
   cupoTotal?: number
-  comercio: { _id: string; nombre: string; lat: number; lng: number }
+  comercio: { _id: string; nombre: string; logo?: string; verificado?: boolean; lat: number; lng: number }
   radioMetros?: number
   distancia?: number
 }
@@ -35,15 +37,36 @@ export default function AlertaLiquidacion({ liquidacion, onCerrar }: { liquidaci
 
   return (
     <div className="mb-5 rounded-2xl overflow-hidden border border-red-300 shadow-md">
+      {/* Portada: foto del producto que se liquida (encuadrada) */}
+      {liquidacion.imagen && (
+        <div className="relative h-32 w-full overflow-hidden">
+          <img
+            src={liquidacion.imagen}
+            alt={liquidacion.titulo}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: liquidacion.imagenPosicion || '50% 50%' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        </div>
+      )}
       <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-white/90">⚡ Liquidación Relámpago cerca tuyo</p>
-            <p className="font-extrabold text-lg leading-tight mt-0.5">{liquidacion.titulo}</p>
-            <p className="text-sm text-white/90 mt-0.5">
-              {liquidacion.comercio.nombre}
-              {liquidacion.distancia != null && <> · 📍 {formatearDistancia(liquidacion.distancia)}</>}
-            </p>
+          <div className="flex items-start gap-3 min-w-0">
+            {/* Logo redondo del comercio que liquida */}
+            {liquidacion.comercio.logo && (
+              <img src={liquidacion.comercio.logo} alt={liquidacion.comercio.nombre} className="w-10 h-10 rounded-full object-cover border-2 border-white/70 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-white/90">⚡ Liquidación Relámpago cerca tuyo</p>
+              <p className="font-extrabold text-lg leading-tight mt-0.5">{liquidacion.titulo}</p>
+              <p className="text-sm text-white/90 mt-0.5 flex items-center gap-1 flex-wrap">
+                {liquidacion.comercio.nombre}
+                {liquidacion.comercio.verificado && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold bg-white/25 px-1.5 py-0.5 rounded-full" title="Comercio verificado">✓ Verificado</span>
+                )}
+                {liquidacion.distancia != null && <> · 📍 {formatearDistancia(liquidacion.distancia)}</>}
+              </p>
+            </div>
           </div>
           <button onClick={onCerrar} className="shrink-0 text-white/70 hover:text-white text-lg leading-none">✕</button>
         </div>

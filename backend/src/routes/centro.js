@@ -81,7 +81,7 @@ router.get('/mis-comercios', verificarToken, async (req, res) => {
 // POST /api/centro/comercios - alta de comercio (el dueño lo crea)
 router.post('/comercios', verificarToken, async (req, res) => {
   try {
-    const { nombre, rubro, descripcion, ubicacion, bloqueHorarioPrioritario, tiempoPrepEstimado, contacto } = req.body
+    const { nombre, rubro, descripcion, ubicacion, bloqueHorarioPrioritario, tiempoPrepEstimado, contacto, media } = req.body
 
     if (!nombre || !ubicacion || ubicacion.lat == null || ubicacion.lng == null || !ubicacion.ciudad) {
       return res.status(400).json({ error: 'Nombre, ciudad y coordenadas (lat/lng) son obligatorios' })
@@ -100,7 +100,8 @@ router.post('/comercios', verificarToken, async (req, res) => {
       },
       bloqueHorarioPrioritario: bloqueHorarioPrioritario || 'todos',
       tiempoPrepEstimado: tiempoPrepEstimado ?? null,
-      contacto: contacto || {}
+      contacto: contacto || {},
+      media: media || {}
     })
 
     res.status(201).json(comercio)
@@ -120,9 +121,20 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
       return res.status(403).json({ error: 'No autorizado' })
     }
 
-    const campos = ['nombre', 'rubro', 'descripcion', 'bloqueHorarioPrioritario', 'tiempoPrepEstimado', 'contacto', 'media', 'activo']
+    const campos = ['nombre', 'rubro', 'descripcion', 'bloqueHorarioPrioritario', 'tiempoPrepEstimado', 'contacto', 'activo']
     for (const c of campos) {
       if (req.body[c] !== undefined) comercio[c] = req.body[c]
+    }
+    // media se mergea campo a campo: un PUT con solo {logo} no debe borrar
+    // videoLoopUrl/posterUrl/fotos (micro-contenido de Fase 4).
+    if (req.body.media && typeof req.body.media === 'object') {
+      for (const k of ['logo', 'videoLoopUrl', 'posterUrl', 'fotos']) {
+        if (req.body.media[k] !== undefined) comercio.media[k] = req.body.media[k]
+      }
+    }
+    // La verificación es un acto del admin (otorga confianza), no del dueño.
+    if (req.body.verificado !== undefined && req.usuario.rol === 'admin') {
+      comercio.verificado = !!req.body.verificado
     }
     let cambioCiudad = false
     if (req.body.ubicacion) {
@@ -414,6 +426,8 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       comercioId,
       titulo,
       descripcion,
+      imagen,
+      imagenPosicion,
       tipoGancho,
       valorDescuento,
       inicioEn,
@@ -450,6 +464,8 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       comercioId,
       titulo,
       descripcion: descripcion || '',
+      imagen: imagen || '',
+      imagenPosicion: imagenPosicion || '50% 50%',
       tipoGancho: tipoGancho || 'descuento',
       valorDescuento: valorDescuento || 0,
       inicioEn: inicio,
@@ -477,7 +493,7 @@ router.post('/ofertas', verificarToken, async (req, res) => {
 // de la ciudad; cada cliente filtra por su propia distancia (privacy-first).
 router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) => {
   try {
-    const { comercioId, titulo, descripcion, valorDescuento, cupoTotal, duracionMin, condiciones } = req.body
+    const { comercioId, titulo, descripcion, imagen, imagenPosicion, valorDescuento, cupoTotal, duracionMin, condiciones } = req.body
 
     if (!comercioId || !titulo) {
       return res.status(400).json({ error: 'Comercio y título son obligatorios.' })
@@ -494,6 +510,8 @@ router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) =
       comercioId,
       titulo,
       descripcion: descripcion || '',
+      imagen: imagen || '',
+      imagenPosicion: imagenPosicion || '50% 50%',
       tipoGancho: 'descuento',
       valorDescuento: Math.min(100, Math.max(0, Number(valorDescuento) || 0)),
       inicioEn: inicio,
@@ -513,12 +531,16 @@ router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) =
       ofertaId: oferta._id,
       titulo: oferta.titulo,
       descripcion: oferta.descripcion,
+      imagen: oferta.imagen,
+      imagenPosicion: oferta.imagenPosicion,
       valorDescuento: oferta.valorDescuento,
       finEn: oferta.finEn,
       cupoTotal: oferta.cupoTotal,
       comercio: {
         _id: acceso.comercio._id,
         nombre: acceso.comercio.nombre,
+        logo: acceso.comercio.media?.logo || '',
+        verificado: acceso.comercio.verificado,
         lat: acceso.comercio.ubicacion.lat,
         lng: acceso.comercio.ubicacion.lng
       },
@@ -685,7 +707,7 @@ router.put('/ofertas/:id', verificarToken, async (req, res) => {
     const acceso = await comercioDelUsuario(oferta.comercioId, req.usuario)
     if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
 
-    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea', 'cuponCruzado', 'precioFinal', 'comisionPorcentaje', 'requierePrepagoApp']
+    const campos = ['titulo', 'descripcion', 'imagen', 'imagenPosicion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea', 'cuponCruzado', 'precioFinal', 'comisionPorcentaje', 'requierePrepagoApp']
     for (const c of campos) {
       if (req.body[c] !== undefined) oferta[c] = req.body[c]
     }
@@ -806,7 +828,7 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
     }
 
     const ofertas = await OfertaFlash.find(filtro)
-      .populate('comercioId', 'nombre ubicacion')
+      .populate('comercioId', 'nombre ubicacion media verificado estadoPrograma')
       .sort({ finEn: 1 })
       .limit(100)
 
@@ -817,6 +839,10 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
     let resultado = vigentes.map(o => ({
       ...o.toPublic(ahora),
       comercioNombre: o.comercioId?.nombre,
+      comercioLogo: o.comercioId?.media?.logo || '',
+      // Verificado = acto explícito del admin (no se infiere de 'fundador', que es
+      // un estado de programa distinto). Consistente con el feed y el broadcast.
+      comercioVerificado: !!o.comercioId?.verificado,
       comercioLat: o.comercioId?.ubicacion?.lat,
       comercioLng: o.comercioId?.ubicacion?.lng
     }))
