@@ -41,12 +41,27 @@ export default function RadarCentro() {
   const [coords, setCoords] = useState<Coord | null>(null)
   const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
 
-  // Si ya dio consentimiento antes, lo recordamos
+  // Si ya dio consentimiento antes, activar radar automáticamente
   useEffect(() => {
     if (localStorage.getItem('ml_radar_consent') === 'si') {
       setMayoria(true)
+      activarRadarAuto()
     }
   }, [])
+
+  async function activarRadarAuto() {
+    setRadarOn(true)
+    setEstado('pidiendo')
+    try {
+      const ubic = await obtenerUbicacion()
+      setCoords(ubic)
+      setEstado('listo')
+      cargarComercios(ubic)
+    } catch (e: any) {
+      setError(e.message || 'No pudimos acceder a tu ubicación.')
+      setEstado('error')
+    }
+  }
 
   async function activarRadar() {
     setError('')
@@ -248,30 +263,69 @@ export default function RadarCentro() {
             ) : (
               <div className="space-y-3">
                 {comercios.map(c => (
-                  <div key={c._id} className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
-                    <div className="flex">
+                  <div key={c._id} className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="flex flex-col sm:flex-row">
                       {/* Media / poster */}
-                      <div className="w-24 sm:w-28 bg-ml-bg flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className="w-full sm:w-28 h-28 sm:h-auto bg-gradient-to-br from-ml-violet/10 to-ml-blue/10 flex items-center justify-center shrink-0 overflow-hidden">
                         {c.media?.posterUrl ? (
                           <img src={c.media.posterUrl} alt={c.nombre} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-4xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
+                          <span className="text-5xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
                         )}
                       </div>
-                      <div className="flex-1 p-3 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-ml-ink truncate">{c.nombre}</h3>
-                          {c.estadoPrograma === 'fundador' && (
-                            <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
-                          )}
+                      <div className="flex-1 p-4 min-w-0">
+                        {/* Encabezado */}
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-bold text-ml-ink text-base">{c.nombre}</h3>
+                              {c.estadoPrograma === 'fundador' && (
+                                <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-ml-soft mt-0.5">{c.rubro}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-ml-violet text-sm">📍 {formatearDistancia(c.distancia)}</p>
+                            {c.tiempoPrepEstimado && (
+                              <p className="text-[11px] text-green-600 mt-1">⏱️ ~{c.tiempoPrepEstimado}m</p>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-xs text-ml-muted line-clamp-1">{c.descripcion || c.ubicacion.direccion}</p>
-                        <div className="flex items-center gap-3 mt-2 text-xs">
-                          <span className="font-semibold text-ml-violet">📍 {formatearDistancia(c.distancia)}</span>
-                          {c.tiempoPrepEstimado && (
-                            <span className="text-green-600">⏱️ listo en ~{c.tiempoPrepEstimado} min</span>
-                          )}
+
+                        {/* Descripción */}
+                        <p className="text-xs text-ml-muted line-clamp-2 mb-3">{c.descripcion || c.ubicacion.direccion}</p>
+
+                        {/* Dirección y contacto */}
+                        <div className="space-y-2 mb-3">
+                          <p className="text-[11px] text-ml-soft">📍 {c.ubicacion.direccion}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {c.contacto?.whatsapp && (
+                              <a href={`https://wa.me/${c.contacto.whatsapp}`} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-green-50 text-green-700 border border-green-200 px-2 py-1 rounded-lg hover:bg-green-100 transition-colors">
+                                💬 WhatsApp
+                              </a>
+                            )}
+                            {c.contacto?.instagram && (
+                              <a href={`https://instagram.com/${c.contacto.instagram}`} target="_blank" rel="noopener noreferrer" className="text-[11px] bg-pink-50 text-pink-700 border border-pink-200 px-2 py-1 rounded-lg hover:bg-pink-100 transition-colors">
+                                📸 Instagram
+                              </a>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Fotos galería */}
+                        {c.media?.fotos && c.media.fotos.length > 0 && (
+                          <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                            {c.media.fotos.slice(0, 4).map((foto, idx) => (
+                              <img key={idx} src={foto} alt={`${c.nombre} ${idx + 1}`} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                            ))}
+                            {c.media.fotos.length > 4 && (
+                              <div className="w-12 h-12 rounded-lg bg-ml-bg border border-ml-line flex items-center justify-center flex-shrink-0 text-xs font-bold text-ml-muted">
+                                +{c.media.fotos.length - 4}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
