@@ -49,6 +49,24 @@ export function initSocket(httpServer, corsOrigins) {
       }
     })
 
+    // Radar del Centro: usuarios anónimos (sin JWT) se unen a la sala de su
+    // ciudad para recibir alertas de "Liquidación Relámpago" en tiempo real.
+    // No mandamos su ubicación: el server difunde las coords del comercio y el
+    // cliente filtra por distancia localmente (modelo privacy-first del Radar).
+    socket.on('radar:join', (ciudad) => {
+      socket.join('radar:all')
+      if (ciudad && typeof ciudad === 'string') {
+        socket.join(`radar:${ciudad.trim().toLowerCase()}`)
+      }
+    })
+
+    socket.on('radar:leave', (ciudad) => {
+      socket.leave('radar:all')
+      if (ciudad && typeof ciudad === 'string') {
+        socket.leave(`radar:${ciudad.trim().toLowerCase()}`)
+      }
+    })
+
     socket.on('disconnect', () => {
       console.log(`🔌 WebSocket desconectado: ${socket.id}`)
     })
@@ -90,6 +108,18 @@ export function emitNotificacion(usuarioId, notificacion) {
     mensaje: notificacion.mensaje,
     enlace: notificacion.enlace
   }).catch(() => {})
+}
+
+/**
+ * Difunde una "Liquidación Relámpago" (botón anti-desperdicio del comercio) a
+ * todos los usuarios del Radar de esa ciudad. El payload lleva las coords del
+ * comercio y el radio; cada cliente decide si vibrar/mostrar según SU distancia
+ * (la ubicación del usuario nunca llega al server).
+ */
+export function emitLiquidacionRelampago(ciudad, payload) {
+  if (!io) return
+  const sala = ciudad ? `radar:${String(ciudad).trim().toLowerCase()}` : 'radar:all'
+  io.to(sala).emit('liquidacion:nueva', { ...payload, timestamp: new Date() })
 }
 
 /**

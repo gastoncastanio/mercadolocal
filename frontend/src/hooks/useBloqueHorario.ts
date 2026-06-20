@@ -1,15 +1,33 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
 
+export interface TemaBloque {
+  emoji: string
+  colorDesde: string
+  colorHasta: string
+  acento: string
+  rubrosPrioritarios: string[]
+}
+
 export interface BloqueHorario {
   nombre: string
   horaInicio: string
   horaFin: string
   titulo: string
   descripcion: string
-  tipoDispatcher: 'cercania' | 'cruzada' | 'general'
+  tipoDispatcher: 'cercania' | 'cruzada' | 'general' | 'shopping'
   distanciaMaxima: number
   activo: boolean
+  tema?: TemaBloque | null
+}
+
+// Tema neutro para los gaps horarios (cuando no hay bloque activo).
+export const TEMA_NEUTRO: TemaBloque = {
+  emoji: '📍',
+  colorDesde: '#7C3AED',
+  colorHasta: '#2563EB',
+  acento: '#7C3AED',
+  rubrosPrioritarios: []
 }
 
 export function useBloqueHorario() {

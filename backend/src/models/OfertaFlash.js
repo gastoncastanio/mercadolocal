@@ -54,10 +54,11 @@ const ofertaFlashSchema = new mongoose.Schema({
   // El comercio puede pausar la oferta sin borrarla
   activa: { type: Boolean, default: true },
 
-  // Bloque horario al que pertenece (despachador de Fase 3)
+  // Bloque horario al que pertenece (despachador de Fase 3 / Radar Camaleón).
+  // Incluye los modos temáticos nuevos + los legacy (retrocompat con datos viejos).
   bloqueHorario: {
     type: String,
-    enum: ['manana', 'tarde', 'noche', 'todos'],
+    enum: ['desayuno', 'almuerzo', 'siesta', 'merienda', 'cena', 'manana', 'tarde', 'noche', 'todos'],
     default: 'todos'
   },
 

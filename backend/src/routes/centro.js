@@ -7,6 +7,7 @@ import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
 import { bloqueActual, obtenerBloques } from '../utils/bloqueHorario.js'
 import { crearPreferenciaOferta, obtenerPago, buscarPagoPorReferencia } from '../config/mercadopago.js'
+import { emitLiquidacionRelampago } from '../services/socketService.js'
 
 const router = Router()
 
@@ -460,6 +461,66 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       comisionPorcentaje: comisionPorcentaje || 7,
       requierePrepagoApp: requierePrepagoApp || false
     })
+    res.status(201).json(oferta)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/ofertas/liquidacion-relampago - "botón de pánico" anti-desperdicio.
+// El comercio liquida stock que sobra (facturas, platos del día) en una ventana
+// corta. Crea una OfertaFlash de duración limitada y la difunde EN VIVO al Radar
+// de la ciudad; cada cliente filtra por su propia distancia (privacy-first).
+router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) => {
+  try {
+    const { comercioId, titulo, descripcion, valorDescuento, cupoTotal, duracionMin, condiciones } = req.body
+
+    if (!comercioId || !titulo) {
+      return res.status(400).json({ error: 'Comercio y título son obligatorios.' })
+    }
+    const acceso = await comercioDelUsuario(comercioId, req.usuario)
+    if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
+
+    // Ventana corta: por defecto 45 min, acotada entre 15 y 180 min.
+    const minutos = Math.min(180, Math.max(15, Number(duracionMin) || 45))
+    const inicio = new Date()
+    const fin = new Date(inicio.getTime() + minutos * 60 * 1000)
+
+    const oferta = await OfertaFlash.create({
+      comercioId,
+      titulo,
+      descripcion: descripcion || '',
+      tipoGancho: 'descuento',
+      valorDescuento: Math.min(100, Math.max(0, Number(valorDescuento) || 0)),
+      inicioEn: inicio,
+      finEn: fin,
+      cupoTotal: Math.max(0, Number(cupoTotal) || 0),
+      bloqueHorario: 'todos',
+      condiciones: condiciones || 'Sujeto a disponibilidad. Retiro en el local dentro de la ventana de la oferta.',
+      ciudad: acceso.comercio.ubicacion.ciudad,
+      // El anti-desperdicio es postpago en mostrador (recuperar costo, no monetizar app).
+      requierePrepagoApp: false,
+      precioFinal: 0
+    })
+
+    // Difundir EN VIVO al Radar de la ciudad. Mandamos las coords del comercio y
+    // el radio; el cliente decide si mostrar la alerta según su propia distancia.
+    emitLiquidacionRelampago(acceso.comercio.ubicacion.ciudad, {
+      ofertaId: oferta._id,
+      titulo: oferta.titulo,
+      descripcion: oferta.descripcion,
+      valorDescuento: oferta.valorDescuento,
+      finEn: oferta.finEn,
+      cupoTotal: oferta.cupoTotal,
+      comercio: {
+        _id: acceso.comercio._id,
+        nombre: acceso.comercio.nombre,
+        lat: acceso.comercio.ubicacion.lat,
+        lng: acceso.comercio.ubicacion.lng
+      },
+      radioMetros: 1500 // ~15 cuadras
+    })
+
     res.status(201).json(oferta)
   } catch (error) {
     res.status(400).json({ error: error.message })

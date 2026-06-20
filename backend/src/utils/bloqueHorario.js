@@ -32,24 +32,36 @@ export async function bloqueActual() {
 
   // Busca cuál bloque contiene minutosAhora
   for (const bloque of bloques) {
-    const minInicio = horaAMinutos(bloque.horaInicio)
-    const minFin = horaAMinutos(bloque.horaFin)
-
-    // Nota: si la franja cruza medianoche (ej. 22:00–07:00), usar lógica especial si es necesario
-    // Por ahora asumimos franjas intra-día (mañana < tarde < noche)
-    if (minutosAhora >= minInicio && minutosAhora < minFin) {
+    if (enFranja(minutosAhora, bloque.horaInicio, bloque.horaFin)) {
       return {
         nombre: bloque.nombre,
         titulo: bloque.titulo,
         descripcion: bloque.descripcion,
         tipoDispatcher: bloque.tipoDispatcher,
-        distanciaMaxima: bloque.distanciaMaxima
+        distanciaMaxima: bloque.distanciaMaxima,
+        tema: bloque.tema || null
       }
     }
   }
 
-  // Ninguno activo ahora
+  // Ninguno activo ahora (gap horario) → el feed cae al fallback genérico.
   return null
+}
+
+/**
+ * ¿`minutos` cae dentro de la franja [inicio, fin)? Maneja cruce de medianoche:
+ * si fin <= inicio (ej. 22:00–02:00), la franja envuelve la medianoche.
+ */
+function enFranja(minutos, horaInicio, horaFin) {
+  const minInicio = horaAMinutos(horaInicio)
+  const minFin = horaAMinutos(horaFin)
+  if (minFin > minInicio) {
+    // Franja intra-día normal (ej. 08:00–11:30)
+    return minutos >= minInicio && minutos < minFin
+  }
+  // Franja que cruza medianoche (ej. 22:00–02:00): activa si estás después
+  // del inicio O antes del fin.
+  return minutos >= minInicio || minutos < minFin
 }
 
 /**

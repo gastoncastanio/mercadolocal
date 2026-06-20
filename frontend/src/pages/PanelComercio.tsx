@@ -41,9 +41,11 @@ interface Metricas {
 const RUBROS = ['cafeteria', 'libreria', 'indumentaria', 'gastronomia', 'belleza', 'otro']
 const BLOQUES = [
   { v: 'todos', t: 'Todo el día' },
-  { v: 'manana', t: 'Mañana' },
-  { v: 'tarde', t: 'Tarde' },
-  { v: 'noche', t: 'Noche' }
+  { v: 'desayuno', t: '🥐 Desayuno (08–11:30)' },
+  { v: 'almuerzo', t: '🍽️ Almuerzo (12–14:30)' },
+  { v: 'siesta', t: '🛍️ Siesta (14:30–17)' },
+  { v: 'merienda', t: '☕ Merienda (17:30–19:30)' },
+  { v: 'cena', t: '🌙 Cena / Bar (20–23:30)' }
 ]
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -235,6 +237,12 @@ export default function PanelComercio() {
                     <Metrica label="Ingreso atrib." valor={`$${metricas.ingresoAtribuido.toLocaleString('es-AR')}`} />
                   </div>
                 )}
+
+                {/* Botón de pánico anti-desperdicio */}
+                <LiquidacionRelampago
+                  comercioId={sel._id}
+                  onLanzada={(o) => setOfertas([o, ...ofertas])}
+                />
 
                 {/* Ofertas */}
                 <div className="flex items-center justify-between">
@@ -532,5 +540,107 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
         )}
       </div>
     </form>
+  )
+}
+
+// ===== Botón de pánico anti-desperdicio: "Liquidación Relámpago" =====
+// El comercio liquida stock que sobra (facturas, platos del día) en una ventana
+// corta. Crea una oferta de duración limitada y la difunde EN VIVO al Radar.
+function LiquidacionRelampago({ comercioId, onLanzada }: { comercioId: string; onLanzada: (o: Oferta) => void }) {
+  const [abierto, setAbierto] = useState(false)
+  const [f, setF] = useState({ titulo: '', descripcion: '', valorDescuento: 50, cupoTotal: 0, duracionMin: 45 })
+  const [lanzando, setLanzando] = useState(false)
+  const [error, setError] = useState('')
+  const [ok, setOk] = useState(false)
+
+  async function lanzar() {
+    if (!f.titulo.trim()) { setError('Poné un título, ej: "3 docenas de facturas al 50%".'); return }
+    setLanzando(true)
+    setError('')
+    try {
+      const res = await api.post('/centro/ofertas/liquidacion-relampago', { comercioId, ...f })
+      onLanzada(res.data)
+      setOk(true)
+      setTimeout(() => { setAbierto(false); setOk(false); setF({ titulo: '', descripcion: '', valorDescuento: 50, cupoTotal: 0, duracionMin: 45 }) }, 2500)
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No pudimos lanzar la liquidación.')
+    } finally {
+      setLanzando(false)
+    }
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        onClick={() => setAbierto(true)}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-sm transition-colors"
+      >
+        ⚡ Liquidación Relámpago
+        <span className="text-xs font-normal text-white/80">— vaciá lo que sobra ya</span>
+      </button>
+    )
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-red-700">⚡ Liquidación Relámpago</h3>
+        <button onClick={() => setAbierto(false)} className="text-xs text-ml-soft hover:text-ml-ink">Cerrar</button>
+      </div>
+      <p className="text-xs text-ml-soft">Avisás EN VIVO a los vecinos del Radar a la redonda (~15 cuadras). Ideal para vaciar stock antes de cerrar el turno.</p>
+
+      {ok ? (
+        <p className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+          🚀 ¡Lanzada! Ya está sonando en el Radar de los vecinos.
+        </p>
+      ) : (
+        <>
+          <input
+            value={f.titulo}
+            onChange={e => setF({ ...f, titulo: e.target.value })}
+            placeholder='Ej: 3 docenas de facturas al 50%'
+            maxLength={80}
+            className="w-full px-3 py-2.5 rounded-xl border border-ml-line text-sm"
+          />
+          <input
+            value={f.descripcion}
+            onChange={e => setF({ ...f, descripcion: e.target.value })}
+            placeholder="Detalle opcional (ej: retirar en mostrador)"
+            maxLength={200}
+            className="w-full px-3 py-2.5 rounded-xl border border-ml-line text-sm"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <label className="text-xs text-ml-soft">
+              Descuento %
+              <input type="number" min={0} max={100} value={f.valorDescuento}
+                onChange={e => setF({ ...f, valorDescuento: Number(e.target.value) })}
+                className="w-full mt-1 px-2 py-2 rounded-lg border border-ml-line text-sm" />
+            </label>
+            <label className="text-xs text-ml-soft">
+              Cupo (0 = libre)
+              <input type="number" min={0} value={f.cupoTotal}
+                onChange={e => setF({ ...f, cupoTotal: Number(e.target.value) })}
+                className="w-full mt-1 px-2 py-2 rounded-lg border border-ml-line text-sm" />
+            </label>
+            <label className="text-xs text-ml-soft">
+              Dura (min)
+              <input type="number" min={15} max={180} value={f.duracionMin}
+                onChange={e => setF({ ...f, duracionMin: Number(e.target.value) })}
+                className="w-full mt-1 px-2 py-2 rounded-lg border border-ml-line text-sm" />
+            </label>
+          </div>
+
+          {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{error}</p>}
+
+          <button
+            onClick={lanzar}
+            disabled={lanzando}
+            className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:opacity-60 transition-colors"
+          >
+            {lanzando ? 'Lanzando...' : `🚀 Lanzar ya (${f.duracionMin} min)`}
+          </button>
+        </>
+      )}
+    </div>
   )
 }
