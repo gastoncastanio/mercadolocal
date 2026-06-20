@@ -92,6 +92,8 @@ export default function PanelContador() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [modal, setModal] = useState<'gasto' | 'config' | null>(null)
+  const [setupMsg, setSetupMsg] = useState('')
+  const [setupBusy, setSetupBusy] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -107,6 +109,36 @@ export default function PanelContador() {
   }, [anio, mes])
 
   useEffect(() => { cargar() }, [cargar])
+
+  async function inicializarPlan() {
+    setSetupBusy(true)
+    setSetupMsg('Creando el plan de cuentas…')
+    try {
+      await api.post('/contador/init-plan-cuentas')
+      setSetupMsg('✅ Plan de cuentas creado. Importando tu histórico…')
+      const res = await api.post('/contador/backfill')
+      setSetupMsg(`✅ Listo: ${res.data.asientosNuevos} movimientos importados de tu histórico.`)
+      await cargar()
+    } catch (e: any) {
+      setSetupMsg('❌ ' + (e?.response?.data?.error || 'No se pudo inicializar. Reintentá.'))
+    } finally {
+      setSetupBusy(false)
+    }
+  }
+
+  async function importarHistorico() {
+    setSetupBusy(true)
+    setSetupMsg('Importando histórico…')
+    try {
+      const res = await api.post('/contador/backfill')
+      setSetupMsg(`✅ ${res.data.asientosNuevos} movimientos nuevos importados.`)
+      await cargar()
+    } catch (e: any) {
+      setSetupMsg('❌ ' + (e?.response?.data?.error || 'No se pudo importar.'))
+    } finally {
+      setSetupBusy(false)
+    }
+  }
 
   async function exportarCSV() {
     if (!data) return
@@ -154,6 +186,7 @@ export default function PanelContador() {
                 <option key={y} value={y}>{y}</option>
               )}
             </select>
+            <button onClick={importarHistorico} disabled={setupBusy} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 disabled:opacity-50" title="Volver a importar el histórico (no duplica)">↻ Sincronizar</button>
             <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90">➕ Gasto</button>
             <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">⚙️ Config</button>
             <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">🖨️ PDF</button>
@@ -182,9 +215,22 @@ export default function PanelContador() {
         {cargando && <div className="text-center py-20 text-ml-muted">Cargando panel financiero…</div>}
 
         {error && !cargando && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-            <p className="text-red-700 font-medium">{error}</p>
-            <button onClick={cargar} className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg text-sm">Reintentar</button>
+          <div className="bg-white border border-ml-line rounded-2xl p-8 text-center max-w-lg mx-auto">
+            <div className="text-5xl mb-3">📊</div>
+            <h2 className="text-xl font-bold text-ml-ink">Activá el sistema contable</h2>
+            <p className="text-sm text-ml-muted mt-2">
+              La primera vez hay que crear el plan de cuentas e importar tu histórico de ventas.
+              Es un solo clic y se hace solo.
+            </p>
+            <button
+              onClick={inicializarPlan}
+              disabled={setupBusy}
+              className="mt-5 px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50"
+            >
+              {setupBusy ? 'Trabajando…' : '🚀 Activar y cargar mis datos'}
+            </button>
+            {setupMsg && <p className="text-sm mt-4 text-ml-soft">{setupMsg}</p>}
+            <button onClick={cargar} className="block mx-auto mt-3 text-xs text-ml-muted hover:text-ml-ink">Reintentar carga</button>
           </div>
         )}
 

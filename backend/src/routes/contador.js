@@ -69,6 +69,39 @@ router.post('/init-plan-cuentas', verificarToken, soloAdmin, async (req, res) =>
 })
 
 /**
+ * POST /api/contador/backfill
+ * Importa el histórico: genera asientos retroactivos desde auditoría + comprobantes.
+ * Idempotente (no duplica). Pensado para el botón de "Importar histórico".
+ */
+router.post('/backfill', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const resultado = await contabilidadService.backfillAsientos()
+    res.json({ mensaje: 'Histórico importado', ...resultado })
+  } catch (error) {
+    console.error('Error en POST /backfill:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
+ * GET /api/contador/estado-setup
+ * Indica si el sistema contable ya está inicializado (plan de cuentas + asientos).
+ */
+router.get('/estado-setup', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const cuentas = await CuentaContable.countDocuments()
+    const asientos = await AsientoContable.estimatedDocumentCount()
+    res.json({
+      planInicializado: cuentas > 0,
+      cantidadCuentas: cuentas,
+      cantidadAsientos: asientos
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
  * GET /api/contador/resumen
  * Resumen financiero del mes actual
  */

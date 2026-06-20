@@ -151,12 +151,13 @@ router.post('/webhook', async (req, res) => {
           emitirComprobantePauta(r.destacado).catch(e =>
             console.warn('No se pudo emitir comprobante de pauta:', e.message))
 
-          // Asiento contable de pauta (fire-and-forget)
-          contabilidadService.asientoVentaSplit({
-            ordenId: r.destacado._id,
+          // Asiento contable de pauta (fire-and-forget). Es ingreso por PAUTA
+          // (cuenta 4.1.4), no comisión. El dinero entra entero (sin split).
+          contabilidadService.asientoPauta({
+            destacadoId: r.destacado._id,
             tiendaId: r.destacado.tiendaId,
             vendedorId: (await Tienda.findById(r.destacado.tiendaId))?.usuarioId,
-            montoComision: r.destacado.precioTotal,
+            monto: r.destacado.precioTotal,
             fecha: new Date(),
             creadoPor: null
           }).catch(e => console.warn('Error registrando asiento pauta:', e.message))

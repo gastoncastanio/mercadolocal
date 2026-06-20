@@ -2,6 +2,8 @@ import CuentaContable from '../models/CuentaContable.js'
 import AsientoContable from '../models/AsientoContable.js'
 import GastoOperativo from '../models/GastoOperativo.js'
 import ResumenDiarioContable from '../models/ResumenDiarioContable.js'
+import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
+import Comprobante from '../models/Comprobante.js'
 
 /**
  * SERVICIO DE CONTABILIDAD
@@ -153,14 +155,19 @@ export async function asientoVentaSplit({
   fecha,
   creadoPor
 }) {
+  // En split, tu único ingreso es la comisión. Si es $0 (ej: oferta compartida
+  // que llevó el fee a cero), no hay plata que entre a tu cuenta → no hay asiento.
+  const comision = Math.round((montoComision || 0) * 100) / 100
+  if (comision <= 0) return null
+
   return registrarAsiento({
     referenciaId: `venta_split:${ordenId}`,
     tipo: 'venta_split',
-    descripcion: `Venta orden #${ordenId?.toString?.().slice(-8)} (Split) | Comisión: $${montoComision}`,
+    descripcion: `Venta orden #${ordenId?.toString?.().slice(-8)} (Split) | Comisión: $${comision}`,
     fechaContable: fecha,
     lineas: [
-      { codigoCuenta: '1.1.2', debe: montoComision }, // MP a liberar
-      { codigoCuenta: '4.1.1', haber: montoComision } // Comisiones por venta
+      { codigoCuenta: '1.1.2', debe: comision }, // MP a liberar
+      { codigoCuenta: '4.1.1', haber: comision } // Comisiones por venta
     ],
     referencias: { ordenId, tiendaId, vendedorId },
     origen: 'webhook',
@@ -182,17 +189,51 @@ export async function asientoVentaSinSplit({
   fecha,
   creadoPor
 }) {
+  const total = Math.round((montoTotal || 0) * 100) / 100
+  const comision = Math.round((montoComision || 0) * 100) / 100
+  const payout = Math.round((montoPayout || 0) * 100) / 100
+  if (total <= 0) return null
+
+  // Líneas del haber dinámicas: si comisión o payout son $0 no los incluimos
+  // (una línea $0/$0 invalidaría el asiento).
+  const lineas = [{ codigoCuenta: '1.1.2', debe: total }] // MP a liberar
+  if (comision > 0) lineas.push({ codigoCuenta: '4.1.1', haber: comision }) // Comisiones
+  if (payout > 0) lineas.push({ codigoCuenta: '2.1.1', haber: payout }) // Por pagar vendedor
+
   return registrarAsiento({
     referenciaId: `venta_sin_split:${ordenId}`,
     tipo: 'venta_sin_split',
-    descripcion: `Venta orden #${ordenId?.toString?.().slice(-8)} (Sin Split) | Total: $${montoTotal}, Comisión: $${montoComision}, Payout: $${montoPayout}`,
+    descripcion: `Venta orden #${ordenId?.toString?.().slice(-8)} (Sin Split) | Total: $${total}, Comisión: $${comision}, Payout: $${payout}`,
+    fechaContable: fecha,
+    lineas,
+    referencias: { ordenId, tiendaId, vendedorId },
+    origen: 'webhook',
+    creadoPor
+  })
+}
+
+/**
+ * Asiento de PAUTA publicitaria (un vendedor te paga por destacar su producto).
+ * El dinero entra entero a tu cuenta y es ingreso por pauta (NO comisión).
+ */
+export async function asientoPauta({
+  destacadoId,
+  vendedorId,
+  tiendaId,
+  monto,
+  fecha,
+  creadoPor
+}) {
+  return registrarAsiento({
+    referenciaId: `pauta:${destacadoId}`,
+    tipo: 'pauta_publicitaria',
+    descripcion: `Pauta publicitaria | Monto: $${monto}`,
     fechaContable: fecha,
     lineas: [
-      { codigoCuenta: '1.1.2', debe: montoTotal }, // MP a liberar
-      { codigoCuenta: '4.1.1', haber: montoComision }, // Comisiones por venta
-      { codigoCuenta: '2.1.1', haber: montoPayout } // Cuentas por pagar vendedor
+      { codigoCuenta: '1.1.2', debe: monto }, // MP a liberar
+      { codigoCuenta: '4.1.4', haber: monto } // Pauta publicitaria
     ],
-    referencias: { ordenId, tiendaId, vendedorId },
+    referencias: { comprobantePautaId: destacadoId, vendedorId, tiendaId },
     origen: 'webhook',
     creadoPor
   })
@@ -497,15 +538,83 @@ async function detectarDescuadres() {
   }
 }
 
+// ===== BACKFILL: genera asientos retroactivos del histórico =====
+
+/**
+ * Recorre AuditoriaFinanciera (ventas) + Comprobante (pautas) y genera los
+ * asientos que falten. Usa los MISMOS helpers que el webhook, así que comparte
+ * el referenciaId → es idempotente y NO duplica lo que el webhook ya registró.
+ * Se puede correr cuantas veces quieras.
+ */
+export async function backfillAsientos() {
+  const antes = await AsientoContable.estimatedDocumentCount()
+
+  // 1. Ventas (desde la auditoría financiera)
+  const auditorias = await AuditoriaFinanciera.find({ tipo: 'pago_aprobado' }).lean()
+  let ventasError = 0
+  for (const aud of auditorias) {
+    try {
+      const fecha = aud.createdAt || new Date()
+      const tiendaId = aud.tiendaIds?.[0] || null
+      if (aud.usaSplit) {
+        await asientoVentaSplit({
+          ordenId: aud.ordenId, tiendaId, vendedorId: null,
+          montoComision: aud.comision, fecha, creadoPor: null
+        })
+      } else {
+        const total = aud.monto || 0
+        const comision = aud.comision || 0
+        await asientoVentaSinSplit({
+          ordenId: aud.ordenId, tiendaId, vendedorId: null,
+          montoTotal: total, montoComision: comision,
+          montoPayout: Math.round((total - comision) * 100) / 100,
+          fecha, creadoPor: null
+        })
+      }
+    } catch (e) {
+      ventasError++
+      console.warn(`Backfill venta ${aud.ordenId}:`, e.message)
+    }
+  }
+
+  // 2. Pautas (desde los comprobantes)
+  const pautas = await Comprobante.find({ tipo: 'pauta' }).lean()
+  let pautasError = 0
+  for (const c of pautas) {
+    try {
+      const destacadoId = c.destacadoId || c._id // fallback al id del comprobante
+      await asientoPauta({
+        destacadoId, tiendaId: c.tiendaId, vendedorId: c.vendedorId,
+        monto: c.total, fecha: c.fechaEmision || c.createdAt, creadoPor: null
+      })
+    } catch (e) {
+      pautasError++
+      console.warn(`Backfill pauta ${c._id}:`, e.message)
+    }
+  }
+
+  const despues = await AsientoContable.estimatedDocumentCount()
+
+  return {
+    ventasProcesadas: auditorias.length,
+    pautasProcesadas: pautas.length,
+    asientosNuevos: despues - antes,
+    ventasError,
+    pautasError
+  }
+}
+
 export default {
   registrarAsiento,
   asientoVentaSplit,
   asientoVentaSinSplit,
+  asientoPauta,
   asientoSuscripcion,
   asientoReembolso,
   asientoEgresoOPEX,
   asientoLiberacionMP,
   balanceCuenta,
   cuadre,
+  backfillAsientos,
   obtenerCuenta
 }
