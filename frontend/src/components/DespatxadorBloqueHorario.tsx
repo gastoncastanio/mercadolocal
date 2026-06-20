@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
-import { Coord } from '../utils/geo'
-import { OfertaFlash } from './TarjetaOfertaFlash'
+import { Coord, formatearDistancia } from '../utils/geo'
+import { calcularOffset } from '../utils/canjes'
+import TarjetaOfertaFlash, { OfertaFlash } from './TarjetaOfertaFlash'
 import CarruselRecompensaCruzada from './CarruselRecompensaCruzada'
 import { BloqueHorario } from '../hooks/useBloqueHorario'
 
@@ -15,6 +16,8 @@ interface DespatxadorBloqueHorarioProps {
 
 interface OfertaPorBloque extends OfertaFlash {
   comercioNombre?: string
+  comercioLogo?: string
+  comercioVerificado?: boolean
   comercioLat?: number
   comercioLng?: number
   distancia?: number
@@ -22,6 +25,7 @@ interface OfertaPorBloque extends OfertaFlash {
 
 export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, cargando = false }: DespatxadorBloqueHorarioProps) {
   const [ofertas, setOfertas] = useState<OfertaPorBloque[]>([])
+  const [offsetMs, setOffsetMs] = useState(0)
   const [cargandoOfertas, setCargandoOfertas] = useState(false)
   const [error, setError] = useState('')
 
@@ -44,6 +48,8 @@ export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, carga
 
       const res = await api.get(`/centro/ofertas/bloque/${bloque.nombre}?${params}`)
       setOfertas(res.data.ofertas || [])
+      // Countdown fiel a la hora del server (no al reloj del celu).
+      if (res.data.serverNow) setOffsetMs(calcularOffset(res.data.serverNow))
       setError('')
     } catch (e: any) {
       setError(e.response?.data?.error || 'No pudimos cargar las ofertas.')
@@ -51,6 +57,21 @@ export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, carga
     } finally {
       setCargandoOfertas(false)
     }
+  }
+
+  // Render unificado de cada oferta como tarjeta rica (foto + logo + verificado).
+  function renderTarjeta(o: OfertaPorBloque) {
+    return (
+      <TarjetaOfertaFlash
+        key={o._id}
+        oferta={o}
+        offsetMs={offsetMs}
+        nombreComercio={o.comercioNombre}
+        logoComercio={o.comercioLogo}
+        verificadoComercio={o.comercioVerificado}
+        distanciaTexto={o.distancia != null ? formatearDistancia(o.distancia) : undefined}
+      />
+    )
   }
 
   if (!bloque) {
@@ -110,34 +131,14 @@ export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, carga
           <div className="mt-8">
             <h3 className="text-sm font-bold text-ml-soft uppercase tracking-wide mb-3">📋 Todas las ofertas</h3>
             <div className="space-y-3">
-              {ofertas.map(o => (
-                <div key={o._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-ml-ink">{o.titulo}</p>
-                      <p className="text-xs text-ml-muted">{o.comercioNombre}</p>
-                    </div>
-                    {o.distancia && <p className="text-xs font-semibold text-ml-violet ml-3">📍 {(o.distancia / 1000).toFixed(1)}km</p>}
-                  </div>
-                </div>
-              ))}
+              {ofertas.map(renderTarjeta)}
             </div>
           </div>
         </>
       ) : (
-        // Dispatch 'cercania' o 'general': lista simple
+        // Dispatch 'cercania' o 'general': tarjetas ricas
         <div className="space-y-3">
-          {ofertas.map(o => (
-            <div key={o._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-ml-ink">{o.titulo}</p>
-                  <p className="text-xs text-ml-muted">{o.comercioNombre}</p>
-                </div>
-                {o.distancia && <p className="text-xs font-semibold text-ml-violet ml-3">📍 {(o.distancia / 1000).toFixed(1)}km</p>}
-              </div>
-            </div>
-          ))}
+          {ofertas.map(renderTarjeta)}
         </div>
       )}
     </div>

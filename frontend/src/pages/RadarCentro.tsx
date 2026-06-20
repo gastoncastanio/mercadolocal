@@ -19,8 +19,9 @@ interface Comercio {
   descripcion: string
   ubicacion: Coord & { direccion: string; ciudad: string }
   estadoPrograma: string
+  verificado?: boolean
   bloqueHorarioPrioritario: string
-  media: { videoLoopUrl: string; posterUrl: string; fotos: string[] }
+  media: { logo?: string; videoLoopUrl: string; posterUrl: string; fotos: string[] }
   tiempoPrepEstimado: number | null
   contacto: { whatsapp: string; instagram: string }
 }
@@ -138,11 +139,13 @@ export default function RadarCentro() {
     }
   }
 
-  // Datos del comercio (nombre + distancia) para mostrar en cada oferta flash.
+  // Datos del comercio (nombre, logo, verificado + distancia) para cada oferta flash.
   function infoComercio(comercioId: string) {
     const c = comercios.find(x => x._id === comercioId)
     return {
       nombre: c?.nombre,
+      logo: c?.media?.logo,
+      verificado: c?.verificado || c?.estadoPrograma === 'fundador',
       distanciaTexto: c ? formatearDistancia(c.distancia) : undefined
     }
   }
@@ -305,6 +308,8 @@ export default function RadarCentro() {
                     oferta={o}
                     offsetMs={offsetMs}
                     nombreComercio={info.nombre}
+                    logoComercio={info.logo}
+                    verificadoComercio={info.verificado}
                     distanciaTexto={info.distanciaTexto}
                   />
                 )
@@ -339,14 +344,25 @@ export default function RadarCentro() {
                       <div className="flex-1 p-4 min-w-0">
                         {/* Encabezado */}
                         <div className="flex items-start justify-between gap-3 mb-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-bold text-ml-ink text-base">{c.nombre}</h3>
-                              {c.estadoPrograma === 'fundador' && (
-                                <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-semibold">⭐ Fundador</span>
-                              )}
+                          <div className="min-w-0 flex-1 flex items-start gap-2">
+                            {/* Logo redondo del comercio */}
+                            {c.media?.logo ? (
+                              <img src={c.media.logo} alt={c.nombre} className="w-10 h-10 rounded-full object-cover border border-ml-line shrink-0" />
+                            ) : (
+                              <span className="w-10 h-10 rounded-full bg-ml-bg border border-ml-line flex items-center justify-center text-lg shrink-0">{RUBRO_ICON[c.rubro] || '🏬'}</span>
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-bold text-ml-ink text-base">{c.nombre}</h3>
+                                {(c.verificado || c.estadoPrograma === 'fundador') && (
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] text-ml-blue font-semibold" title="Comercio verificado">
+                                    <span className="bg-ml-blue text-white rounded-full w-3.5 h-3.5 inline-flex items-center justify-center text-[8px]">✓</span>
+                                    Verificado
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-ml-soft mt-0.5">{c.rubro}</p>
                             </div>
-                            <p className="text-xs text-ml-soft mt-0.5">{c.rubro}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-ml-violet text-sm">📍 {formatearDistancia(c.distancia)}</p>

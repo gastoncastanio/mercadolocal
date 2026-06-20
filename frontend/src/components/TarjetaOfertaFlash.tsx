@@ -12,6 +12,8 @@ export interface OfertaFlash {
   comercioId: string
   titulo: string
   descripcion: string
+  imagen?: string
+  imagenPosicion?: string
   tipoGancho: string
   valorDescuento: number
   inicioEn: string
@@ -33,9 +35,11 @@ interface Props {
   offsetMs: number          // diferencia reloj server-cliente
   distanciaTexto?: string
   nombreComercio?: string
+  logoComercio?: string
+  verificadoComercio?: boolean
 }
 
-export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, nombreComercio }: Props) {
+export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, nombreComercio, logoComercio, verificadoComercio }: Props) {
   const { estaLogueado } = useAuth()
   const navigate = useNavigate()
   const [restanteMs, setRestanteMs] = useState(0)
@@ -100,19 +104,51 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
-      <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 flex items-center justify-between text-white">
-        <span className="text-xs font-bold flex items-center gap-1">⚡ Oferta relámpago</span>
-        <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded-lg ${urgente ? 'bg-red-600 animate-pulse' : 'bg-black/20'}`}>
-          {expirada ? 'Finalizó' : `⏳ ${formatearCuenta(restanteMs)}`}
-        </span>
+      {/* Portada: foto del producto encuadrada (object-position) o gradiente fallback */}
+      <div className="relative h-40 w-full overflow-hidden">
+        {oferta.imagen ? (
+          <img
+            src={oferta.imagen}
+            alt={oferta.titulo}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: oferta.imagenPosicion || '50% 50%' }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+            <span className="text-5xl opacity-80">{GANCHO_ICON[oferta.tipoGancho] || '🏷️'}</span>
+          </div>
+        )}
+        {/* Velo para legibilidad del chip + countdown */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/10" />
+        <div className="absolute top-0 inset-x-0 px-3 py-2 flex items-center justify-between">
+          <span className="text-xs font-bold text-white flex items-center gap-1 bg-black/30 backdrop-blur px-2 py-0.5 rounded-lg">⚡ Oferta relámpago</span>
+          <span className={`text-sm font-mono font-bold px-2 py-0.5 rounded-lg text-white ${urgente ? 'bg-red-600 animate-pulse' : 'bg-black/40 backdrop-blur'}`}>
+            {expirada ? 'Finalizó' : `⏳ ${formatearCuenta(restanteMs)}`}
+          </span>
+        </div>
       </div>
 
       <div className="p-4 space-y-2">
-        <div className="flex items-start gap-2">
-          <span className="text-2xl">{GANCHO_ICON[oferta.tipoGancho] || '🏷️'}</span>
+        {/* Comercio: logo redondo + nombre (con verificado) + título del producto */}
+        <div className="flex items-start gap-3">
+          {logoComercio ? (
+            <img src={logoComercio} alt={nombreComercio || ''} className="w-11 h-11 rounded-full object-cover border border-ml-line shrink-0" />
+          ) : (
+            <span className="w-11 h-11 rounded-full bg-ml-bg border border-ml-line flex items-center justify-center text-xl shrink-0">{GANCHO_ICON[oferta.tipoGancho] || '🏪'}</span>
+          )}
           <div className="flex-1 min-w-0">
+            {nombreComercio && (
+              <p className="text-xs text-ml-muted flex items-center gap-1">
+                {nombreComercio}
+                {verificadoComercio && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-ml-blue font-semibold" title="Comercio verificado">
+                    <span className="bg-ml-blue text-white rounded-full w-3.5 h-3.5 inline-flex items-center justify-center text-[8px]">✓</span>
+                    Verificado
+                  </span>
+                )}
+              </p>
+            )}
             <h3 className="font-bold text-ml-ink leading-tight">{oferta.titulo}</h3>
-            {nombreComercio && <p className="text-xs text-ml-muted">{nombreComercio}</p>}
             {oferta.descripcion && <p className="text-sm text-ml-soft mt-1">{oferta.descripcion}</p>}
           </div>
         </div>

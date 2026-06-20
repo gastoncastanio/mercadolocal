@@ -24,6 +24,13 @@ const ofertaFlashSchema = new mongoose.Schema({
   },
   descripcion: { type: String, default: '', maxlength: 300 },
 
+  // Foto del producto que se ofrece (portada de la tarjeta en el Radar).
+  imagen: { type: String, default: '' },
+  // Encuadre de la foto: object-position CSS ("X% Y%") que el comercio acomoda
+  // para que el producto se vea bien centrado en la portada (recorte sin destruir
+  // el original — se guarda solo el punto focal).
+  imagenPosicion: { type: String, default: '50% 50%' },
+
   // Tipo de gancho (solo informativo / para iconos del feed)
   tipoGancho: {
     type: String,
@@ -126,6 +133,8 @@ ofertaFlashSchema.methods.toPublic = function (ahora = new Date()) {
     comercioId: this.comercioId,
     titulo: this.titulo,
     descripcion: this.descripcion,
+    imagen: this.imagen,
+    imagenPosicion: this.imagenPosicion,
     tipoGancho: this.tipoGancho,
     valorDescuento: this.valorDescuento,
     inicioEn: this.inicioEn,

@@ -42,6 +42,9 @@ const comercioCentroSchema = new mongoose.Schema({
     enum: ['fundador', 'beta', 'activo', 'pausado'],
     default: 'beta'
   },
+  // Verificación otorgada por el admin: muestra el badge "✓ Verificado" y el logo
+  // del comercio como portada en el feed del Radar (confianza para el comprador).
+  verificado: { type: Boolean, default: false },
   // Bloque horario donde el comercio quiere priorizarse en el feed (Radar Camaleón).
   // Incluye los modos temáticos nuevos + los legacy (retrocompat con datos viejos).
   bloqueHorarioPrioritario: {
@@ -52,6 +55,8 @@ const comercioCentroSchema = new mongoose.Schema({
 
   // Feed micro-contenido (Fase 4)
   media: {
+    // Logo redondo del comercio (portada en las tarjetas del Radar).
+    logo: { type: String, default: '' },
     videoLoopUrl: { type: String, default: '' },
     posterUrl: { type: String, default: '' },
     fotos: { type: [String], default: [] }
@@ -94,6 +99,7 @@ comercioCentroSchema.methods.toPublic = function () {
       ciudad: this.ubicacion.ciudad
     },
     estadoPrograma: this.estadoPrograma,
+    verificado: this.verificado,
     bloqueHorarioPrioritario: this.bloqueHorarioPrioritario,
     media: this.media,
     tiempoPrepEstimado: this.tiempoPrepEstimado,

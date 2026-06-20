@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { obtenerUbicacion } from '../utils/geo'
 import { GANCHO_ICON } from '../utils/canjes'
+import { SubidaImagenEncuadre, SubidaLogo } from '../components/SubidaImagen'
 
 interface Comercio {
   _id: string
@@ -11,14 +12,18 @@ interface Comercio {
   descripcion: string
   ubicacion: { lat: number; lng: number; direccion: string; ciudad: string }
   estadoPrograma: string
+  verificado?: boolean
   activo: boolean
   contacto?: { whatsapp?: string; instagram?: string }
+  media?: { logo?: string; posterUrl?: string; fotos?: string[] }
 }
 
 interface Oferta {
   _id: string
   titulo: string
   descripcion: string
+  imagen?: string
+  imagenPosicion?: string
   tipoGancho: string
   valorDescuento: number
   inicioEn: string
@@ -351,7 +356,8 @@ function FormComercio({ inicial, onGuardado, onCancelar }: { inicial?: Comercio;
     lat: inicial ? String(inicial.ubicacion.lat) : '',
     lng: inicial ? String(inicial.ubicacion.lng) : '',
     whatsapp: inicial?.contacto?.whatsapp || '',
-    instagram: inicial?.contacto?.instagram || ''
+    instagram: inicial?.contacto?.instagram || '',
+    logo: inicial?.media?.logo || ''
   })
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -379,7 +385,8 @@ function FormComercio({ inicial, onGuardado, onCancelar }: { inicial?: Comercio;
       rubro: f.rubro,
       descripcion: f.descripcion,
       ubicacion: { lat: Number(f.lat), lng: Number(f.lng), direccion: f.direccion, ciudad: f.ciudad },
-      contacto: { whatsapp: f.whatsapp, instagram: f.instagram }
+      contacto: { whatsapp: f.whatsapp, instagram: f.instagram },
+      media: { ...(inicial?.media || {}), logo: f.logo }
     }
     try {
       const res = edicion
@@ -397,6 +404,7 @@ function FormComercio({ inicial, onGuardado, onCancelar }: { inicial?: Comercio;
   return (
     <form onSubmit={guardar} className="space-y-3">
       <h3 className="font-bold text-ml-ink">{edicion ? 'Editar local' : 'Nuevo local'}</h3>
+      <SubidaLogo logo={f.logo} onChange={logo => setF({ ...f, logo })} />
       <input className={inp} placeholder="Nombre del local" value={f.nombre} onChange={e => setF({ ...f, nombre: e.target.value })} />
       <div className="grid grid-cols-2 gap-3">
         <select className={inp} value={f.rubro} onChange={e => setF({ ...f, rubro: e.target.value })}>
@@ -439,6 +447,8 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
   const [f, setF] = useState({
     titulo: inicial?.titulo || '',
     descripcion: inicial?.descripcion || '',
+    imagen: inicial?.imagen || '',
+    imagenPosicion: inicial?.imagenPosicion || '50% 50%',
     tipoGancho: inicial?.tipoGancho || 'descuento',
     valorDescuento: inicial?.valorDescuento ? String(inicial.valorDescuento) : '',
     inicioEn: inicial ? isoALocalInput(inicial.inicioEn) : ahoraLocalInput(),
@@ -474,6 +484,8 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
       comercioId,
       titulo: f.titulo,
       descripcion: f.descripcion,
+      imagen: f.imagen,
+      imagenPosicion: f.imagenPosicion,
       tipoGancho: f.tipoGancho,
       valorDescuento: f.valorDescuento ? Number(f.valorDescuento) : 0,
       inicioEn: inicioISO,
@@ -505,6 +517,11 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
   return (
     <form onSubmit={guardar} className="bg-white rounded-2xl border border-ml-violet/30 p-4 space-y-3">
       <h3 className="font-bold text-ml-ink">{edicion ? 'Editar oferta' : 'Nueva oferta'}</h3>
+      <SubidaImagenEncuadre
+        imagen={f.imagen}
+        posicion={f.imagenPosicion}
+        onChange={(imagen, imagenPosicion) => setF({ ...f, imagen, imagenPosicion })}
+      />
       <input className={inp} placeholder='Título (ej. "2x1 en Macchiato")' value={f.titulo} onChange={e => setF({ ...f, titulo: e.target.value })} />
       <textarea className={inp} placeholder="Descripción" rows={2} value={f.descripcion} onChange={e => setF({ ...f, descripcion: e.target.value })} />
       <div className="grid grid-cols-2 gap-3">
@@ -590,7 +607,8 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
 // corta. Crea una oferta de duración limitada y la difunde EN VIVO al Radar.
 function LiquidacionRelampago({ comercioId, onLanzada }: { comercioId: string; onLanzada: (o: Oferta) => void }) {
   const [abierto, setAbierto] = useState(false)
-  const [f, setF] = useState({ titulo: '', descripcion: '', valorDescuento: 50, cupoTotal: 0, duracionMin: 45 })
+  const vacio = { titulo: '', descripcion: '', imagen: '', imagenPosicion: '50% 50%', valorDescuento: 50, cupoTotal: 0, duracionMin: 45 }
+  const [f, setF] = useState(vacio)
   const [lanzando, setLanzando] = useState(false)
   const [error, setError] = useState('')
   const [ok, setOk] = useState(false)
@@ -603,7 +621,7 @@ function LiquidacionRelampago({ comercioId, onLanzada }: { comercioId: string; o
       const res = await api.post('/centro/ofertas/liquidacion-relampago', { comercioId, ...f })
       onLanzada(res.data)
       setOk(true)
-      setTimeout(() => { setAbierto(false); setOk(false); setF({ titulo: '', descripcion: '', valorDescuento: 50, cupoTotal: 0, duracionMin: 45 }) }, 2500)
+      setTimeout(() => { setAbierto(false); setOk(false); setF(vacio) }, 2500)
     } catch (e: any) {
       setError(e.response?.data?.error || 'No pudimos lanzar la liquidación.')
     } finally {
@@ -637,6 +655,12 @@ function LiquidacionRelampago({ comercioId, onLanzada }: { comercioId: string; o
         </p>
       ) : (
         <>
+          <SubidaImagenEncuadre
+            imagen={f.imagen}
+            posicion={f.imagenPosicion}
+            onChange={(imagen, imagenPosicion) => setF({ ...f, imagen, imagenPosicion })}
+            label="Foto del producto que se liquida"
+          />
           <input
             value={f.titulo}
             onChange={e => setF({ ...f, titulo: e.target.value })}
