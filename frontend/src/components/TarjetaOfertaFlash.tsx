@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { ahoraServidor, formatearCuenta, guardarCodigo, GANCHO_ICON } from '../utils/canjes'
+import { useRecompensaCruzada } from '../hooks/useRecompensaCruzada'
 import CheckoutOferta from './CheckoutOferta'
+import RecompensaCruzada from './RecompensaCruzada'
 
 export interface OfertaFlash {
   _id: string
@@ -41,6 +43,7 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
   const [reclamando, setReclamando] = useState(false)
   const [error, setError] = useState('')
   const [mostrarCheckout, setMostrarCheckout] = useState(false)
+  const { sugerencia, reservando, reserva, error: errorCruzada, buscar: buscarGancho, reservar: reservarGancho, cerrar: cerrarGancho } = useRecompensaCruzada()
 
   // Countdown contra la hora del SERVER (reloj local + offset). Nunca confiamos
   // en el reloj del dispositivo para decidir si la oferta sigue viva.
@@ -80,7 +83,11 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
       const res = await api.post(`/centro/ofertas/${oferta._id}/reclamar`)
       const { canjeId, codigo, expiraEn } = res.data
       guardarCodigo(canjeId, codigo, expiraEn)
-      navigate('/mis-canjes')
+      // Gamificación Cruzada: buscar gancho del bloque siguiente
+      const tieneGancho = await buscarGancho(oferta.bloqueHorario)
+      if (!tieneGancho) {
+        navigate('/mis-canjes')
+      }
     } catch (e: any) {
       setError(e.response?.data?.error || 'No pudimos generar tu código. Probá de nuevo.')
     } finally {
@@ -154,6 +161,21 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
             precioFinal={oferta.precioFinal}
             comisionPorcentaje={oferta.comisionPorcentaje}
             onClose={() => setMostrarCheckout(false)}
+          />
+        )}
+
+        {/* Gamificación Cruzada (gancho del bloque siguiente) */}
+        {sugerencia && (
+          <RecompensaCruzada
+            sugerencia={sugerencia}
+            reserva={reserva}
+            reservando={reservando}
+            error={errorCruzada}
+            onReservar={reservarGancho}
+            onContinuar={() => {
+              cerrarGancho()
+              navigate('/mis-canjes')
+            }}
           />
         )}
       </div>

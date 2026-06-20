@@ -68,6 +68,19 @@ const ofertaFlashSchema = new mongoose.Schema({
     descripcion: { type: String, default: '' }
   },
 
+  // Gamificación Cruzada (gancho de la cadena gastronómica): el comercio define
+  // un cupón EXTRA de descuento que se le ofrece a quien acaba de comprar en el
+  // bloque anterior (ej. la cafetería del desayuno engancha al restaurante del
+  // almuerzo). Si el cliente reserva en la app, el comercio recibe el aviso para
+  // "preparar la mesa con invitación especial de Mercado Local".
+  cuponCruzado: {
+    activo: { type: Boolean, default: false },
+    // % de descuento adicional que define el vendedor según su costo (0–100).
+    porcentaje: { type: Number, default: 0, min: 0, max: 100 },
+    // Mensaje gancho opcional (ej. "Mesa lista con copa de bienvenida").
+    mensaje: { type: String, default: '', maxlength: 200 }
+  },
+
   // Letra chica obligatoria (exclusiones, vigencia, etc.)
   condiciones: { type: String, default: '', maxlength: 500 },
 
@@ -121,6 +134,7 @@ ofertaFlashSchema.methods.toPublic = function (ahora = new Date()) {
     cupoRestante: this.cupoRestante(),
     bloqueHorario: this.bloqueHorario,
     desbloquea: this.desbloquea?.descripcion ? this.desbloquea : null,
+    cuponCruzado: this.cuponCruzado?.activo ? this.cuponCruzado : null,
     condiciones: this.condiciones,
     vigente: this.estaVigente(ahora),
     // FASE 3: datos de monetización

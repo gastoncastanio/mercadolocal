@@ -5,9 +5,9 @@ import OfertaFlash from '../models/OfertaFlash.js'
 import CanjeAtribuido from '../models/CanjeAtribuido.js'
 import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
-import { bloqueActual, obtenerBloques } from '../utils/bloqueHorario.js'
+import { bloqueActual, obtenerBloques, bloqueSiguienteGancho } from '../utils/bloqueHorario.js'
 import { crearPreferenciaOferta, obtenerPago, buscarPagoPorReferencia } from '../config/mercadopago.js'
-import { emitLiquidacionRelampago } from '../services/socketService.js'
+import { emitLiquidacionRelampago, emitNotificacion } from '../services/socketService.js'
 
 const router = Router()
 
@@ -303,6 +303,8 @@ router.get('/mis-canjes', verificarToken, async (req, res) => {
       expiraEn: c.expiraEn,
       canjeadoEn: c.canjeadoEn,
       vigente: c.estaVigente(ahora),
+      tipoReclamo: c.tipoReclamo,
+      cuponPorcentaje: c.cuponPorcentaje,
       comercio: c.comercioId,
       oferta: c.ofertaId
     }))
@@ -420,6 +422,7 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       bloqueHorario,
       condiciones,
       desbloquea,
+      cuponCruzado,
       // FASE 3: campos de prepago
       precioFinal,
       comisionPorcentaje,
@@ -455,6 +458,7 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       bloqueHorario: bloqueHorario || 'todos',
       condiciones: condiciones || '',
       desbloquea: desbloquea || {},
+      cuponCruzado: cuponCruzado || {},
       ciudad: acceso.comercio.ubicacion.ciudad,
       // FASE 3: almacena los datos de prepago
       precioFinal: precioFinal || 0,
@@ -527,6 +531,151 @@ router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) =
   }
 })
 
+// ============================================================
+//  GAMIFICACIÓN CRUZADA — la cadena de ganchos del día
+// ============================================================
+
+// GET /api/centro/cruzada/sugerencias?desde=<bloque>&ciudad=
+// Tras comprar en un bloque (ej. desayuno), sugerimos UNA promo del bloque
+// gastronómico siguiente (almuerzo) que tenga "cupón cruzado" activo. La promo
+// puede no estar vigente todavía (su ventana es más tarde): se reserva por
+// adelantado. Si no se manda `desde`, se infiere del bloque activo a esta hora.
+router.get('/cruzada/sugerencias', async (req, res) => {
+  try {
+    const { desde, ciudad } = req.query
+    const ahora = new Date()
+
+    // Bloque base: el que se acaba de completar, o el activo ahora mismo.
+    let base = desde
+    if (!base) {
+      const actual = await bloqueActual()
+      base = actual?.nombre
+    }
+    if (!base) return res.json({ sugerencia: null })
+
+    const siguiente = bloqueSiguienteGancho(base)
+    if (!siguiente) return res.json({ sugerencia: null })
+
+    const filtro = {
+      activa: true,
+      finEn: { $gte: ahora }, // que no haya terminado su ventana
+      bloqueHorario: siguiente,
+      'cuponCruzado.activo': true
+    }
+    if (ciudad) filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+
+    // Mejor gancho primero: mayor % de cupón, luego la que arranca antes.
+    const oferta = await OfertaFlash.findOne(filtro)
+      .populate('comercioId', 'nombre ubicacion')
+      .sort({ 'cuponCruzado.porcentaje': -1, inicioEn: 1 })
+
+    if (!oferta) return res.json({ sugerencia: null })
+
+    res.json({
+      sugerencia: {
+        ofertaId: oferta._id,
+        titulo: oferta.titulo,
+        descripcion: oferta.descripcion,
+        precioFinal: oferta.precioFinal,
+        valorDescuento: oferta.valorDescuento,
+        cuponPorcentaje: oferta.cuponCruzado?.porcentaje || 0,
+        mensaje: oferta.cuponCruzado?.mensaje || '',
+        comercioNombre: oferta.comercioId?.nombre,
+        bloque: siguiente,
+        inicioEn: oferta.inicioEn,
+        finEn: oferta.finEn
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/centro/cruzada/reservar - el cliente confirma el gancho del bloque
+// siguiente. Genera un canje con el cupón extra y AVISA al comercio para que
+// prepare la mesa "con invitación especial de Mercado Local".
+router.post('/cruzada/reservar', verificarToken, async (req, res) => {
+  try {
+    const ahora = new Date()
+    const { ofertaId } = req.body
+    if (!ofertaId) return res.status(400).json({ error: 'Falta la oferta a reservar.' })
+
+    const oferta = await OfertaFlash.findById(ofertaId).populate('comercioId', 'nombre usuarioId ubicacion')
+    if (!oferta) return res.status(404).json({ error: 'Oferta no encontrada' })
+    if (!oferta.cuponCruzado?.activo) {
+      return res.status(409).json({ error: 'Esta promo ya no ofrece cupón de reserva.' })
+    }
+    if (!oferta.activa || ahora > oferta.finEn) {
+      return res.status(409).json({ error: 'La promo ya no está disponible para reservar.' })
+    }
+
+    // ¿Ya tiene una reserva/canje vigente de esta oferta? (evita duplicar)
+    const yaReservada = await CanjeAtribuido.findOne({
+      usuarioId: req.usuario.id,
+      ofertaId: oferta._id,
+      estado: 'emitido'
+    })
+    if (yaReservada) {
+      return res.status(409).json({ error: 'Ya tenés esta promo reservada. Mirá "Mis canjes".' })
+    }
+
+    // Guarda de cupo (blanda): no repartir más reservas que cupos.
+    if (oferta.cupoTotal > 0) {
+      const emitidosVigentes = await CanjeAtribuido.countDocuments({
+        ofertaId: oferta._id,
+        estado: 'emitido',
+        expiraEn: { $gt: ahora }
+      })
+      if (oferta.cupoUsado + emitidosVigentes >= oferta.cupoTotal) {
+        return res.status(409).json({ error: 'No quedan cupos para reservar esta promo.' })
+      }
+    }
+
+    // El código vive hasta que termine la ventana de la promo (la mesa lo espera).
+    const { codigo, codigoHash } = generarCodigoCanje()
+    let canje
+    try {
+      canje = await CanjeAtribuido.create({
+        usuarioId: req.usuario.id,
+        comercioId: oferta.comercioId._id,
+        ofertaId: oferta._id,
+        codigoHash,
+        estado: 'emitido',
+        emitidoEn: ahora,
+        expiraEn: oferta.finEn,
+        tipoReclamo: 'reserva_cruzada',
+        cuponPorcentaje: oferta.cuponCruzado.porcentaje || 0
+      })
+    } catch (e) {
+      if (e.code === 11000) {
+        return res.status(409).json({ error: 'Ya tenés esta promo reservada.' })
+      }
+      throw e
+    }
+
+    // Avisar al comercio: preparen la mesa con la invitación especial.
+    if (oferta.comercioId?.usuarioId) {
+      emitNotificacion(oferta.comercioId.usuarioId.toString(), {
+        tipo: 'reserva_cruzada',
+        titulo: '🪑 Nueva reserva con invitación Mercado Local',
+        mensaje: `Un cliente reservó "${oferta.titulo}" con cupón ${oferta.cuponCruzado.porcentaje || 0}%. Prepará la mesa con la invitación especial.`,
+        enlace: '/panel-comercio'
+      })
+    }
+
+    res.status(201).json({
+      canjeId: canje._id,
+      codigo, // ⚠️ única vez que viaja en claro
+      expiraEn: canje.expiraEn,
+      cuponPorcentaje: canje.cuponPorcentaje,
+      comercioNombre: oferta.comercioId?.nombre,
+      titulo: oferta.titulo
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // PUT /api/centro/ofertas/:id - editar / pausar oferta (dueño del comercio)
 router.put('/ofertas/:id', verificarToken, async (req, res) => {
   try {
@@ -536,7 +685,7 @@ router.put('/ofertas/:id', verificarToken, async (req, res) => {
     const acceso = await comercioDelUsuario(oferta.comercioId, req.usuario)
     if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
 
-    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea', 'precioFinal', 'comisionPorcentaje', 'requierePrepagoApp']
+    const campos = ['titulo', 'descripcion', 'tipoGancho', 'valorDescuento', 'cupoTotal', 'bloqueHorario', 'condiciones', 'activa', 'desbloquea', 'cuponCruzado', 'precioFinal', 'comisionPorcentaje', 'requierePrepagoApp']
     for (const c of campos) {
       if (req.body[c] !== undefined) oferta[c] = req.body[c]
     }

@@ -6,8 +6,10 @@ import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlas
 import DespatxadorBloqueHorario from '../components/DespatxadorBloqueHorario'
 import RetornoPagoOferta from '../components/RetornoPagoOferta'
 import AlertaLiquidacion, { Liquidacion } from '../components/AlertaLiquidacion'
+import AlertaClima from '../components/AlertaClima'
 import { calcularOffset } from '../utils/canjes'
 import { useBloqueHorario, TEMA_NEUTRO } from '../hooks/useBloqueHorario'
+import { useWeatherAlert } from '../hooks/useWeatherAlert'
 import { useSocket } from '../hooks/useSocket'
 
 interface Comercio {
@@ -43,6 +45,7 @@ export default function RadarCentro() {
   const [coords, setCoords] = useState<Coord | null>(null)
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null)
   const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
+  const { alerta: alertaClima, cargando: cargandoClima } = useWeatherAlert(coords)
   const { on, off, emit } = useSocket()
 
   // Si ya dio consentimiento antes, activar radar automáticamente
@@ -256,6 +259,11 @@ export default function RadarCentro() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Alerta del Clima (Modo Lluvia) */}
+        {alertaClima && !cargandoClima && (
+          <AlertaClima alerta={alertaClima} onCerrar={() => {}} />
+        )}
+
         {/* Alerta EN VIVO de Liquidación Relámpago (anti-desperdicio) */}
         {liquidacion && (
           <AlertaLiquidacion liquidacion={liquidacion} onCerrar={() => setLiquidacion(null)} />
