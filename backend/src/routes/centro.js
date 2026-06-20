@@ -19,6 +19,23 @@ function redondearCoord(n) {
   return Math.round(Number(n) * 10000) / 10000
 }
 
+// Escapa los metacaracteres de regex de un texto del usuario. Sin esto, un
+// `?ciudad=(a+)+$` se interpreta como regex y abre la puerta a ReDoS (backtracking
+// catastrófico que clava la CPU). Devuelve un regex de igualdad exacta, case-insensitive.
+function ciudadExacta(valor) {
+  const limpio = String(valor || '').trim().slice(0, 100)
+  const escapado = limpio.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escapado}$`, 'i')
+}
+
+// Valida que lat/lng sean números dentro del rango geográfico real. Coordenadas
+// fuera de rango (o NaN) romperían el cálculo de distancia Haversine en el cliente.
+function coordsValidas(lat, lng) {
+  const la = Number(lat)
+  const ln = Number(lng)
+  return Number.isFinite(la) && Number.isFinite(ln) && la >= -90 && la <= 90 && ln >= -180 && ln <= 180
+}
+
 // Carga un comercio y verifica que el usuario logueado sea su dueño (o admin).
 // Devuelve el comercio o null si no autorizado / inexistente.
 async function comercioDelUsuario(comercioId, usuario) {
@@ -42,7 +59,7 @@ router.get('/comercios', async (req, res) => {
   try {
     const filtro = { activo: true }
     if (req.query.ciudad) {
-      filtro['ubicacion.ciudad'] = new RegExp(`^${String(req.query.ciudad).trim()}$`, 'i')
+      filtro['ubicacion.ciudad'] = ciudadExacta(req.query.ciudad)
     }
     const comercios = await ComercioCentro.find(filtro).limit(200)
     res.json(comercios.map(c => c.toPublic()))
@@ -85,6 +102,9 @@ router.post('/comercios', verificarToken, async (req, res) => {
 
     if (!nombre || !ubicacion || ubicacion.lat == null || ubicacion.lng == null || !ubicacion.ciudad) {
       return res.status(400).json({ error: 'Nombre, ciudad y coordenadas (lat/lng) son obligatorios' })
+    }
+    if (!coordsValidas(ubicacion.lat, ubicacion.lng)) {
+      return res.status(400).json({ error: 'Coordenadas inválidas (lat −90..90, lng −180..180).' })
     }
 
     const comercio = await ComercioCentro.create({
@@ -139,6 +159,14 @@ router.put('/comercios/:id', verificarToken, async (req, res) => {
     let cambioCiudad = false
     if (req.body.ubicacion) {
       const u = req.body.ubicacion
+      // Validar contra el valor efectivo (el nuevo si vino, si no el actual).
+      if (u.lat != null || u.lng != null) {
+        const latEf = u.lat != null ? u.lat : comercio.ubicacion.lat
+        const lngEf = u.lng != null ? u.lng : comercio.ubicacion.lng
+        if (!coordsValidas(latEf, lngEf)) {
+          return res.status(400).json({ error: 'Coordenadas inválidas (lat −90..90, lng −180..180).' })
+        }
+      }
       if (u.lat != null) comercio.ubicacion.lat = redondearCoord(u.lat)
       if (u.lng != null) comercio.ubicacion.lng = redondearCoord(u.lng)
       if (u.direccion !== undefined) comercio.ubicacion.direccion = u.direccion
@@ -167,6 +195,26 @@ router.delete('/comercios/:id', verificarToken, async (req, res) => {
     const acceso = await comercioDelUsuario(req.params.id, req.usuario)
     if (acceso.error) return res.status(acceso.error).json({ error: acceso.msg })
 
+    // Protección al consumidor: si hay canjes PAGADOS y todavía no canjeados, el
+    // comercio les debe el producto (haya o no vencido la ventana). No se puede
+    // borrar el local hasta honrarlos (o reembolsar).
+    const pagadosVivos = await CanjeAtribuido.countDocuments({
+      comercioId: acceso.comercio._id,
+      estadoPago: 'pagado',
+      estado: { $ne: 'canjeado' }
+    })
+    if (pagadosVivos > 0) {
+      return res.status(409).json({
+        error: `No podés eliminar el local: hay ${pagadosVivos} canje(s) pagado(s) sin usar. Atendelos o reembolsalos antes de borrar.`
+      })
+    }
+
+    // Expiramos los reclamos sin pagar que quedaran vivos (legacy postpago) para no
+    // dejar códigos "emitido" apuntando a un comercio inexistente.
+    await CanjeAtribuido.updateMany(
+      { comercioId: acceso.comercio._id, estado: 'emitido' },
+      { $set: { estado: 'expirado' } }
+    )
     await OfertaFlash.deleteMany({ comercioId: acceso.comercio._id })
     await acceso.comercio.deleteOne()
     res.json({ ok: true, mensaje: 'Local y ofertas eliminados.' })
@@ -191,7 +239,7 @@ router.get('/ofertas', async (req, res) => {
       finEn: { $gte: ahora }
     }
     if (req.query.ciudad) {
-      filtro.ciudad = new RegExp(`^${String(req.query.ciudad).trim()}$`, 'i')
+      filtro.ciudad = ciudadExacta(req.query.ciudad)
     }
     if (req.query.bloque && req.query.bloque !== 'todos') {
       filtro.bloqueHorario = { $in: [String(req.query.bloque), 'todos'] }
@@ -318,18 +366,28 @@ router.get('/mis-canjes', verificarToken, async (req, res) => {
       .populate('comercioId', 'nombre rubro ubicacion')
       .populate('ofertaId', 'titulo descripcion tipoGancho valorDescuento')
 
-    const data = canjes.map(c => ({
-      _id: c._id,
-      estado: c.estado === 'emitido' && ahora > c.expiraEn ? 'expirado' : c.estado,
-      emitidoEn: c.emitidoEn,
-      expiraEn: c.expiraEn,
-      canjeadoEn: c.canjeadoEn,
-      vigente: c.estaVigente(ahora),
-      tipoReclamo: c.tipoReclamo,
-      cuponPorcentaje: c.cuponPorcentaje,
-      comercio: c.comercioId,
-      oferta: c.ofertaId
-    }))
+    const data = canjes.map(c => {
+      // Pagó pero el código nunca se generó (cerró el navegador al volver de MP).
+      // No es un canje "expirado": es plata que el usuario puede recuperar pidiendo
+      // su código (confirmar-pago lo regenera y renueva la ventana).
+      const pagadoSinCodigo = c.estadoPago === 'pagado' && !c.codigoHash
+      return {
+        _id: c._id,
+        estado: pagadoSinCodigo
+          ? 'pagado_sin_codigo'
+          : (c.estado === 'emitido' && ahora > c.expiraEn ? 'expirado' : c.estado),
+        emitidoEn: c.emitidoEn,
+        expiraEn: c.expiraEn,
+        canjeadoEn: c.canjeadoEn,
+        vigente: c.estaVigente(ahora),
+        estadoPago: c.estadoPago,
+        pagadoSinCodigo,
+        tipoReclamo: c.tipoReclamo,
+        cuponPorcentaje: c.cuponPorcentaje,
+        comercio: c.comercioId,
+        oferta: c.ofertaId
+      }
+    })
     res.json({ serverNow: ahora, canjes: data })
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -465,9 +523,19 @@ router.post('/ofertas', verificarToken, async (req, res) => {
       return res.status(400).json({ error: 'La ventana temporal es inválida (fin debe ser posterior al inicio).' })
     }
 
-    // Validar campos de prepago si aplica
-    if (requierePrepagoApp && !precioFinal) {
-      return res.status(400).json({ error: 'Si requiere prepago, precioFinal es obligatorio.' })
+    // Validar campos de prepago si aplica: precio con tope razonable (evita
+    // ofertas malformadas que MercadoPago rechazaría, o cobros absurdos).
+    if (requierePrepagoApp) {
+      const precio = Number(precioFinal)
+      if (!Number.isFinite(precio) || precio <= 0 || precio > 1000000) {
+        return res.status(400).json({ error: 'El precio de prepago debe estar entre $1 y $1.000.000.' })
+      }
+      if (comisionPorcentaje != null) {
+        const com = Number(comisionPorcentaje)
+        if (!Number.isFinite(com) || com < 0 || com > 100) {
+          return res.status(400).json({ error: 'La comisión debe estar entre 0% y 100%.' })
+        }
+      }
     }
 
     const oferta = await OfertaFlash.create({
@@ -594,7 +662,7 @@ router.get('/cruzada/sugerencias', async (req, res) => {
       bloqueHorario: siguiente,
       'cuponCruzado.activo': true
     }
-    if (ciudad) filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+    if (ciudad) filtro.ciudad = ciudadExacta(ciudad)
 
     // Mejor gancho primero: mayor % de cupón, luego la que arranca antes.
     const oferta = await OfertaFlash.findOne(filtro)
@@ -842,7 +910,7 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
       bloqueHorario: { $in: [nombre, 'todos'] }
     }
     if (ciudad) {
-      filtro.ciudad = new RegExp(`^${String(ciudad).trim()}$`, 'i')
+      filtro.ciudad = ciudadExacta(ciudad)
     }
 
     const ofertas = await OfertaFlash.find(filtro)

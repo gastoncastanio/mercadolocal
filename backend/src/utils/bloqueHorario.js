@@ -1,14 +1,28 @@
 import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 
 /**
- * Obtiene la hora actual en zona horaria Argentina (ART = UTC-3, o ARST = UTC-2 en verano).
- * Returns: Date object en zona Argentina (leer .getHours(), .getMinutes()).
+ * Obtiene la hora actual en zona horaria Argentina, robusta ante la zona horaria
+ * del servidor (Railway corre en UTC). Returns: Date cuyas .getHours()/.getMinutes()
+ * son la hora de Argentina.
+ *
+ * IMPORTANTE: NO usar `new Date(d.toLocaleString('es-AR', ...))`. El locale es-AR
+ * formatea DD/MM/YYYY y `new Date("20/6/2026")` es Invalid Date (mes 20 inválido)
+ * todos los días > 12 → getHours() = NaN → bloqueActual() null siempre. Usamos
+ * formatToParts, que extrae los números sin pasar por un parseo ambiguo de string.
  */
 export function ahoraART() {
-  // Siempre usa UTC-3 (ART, invierno). En verano ARST sería -2, pero mantener consistencia.
-  // Alternativa: usar Intl.DateTimeFormat si se necesita verano/invierno automático.
-  const ahora = new Date()
-  return new Date(ahora.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }))
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  })
+  const p = {}
+  for (const part of fmt.formatToParts(new Date())) {
+    if (part.type !== 'literal') p[part.type] = Number(part.value)
+  }
+  // A medianoche, hour12:false puede devolver "24" en algunos entornos → normalizar a 0.
+  const hora = p.hour === 24 ? 0 : p.hour
+  return new Date(p.year, p.month - 1, p.day, hora, p.minute, p.second)
 }
 
 /**

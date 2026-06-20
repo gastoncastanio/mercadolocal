@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import QRCode from 'qrcode'
 import api from '../services/api'
-import { calcularOffset, ahoraServidor, formatearCuenta, obtenerCodigo, GANCHO_ICON } from '../utils/canjes'
+import { calcularOffset, ahoraServidor, formatearCuenta, obtenerCodigo, guardarCodigo, GANCHO_ICON } from '../utils/canjes'
 
 interface Canje {
   _id: string
-  estado: 'emitido' | 'canjeado' | 'expirado'
+  estado: 'emitido' | 'canjeado' | 'expirado' | 'pagado_sin_codigo'
   emitidoEn: string
   expiraEn: string
   canjeadoEn: string | null
   vigente: boolean
+  estadoPago?: string
+  pagadoSinCodigo?: boolean
   comercio: { _id: string; nombre: string; rubro: string; ubicacion: { direccion: string; ciudad: string } } | null
   oferta: { _id: string; titulo: string; descripcion: string; tipoGancho: string } | null
 }
@@ -50,6 +52,7 @@ export default function MisCanjes() {
   const [offsetMs, setOffsetMs] = useState(0)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [recuperando, setRecuperando] = useState<string | null>(null)
 
   useEffect(() => { cargar() }, [])
 
@@ -66,8 +69,25 @@ export default function MisCanjes() {
     }
   }
 
-  const activos = canjes.filter(c => c.estado === 'emitido' && c.vigente)
-  const historial = canjes.filter(c => !(c.estado === 'emitido' && c.vigente))
+  // Pagó pero el código nunca se generó (cerró el navegador al volver de MP).
+  // confirmar-pago lo regenera y renueva la ventana de canje.
+  async function recuperarCodigo(canjeId: string) {
+    setRecuperando(canjeId)
+    setError('')
+    try {
+      const res = await api.post(`/centro/canje/${canjeId}/confirmar-pago`)
+      if (res.data.codigo) guardarCodigo(canjeId, res.data.codigo, res.data.expiraEn)
+      await cargar()
+    } catch {
+      setError('No pudimos recuperar tu código. Probá de nuevo en un momento.')
+    } finally {
+      setRecuperando(null)
+    }
+  }
+
+  const recuperables = canjes.filter(c => c.pagadoSinCodigo)
+  const activos = canjes.filter(c => !c.pagadoSinCodigo && c.estado === 'emitido' && c.vigente)
+  const historial = canjes.filter(c => !c.pagadoSinCodigo && !(c.estado === 'emitido' && c.vigente))
 
   return (
     <div className="min-h-screen bg-ml-bg">
@@ -91,6 +111,32 @@ export default function MisCanjes() {
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Pagados sin código — el usuario pagó pero no llegó a confirmar */}
+            {recuperables.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-sm font-bold text-ml-soft uppercase tracking-wide">Pago confirmado — recuperá tu código</h2>
+                {recuperables.map(c => (
+                  <div key={c._id} className="bg-white rounded-2xl border border-green-300 overflow-hidden">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 text-white">
+                      <span className="text-sm font-bold">{GANCHO_ICON[c.oferta?.tipoGancho || ''] || '🏷️'} {c.oferta?.titulo}</span>
+                    </div>
+                    <div className="p-4 text-center">
+                      <p className="text-xs text-ml-muted mb-3">
+                        ✅ Tu pago se acreditó en <span className="font-semibold">{c.comercio?.nombre}</span>, pero no llegaste a ver tu código. Recuperalo acá:
+                      </p>
+                      <button
+                        onClick={() => recuperarCodigo(c._id)}
+                        disabled={recuperando === c._id}
+                        className="w-full py-3 ml-grad text-white rounded-xl font-bold disabled:opacity-60"
+                      >
+                        {recuperando === c._id ? 'Recuperando…' : '🎟️ Recuperar mi código'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Activos — mostramos QR + código */}
             {activos.length > 0 && (
               <div className="space-y-4">

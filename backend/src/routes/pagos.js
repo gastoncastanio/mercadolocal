@@ -416,15 +416,18 @@ router.post('/confirmar-recepcion/:ordenId', verificarToken, async (req, res) =>
       return res.status(403).json({ error: 'No autorizado' })
     }
 
-    if (orden.estado !== 'enviada') {
-      return res.status(400).json({ error: 'La orden debe estar en estado "enviada" para confirmar recepción' })
+    // Transición atómica: el filtro por estado evita una carrera (ej. un admin
+    // revirtiendo la orden justo en este momento) que dejaría un estado inconsistente.
+    const ordenActualizada = await Orden.findOneAndUpdate(
+      { _id: orden._id, compradorId: req.usuario.id, estado: 'enviada' },
+      { $set: { estado: 'completada', fechaConfirmacion: new Date() } },
+      { new: true }
+    )
+    if (!ordenActualizada) {
+      return res.status(409).json({ error: 'La orden debe estar en estado "enviada" para confirmar recepción' })
     }
 
-    orden.estado = 'completada'
-    orden.fechaConfirmacion = new Date()
-    await orden.save()
-
-    console.log(`✅ Comprador confirmó recepción: orden ${orden._id}`)
+    console.log(`✅ Comprador confirmó recepción: orden ${ordenActualizada._id}`)
 
     res.json({ mensaje: 'Recepción confirmada. ¡Gracias por tu compra!' })
   } catch (error) {
@@ -443,9 +446,6 @@ router.get('/estado/:ordenId', verificarToken, async (req, res) => {
 
     // Verificar que el usuario sea el comprador, un vendedor de la orden, o admin
     const esComprador = orden.compradorId.toString() === req.usuario.id
-    const esVendedorDeOrden = orden.items.some(
-      item => item.tiendaId && item.tiendaId.toString()
-    )
     let esVendedorAutorizado = false
     if (!esComprador && (req.usuario.tieneVendedor || req.usuario.rol === 'vendedor')) {
       const tienda = await Tienda.findOne({ usuarioId: req.usuario.id })
