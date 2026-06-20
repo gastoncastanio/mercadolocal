@@ -1,8 +1,11 @@
 # 📊 Plan Maestro — Panel del Contador (Libro Mayor del Marketplace)
 
 **Versión:** 1.0  
-**Estado:** En implementación (Fase 0 + Fase 1)  
+**Estado:** Fase 2 completada (Núcleo + Hooks)  
 **Última actualización:** 2025-06-20  
+**Commits:**
+- 0370a04: Fase 0 + 1: Núcleo contable
+- 74d4e00: Fase 2: Hooks en webhooks  
 
 ---
 
