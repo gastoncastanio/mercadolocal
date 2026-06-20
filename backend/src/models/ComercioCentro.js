@@ -42,10 +42,11 @@ const comercioCentroSchema = new mongoose.Schema({
     enum: ['fundador', 'beta', 'activo', 'pausado'],
     default: 'beta'
   },
-  // Bloque horario donde el comercio quiere priorizarse en el feed
+  // Bloque horario donde el comercio quiere priorizarse en el feed (Radar Camaleón).
+  // Incluye los modos temáticos nuevos + los legacy (retrocompat con datos viejos).
   bloqueHorarioPrioritario: {
     type: String,
-    enum: ['manana', 'tarde', 'noche', 'todos'],
+    enum: ['desayuno', 'almuerzo', 'siesta', 'merienda', 'cena', 'manana', 'tarde', 'noche', 'todos'],
     default: 'todos'
   },
 

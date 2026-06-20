@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Coord } from '../utils/geo'
 import { OfertaFlash } from './TarjetaOfertaFlash'
@@ -56,13 +57,38 @@ export default function DespatxadorBloqueHorario({ bloque, coords, ciudad, carga
     return null
   }
 
+  // El header muta con el tema del bloque (Camaleón). Fallback a violeta/azul.
+  const tema = bloque.tema || null
+  const gradiente = tema
+    ? `linear-gradient(135deg, ${tema.colorDesde}, ${tema.colorHasta})`
+    : 'linear-gradient(135deg, #A855F7, #3B82F6)'
+
   return (
     <div className="mb-8">
       {/* Encabezado del bloque */}
-      <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-2xl p-6 mb-6">
+      <div
+        className="text-white rounded-2xl p-6 mb-6 transition-colors duration-700"
+        style={{ background: gradiente }}
+      >
         <h2 className="font-display text-3xl font-extrabold mb-1">{bloque.titulo}</h2>
         <p className="text-sm text-white/90">{bloque.descripcion}</p>
       </div>
+
+      {/* Modo Siesta / Shopping: el local físico está cerrado → empujamos compra online */}
+      {bloque.tipoDispatcher === 'shopping' && (
+        <Link
+          to="/catalogo"
+          className="flex items-center justify-between gap-3 bg-white rounded-2xl border border-ml-line p-4 mb-6 hover:shadow-md transition-shadow"
+        >
+          <div>
+            <p className="font-bold text-ml-ink">🛍️ El centro está en siesta, pero las ofertas no</p>
+            <p className="text-xs text-ml-muted mt-0.5">Comprá online indumentaria, tecnología y calzado con descuentos de siesta.</p>
+          </div>
+          <span className="shrink-0 text-sm font-bold text-white px-4 py-2 rounded-xl" style={{ background: tema?.acento || '#9333EA' }}>
+            Ver tienda →
+          </span>
+        </Link>
+      )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3 mb-4">{error}</p>}
 

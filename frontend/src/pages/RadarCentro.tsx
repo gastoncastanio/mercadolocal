@@ -6,7 +6,7 @@ import TarjetaOfertaFlash, { OfertaFlash } from '../components/TarjetaOfertaFlas
 import DespatxadorBloqueHorario from '../components/DespatxadorBloqueHorario'
 import RetornoPagoOferta from '../components/RetornoPagoOferta'
 import { calcularOffset } from '../utils/canjes'
-import { useBloqueHorario } from '../hooks/useBloqueHorario'
+import { useBloqueHorario, TEMA_NEUTRO } from '../hooks/useBloqueHorario'
 
 interface Comercio {
   _id: string
@@ -192,31 +192,54 @@ export default function RadarCentro() {
   // todas las ofertas son de la misma localidad.
   const ciudad = ''
 
+  // Radar Camaleón: el hero muta sus colores según el modo activo (desayuno,
+  // almuerzo, siesta, merienda, cena). En los gaps horarios usa el tema neutro.
+  const tema = bloqueActual?.tema || TEMA_NEUTRO
+  const subtituloModo = bloqueActual
+    ? `${tema.emoji} ${bloqueActual.titulo} · activo ahora`
+    : 'Ordenado por cercanía a vos'
+
   return (
     <div className="min-h-screen bg-ml-bg">
       {/* Retorno de pago de MercadoPago (overlay si volvió de un checkout) */}
       <RetornoPagoOferta />
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h1 className="font-display text-2xl font-extrabold text-ml-ink">📍 Radar del Centro</h1>
-            <p className="text-sm text-ml-muted">Ordenado por cercanía a vos</p>
-          </div>
-          <div className="flex items-center gap-2">
+
+      {/* Hero Camaleón — muta de color según la hora del día */}
+      <div
+        className="text-white transition-colors duration-700"
+        style={{ background: `linear-gradient(135deg, ${tema.colorDesde}, ${tema.colorHasta})` }}
+      >
+        <div className="max-w-2xl mx-auto px-4 py-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl font-extrabold flex items-center gap-2">
+                <span className="text-3xl leading-none">{tema.emoji}</span>
+                Radar del Centro
+              </h1>
+              <p className="text-sm text-white/90 mt-1">{subtituloModo}</p>
+            </div>
             <button
-              onClick={() => coords && cargarComercios(coords)}
-              disabled={cargandoComercios}
-              className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet disabled:opacity-50"
+              onClick={apagarRadar}
+              className="shrink-0 text-xs px-3 py-2 bg-white/15 hover:bg-white/25 backdrop-blur rounded-xl font-semibold text-white transition-colors"
             >
-              🔄 Actualizar
-            </button>
-            <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet">
-              🎟️ Mis canjes
-            </Link>
-            <button onClick={apagarRadar} className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-red-300 hover:text-red-600">
               Apagar
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-end gap-2 mb-5">
+          <button
+            onClick={() => coords && cargarComercios(coords)}
+            disabled={cargandoComercios}
+            className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet disabled:opacity-50"
+          >
+            🔄 Actualizar
+          </button>
+          <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet">
+            🎟️ Mis canjes
+          </Link>
         </div>
 
         {/* FASE 3: Despachador dinámico por bloque horario */}
