@@ -641,11 +641,19 @@ router.post('/cruzada/reservar', verificarToken, async (req, res) => {
       return res.status(409).json({ error: 'La promo ya no está disponible para reservar.' })
     }
 
+    // Limpieza perezosa (igual que en reclamar): si quedó una reserva 'emitido'
+    // vencida, la expiramos para liberar el slot del índice único parcial.
+    await CanjeAtribuido.updateMany(
+      { usuarioId: req.usuario.id, ofertaId: oferta._id, estado: 'emitido', expiraEn: { $lte: ahora } },
+      { $set: { estado: 'expirado' } }
+    )
+
     // ¿Ya tiene una reserva/canje vigente de esta oferta? (evita duplicar)
     const yaReservada = await CanjeAtribuido.findOne({
       usuarioId: req.usuario.id,
       ofertaId: oferta._id,
-      estado: 'emitido'
+      estado: 'emitido',
+      expiraEn: { $gt: ahora }
     })
     if (yaReservada) {
       return res.status(409).json({ error: 'Ya tenés esta promo reservada. Mirá "Mis canjes".' })
@@ -931,18 +939,29 @@ router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
       return res.status(409).json({ error: 'Ya tenés un pago pendiente para esta oferta. Esperá unos minutos o revisá "Mis canjes".' })
     }
 
-    // Crear registro de canje (aún sin pago confirmado)
-    const canje = await CanjeAtribuido.create({
-      usuarioId: req.usuario.id,
-      comercioId: oferta.comercioId,
-      ofertaId: oferta._id,
-      codigoHash: '', // Se completa después del pago
-      estado: 'emitido',
-      estadoPago: 'pendiente_pago',
-      emitidoEn: ahora,
-      expiraEn: new Date(ahora.getTime() + 15 * 60 * 1000), // 15 min window
-      montoCentavos: Math.round(oferta.precioFinal * 100)
-    })
+    // Crear registro de canje (aún sin pago confirmado). Si choca con el índice
+    // único parcial es porque ya existe un canje 'emitido' de esta oferta (p. ej.
+    // un pago anterior que quedó confirmado pero sin código): lo derivamos a "Mis
+    // canjes" en vez de cobrar dos veces.
+    let canje
+    try {
+      canje = await CanjeAtribuido.create({
+        usuarioId: req.usuario.id,
+        comercioId: oferta.comercioId,
+        ofertaId: oferta._id,
+        codigoHash: '', // Se completa después del pago
+        estado: 'emitido',
+        estadoPago: 'pendiente_pago',
+        emitidoEn: ahora,
+        expiraEn: new Date(ahora.getTime() + 15 * 60 * 1000), // 15 min window
+        montoCentavos: Math.round(oferta.precioFinal * 100)
+      })
+    } catch (e) {
+      if (e.code === 11000) {
+        return res.status(409).json({ error: 'Ya tenés un canje activo para esta oferta. Revisá "Mis canjes".' })
+      }
+      throw e
+    }
 
     // Crear preferencia en MercadoPago
     const mpResponse = await crearPreferenciaOferta(oferta, req.usuario, canje._id)
