@@ -152,6 +152,19 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // ===== Traslado de comisionista (external_reference "cotizacion:<id>") =====
+      // El comprador pagó un traslado cotizado. El dinero va al comisionista vía
+      // split; la plataforma retuvo su fee. Solo marcamos el pago y cortamos acá.
+      const extRef = pago.external_reference || ''
+      if (extRef.startsWith('cotizacion:')) {
+        if (pago.status === 'approved') {
+          const solicitudId = extRef.slice('cotizacion:'.length)
+          const { marcarTrasladoPagado } = await import('../services/comisionistaService.js')
+          await marcarTrasladoPagado(solicitudId, pago.id)
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 

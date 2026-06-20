@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { encriptar, desencriptar, estaEncriptado } from '../utils/crypto.js'
 
 /**
  * PerfilComisionista — perfil de un "viajero" que transporta bultos entre
@@ -93,10 +94,41 @@ const perfilComisionistaSchema = new mongoose.Schema({
   estaTrabajandoHoy: {
     type: Boolean,
     default: false
-  }
+  },
+  // Mercado Pago — OAuth del comisionista (para cobrar el traslado con split).
+  // Mismo patrón que Tienda: tokens encriptados en reposo.
+  mpAccessToken: { type: String, default: '' },
+  mpRefreshToken: { type: String, default: '' },
+  mpUserId: { type: String, default: '' },
+  mpVinculado: { type: Boolean, default: false },
+  mpVinculadoEn: { type: Date, default: null },
+  mpCsrfToken: { type: String, default: null }
 }, {
   timestamps: true
 })
+
+// Encriptar tokens de MP antes de guardar (idéntico a Tienda).
+perfilComisionistaSchema.pre('save', function (next) {
+  try {
+    if (this.isModified('mpAccessToken') && this.mpAccessToken && !estaEncriptado(this.mpAccessToken)) {
+      this.mpAccessToken = encriptar(this.mpAccessToken)
+    }
+    if (this.isModified('mpRefreshToken') && this.mpRefreshToken && !estaEncriptado(this.mpRefreshToken)) {
+      this.mpRefreshToken = encriptar(this.mpRefreshToken)
+    }
+    next()
+  } catch (error) {
+    console.error('❌ Error al encriptar tokens de MP del comisionista:', error.message)
+    next(error)
+  }
+})
+
+perfilComisionistaSchema.methods.getMpAccessToken = function () {
+  return desencriptar(this.mpAccessToken)
+}
+perfilComisionistaSchema.methods.getMpRefreshToken = function () {
+  return desencriptar(this.mpRefreshToken)
+}
 
 // Búsqueda de comisionistas activos disponibles ahora
 perfilComisionistaSchema.index({ activo: 1, estaTrabajandoHoy: 1, calificacion: -1 })
@@ -127,6 +159,7 @@ perfilComisionistaSchema.methods.toPublic = function () {
     estadoDocumento: this.estadoDocumento,
     estaTrabajandoHoy: this.estaTrabajandoHoy,
     horariosActivos: this.horariosActivos,
+    mpVinculado: this.mpVinculado,
     createdAt: this.createdAt
   }
 }

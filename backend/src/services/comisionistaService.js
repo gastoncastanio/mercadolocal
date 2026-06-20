@@ -572,6 +572,93 @@ export async function cancelarCotizacion(usuarioId, solicitudId) {
 }
 
 /**
+ * El comprador paga el traslado cotizado: crea la preferencia de MP con split
+ * (el comisionista cobra, la plataforma retiene su fee). Devuelve el initPoint.
+ */
+export async function pagarTraslado(compradorId, solicitudId, compradorEmail) {
+  const { crearPreferenciaTraslado } = await import('./mercadoPagoService.js')
+
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+  if (solicitud.estado !== 'aceptada') throw new Error('Tenés que aceptar la cotización antes de pagar')
+  if (solicitud.pago?.estadoPago === 'pagado') throw new Error('Este traslado ya fue pagado')
+  if (solicitud.cotizacion?.monto == null) throw new Error('La solicitud no tiene un monto cotizado')
+
+  const perfil = await PerfilComisionista.findOne({ usuarioId: solicitud.comisionistaId })
+  if (!perfil || !perfil.mpVinculado) {
+    throw new Error('El comisionista todavía no vinculó su cuenta de Mercado Pago. Pedile que la vincule para poder pagar online.')
+  }
+
+  const { preferenceId, initPoint, marketplaceFee } = await crearPreferenciaTraslado({
+    solicitud, perfilComisionista: perfil, compradorEmail
+  })
+
+  solicitud.pago = {
+    ...solicitud.pago,
+    mpPreferenceId: preferenceId,
+    comisionPlataforma: marketplaceFee,
+    estadoPago: 'pendiente_pago'
+  }
+  await solicitud.save()
+
+  return { initPoint, preferenceId }
+}
+
+/**
+ * Verifica el pago de un traslado consultando a MP por external_reference
+ * (fallback al volver del checkout, por si el webhook no llegó). Best-effort.
+ */
+export async function verificarPagoTraslado(compradorId, solicitudId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+  if (solicitud.pago?.estadoPago === 'pagado') return solicitud
+
+  try {
+    const { MercadoPagoConfig, Payment } = await import('mercadopago')
+    const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' })
+    const search = await new Payment(client).search({
+      options: { external_reference: `cotizacion:${solicitudId}` }
+    })
+    const resultados = search?.results || []
+    const aprobado = resultados.find(p => p.status === 'approved')
+    if (aprobado) {
+      return await marcarTrasladoPagado(solicitudId, aprobado.id)
+    }
+  } catch (e) {
+    console.warn('verificarPagoTraslado: no se pudo consultar a MP:', e.message)
+  }
+  return solicitud
+}
+
+/**
+ * Marca el traslado como pagado (lo invoca el webhook de MP). Idempotente.
+ */
+export async function marcarTrasladoPagado(solicitudId, mpPaymentId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) return null
+  if (solicitud.pago?.estadoPago === 'pagado') return solicitud // idempotencia
+
+  solicitud.pago = { ...solicitud.pago, mpPaymentId: mpPaymentId?.toString() || '', estadoPago: 'pagado' }
+  await solicitud.save()
+
+  emitNotificacion(solicitud.comisionistaId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Traslado pagado',
+    mensaje: 'El comprador pagó el traslado. Ya podés coordinar el retiro.',
+    enlace: '/comisionistas/mi-perfil'
+  })
+  emitNotificacion(solicitud.compradorId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Pago del traslado confirmado',
+    mensaje: 'Tu pago del traslado fue confirmado. Coordiná la entrega con el comisionista.',
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+  return solicitud
+}
+
+/**
  * El comisionista reporta un incidente (rotura, accidente). MercadoLocal solo
  * deja constancia: el reintegro al comprador lo resuelve el vendedor con el
  * comisionista. Notifica a comprador y vendedor.

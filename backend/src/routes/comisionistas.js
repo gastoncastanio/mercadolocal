@@ -285,6 +285,28 @@ router.patch('/cotizacion/:id/aceptar', verificarToken, async (req, res) => {
   }
 })
 
+// POST /api/comisionistas/cotizacion/:id/pagar - El comprador paga el traslado (split a MP del comisionista)
+router.post('/cotizacion/:id/pagar', verificarToken, async (req, res) => {
+  try {
+    const { default: Usuario } = await import('../models/Usuario.js')
+    const usuario = await Usuario.findById(req.usuario.id).select('email')
+    const resultado = await comisionistaService.pagarTraslado(req.usuario.id, req.params.id, usuario?.email)
+    res.json(resultado)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/comisionistas/cotizacion/:id/verificar-pago - Verificar el pago al volver del checkout
+router.post('/cotizacion/:id/verificar-pago', verificarToken, async (req, res) => {
+  try {
+    const solicitud = await comisionistaService.verificarPagoTraslado(req.usuario.id, req.params.id)
+    res.json(solicitud)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 // PATCH /api/comisionistas/cotizacion/:id/cancelar - Cancelar/rechazar (cualquiera de las partes)
 router.patch('/cotizacion/:id/cancelar', verificarToken, async (req, res) => {
   try {

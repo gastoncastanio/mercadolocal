@@ -59,6 +59,17 @@ const solicitudCotizacionSchema = new mongoose.Schema({
     notas: { type: String, default: '' },
     fecha: { type: Date, default: null }
   },
+  // Pago del traslado (split: el comisionista cobra, la plataforma retiene su fee).
+  pago: {
+    mpPreferenceId: { type: String, default: '' },
+    mpPaymentId: { type: String, default: '' },
+    comisionPlataforma: { type: Number, default: 0 },
+    estadoPago: {
+      type: String,
+      enum: ['no_iniciado', 'pendiente_pago', 'pagado', 'reembolsado'],
+      default: 'no_iniciado'
+    }
+  },
   // El comprador debió aceptar el deslinde de responsabilidad de la plataforma.
   terminosAceptados: {
     type: Boolean,

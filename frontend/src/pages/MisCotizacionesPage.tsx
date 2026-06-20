@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 
 interface Cotizacion {
@@ -9,6 +9,7 @@ interface Cotizacion {
   ciudadDestino: string
   descripcionCarga: string
   cotizacion: { monto: number | null; notas: string; fecha: string | null }
+  pago?: { estadoPago: string }
   incidente?: { reportado: boolean; descripcion: string; fecha: string | null }
   comisionistaId?: { _id: string; nombre: string; avatar: string } | null
   createdAt: string
@@ -24,12 +25,37 @@ const ESTADO_INFO: Record<string, { texto: string; clase: string }> = {
 
 export default function MisCotizacionesPage() {
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const [lista, setLista] = useState<Cotizacion[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [accionando, setAccionando] = useState(false)
+  const [aviso, setAviso] = useState('')
 
   useEffect(() => { cargar() }, [])
+
+  // Al volver del checkout de MP (?pago=ok), verificar el pago de todas las
+  // cotizaciones aceptadas pendientes (best-effort por si no llegó el webhook).
+  useEffect(() => {
+    const pago = params.get('pago')
+    if (!pago) return
+    if (pago === 'ok') setAviso('Verificando tu pago...')
+    ;(async () => {
+      try {
+        const res = await api.get('/comisionistas/mis-cotizaciones')
+        const pendientes = (res.data || []).filter((c: Cotizacion) => c.estado === 'aceptada' && c.pago?.estadoPago !== 'pagado')
+        await Promise.all(pendientes.map((c: Cotizacion) =>
+          api.post(`/comisionistas/cotizacion/${c._id}/verificar-pago`).catch(() => {})
+        ))
+        if (pago === 'ok') setAviso('¡Pago confirmado! Coordiná la entrega con el comisionista.')
+        else setAviso('')
+      } finally {
+        await cargar()
+        params.delete('pago'); setParams(params, { replace: true })
+      }
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function cargar() {
     setCargando(true)
@@ -68,6 +94,24 @@ export default function MisCotizacionesPage() {
     }
   }
 
+  async function pagarTraslado(id: string) {
+    setAccionando(true)
+    setError('')
+    try {
+      const res = await api.post(`/comisionistas/cotizacion/${id}/pagar`)
+      const url = res.data?.initPoint
+      if (url && url.startsWith('https://') && url.includes('mercadopago')) {
+        window.location.href = url
+      } else {
+        setError('No se pudo generar el pago. Intentá de nuevo.')
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo iniciar el pago')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
   async function coordinarChat(comisionistaId: string, nombre?: string) {
     try {
       await api.post('/mensajes', { receptorId: comisionistaId, mensaje: 'Hola! Coordinemos el traslado.' })
@@ -91,6 +135,7 @@ export default function MisCotizacionesPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {aviso && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3 mb-4">{aviso}</p>}
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-6">{error}</p>}
 
         {lista.length === 0 ? (
@@ -142,14 +187,24 @@ export default function MisCotizacionesPage() {
                     </div>
                   )}
 
+                  {/* Estado de pago del traslado */}
+                  {c.estado === 'aceptada' && c.pago?.estadoPago === 'pagado' && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 text-sm text-green-800 font-semibold">
+                      ✓ Traslado pagado. Coordiná la entrega con el comisionista.
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2 justify-end">
                     {c.estado === 'cotizada' && (
                       <button onClick={() => aceptar(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-bold rounded-lg mlbtn ml-grad text-white disabled:opacity-50">Aceptar cotización</button>
                     )}
+                    {c.estado === 'aceptada' && c.pago?.estadoPago !== 'pagado' && (
+                      <button onClick={() => pagarTraslado(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-bold rounded-lg bg-ml-mp text-white disabled:opacity-50">💳 Pagar traslado</button>
+                    )}
                     {c.comisionistaId && ['cotizada', 'aceptada'].includes(c.estado) && (
                       <button onClick={() => coordinarChat(c.comisionistaId!._id, c.comisionistaId!.nombre)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
                     )}
-                    {!['rechazada', 'cancelada'].includes(c.estado) && (
+                    {!['rechazada', 'cancelada'].includes(c.estado) && c.pago?.estadoPago !== 'pagado' && (
                       <button onClick={() => cancelar(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700">Cancelar</button>
                     )}
                   </div>

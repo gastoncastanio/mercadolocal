@@ -2,6 +2,7 @@ import { Router } from 'express'
 import crypto from 'crypto'
 import { verificarToken } from '../middleware/auth.js'
 import Tienda from '../models/Tienda.js'
+import PerfilComisionista from '../models/PerfilComisionista.js'
 
 const router = Router()
 
@@ -95,19 +96,78 @@ router.get('/callback', async (req, res) => {
 
     console.log('✓ Code y state recibidos')
 
-    // Decodificar state y extraer tiendaId, usuarioId, csrfToken y origen frontend
-    let tiendaId, usuarioId, csrfToken
+    // Decodificar state y extraer datos según el tipo (vendedor | comisionista)
+    let tipo, tiendaId, perfilId, usuarioId, csrfToken
     try {
       const decoded = Buffer.from(state, 'base64url').toString()
       const payload = JSON.parse(decoded)
+      tipo = payload.tipo || 'vendedor'
       tiendaId = payload.tiendaId
+      perfilId = payload.perfilId
       usuarioId = payload.usuarioId
       csrfToken = payload.csrfToken
-      // Ajustar la base de redirect al origen real desde donde arrancó el vendedor
+      // Ajustar la base de redirect al origen real desde donde arrancó el flujo
       frontendBase = resolverFrontendBase(payload.fo)
-      if (!tiendaId || !usuarioId || !csrfToken) throw new Error('State incompleto')
+      const refId = tipo === 'comisionista' ? perfilId : tiendaId
+      if (!refId || !usuarioId || !csrfToken) throw new Error('State incompleto')
     } catch {
       return res.redirect(`${frontendBase}/central-vendedor?mp=error&msg=state_invalido`)
+    }
+
+    // ===== Rama comisionista =====
+    if (tipo === 'comisionista') {
+      const exitoUrl = `${frontendBase}/comisionistas/mi-perfil`
+      const perfil = await PerfilComisionista.findById(perfilId)
+      if (!perfil || perfil.usuarioId.toString() !== usuarioId) {
+        return res.redirect(`${exitoUrl}?mp=error&msg=perfil_no_encontrado`)
+      }
+      if (!perfil.mpCsrfToken || perfil.mpCsrfToken !== csrfToken) {
+        console.warn(`🚨 OAuth MP comisionista con CSRF inválido: perfil ${perfilId}`)
+        return res.redirect(`${exitoUrl}?mp=error&msg=csrf_invalido`)
+      }
+
+      let response, data
+      try {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000)
+        response = await fetch('https://api.mercadopago.com/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: MP_APP_ID,
+            client_secret: MP_CLIENT_SECRET,
+            code,
+            grant_type: 'authorization_code',
+            redirect_uri: `${BACKEND_URL}/api/mp/callback`
+          }),
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+        data = await response.json()
+      } catch (fetchError) {
+        console.error('❌ Error en fetch a MP (comisionista):', fetchError.message)
+        return res.redirect(`${exitoUrl}?mp=error&msg=mp_timeout`)
+      }
+
+      if (!response.ok || !data.access_token) {
+        console.error('❌ Error OAuth MP comisionista:', data)
+        return res.redirect(`${exitoUrl}?mp=error&msg=token_invalido`)
+      }
+
+      perfil.mpAccessToken = data.access_token
+      perfil.mpRefreshToken = data.refresh_token
+      perfil.mpUserId = data.user_id?.toString() || ''
+      perfil.mpVinculado = true
+      perfil.mpVinculadoEn = new Date()
+      perfil.mpCsrfToken = null
+      try {
+        await perfil.save()
+        console.log(`✅ Comisionista vinculó MP (perfil ${perfilId}, MP user: ${data.user_id})`)
+        return res.redirect(`${exitoUrl}?mp=ok`)
+      } catch (saveError) {
+        console.error('❌ Error guardando perfil comisionista con tokens MP:', saveError.message)
+        return res.redirect(`${exitoUrl}?mp=error&msg=error_guardar`)
+      }
     }
 
     console.log(`🎯 Redirigiré al frontend: ${frontendBase}`)
@@ -220,6 +280,104 @@ router.post('/desvincular', verificarToken, async (req, res) => {
     res.status(500).json({ error: 'Error al desvincular' })
   }
 })
+
+// ===== OAuth de Mercado Pago para COMISIONISTAS =====
+
+// GET /api/mp/comisionista/auth-url - URL de autorización para vincular MP (comisionista)
+router.get('/comisionista/auth-url', verificarToken, async (req, res) => {
+  try {
+    const perfil = await PerfilComisionista.findOne({ usuarioId: req.usuario.id })
+    if (!perfil) return res.status(404).json({ error: 'No tenés un perfil de comisionista' })
+    if (!MP_APP_ID) return res.status(500).json({ error: 'MP_APP_ID no configurado en el servidor' })
+
+    const redirectUri = `${BACKEND_URL}/api/mp/callback`
+    const csrfToken = crypto.randomBytes(16).toString('hex')
+    perfil.mpCsrfToken = csrfToken
+    await perfil.save()
+
+    const origenFrontend = esOrigenFrontendValido(req.query.origin) ? req.query.origin : null
+    const statePayload = JSON.stringify({
+      tipo: 'comisionista',
+      perfilId: perfil._id.toString(),
+      usuarioId: req.usuario.id.toString(),
+      csrfToken,
+      fo: origenFrontend
+    })
+    const state = Buffer.from(statePayload).toString('base64url')
+
+    const authUrl = `https://auth.mercadopago.com.ar/authorization?client_id=${MP_APP_ID}&response_type=code&platform_id=mp&state=${state}&redirect_uri=${encodeURIComponent(redirectUri)}`
+    res.json({ authUrl })
+  } catch (error) {
+    console.error('Error generando auth URL comisionista:', error)
+    res.status(500).json({ error: 'Error al generar enlace de autorización' })
+  }
+})
+
+// GET /api/mp/comisionista/estado - ¿El comisionista tiene MP vinculado?
+router.get('/comisionista/estado', verificarToken, async (req, res) => {
+  try {
+    const perfil = await PerfilComisionista.findOne({ usuarioId: req.usuario.id })
+    if (!perfil) return res.json({ vinculado: false, perfil: false })
+    res.json({ vinculado: perfil.mpVinculado, mpUserId: perfil.mpUserId || null, vinculadoEn: perfil.mpVinculadoEn })
+  } catch (error) {
+    res.status(500).json({ error: 'Error al verificar estado' })
+  }
+})
+
+// POST /api/mp/comisionista/desvincular - Desvincular MP del comisionista
+router.post('/comisionista/desvincular', verificarToken, async (req, res) => {
+  try {
+    const perfil = await PerfilComisionista.findOne({ usuarioId: req.usuario.id })
+    if (!perfil) return res.status(404).json({ error: 'Perfil no encontrado' })
+
+    perfil.mpAccessToken = ''
+    perfil.mpRefreshToken = ''
+    perfil.mpUserId = ''
+    perfil.mpVinculado = false
+    perfil.mpVinculadoEn = null
+    perfil.mpCsrfToken = null
+    await perfil.save()
+    res.json({ mensaje: 'Mercado Pago desvinculado correctamente' })
+  } catch (error) {
+    res.status(500).json({ error: 'Error al desvincular' })
+  }
+})
+
+// Refresca el token de MP de un comisionista (mismo patrón que el del vendedor).
+export async function refrescarTokenComisionista(perfil) {
+  if (!perfil.mpRefreshToken) return null
+  try {
+    let refreshToken
+    try {
+      refreshToken = perfil.getMpRefreshToken()
+    } catch (decryptError) {
+      console.error('❌ Error desencriptando refresh token comisionista:', decryptError.message)
+      return null
+    }
+    if (!refreshToken) return null
+
+    const response = await fetch('https://api.mercadopago.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: MP_APP_ID,
+        client_secret: MP_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken
+      })
+    })
+    const data = await response.json()
+    if (data.access_token) {
+      perfil.mpAccessToken = data.access_token
+      perfil.mpRefreshToken = data.refresh_token || perfil.mpRefreshToken
+      await perfil.save()
+      return data.access_token
+    }
+  } catch (error) {
+    console.error('❌ Error refrescando token MP comisionista:', error.message)
+  }
+  return null
+}
 
 // Función auxiliar para refrescar token de un vendedor
 export async function refrescarTokenVendedor(tienda) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { subirImagenOptimizada } from '../utils/imageUpload'
 import DeslindeComisionista from '../components/DeslindeComisionista'
@@ -18,6 +18,7 @@ interface Perfil {
   estadoDocumento?: string
   estaTrabajandoHoy?: boolean
   horariosActivos?: Record<string, { desde?: string; hasta?: string }>
+  mpVinculado?: boolean
 }
 
 interface Cotizacion {
@@ -76,6 +77,7 @@ const ESTADO_ENVIO: Record<string, { texto: string; clase: string }> = {
 
 export default function MiPerfilComisionistaPage() {
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [viajes, setViajes] = useState<Viaje[]>([])
   const [envios, setEnvios] = useState<Envio[]>([])
@@ -91,6 +93,7 @@ export default function MiPerfilComisionistaPage() {
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([])
   const [montos, setMontos] = useState<Record<string, string>>({})
   const [notasCot, setNotasCot] = useState<Record<string, string>>({})
+  const [avisoMp, setAvisoMp] = useState('')
 
   // Form de perfil
   const [pf, setPf] = useState({
@@ -105,6 +108,16 @@ export default function MiPerfilComisionistaPage() {
   })
 
   useEffect(() => { cargar() }, [])
+
+  // Feedback al volver del OAuth de Mercado Pago.
+  useEffect(() => {
+    const mp = params.get('mp')
+    if (!mp) return
+    if (mp === 'ok') setAvisoMp('✓ Mercado Pago vinculado correctamente.')
+    else setAvisoMp('No se pudo vincular Mercado Pago. Probá de nuevo.')
+    params.delete('mp'); params.delete('msg'); setParams(params, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function cargar() {
     setCargando(true)
@@ -250,6 +263,21 @@ export default function MiPerfilComisionistaPage() {
     }
   }
 
+  // Vincular Mercado Pago para cobrar los traslados (OAuth, split).
+  async function vincularMercadoPago() {
+    setAccionando(true)
+    setError('')
+    try {
+      const res = await api.get(`/mp/comisionista/auth-url?origin=${encodeURIComponent(window.location.origin)}`)
+      if (res.data?.authUrl) window.location.href = res.data.authUrl
+      else setError('No se pudo iniciar la vinculación con Mercado Pago')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo iniciar la vinculación')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
   async function guardarPerfil(e: React.FormEvent) {
     e.preventDefault()
     setAccionando(true)
@@ -348,6 +376,7 @@ export default function MiPerfilComisionistaPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+        {avisoMp && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">{avisoMp}</p>}
         {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}
 
         {/* Perfil (crear / editar) */}
@@ -453,6 +482,23 @@ export default function MiPerfilComisionistaPage() {
                 >
                   {perfil.estaTrabajandoHoy ? '🟢 Trabajando — Tocá para parar' : '▶ Empezar a trabajar'}
                 </button>
+              </div>
+
+              {/* Cobro de traslados: vinculación de Mercado Pago */}
+              <div className="flex items-center justify-between gap-3 pt-3 border-t border-ml-line flex-wrap">
+                <div>
+                  <p className="text-sm font-semibold text-ml-ink">Cobro de traslados</p>
+                  <p className="text-xs text-ml-muted">
+                    {perfil.mpVinculado
+                      ? 'Mercado Pago vinculado. Vas a cobrar los traslados directo en tu cuenta.'
+                      : 'Vinculá tu Mercado Pago para poder cobrar los traslados online.'}
+                  </p>
+                </div>
+                {perfil.mpVinculado ? (
+                  <span className="px-4 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm font-semibold">✓ MP vinculado</span>
+                ) : (
+                  <button onClick={vincularMercadoPago} disabled={accionando} className="px-5 py-2.5 rounded-lg font-bold text-sm bg-ml-mp text-white disabled:opacity-50">Vincular Mercado Pago</button>
+                )}
               </div>
             </div>
 
