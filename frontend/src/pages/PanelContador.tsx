@@ -91,6 +91,7 @@ export default function PanelContador() {
   const [data, setData] = useState<PanelData | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
+  const [modal, setModal] = useState<'gasto' | 'config' | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -135,7 +136,7 @@ export default function PanelContador() {
             <h1 className="text-2xl md:text-3xl font-bold text-ml-ink">📊 Panel del Contador</h1>
             <p className="text-sm text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap print:hidden">
             <Link to="/admin" className="text-sm text-ml-soft hover:text-ml-ink px-3 py-2">← Admin</Link>
             <select
               value={mes}
@@ -153,6 +154,9 @@ export default function PanelContador() {
                 <option key={y} value={y}>{y}</option>
               )}
             </select>
+            <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90">➕ Gasto</button>
+            <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">⚙️ Config</button>
+            <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">🖨️ PDF</button>
           </div>
         </div>
 
@@ -353,7 +357,170 @@ export default function PanelContador() {
           </div>
         )}
       </div>
+
+      {/* ===== Modales ===== */}
+      {modal === 'gasto' && (
+        <ModalGasto onClose={() => setModal(null)} onGuardado={() => { setModal(null); cargar() }} />
+      )}
+      {modal === 'config' && data && (
+        <ModalConfig configActual={data.config} onClose={() => setModal(null)} onGuardado={() => { setModal(null); cargar() }} />
+      )}
     </div>
+  )
+}
+
+// ===================== MODAL: Cargar Gasto (OPEX) =====================
+const CATEGORIAS_GASTO = [
+  { id: 'marketing', label: '📢 Marketing / Pauta' },
+  { id: 'hosting', label: '🖥️ Hosting' },
+  { id: 'infraestructura', label: '⚙️ Infraestructura' },
+  { id: 'honorarios', label: '💼 Honorarios / Bancarios' },
+  { id: 'otro', label: '📦 Otro' }
+]
+
+function ModalGasto({ onClose, onGuardado }: { onClose: () => void; onGuardado: () => void }) {
+  const hoy = new Date().toISOString().split('T')[0]
+  const [categoria, setCategoria] = useState('marketing')
+  const [concepto, setConcepto] = useState('')
+  const [monto, setMonto] = useState('')
+  const [fechaGasto, setFechaGasto] = useState(hoy)
+  const [notas, setNotas] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function guardar() {
+    setErr('')
+    const montoNum = parseFloat(monto)
+    if (!concepto.trim()) return setErr('Poné un concepto (ej: "Pauta Meta Junio")')
+    if (!montoNum || montoNum <= 0) return setErr('El monto debe ser mayor a cero')
+    setGuardando(true)
+    try {
+      await api.post('/contador/gasto', { categoria, concepto: concepto.trim(), monto: montoNum, fechaGasto, notas })
+      onGuardado()
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || 'No se pudo guardar el gasto')
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Overlay onClose={onClose} titulo="➕ Cargar gasto operativo">
+      <div className="space-y-3">
+        <Campo label="Categoría">
+          <select value={categoria} onChange={e => setCategoria(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100">
+            {CATEGORIAS_GASTO.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+        </Campo>
+        <Campo label="Concepto">
+          <input value={concepto} onChange={e => setConcepto(e.target.value)} placeholder="Pauta Meta Lobos - Junio" className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Monto ($)">
+            <input type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="1000000" className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+          </Campo>
+          <Campo label="Fecha">
+            <input type="date" value={fechaGasto} onChange={e => setFechaGasto(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+          </Campo>
+        </div>
+        <Campo label="Notas (opcional)">
+          <input value={notas} onChange={e => setNotas(e.target.value)} placeholder="Campaña regional" className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+        </Campo>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div className="flex gap-2 justify-end pt-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-ml-soft">Cancelar</button>
+          <button onClick={guardar} disabled={guardando} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg disabled:opacity-50">
+            {guardando ? 'Guardando…' : 'Guardar gasto'}
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  )
+}
+
+// ===================== MODAL: Configuración contable =====================
+function ModalConfig({ configActual, onClose, onGuardado }: {
+  configActual: PanelData['config']; onClose: () => void; onGuardado: () => void
+}) {
+  const [costosFijos, setCostosFijos] = useState(String(configActual.costosFijosMensuales))
+  const [regimen, setRegimen] = useState(configActual.regimenFiscal)
+  const [alicuotaIVA, setAlicuotaIVA] = useState(String(configActual.alicuotaIVA))
+  const [costoMP, setCostoMP] = useState(String(configActual.costoProcesamientoMP))
+  const [guardando, setGuardando] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function guardar() {
+    setErr('')
+    setGuardando(true)
+    try {
+      await api.put('/contador/config', {
+        costosFijosMensuales: parseFloat(costosFijos) || 0,
+        regimenFiscal: regimen,
+        alicuotaIVA: parseFloat(alicuotaIVA) || 0,
+        costoProcesamientoMP: parseFloat(costoMP) || 0
+      })
+      onGuardado()
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || 'No se pudo guardar la configuración')
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Overlay onClose={onClose} titulo="⚙️ Configuración contable">
+      <div className="space-y-3">
+        <Campo label="Costos fijos mensuales ($)">
+          <input type="number" value={costosFijos} onChange={e => setCostosFijos(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+          <p className="text-[11px] text-ml-muted mt-1">Pauta + hosting + contable. Se usa para el punto de equilibrio.</p>
+        </Campo>
+        <Campo label="Régimen fiscal">
+          <select value={regimen} onChange={e => setRegimen(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100">
+            <option value="Monotributo">Monotributo (Factura C, IVA 0)</option>
+            <option value="Responsable Inscripto">Responsable Inscripto (IVA discriminado)</option>
+          </select>
+        </Campo>
+        <div className="grid grid-cols-2 gap-3">
+          <Campo label="Alícuota IVA (%)">
+            <input type="number" value={alicuotaIVA} onChange={e => setAlicuotaIVA(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" disabled={regimen === 'Monotributo'} />
+          </Campo>
+          <Campo label="Costo procesamiento MP (%)">
+            <input type="number" step="0.1" value={costoMP} onChange={e => setCostoMP(e.target.value)} className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white disabled:bg-gray-100" />
+          </Campo>
+        </div>
+        {regimen === 'Responsable Inscripto' && (
+          <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            ⚠️ Como Responsable Inscripto, el panel calcula el IVA débito fiscal sobre tus comisiones. Verificá la alícuota con tu contador.
+          </p>
+        )}
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div className="flex gap-2 justify-end pt-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-ml-soft">Cancelar</button>
+          <button onClick={guardar} disabled={guardando} className="px-4 py-2 text-sm bg-ml-ink text-white rounded-lg disabled:opacity-50">
+            {guardando ? 'Guardando…' : 'Guardar config'}
+          </button>
+        </div>
+      </div>
+    </Overlay>
+  )
+}
+
+// ===================== Overlay genérico =====================
+function Overlay({ titulo, children, onClose }: { titulo: string; children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 print:hidden" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-ml-ink mb-4">{titulo}</h3>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-ml-soft">{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
   )
 }
 
