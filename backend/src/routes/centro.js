@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import rateLimit from 'express-rate-limit'
 import { verificarToken } from '../middleware/auth.js'
 import ComercioCentro from '../models/ComercioCentro.js'
 import OfertaFlash from '../models/OfertaFlash.js'
@@ -13,6 +14,33 @@ const router = Router()
 
 // Minutos que el cliente tiene para llegar al mostrador y canjear su código.
 const VENTANA_CANJE_MIN = 30
+
+// ===== Rate limiters específicos del Radar =====
+// Todas estas rutas van detrás de verificarToken, así que limitamos POR USUARIO
+// (no por IP): evita que un script acapare cupos, brute-force de códigos o spamee
+// el Radar, sin penalizar a varios usuarios detrás de una misma IP (NAT/oficina).
+// Estas rutas corren siempre detrás de verificarToken ⇒ req.usuario.id existe.
+// No usamos req.ip de fallback a propósito (evita ERR_ERL_KEY_GEN_IPV6 de v8 y la
+// posibilidad de evadir el límite rotando IPs); 'sin-usuario' es solo defensivo.
+const porUsuario = (req) => req.usuario?.id || 'sin-usuario'
+const mkLimiter = (max, msg) => rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max,
+  keyGenerator: porUsuario,
+  message: { error: msg },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+// Reclamar/reservar ofertas: 30/15min (navegar y reclamar varias es normal; un
+// script que acapara cupos, no).
+const reclamarLimiter = mkLimiter(30, 'Estás reclamando demasiadas ofertas muy rápido. Esperá unos minutos.')
+// Validar códigos en el mostrador (lo hace el comercio): tope alto para una caja
+// con mucho movimiento, pero corta un flood.
+const canjearLimiter = mkLimiter(120, 'Demasiadas validaciones seguidas. Esperá un momento.')
+// Iniciar checkout de prepago: pocos por usuario (un abandono no debe spamear MP).
+const checkoutLimiter = mkLimiter(20, 'Demasiados intentos de pago. Esperá unos minutos.')
+// Lanzar Liquidación Relámpago (lo hace el comercio): no debe martillar el Radar.
+const liquidacionLimiter = mkLimiter(12, 'Estás lanzando liquidaciones muy seguido. Esperá unos minutos.')
 
 // Redondea coordenadas a ~4 decimales (~11 m) para no exponer ubicación exacta
 function redondearCoord(n) {
@@ -273,7 +301,7 @@ router.get('/ofertas/:id', async (req, res) => {
 
 // POST /api/centro/ofertas/:id/reclamar - el usuario reclama un código de canje
 // Requiere login (fricción cero hasta acá; recién al reclamar pedimos cuenta).
-router.post('/ofertas/:id/reclamar', verificarToken, async (req, res) => {
+router.post('/ofertas/:id/reclamar', verificarToken, reclamarLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const oferta = await OfertaFlash.findById(req.params.id)
@@ -396,7 +424,7 @@ router.get('/mis-canjes', verificarToken, async (req, res) => {
 
 // POST /api/centro/canjear - el COMERCIO valida un código en el mostrador.
 // Body: { codigo, ticketValor? }. Requiere ser dueño del comercio de la oferta.
-router.post('/canjear', verificarToken, async (req, res) => {
+router.post('/canjear', verificarToken, canjearLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const { codigo, ticketValor } = req.body
@@ -569,7 +597,7 @@ router.post('/ofertas', verificarToken, async (req, res) => {
 // El comercio liquida stock que sobra (facturas, platos del día) en una ventana
 // corta. Crea una OfertaFlash de duración limitada y la difunde EN VIVO al Radar
 // de la ciudad; cada cliente filtra por su propia distancia (privacy-first).
-router.post('/ofertas/liquidacion-relampago', verificarToken, async (req, res) => {
+router.post('/ofertas/liquidacion-relampago', verificarToken, liquidacionLimiter, async (req, res) => {
   try {
     const { comercioId, titulo, descripcion, imagen, imagenPosicion, valorDescuento, cupoTotal, duracionMin, condiciones } = req.body
 
@@ -694,7 +722,7 @@ router.get('/cruzada/sugerencias', async (req, res) => {
 // POST /api/centro/cruzada/reservar - el cliente confirma el gancho del bloque
 // siguiente. Genera un canje con el cupón extra y AVISA al comercio para que
 // prepare la mesa "con invitación especial de Mercado Local".
-router.post('/cruzada/reservar', verificarToken, async (req, res) => {
+router.post('/cruzada/reservar', verificarToken, reclamarLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const { ofertaId } = req.body
@@ -971,7 +999,7 @@ router.get('/ofertas/bloque/:nombre', async (req, res) => {
 
 // POST /api/centro/ofertas/:id/checkout - inicia pago prepago para una oferta
 // Crea una preferencia de MercadoPago y devuelve la URL para redirigir al usuario
-router.post('/ofertas/:id/checkout', verificarToken, async (req, res) => {
+router.post('/ofertas/:id/checkout', verificarToken, checkoutLimiter, async (req, res) => {
   try {
     const ahora = new Date()
     const oferta = await OfertaFlash.findById(req.params.id)

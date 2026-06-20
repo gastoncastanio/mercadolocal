@@ -291,6 +291,23 @@ export default function PedidosVendedor() {
                     </span>
                   </div>
 
+                  {/* Aviso de sobreventa: pago cobrado pero sin stock suficiente */}
+                  {orden.incidenciaStock?.hay && (
+                    <div className="px-5 py-3 bg-amber-50 border-b border-amber-200">
+                      <p className="text-xs font-bold text-amber-800">⚠️ Sin stock suficiente — reponé o reembolsá</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        El pago ya se cobró, pero estos productos quedaron sin stock al confirmarse:
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {orden.incidenciaStock.items.map((it, k) => (
+                          <li key={k} className="text-[11px] text-amber-800">
+                            • <span className="font-semibold">{it.nombre}</span>: se vendieron {it.pedido}, había {it.disponible}.
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   {/* Comprador */}
                   <div className="px-5 py-4 bg-gray-50 border-b border-ml-line2">
                     <p className="text-[10px] font-bold text-ml-muted uppercase tracking-wider mb-2">Comprador</p>

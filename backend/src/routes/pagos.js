@@ -207,14 +207,53 @@ router.post('/webhook', async (req, res) => {
           console.log(`💰 Pago estándar aprobado: orden ${ordenId} | Total: $${ordenActualizada.total}`)
         }
 
-        // Descontar stock (solo cuando el pago se confirma)
+        // Descontar stock ATÓMICAMENTE (solo al confirmar pago). El filtro
+        // `stock >= cantidad` evita vender de más: si entre crear la orden y
+        // acreditarse el pago otra compra agotó el stock, el decremento no aplica.
+        // Como el pago YA se cobró, NO rechazamos la orden: registramos la
+        // incidencia para que el vendedor reponga o reembolse, y dejamos el stock
+        // en 0 (nunca negativo) para no encadenar más sobreventas.
+        const itemsSinStock = []
         for (const item of ordenActualizada.items) {
-          const prodActualizado = await Producto.findByIdAndUpdate(item.productoId, {
-            $inc: { stock: -item.cantidad, totalVentas: item.cantidad }
-          }, { new: true })
-          // Emitir stock actualizado en tiempo real
+          const prodActualizado = await Producto.findOneAndUpdate(
+            { _id: item.productoId, stock: { $gte: item.cantidad } },
+            { $inc: { stock: -item.cantidad, totalVentas: item.cantidad } },
+            { new: true }
+          )
           if (prodActualizado) {
             emitStockActualizado(item.productoId.toString(), prodActualizado.stock)
+          } else {
+            // Sobreventa: cuánto había realmente (para que el vendedor lo vea).
+            const prod = await Producto.findById(item.productoId).select('stock')
+            const disponible = prod ? Math.max(0, prod.stock) : 0
+            await Producto.findByIdAndUpdate(item.productoId, {
+              $set: { stock: 0 },
+              $inc: { totalVentas: item.cantidad }
+            })
+            emitStockActualizado(item.productoId.toString(), 0)
+            itemsSinStock.push({ productoId: item.productoId, nombre: item.nombre, pedido: item.cantidad, disponible })
+          }
+        }
+
+        // Si hubo sobreventa, marcar la orden y avisar a los vendedores afectados.
+        if (itemsSinStock.length > 0) {
+          ordenActualizada.incidenciaStock = { hay: true, items: itemsSinStock }
+          await ordenActualizada.save()
+          const tiendasAfectadas = [...new Set(
+            ordenActualizada.items
+              .filter(i => itemsSinStock.some(s => s.productoId.toString() === i.productoId.toString()))
+              .map(i => i.tiendaId.toString())
+          )]
+          for (const tid of tiendasAfectadas) {
+            const tienda = await Tienda.findById(tid).select('usuarioId')
+            if (tienda?.usuarioId) {
+              emitNotificacion(tienda.usuarioId.toString(), {
+                tipo: 'incidencia_stock',
+                titulo: '⚠️ Venta sin stock suficiente',
+                mensaje: 'Una orden pagada incluye productos que quedaron sin stock. Revisá el pedido para reponer o reembolsar al comprador.',
+                enlace: '/mis-ventas'
+              })
+            }
           }
         }
 

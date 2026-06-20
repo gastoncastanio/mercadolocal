@@ -144,6 +144,12 @@ export interface Orden {
   fechaEnvio?: string
   // Pago confirmado (cuando estado === 'pagada' o posterior)
   fechaConfirmacion?: string
+  // Sobreventa: items que quedaron sin stock al acreditarse el pago (el vendedor
+  // debe reponer o reembolsar). El pago ya se cobró.
+  incidenciaStock?: {
+    hay: boolean
+    items: { productoId: string; nombre: string; pedido: number; disponible: number }[]
+  }
   createdAt?: string
   updatedAt?: string
 }
