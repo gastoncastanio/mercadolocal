@@ -28,6 +28,7 @@ interface Oferta {
   activa: boolean
   bloqueHorario: string
   condiciones: string
+  cuponCruzado?: { activo: boolean; porcentaje: number; mensaje: string }
 }
 
 interface Metricas {
@@ -444,7 +445,10 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
     finEn: inicial ? isoALocalInput(inicial.finEn) : ahoraLocalInput(60),
     cupoTotal: inicial?.cupoTotal ? String(inicial.cupoTotal) : '',
     bloqueHorario: inicial?.bloqueHorario || 'todos',
-    condiciones: inicial?.condiciones || ''
+    condiciones: inicial?.condiciones || '',
+    cuponCruzadoActivo: inicial?.cuponCruzado?.activo || false,
+    cuponCruzadoPorcentaje: inicial?.cuponCruzado?.porcentaje ? String(inicial.cuponCruzado.porcentaje) : '',
+    cuponCruzadoMensaje: inicial?.cuponCruzado?.mensaje || ''
   })
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -476,7 +480,14 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
       finEn: new Date(f.finEn).toISOString(),
       cupoTotal: f.cupoTotal ? Number(f.cupoTotal) : 0,
       bloqueHorario: f.bloqueHorario,
-      condiciones: f.condiciones
+      condiciones: f.condiciones,
+      cuponCruzado: f.cuponCruzadoActivo
+        ? {
+            activo: true,
+            porcentaje: f.cuponCruzadoPorcentaje ? Number(f.cuponCruzadoPorcentaje) : 0,
+            mensaje: f.cuponCruzadoMensaje
+          }
+        : { activo: false }
     }
     try {
       const res = edicion
@@ -530,6 +541,37 @@ function FormOferta({ comercioId, inicial, onGuardado, onCancelar }: { comercioI
       </select>
       <textarea className={inp} placeholder="Condiciones / letra chica (exclusiones, vigencia)" rows={2} value={f.condiciones} onChange={e => setF({ ...f, condiciones: e.target.value })} />
       <p className="text-[11px] text-ml-muted">⚖️ El cupo y el horario son reales: el sistema impide vender más cupos de los cargados. Sin urgencia falsa.</p>
+
+      {/* Gamificación Cruzada: cupón para enganchar al bloque siguiente */}
+      <div className="bg-violet-50 border border-violet-200 rounded-xl p-3 space-y-2">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={f.cuponCruzadoActivo} onChange={e => setF({ ...f, cuponCruzadoActivo: e.target.checked })} className="w-4 h-4 accent-ml-violet" />
+          <span className="text-sm font-semibold text-ml-violet">🎁 Cupón cruzado (enganche al bloque siguiente)</span>
+        </label>
+        {f.cuponCruzadoActivo && (
+          <div className="space-y-2 pl-6 border-l-2 border-ml-violet">
+            <input
+              className={inp}
+              placeholder="% cupón (ej. 15)"
+              inputMode="numeric"
+              value={f.cuponCruzadoPorcentaje}
+              onChange={e => setF({ ...f, cuponCruzadoPorcentaje: e.target.value })}
+            />
+            <textarea
+              className={inp}
+              placeholder="Mensaje gancho (ej: 'Mesa lista con copa de bienvenida')"
+              rows={2}
+              maxLength={200}
+              value={f.cuponCruzadoMensaje}
+              onChange={e => setF({ ...f, cuponCruzadoMensaje: e.target.value })}
+            />
+            <p className="text-[11px] text-ml-soft">
+              El cliente verá: "Si confirmás acá, cupón {f.cuponCruzadoPorcentaje}% OFF" + tu mensaje. El comercio recibe aviso para prepararse.
+            </p>
+          </div>
+        )}
+      </div>
+
       {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-2">{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={guardando} className="flex-1 py-2.5 ml-grad text-white rounded-xl font-bold disabled:opacity-60">

@@ -70,3 +70,30 @@ function enFranja(minutos, horaInicio, horaFin) {
 export async function obtenerBloques() {
   return await BloqueHorarioConfig.find().sort({ horaInicio: 1 }).lean()
 }
+
+/**
+ * Cadena de "ganchos" gastronómicos del día (Gamificación Cruzada). La idea: el
+ * comercio del bloque N engancha al cliente con la promo del bloque N+1 (la
+ * cafetería del desayuno → el restaurante del almuerzo → la merienda → la cena).
+ * La siesta es shopping, no comida, así que NO está en la cadena: quien viene de
+ * la siesta engancha con la merienda.
+ */
+export const SECUENCIA_GANCHO = ['desayuno', 'almuerzo', 'merienda', 'cena']
+
+/**
+ * Dado el bloque recién completado (o el actual), devuelve el NOMBRE del bloque
+ * gastronómico siguiente al que enganchar, o null si no hay (ej. después de la
+ * cena). Normaliza los bloques que no son comida (siesta / legacy mañana-tarde-noche).
+ */
+export function bloqueSiguienteGancho(nombre) {
+  const equivalencias = {
+    siesta: 'almuerzo', // viene del shopping de siesta → ofrecé merienda
+    manana: 'desayuno',
+    tarde: 'almuerzo',
+    noche: 'merienda'
+  }
+  const base = equivalencias[nombre] || nombre
+  const i = SECUENCIA_GANCHO.indexOf(base)
+  if (i === -1 || i === SECUENCIA_GANCHO.length - 1) return null
+  return SECUENCIA_GANCHO[i + 1]
+}

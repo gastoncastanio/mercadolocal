@@ -53,6 +53,17 @@ const canjeAtribuidoSchema = new mongoose.Schema({
   expiraEn: { type: Date, required: true, index: true },
   canjeadoEn: { type: Date, default: null },
 
+  // Origen del reclamo. 'flash' = oferta normal; 'reserva_cruzada' = el usuario
+  // reservó la promo del bloque siguiente desde la Gamificación Cruzada (con un
+  // cupón extra que el vendedor definió) y el comercio fue avisado para prepararse.
+  tipoReclamo: {
+    type: String,
+    enum: ['flash', 'reserva_cruzada'],
+    default: 'flash'
+  },
+  // % de cupón extra que el comercio honra en el mostrador (reserva cruzada).
+  cuponPorcentaje: { type: Number, default: 0, min: 0, max: 100 },
+
   // Métrica de ROI opcional que el comercio puede cargar al canjear.
   ticketValor: { type: Number, default: null },
 
