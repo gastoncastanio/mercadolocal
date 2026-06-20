@@ -18,13 +18,18 @@ export interface Liquidacion {
 /**
  * Banner urgente que aparece en el Radar cuando un comercio cercano lanza una
  * "Liquidación Relámpago". Escasez real: countdown a la hora de fin del server.
+ *
+ * El countdown se calcula contra la hora del SERVER (Date.now() + offsetMs), no
+ * contra el reloj del dispositivo. Sin esto, un celular con la hora adelantada
+ * vería ms<=0 y descartaría la alerta al instante (y un reloj atrasado mostraría
+ * urgencia falsa, prohibida por la Ley de Lealtad Comercial).
  */
-export default function AlertaLiquidacion({ liquidacion, onCerrar }: { liquidacion: Liquidacion; onCerrar: () => void }) {
+export default function AlertaLiquidacion({ liquidacion, onCerrar, offsetMs = 0 }: { liquidacion: Liquidacion; onCerrar: () => void; offsetMs?: number }) {
   const [restante, setRestante] = useState('')
 
   useEffect(() => {
     function tick() {
-      const ms = new Date(liquidacion.finEn).getTime() - Date.now()
+      const ms = new Date(liquidacion.finEn).getTime() - (Date.now() + offsetMs)
       if (ms <= 0) { setRestante(''); onCerrar(); return }
       const min = Math.floor(ms / 60000)
       const seg = Math.floor((ms % 60000) / 1000)
@@ -33,7 +38,7 @@ export default function AlertaLiquidacion({ liquidacion, onCerrar }: { liquidaci
     tick()
     const t = setInterval(tick, 1000)
     return () => clearInterval(t)
-  }, [liquidacion.finEn, onCerrar])
+  }, [liquidacion.finEn, onCerrar, offsetMs])
 
   return (
     <div className="mb-5 rounded-2xl overflow-hidden border border-red-300 shadow-md">

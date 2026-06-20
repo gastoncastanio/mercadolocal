@@ -112,14 +112,18 @@ export function emitNotificacion(usuarioId, notificacion) {
 
 /**
  * Difunde una "Liquidación Relámpago" (botón anti-desperdicio del comercio) a
- * todos los usuarios del Radar de esa ciudad. El payload lleva las coords del
- * comercio y el radio; cada cliente decide si vibrar/mostrar según SU distancia
- * (la ubicación del usuario nunca llega al server).
+ * los usuarios del Radar. El payload lleva las coords del comercio y el radio;
+ * cada cliente decide si vibrar/mostrar según SU distancia (la ubicación del
+ * usuario nunca llega al server).
+ *
+ * Difundimos a `radar:all` y NO a una sala por-ciudad: el cliente es privacy-first
+ * y no manda su ciudad al unirse (se une solo a `radar:all`), así que un broadcast
+ * a `radar:${ciudad}` no le llegaría a nadie. La relevancia la garantiza el filtro
+ * de distancia del cliente. `ciudad` queda como dato informativo/futuro.
  */
 export function emitLiquidacionRelampago(ciudad, payload) {
   if (!io) return
-  const sala = ciudad ? `radar:${String(ciudad).trim().toLowerCase()}` : 'radar:all'
-  io.to(sala).emit('liquidacion:nueva', { ...payload, timestamp: new Date() })
+  io.to('radar:all').emit('liquidacion:nueva', { ...payload, timestamp: new Date() })
 }
 
 /**
