@@ -5,6 +5,7 @@ import { crearPreferencia } from '../services/mercadoPagoService.js'
 import { esPagoDePauta, activarPautaDesdePago } from '../services/pautaService.js'
 import { registrarCompra, notificarClientesIdeales } from '../services/targetingService.js'
 import { emitirComprobantePauta, emitirComprobanteComision } from '../services/facturacionService.js'
+import * as configService from '../services/configService.js'
 import Orden from '../models/Orden.js'
 import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
 import Producto from '../models/Producto.js'
@@ -233,10 +234,11 @@ router.post('/webhook', async (req, res) => {
 
         // Actualizar stats de la tienda
         const tiendaIds = [...new Set(ordenActualizada.items.map(i => i.tiendaId.toString()))]
+        const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
         for (const tiendaId of tiendaIds) {
           const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
           const subtotalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-          const comisionTienda = Math.round(subtotalTienda * 0.10 * 100) / 100
+          const comisionTienda = Math.round(subtotalTienda * porcentajeComision / 100 * 100) / 100
           const gananciaTienda = subtotalTienda - comisionTienda
 
           await Tienda.findByIdAndUpdate(tiendaId, {

@@ -3,8 +3,7 @@ import Carrito from '../models/Carrito.js'
 import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
-
-const PORCENTAJE_COMISION = 10 // 10%
+import * as configService from './configService.js'
 
 // Crear orden desde carrito
 export async function crearOrden(usuarioId, datosEntrega) {
@@ -52,9 +51,10 @@ export async function crearOrden(usuarioId, datosEntrega) {
 
   // Crear una orden por cada vendedor, con su propio total y comisión.
   const ordenesCreadas = []
+  const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
   for (const items of gruposPorTienda.values()) {
     const total = items.reduce((sum, i) => sum + i.subtotal, 0)
-    const comision = Math.round(total * PORCENTAJE_COMISION / 100 * 100) / 100
+    const comision = Math.round(total * porcentajeComision / 100 * 100) / 100
     const gananciaVendedor = total - comision
 
     const orden = new Orden({
@@ -62,7 +62,7 @@ export async function crearOrden(usuarioId, datosEntrega) {
       items,
       total,
       comision,
-      porcentajeComision: PORCENTAJE_COMISION,
+      porcentajeComision,
       gananciaVendedor,
       estado: 'pendiente',
       direccionEntrega: datosEntrega.direccion,

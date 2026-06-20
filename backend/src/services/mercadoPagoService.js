@@ -1,10 +1,7 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import Tienda from '../models/Tienda.js'
 import { refrescarTokenVendedor, refrescarTokenComisionista } from '../routes/mpOauth.js'
-
-const PORCENTAJE_COMISION = 10
-// Fee de la plataforma sobre el traslado del comisionista.
-const PORCENTAJE_COMISION_TRASLADO = 10
+import * as configService from './configService.js'
 
 if (!process.env.MP_ACCESS_TOKEN) {
   console.warn('⚠️ MP_ACCESS_TOKEN no configurado - los pagos no funcionarán')
@@ -28,7 +25,8 @@ export async function crearPreferencia(orden, compradorEmail) {
   }))
 
   // Calcular el marketplace_fee (tu comisión)
-  const marketplaceFee = Math.round(orden.total * PORCENTAJE_COMISION / 100 * 100) / 100
+  const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
+  const marketplaceFee = Math.round(orden.total * porcentajeComision / 100 * 100) / 100
 
   // Agrupar items por tienda para determinar el vendedor
   const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]
@@ -177,7 +175,8 @@ export async function crearPreferenciaTraslado({ solicitud, perfilComisionista, 
   }
   if (!comisionistaToken) throw new Error('No se pudo acceder a la cuenta de Mercado Pago del comisionista')
 
-  const marketplaceFee = Math.round(monto * PORCENTAJE_COMISION_TRASLADO / 100 * 100) / 100
+  const porcentajeComisionTraslado = await configService.obtenerPorcentajeComision('traslado')
+  const marketplaceFee = Math.round(monto * porcentajeComisionTraslado / 100 * 100) / 100
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
 
   const preferenceBody = {
