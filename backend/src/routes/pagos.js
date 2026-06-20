@@ -5,6 +5,7 @@ import { crearPreferencia } from '../services/mercadoPagoService.js'
 import { esPagoDePauta, activarPautaDesdePago } from '../services/pautaService.js'
 import { registrarCompra, notificarClientesIdeales } from '../services/targetingService.js'
 import { emitirComprobantePauta, emitirComprobanteComision } from '../services/facturacionService.js'
+import * as configService from '../services/configService.js'
 import Orden from '../models/Orden.js'
 import AuditoriaFinanciera from '../models/AuditoriaFinanciera.js'
 import Producto from '../models/Producto.js'
@@ -12,6 +13,8 @@ import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
 import Carrito from '../models/Carrito.js'
 import Notificacion from '../models/Notificacion.js'
+import { obtenerPreapproval } from '../services/mercadoPagoPreapprovalService.js'
+import { activarSuscripcionDestacado, cambiarEstadoSuscripcion } from '../services/serviciosService.js'
 import { enviarConfirmacionCompra, enviarNotificacionVenta } from '../services/emailService.js'
 import { MercadoPagoConfig, Payment } from 'mercadopago'
 import { emitPagoAprobado, emitVentaConfirmada, emitStockActualizado, emitNotificacion } from '../services/socketService.js'
@@ -150,6 +153,19 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // ===== Traslado de comisionista (external_reference "cotizacion:<id>") =====
+      // El comprador pagó un traslado cotizado. El dinero va al comisionista vía
+      // split; la plataforma retuvo su fee. Solo marcamos el pago y cortamos acá.
+      const extRef = pago.external_reference || ''
+      if (extRef.startsWith('cotizacion:')) {
+        if (pago.status === 'approved') {
+          const solicitudId = extRef.slice('cotizacion:'.length)
+          const { marcarTrasladoPagado } = await import('../services/comisionistaService.js')
+          await marcarTrasladoPagado(solicitudId, pago.id)
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 
@@ -218,10 +234,11 @@ router.post('/webhook', async (req, res) => {
 
         // Actualizar stats de la tienda
         const tiendaIds = [...new Set(ordenActualizada.items.map(i => i.tiendaId.toString()))]
+        const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
         for (const tiendaId of tiendaIds) {
           const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
           const subtotalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-          const comisionTienda = Math.round(subtotalTienda * 0.10 * 100) / 100
+          const comisionTienda = Math.round(subtotalTienda * porcentajeComision / 100 * 100) / 100
           const gananciaTienda = subtotalTienda - comisionTienda
 
           await Tienda.findByIdAndUpdate(tiendaId, {
@@ -239,6 +256,12 @@ router.post('/webhook', async (req, res) => {
           ordenActualizada.compradorId.toString(),
           ordenActualizada.items
         ).catch(() => {})
+
+        // Oferta Compartida: descontar el aporte de la plataforma del
+        // presupuesto y finalizar la oferta si se agotó (no bloquea el webhook).
+        import('../services/ofertaCompartidaService.js')
+          .then(m => m.registrarVentaConOferta(ordenActualizada))
+          .catch(e => console.warn('No se pudo registrar venta con oferta compartida:', e.message))
 
         // 4. AUDITORÍA: Registrar transacción financiera
         try {
@@ -276,7 +299,11 @@ router.post('/webhook', async (req, res) => {
             }).save()
             // Tiempo real + push (app cerrada) al comprador
             emitNotificacion(comprador._id.toString(), notifCompra)
-            await enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
+            // Email de confirmación: fire-and-forget. NO bloqueamos la respuesta
+            // del webhook esperando a Resend; si MP no recibe el 200 rápido,
+            // reintenta (y la idempotencia ya nos protege de doble proceso).
+            enviarConfirmacionCompra(comprador.email, comprador.nombre, ordenActualizada)
+              .catch(e => console.error('Error enviando email de confirmación de compra:', e.message))
           }
 
           for (const tiendaId of tiendaIds) {
@@ -296,7 +323,9 @@ router.post('/webhook', async (req, res) => {
               emitNotificacion(tienda.usuarioId.toString(), notifVenta)
               const vendedor = await Usuario.findById(tienda.usuarioId)
               if (vendedor) {
-                await enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+                // Email al vendedor: fire-and-forget (no bloquea el 200 del webhook).
+                enviarNotificacionVenta(vendedor.email, vendedor.nombre, totalTienda, itemsTienda.length)
+                  .catch(e => console.error('Error enviando email de notificación de venta:', e.message))
               }
             }
           }
@@ -456,46 +485,37 @@ router.post('/webhook/preapproval', async (req, res) => {
 
     const { type, data } = req.body
 
-    if (type === 'preapproval') {
-      // data.id = mpPreapprovalId, data.status = 'authorized' | 'pending' | 'cancelled' | etc.
-      const { Suscripcion } = await import('../models/Suscripcion.js')
-
-      // Buscar suscripción por mpPreapprovalId
-      // Nota: mpPreapprovalId está encriptado, así que buscamos por external_reference
-      // que debería ser el suscripcionId
-      const suscripcion = await Suscripcion.findOne({
-        mpPreapprovalId: { $regex: `.*${data.id}.*` } // búsqueda aproximada (sólo si lo guardamos encriptado)
-      })
-
-      if (!suscripcion) {
-        // Fallback: buscar en el external_reference del pago si se puede
-        console.warn(`⚠️ Webhook preapproval: suscripción no encontrada para ${data.id}`)
+    // MP manda 'preapproval' o 'subscription_preapproval' según el evento.
+    if ((type === 'preapproval' || type === 'subscription_preapproval') && data?.id) {
+      // 1. NO confiar en el body: consultar el preapproval a la API de MP.
+      //    De ahí sacamos el status real y el external_reference (= suscripcion._id,
+      //    que seteamos al crear el preapproval). Mismo patrón que el webhook de pagos.
+      let preapproval
+      try {
+        preapproval = await obtenerPreapproval(data.id)
+      } catch (e) {
+        console.error('Webhook preapproval: no se pudo consultar a MP:', e.message)
+        // 200 igual: si devolvemos error, MP reintenta en loop. Ya quedó logueado.
         return res.status(200).send('OK')
       }
 
-      // Actualizar estado según respuesta de MP
-      if (data.status === 'authorized') {
-        await Suscripcion.findByIdAndUpdate(suscripcion._id, {
-          estado: 'activa',
-          proximoCobro: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        })
-        console.log(`✓ Suscripción ${suscripcion._id} activada (preapproval autorizado)`)
+      const suscripcionId = preapproval?.external_reference
+      const status = preapproval?.status // 'authorized' | 'paused' | 'cancelled' | 'pending'
 
-        // Notificar al usuario via Socket.IO
-        emitNotificacion(suscripcion.usuarioId.toString(), {
-          tipo: 'suscripcion',
-          titulo: '¡Suscripción activada!',
-          mensaje: 'Tu suscripción a Destacado está activa. Aparecerás arriba de la lista.'
-        })
-      } else if (data.status === 'cancelled') {
-        await Suscripcion.findByIdAndUpdate(suscripcion._id, { estado: 'cancelada' })
-        console.log(`⚠️ Suscripción ${suscripcion._id} cancelada`)
+      if (!suscripcionId) {
+        console.warn(`⚠️ Webhook preapproval ${data.id} sin external_reference`)
+        return res.status(200).send('OK')
+      }
 
-        emitNotificacion(suscripcion.usuarioId.toString(), {
-          tipo: 'suscripcion',
-          titulo: 'Suscripción cancelada',
-          mensaje: 'Tu suscripción a Destacado ha sido cancelada.'
-        })
+      // 2. Aplicar el estado de MP usando los helpers del service. Son la fuente
+      //    única de verdad: activan/desactivan el beneficio "destacado" y son
+      //    idempotentes (un webhook duplicado no re-notifica ni re-aplica).
+      if (status === 'authorized') {
+        await activarSuscripcionDestacado(suscripcionId)
+      } else if (status === 'paused') {
+        await cambiarEstadoSuscripcion(suscripcionId, 'pausada')
+      } else if (status === 'cancelled') {
+        await cambiarEstadoSuscripcion(suscripcionId, 'cancelada')
       }
     }
 

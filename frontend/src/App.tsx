@@ -1,5 +1,5 @@
 import { lazy as lazyReact, Suspense, ComponentType } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
 import Navbar from './components/Navbar'
@@ -89,6 +89,9 @@ const MisCanjes = lazy(() => import('./pages/MisCanjes'))
 const PanelComercio = lazy(() => import('./pages/PanelComercio'))
 const CanjearOferta = lazy(() => import('./pages/CanjearOferta'))
 const SolicitudesLegales = lazy(() => import('./pages/admin/SolicitudesLegales'))
+const VerificarComisionistas = lazy(() => import('./pages/admin/VerificarComisionistas'))
+const OfertasCompartidasVendedor = lazy(() => import('./pages/OfertasCompartidasVendedor'))
+const OfertasCompartidasAdmin = lazy(() => import('./pages/OfertasCompartidasAdmin'))
 const ChatbotSoporte = lazy(() => import('./components/ChatbotSoporte'))
 
 // Servicios Locales (Paso 2)
@@ -97,6 +100,7 @@ const PerfilProfesionalPage = lazy(() => import('./pages/PerfilProfesionalPage')
 const SolicitudServicioPage = lazy(() => import('./pages/SolicitudServicioPage'))
 const PanelProfesionalPage = lazy(() => import('./pages/PanelProfesionalPage'))
 const MiPerfilProfesionalPage = lazy(() => import('./pages/MiPerfilProfesionalPage'))
+const SuscripcionConfirmadaPage = lazy(() => import('./pages/SuscripcionConfirmadaPage'))
 
 // Bolsa de Trabajo Inversa (Paso 2b)
 const TrabajosPage = lazy(() => import('./pages/TrabajosPage'))
@@ -106,6 +110,13 @@ const PanelClienteTrabajos = lazy(() => import('./pages/PanelClienteTrabajos'))
 
 // Mi Cuenta (Paso 2.5)
 const MiCuentaPage = lazy(() => import('./pages/MiCuentaPage'))
+
+// Comisionistas / Viajeros (Paso 3)
+const ComisionistasPage = lazy(() => import('./pages/ComisionistasPage'))
+const DetalleViajePage = lazy(() => import('./pages/DetalleViajePage'))
+const MiPerfilComisionistaPage = lazy(() => import('./pages/MiPerfilComisionistaPage'))
+const MisEnviosPage = lazy(() => import('./pages/MisEnviosPage'))
+const MisCotizacionesPage = lazy(() => import('./pages/MisCotizacionesPage'))
 
 function LoadingSpinner() {
   return (
@@ -133,9 +144,14 @@ function ConNavbar({ children }: { children: React.ReactNode }) {
   return <><MarqueeBanner /><Navbar />{children}</>
 }
 
-function AppContent() {
+function RutasConBoundary() {
+  const location = useLocation()
   return (
-    <Router>
+    // Boundary por-ruta: si UNA página crashea, mostramos un fallback acotado en
+    // el área de contenido y, al navegar a otra ruta, se resetea solo (resetKeys
+    // sigue al pathname). Así un error de una página no obliga a recargar toda la
+    // app — el boundary de arriba (en App) queda como red de seguridad global.
+    <ErrorBoundary inline resetKeys={[location.pathname]}>
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
           {/* Publicas */}
@@ -175,6 +191,7 @@ function AppContent() {
           <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><DashboardVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><CentralVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/mi-tienda/ofertas-compartidas" element={<ConNavbar><RutaPrivada requiereVendedor><OfertasCompartidasVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/mis-comprobantes" element={<ConNavbar><RutaPrivada requiereVendedor><MisComprobantes /></RutaPrivada></ConNavbar>} />
           <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />
           <Route path="/privacidad-datos" element={<ConNavbar><RutaPrivada><MisDatosPrivacidad /></RutaPrivada></ConNavbar>} />
@@ -190,6 +207,7 @@ function AppContent() {
           <Route path="/servicios/solicitud/:profesionalId" element={<ConNavbar><RutaPrivada><SolicitudServicioPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/panel" element={<ConNavbar><RutaPrivada><PanelProfesionalPage /></RutaPrivada></ConNavbar>} />
           <Route path="/servicios/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilProfesionalPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/servicios/suscripcion-confirmada" element={<ConNavbar><RutaPrivada><SuscripcionConfirmadaPage /></RutaPrivada></ConNavbar>} />
 
           {/* Bolsa de Trabajo Inversa (Paso 2b) — rutas estáticas antes de :id */}
           <Route path="/trabajos" element={<ConNavbar><TrabajosPage /></ConNavbar>} />
@@ -200,12 +218,21 @@ function AppContent() {
           {/* Mi Cuenta (Paso 2.5) */}
           <Route path="/mi-cuenta" element={<ConNavbar><RutaPrivada><MiCuentaPage /></RutaPrivada></ConNavbar>} />
 
+          {/* Comisionistas / Viajeros (Paso 3) — rutas estáticas antes de :id */}
+          <Route path="/comisionistas" element={<ConNavbar><ComisionistasPage /></ConNavbar>} />
+          <Route path="/comisionistas/mi-perfil" element={<ConNavbar><RutaPrivada><MiPerfilComisionistaPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/mis-envios" element={<ConNavbar><RutaPrivada><MisEnviosPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/mis-cotizaciones" element={<ConNavbar><RutaPrivada><MisCotizacionesPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/comisionistas/viaje/:id" element={<ConNavbar><DetalleViajePage /></ConNavbar>} />
+
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />
           <Route path="/admin/cms" element={<ConNavbar><RutaPrivada roles={['admin']}><AdminCMS /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/ofertas-compartidas" element={<ConNavbar><RutaPrivada roles={['admin']}><OfertasCompartidasAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/solicitudes-legales" element={<ConNavbar><RutaPrivada roles={['admin']}><SolicitudesLegales /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/comisionistas" element={<ConNavbar><RutaPrivada roles={['admin']}><VerificarComisionistas /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
 
           {/* Ayuda */}
@@ -228,6 +255,14 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
+    </ErrorBoundary>
+  )
+}
+
+function AppContent() {
+  return (
+    <Router>
+      <RutasConBoundary />
       <BannerConsentimiento />
     </Router>
   )

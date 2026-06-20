@@ -3,6 +3,8 @@ import Orden from '../models/Orden.js'
 import Tienda from '../models/Tienda.js'
 import SolicitudServicio from '../models/SolicitudServicio.js'
 import TrabajoBuscado from '../models/TrabajoBuscado.js'
+import EnvioComisionista from '../models/EnvioComisionista.js'
+import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import { censurarContacto } from '../utils/validacionContenido.js'
 
 /**
@@ -46,7 +48,7 @@ async function existeOrdenPagadaEntre(userA, userB) {
  * @returns {Promise<boolean>}
  */
 export async function existeServicioContratadoEntre(userA, userB) {
-  const [solicitud, trabajo] = await Promise.all([
+  const [solicitud, trabajo, envio, cotizacion] = await Promise.all([
     SolicitudServicio.findOne({
       $or: [
         // userA es cliente, userB es profesional
@@ -61,10 +63,28 @@ export async function existeServicioContratadoEntre(userA, userB) {
         { clienteId: userA, profesionalAsignadoId: userB, estado: { $in: ['asignado', 'completado'] } },
         { clienteId: userB, profesionalAsignadoId: userA, estado: { $in: ['asignado', 'completado'] } }
       ]
+    }).select('_id').lean(),
+    // Comisionistas: chat desbloqueado al contratar un envío (cualquier estado
+    // salvo cancelado), entre contratante y comisionista.
+    EnvioComisionista.findOne({
+      estado: { $ne: 'cancelado' },
+      $or: [
+        { contratanteId: userA, comisionistaId: userB },
+        { contratanteId: userB, comisionistaId: userA }
+      ]
+    }).select('_id').lean(),
+    // Comisionista en vivo: chat desbloqueado cuando el comprador acepta la
+    // cotización (entre comprador y comisionista).
+    SolicitudCotizacion.findOne({
+      estado: 'aceptada',
+      $or: [
+        { compradorId: userA, comisionistaId: userB },
+        { compradorId: userB, comisionistaId: userA }
+      ]
     }).select('_id').lean()
   ])
 
-  return !!solicitud || !!trabajo
+  return !!solicitud || !!trabajo || !!envio || !!cotizacion
 }
 
 // Enviar mensaje

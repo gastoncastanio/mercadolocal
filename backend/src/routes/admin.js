@@ -2,8 +2,10 @@ import { Router } from 'express'
 import { verificarToken, soloAdmin } from '../middleware/auth.js'
 import { todasLasOrdenes, estadisticasAdmin } from '../services/ordenService.js'
 import { listarTiendas } from '../services/tiendaService.js'
+import * as configService from '../services/configService.js'
 import Producto from '../models/Producto.js'
 import Usuario from '../models/Usuario.js'
+import { documentosPendientes, verificarDocumento } from '../services/comisionistaService.js'
 
 const router = Router()
 
@@ -200,13 +202,14 @@ router.post('/ordenes-limpieza/ejecutar', verificarToken, soloAdmin, async (req,
       estado: { $in: ['pagada', 'enviada', 'completada'] }
     })
 
+    const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
     for (const orden of ordenesRestantes) {
-      // Por tienda: +1 venta y +ganancia del subtotal de esa tienda (comisión 10%)
+      // Por tienda: +1 venta y +ganancia del subtotal de esa tienda
       const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]
       for (const tiendaId of tiendaIds) {
         const itemsTienda = orden.items.filter(i => i.tiendaId.toString() === tiendaId)
         const subtotalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-        const comisionTienda = Math.round(subtotalTienda * 0.10 * 100) / 100
+        const comisionTienda = Math.round(subtotalTienda * porcentajeComision / 100 * 100) / 100
         const gananciaTienda = subtotalTienda - comisionTienda
         await Tienda.findByIdAndUpdate(tiendaId, {
           $inc: { totalVentas: 1, ganancias: gananciaTienda }
@@ -235,6 +238,28 @@ router.post('/ordenes-limpieza/ejecutar', verificarToken, soloAdmin, async (req,
   } catch (error) {
     console.error('Error limpiando órdenes:', error)
     res.status(500).json({ error: error.message })
+  }
+})
+
+// ===== Verificación de documentos de comisionistas =====
+
+// GET /api/admin/comisionistas/documentos - Documentos pendientes de revisión
+router.get('/comisionistas/documentos', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const pendientes = await documentosPendientes()
+    res.json(pendientes)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PATCH /api/admin/comisionistas/:perfilId/verificar - Aprobar/rechazar documento
+router.patch('/comisionistas/:perfilId/verificar', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const perfil = await verificarDocumento(req.params.perfilId, req.body.aprobado === true)
+    res.json(perfil)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
   }
 })
 

@@ -357,14 +357,17 @@ router.post('/suscribir', verificarToken, async (req, res) => {
       }
     }
 
-    // Crear suscripción (estado: activa inicialmente hasta confirmar en MP)
+    // Crear suscripción en estado PAUSADA: el beneficio (destacar el perfil) se
+    // otorga SOLO cuando MercadoPago confirma el pago — via webhook o via la
+    // verificación al volver del checkout. Así evitamos que alguien aparezca
+    // destacado sin haber pagado.
     const suscripcion = new Suscripcion({
       usuarioId: req.usuario.id,
       tipo: 'profesional_destacado',
       referenciaId: perfil._id,
       plan,
       precioMensual,
-      estado: 'activa'
+      estado: 'pausada'
     })
 
     await suscripcion.save()
@@ -373,9 +376,9 @@ router.post('/suscribir', verificarToken, async (req, res) => {
     try {
       const preapprovalResponse = await preapprovalService.crearPreapproval(suscripcion, usuario.email)
 
-      // Guardar mpPreapprovalId encriptado
+      // Guardar mpPreapprovalId encriptado. NO seteamos proximoCobro ni
+      // destacadoHasta acá: eso ocurre al confirmarse el pago (activación).
       suscripcion.mpPreapprovalId = preapprovalResponse.id
-      suscripcion.proximoCobro = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 días adelante
       await suscripcion.save()
 
       res.status(201).json({
@@ -419,10 +422,57 @@ router.get('/suscripcion/:id', verificarToken, async (req, res) => {
   }
 })
 
-// POST /api/pagos/webhook/preapproval - Webhook de preapproval (MercadoPago)
-// Nota: Esta ruta debería ir en routes/pagos.js, pero la incluyo aquí para referencia
-// router.post('/webhook/preapproval', async (req, res) => {
-//   // Implementar webhook de preapproval
-// })
+// POST /api/servicios/suscripcion/:id/verificar - Confirmar el pago contra MP.
+// Camino robusto que NO depende de que el webhook llegue: cuando el usuario
+// vuelve del checkout, el frontend llama acá; consultamos el preapproval a MP y,
+// si está autorizado, activamos la suscripción y destacamos el perfil.
+router.post('/suscripcion/:id/verificar', verificarToken, async (req, res) => {
+  try {
+    const suscripcion = await Suscripcion.findById(req.params.id)
+    if (!suscripcion) {
+      return res.status(404).json({ error: 'Suscripción no encontrada' })
+    }
+    if (suscripcion.usuarioId.toString() !== req.usuario.id) {
+      return res.status(403).json({ error: 'No tenés acceso a esta suscripción' })
+    }
+
+    const preapprovalId = suscripcion.getMpPreapprovalId()
+    if (!preapprovalId) {
+      return res.status(400).json({ error: 'La suscripción no tiene preapproval asociado' })
+    }
+
+    // Consultar el estado real en MercadoPago.
+    let estadoMP = null
+    try {
+      const preapproval = await preapprovalService.obtenerPreapproval(preapprovalId)
+      estadoMP = preapproval?.status // 'authorized' | 'pending' | 'paused' | 'cancelled'
+    } catch (e) {
+      console.warn('Verificar suscripción: no se pudo consultar a MP:', e.message)
+    }
+
+    // Aplicar el estado de MP (idempotente vía los helpers del service).
+    if (estadoMP === 'authorized') {
+      await serviciosService.activarSuscripcionDestacado(suscripcion._id)
+    } else if (estadoMP === 'cancelled') {
+      await serviciosService.cambiarEstadoSuscripcion(suscripcion._id, 'cancelada')
+    } else if (estadoMP === 'paused') {
+      await serviciosService.cambiarEstadoSuscripcion(suscripcion._id, 'pausada')
+    }
+
+    const actualizada = await Suscripcion.findById(suscripcion._id)
+    res.json({
+      _id: actualizada._id,
+      estado: actualizada.estado,
+      estadoMP,
+      proximoCobro: actualizada.proximoCobro
+    })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// Webhook de preapproval: implementado en routes/pagos.js
+// (POST /api/pagos/webhook/preapproval). El notification_url del preapproval
+// apunta ahí; ver mercadoPagoPreapprovalService.crearPreapproval().
 
 export default router

@@ -4,6 +4,8 @@ import ResenaServicio from '../models/ResenaServicio.js'
 import TrabajoBuscado from '../models/TrabajoBuscado.js'
 import Bid from '../models/Bid.js'
 import Usuario from '../models/Usuario.js'
+import Suscripcion from '../models/Suscripcion.js'
+import { obtenerConfig } from './configService.js'
 import { emitNotificacion } from './socketService.js'
 
 // ===== PerfilProfesional =====
@@ -74,6 +76,87 @@ export async function buscarProfesionales(filtros = {}) {
   const total = await PerfilProfesional.countDocuments(query)
 
   return { perfiles, total }
+}
+
+// ===== Suscripción ↔ Destacado =====
+// El beneficio "Destacado" se otorga via PerfilProfesional.destacadoHasta (fecha
+// futura = aparece arriba en buscarProfesionales). Estos helpers son la ÚNICA
+// fuente de verdad para activar/desactivar ese beneficio, llamados tanto desde
+// el webhook de MercadoPago como desde la verificación al volver del checkout.
+
+// Duración del plan (en días) leída de ConfigSitio. Fallback 30.
+async function duracionPlanDias(plan) {
+  try {
+    const preciosStr = await obtenerConfig('suscripcion_profesional_precios')
+    if (preciosStr) {
+      const precios = JSON.parse(preciosStr)
+      const d = precios?.[plan]?.duracion
+      if (Number.isFinite(d) && d > 0) return d
+    }
+  } catch (e) {
+    console.warn('⚠️ No se pudo leer duración del plan, uso 30 días:', e.message)
+  }
+  return 30
+}
+
+/**
+ * Activa una suscripción tras un pago CONFIRMADO por MercadoPago y otorga el
+ * beneficio real (destaca el perfil hasta fin del período). Idempotente.
+ * @returns {Promise<Suscripcion|null>}
+ */
+export async function activarSuscripcionDestacado(suscripcionId) {
+  const suscripcion = await Suscripcion.findById(suscripcionId)
+  if (!suscripcion) return null
+
+  const ahora = Date.now()
+  // Idempotencia: si ya está activa y con período vigente, no repetir nada.
+  const vigente = suscripcion.estado === 'activa' &&
+    suscripcion.proximoCobro && suscripcion.proximoCobro.getTime() > ahora
+  if (vigente) return suscripcion
+
+  const dias = await duracionPlanDias(suscripcion.plan)
+  const hasta = new Date(ahora + dias * 24 * 60 * 60 * 1000)
+
+  suscripcion.estado = 'activa'
+  suscripcion.proximoCobro = hasta
+  await suscripcion.save()
+
+  // Otorgar el beneficio: el perfil aparece destacado hasta esa fecha.
+  if (suscripcion.referenciaId) {
+    await PerfilProfesional.findByIdAndUpdate(suscripcion.referenciaId, { destacadoHasta: hasta })
+  }
+
+  emitNotificacion(suscripcion.usuarioId.toString(), {
+    tipo: 'suscripcion',
+    titulo: '¡Suscripción activada!',
+    mensaje: 'Tu suscripción a Destacado está activa. Aparecerás arriba de la lista.'
+  })
+  console.log(`✓ Suscripción ${suscripcion._id} activada y perfil destacado hasta ${hasta.toISOString()}`)
+  return suscripcion
+}
+
+/**
+ * Marca una suscripción como pausada/cancelada (evento de MP). NO toca
+ * destacadoHasta: el período ya pagado corre hasta vencer y deja de destacar
+ * solo (no se renueva). Idempotente.
+ */
+export async function cambiarEstadoSuscripcion(suscripcionId, nuevoEstado) {
+  if (!['pausada', 'cancelada'].includes(nuevoEstado)) return null
+  const suscripcion = await Suscripcion.findById(suscripcionId)
+  if (!suscripcion || suscripcion.estado === nuevoEstado) return null
+
+  suscripcion.estado = nuevoEstado
+  await suscripcion.save()
+
+  emitNotificacion(suscripcion.usuarioId.toString(), {
+    tipo: 'suscripcion',
+    titulo: nuevoEstado === 'cancelada' ? 'Suscripción cancelada' : 'Suscripción pausada',
+    mensaje: nuevoEstado === 'cancelada'
+      ? 'Tu suscripción a Destacado fue cancelada. No se renovará al vencer el período actual.'
+      : 'Tu suscripción a Destacado quedó pausada. Revisá tu medio de pago.'
+  })
+  console.log(`ℹ️ Suscripción ${suscripcion._id} → ${nuevoEstado}`)
+  return suscripcion
 }
 
 // ===== SolicitudServicio =====

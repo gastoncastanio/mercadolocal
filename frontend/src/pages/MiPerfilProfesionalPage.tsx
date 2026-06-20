@@ -191,6 +191,11 @@ export default function MiPerfilProfesionalPage() {
   async function suscribirse() {
     try {
       const res = await api.post('/servicios/suscribir', { plan: planSeleccionado })
+      // Guardamos el id de la suscripción para poder verificar el pago contra MP
+      // cuando el usuario vuelva del checkout (/servicios/suscripcion-confirmada).
+      if (res.data.suscripcionId) {
+        localStorage.setItem('ml_suscripcion_pendiente', res.data.suscripcionId)
+      }
       const urlMP = res.data.sandboxInitPoint || res.data.initPoint
       if (urlMP) {
         window.location.href = urlMP

@@ -12,9 +12,9 @@ import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
 import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
-import { connectDB } from './config/database.js'
+import { connectDB, disconnectDB } from './config/database.js'
 import { limpiarOrdenesPendientes } from './services/ordenService.js'
-import { initSocket } from './services/socketService.js'
+import { initSocket, getIO } from './services/socketService.js'
 
 // Rutas del Marketplace
 import authRouter from './routes/auth.js'
@@ -43,6 +43,8 @@ import comprobantesRouter from './routes/comprobantes.js'
 import centroRouter from './routes/centro.js'
 import privacidadRouter from './routes/privacidad.js'
 import serviciosRouter from './routes/servicios.js'
+import comisionistasRouter from './routes/comisionistas.js'
+import ofertasCompartidasRouter from './routes/ofertasCompartidas.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
 import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
 import { sembrarBloqueHorario } from './services/seedBloqueHorario.js'
@@ -119,7 +121,7 @@ app.use(cors({
     callback(new Error(`Origen no permitido: ${origin}`))
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   // x-anon-id: header que el frontend envía en todas las requests para perfilar
   // visitantes anónimos (pauta inteligente). SIN esto, el navegador bloquea TODA
   // request por preflight CORS y el sitio queda inaccesible.
@@ -306,6 +308,8 @@ app.use('/api/comprobantes', comprobantesRouter)
 app.use('/api/privacidad', privacidadRouter)
 app.use('/api/centro', centroRouter)
 app.use('/api/servicios', serviciosRouter)
+app.use('/api/comisionistas', comisionistasRouter)
+app.use('/api/ofertas-compartidas', ofertasCompartidasRouter)
 
 // Health check básico (rápido, para uptime monitors)
 app.get('/api/health', (req, res) => {
@@ -361,4 +365,58 @@ httpServer.listen(PORT, () => {
   console.log(`💳 Pagos: Mercado Pago integrado`)
   console.log(`📸 Imágenes: Cloudinary`)
   console.log(``)
+})
+
+// ===== APAGADO ELEGANTE (graceful shutdown) =====
+// Railway (y cualquier PaaS) manda SIGTERM antes de matar el contenedor en cada
+// deploy. Sin esto, las requests/webhooks en vuelo se cortan a la mitad: un pago
+// podría quedar a medio procesar. Con esto: dejamos de aceptar conexiones nuevas,
+// drenamos las en curso, cerramos WebSockets y la base, y recién ahí salimos.
+let apagando = false
+async function apagar(senal) {
+  if (apagando) return // evitar doble ejecución si llegan SIGTERM + SIGINT
+  apagando = true
+  console.log(`\n🛑 Señal ${senal} recibida. Iniciando apagado elegante...`)
+
+  // Red de seguridad: si algo se cuelga, forzar salida a los 10s.
+  const forzar = setTimeout(() => {
+    console.error('⏱️  El apagado tardó demasiado. Forzando salida.')
+    process.exit(1)
+  }, 10000)
+  forzar.unref()
+
+  try {
+    // 1. Cerrar Socket.IO (desconecta clientes y libera el server).
+    const io = getIO()
+    if (io) {
+      await new Promise((resolve) => io.close(() => resolve()))
+      console.log('✅ Socket.IO cerrado')
+    }
+
+    // 2. Dejar de aceptar requests HTTP nuevas y esperar a que terminen las en curso.
+    await new Promise((resolve) => httpServer.close(() => resolve()))
+    console.log('✅ Servidor HTTP drenado')
+
+    // 3. Cerrar la conexión a MongoDB de forma ordenada.
+    await disconnectDB()
+
+    clearTimeout(forzar)
+    console.log('👋 Apagado completo. Saliendo.')
+    process.exit(0)
+  } catch (err) {
+    console.error('Error durante el apagado:', err.message)
+    process.exit(1)
+  }
+}
+
+process.on('SIGTERM', () => apagar('SIGTERM'))
+process.on('SIGINT', () => apagar('SIGINT'))
+
+// Últimas redes de seguridad: si una excepción/promesa se escapa de todo, la
+// logueamos (Sentry ya la captura vía su integración) en vez de morir en silencio.
+process.on('unhandledRejection', (motivo) => {
+  console.error('🚨 unhandledRejection:', motivo)
+})
+process.on('uncaughtException', (err) => {
+  console.error('🚨 uncaughtException:', err)
 })

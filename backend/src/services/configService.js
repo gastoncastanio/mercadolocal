@@ -17,7 +17,10 @@ const DEFAULTS = [
   { clave: 'landing_banner_imagen', valor: '', tipo: 'imagen', categoria: 'Landing', descripcion: 'Imagen del banner principal' },
 
   // Negocio
-  { clave: 'comision_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión por venta (%)' },
+  { clave: 'comision_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión por venta de productos (%)' },
+  { clave: 'comision_por_categoria', valor: '{}', tipo: 'html', categoria: 'Negocio', descripcion: 'Comisión por categoría de producto (JSON: {"electronica": 8, "ropa": 12}). Vacío = usa comision_porcentaje para todas.' },
+  { clave: 'comision_traslado_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión sobre traslados de comisionistas (%)' },
+  { clave: 'comision_minima', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Comisión mínima en ARS (piso absoluto, incluso con descuentos coopérativos)' },
   { clave: 'moneda_simbolo', valor: '$', tipo: 'texto', categoria: 'Negocio', descripcion: 'Símbolo de moneda' },
   { clave: 'moneda_nombre', valor: 'ARS', tipo: 'texto', categoria: 'Negocio', descripcion: 'Código de moneda (ARS, USD, etc.)' },
   { clave: 'envio_gratis_minimo', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Monto mínimo para envío gratis (0 = deshabilitado)' },
@@ -122,4 +125,57 @@ export async function actualizarMultiplesConfig(cambios) {
     if (config) resultados.push(config)
   }
   return resultados
+}
+
+// Obtener porcentaje de comisión según tipo
+// tipo: 'venta' (productos) o 'traslado' (comisionistas)
+export async function obtenerPorcentajeComision(tipo = 'venta') {
+  const clave = tipo === 'traslado' ? 'comision_traslado_porcentaje' : 'comision_porcentaje'
+  const valor = await obtenerConfig(clave)
+  return valor ? parseFloat(valor) : (tipo === 'traslado' ? 10 : 10)
+}
+
+// Obtener comisión mínima en ARS
+export async function obtenerComisionMinima() {
+  const valor = await obtenerConfig('comision_minima')
+  return valor ? parseFloat(valor) : 0
+}
+
+// Obtener porcentaje de comisión para una categoría específica
+// Si hay tarifas por categoría y la categoría existe, usa esa; si no, usa default
+export async function obtenerPorcentajeComisionPorCategoria(categoria, tipo = 'venta') {
+  if (tipo !== 'venta') {
+    return await obtenerPorcentajeComision(tipo)
+  }
+
+  const tarifasPorCategoria = await obtenerConfig('comision_por_categoria')
+  if (!tarifasPorCategoria) {
+    return await obtenerPorcentajeComision('venta')
+  }
+
+  try {
+    const tarifas = typeof tarifasPorCategoria === 'string'
+      ? JSON.parse(tarifasPorCategoria)
+      : tarifasPorCategoria
+
+    if (tarifas[categoria] !== undefined) {
+      return parseFloat(tarifas[categoria])
+    }
+  } catch (e) {
+    console.error('Error parsing comision_por_categoria:', e.message)
+  }
+
+  return await obtenerPorcentajeComision('venta')
+}
+
+// Calcular comisión con piso mínimo garantizado
+// Asegura que la comisión nunca cae por debajo del mínimo (previene
+// márgenes negativos con descuentos coopérativos)
+export async function calcularComisionConPiso(monto, tipo = 'venta', categoria = null) {
+  const porcentaje = categoria && tipo === 'venta'
+    ? await obtenerPorcentajeComisionPorCategoria(categoria, tipo)
+    : await obtenerPorcentajeComision(tipo)
+  const porcentajeComision = Math.round(monto * porcentaje / 100 * 100) / 100
+  const comisionMinima = await obtenerComisionMinima()
+  return Math.max(porcentajeComision, comisionMinima)
 }

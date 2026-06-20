@@ -1,8 +1,7 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import Tienda from '../models/Tienda.js'
-import { refrescarTokenVendedor } from '../routes/mpOauth.js'
-
-const PORCENTAJE_COMISION = 10
+import { refrescarTokenVendedor, refrescarTokenComisionista } from '../routes/mpOauth.js'
+import * as configService from './configService.js'
 
 if (!process.env.MP_ACCESS_TOKEN) {
   console.warn('⚠️ MP_ACCESS_TOKEN no configurado - los pagos no funcionarán')
@@ -26,7 +25,22 @@ export async function crearPreferencia(orden, compradorEmail) {
   }))
 
   // Calcular el marketplace_fee (tu comisión)
-  const marketplaceFee = Math.round(orden.total * PORCENTAJE_COMISION / 100 * 100) / 100
+  const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
+  let marketplaceFee = Math.round(orden.total * porcentajeComision / 100 * 100) / 100
+
+  // Oferta Compartida: si algún item está en una oferta co-financiada, la
+  // plataforma absorbe su aporte reduciendo el fee (con piso mínimo para no
+  // terminar con margen negativo).
+  try {
+    const { calcularAportePlataformaOrden } = await import('./ofertaCompartidaService.js')
+    const { aporteTotal } = await calcularAportePlataformaOrden(orden)
+    if (aporteTotal > 0) {
+      const comisionMinima = await configService.obtenerComisionMinima()
+      marketplaceFee = Math.max(Math.round((marketplaceFee - aporteTotal) * 100) / 100, comisionMinima)
+    }
+  } catch (e) {
+    console.error('Error calculando aporte de oferta compartida:', e.message)
+  }
 
   // Agrupar items por tienda para determinar el vendedor
   const tiendaIds = [...new Set(orden.items.map(i => i.tiendaId.toString()))]
@@ -146,6 +160,104 @@ export async function crearPreferencia(orden, compradorEmail) {
     usaSplit: usarSplit,
     marketplaceFee
   }
+}
+
+/**
+ * Crea una preferencia de pago para el TRASLADO de un comisionista (split).
+ *
+ * El comprador paga el monto cotizado; la plataforma retiene un marketplace_fee
+ * y el resto va a la cuenta MP del comisionista. external_reference se prefija
+ * con "cotizacion:" para que el webhook lo distinga.
+ *
+ * @param {Object} args
+ * @param {Object} args.solicitud - SolicitudCotizacion (tiene _id, cotizacion.monto)
+ * @param {Object} args.perfilComisionista - PerfilComisionista con MP vinculado
+ * @param {String} args.compradorEmail
+ */
+export async function crearPreferenciaTraslado({ solicitud, perfilComisionista, compradorEmail }) {
+  const monto = Math.round(solicitud.cotizacion.monto)
+  if (!monto || monto <= 0) throw new Error('La cotización no tiene un monto válido')
+  if (!perfilComisionista?.mpVinculado) {
+    throw new Error('El comisionista todavía no vinculó su cuenta de Mercado Pago')
+  }
+
+  let comisionistaToken
+  try {
+    comisionistaToken = perfilComisionista.getMpAccessToken()
+  } catch {
+    comisionistaToken = null
+  }
+  if (!comisionistaToken) throw new Error('No se pudo acceder a la cuenta de Mercado Pago del comisionista')
+
+  const porcentajeComisionTraslado = await configService.obtenerPorcentajeComision('traslado')
+  const marketplaceFee = Math.round(monto * porcentajeComisionTraslado / 100 * 100) / 100
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const preferenceBody = {
+    items: [{
+      id: solicitud._id.toString(),
+      title: `Traslado ${solicitud.ciudadOrigen || ''} → ${solicitud.ciudadDestino || ''}`.slice(0, 250),
+      description: 'Servicio de traslado por comisionista (MercadoLocal solo conecta)',
+      quantity: 1,
+      unit_price: monto,
+      currency_id: 'ARS'
+    }],
+    payer: { email: compradorEmail },
+    external_reference: `cotizacion:${solicitud._id.toString()}`,
+    marketplace_fee: marketplaceFee,
+    back_urls: {
+      success: `${frontendUrl}/comisionistas/mis-cotizaciones?pago=ok`,
+      failure: `${frontendUrl}/comisionistas/mis-cotizaciones?pago=error`,
+      pending: `${frontendUrl}/comisionistas/mis-cotizaciones?pago=pendiente`
+    },
+    auto_return: 'approved',
+    statement_descriptor: 'MERCADOLOCAL ENVIO'
+  }
+
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+      }
+    } catch { /* URL inválida: se omite */ }
+  }
+
+  let result
+  try {
+    const comisionistaClient = new MercadoPagoConfig({ accessToken: comisionistaToken })
+    try {
+      result = await new Preference(comisionistaClient).create({ body: preferenceBody })
+    } catch (splitError) {
+      // Token expirado: intentar refresh una vez.
+      if (splitError?.status === 401 || splitError?.message?.includes('token')) {
+        const nuevoToken = await refrescarTokenComisionista(perfilComisionista)
+        if (nuevoToken) {
+          const refreshed = new MercadoPagoConfig({ accessToken: nuevoToken })
+          result = await new Preference(refreshed).create({ body: preferenceBody })
+        } else {
+          throw splitError
+        }
+      } else {
+        throw splitError
+      }
+    }
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia de traslado:', mpError?.message || mpError)
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
+  }
+
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  if (!initPoint) throw new Error('Mercado Pago no devolvió una URL de pago válida. Intentá de nuevo.')
+
+  console.log(`🚚 Preferencia de traslado creada: cotización ${solicitud._id} | $${monto} | Fee: $${marketplaceFee}`)
+  return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point, marketplaceFee }
 }
 
 /**
