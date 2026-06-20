@@ -233,6 +233,17 @@ function SeccionInicio() {
           <p className="text-xs text-ml-muted mt-1">Datos fiscales de la plataforma</p>
         </a>
         <a
+          href="/admin/contador"
+          className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-3xl">📊</span>
+            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Finanzas</span>
+          </div>
+          <h3 className="font-semibold text-ml-ink group-hover:text-emerald-600">Panel del Contador</h3>
+          <p className="text-xs text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
+        </a>
+        <a
           href="/admin/moderacion"
           className="bg-white rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group block"
         >

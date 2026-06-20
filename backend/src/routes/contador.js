@@ -1,18 +1,27 @@
 import { Router } from 'express'
-import { verificarToken, esAdmin } from '../middleware/auth.js'
+import { verificarToken, soloAdmin } from '../middleware/auth.js'
 import CuentaContable from '../models/CuentaContable.js'
 import AsientoContable from '../models/AsientoContable.js'
 import GastoOperativo from '../models/GastoOperativo.js'
 import ResumenDiarioContable from '../models/ResumenDiarioContable.js'
 import * as contabilidadService from '../services/contabilidadService.js'
+import * as reportesService from '../services/reportesContablesService.js'
 
 const router = Router()
+
+// Parsea {anio, mes} de la query (mes 1-12 → 0-11). Si no vienen, mes actual.
+function parsearPeriodo(query) {
+  const out = {}
+  if (query.anio) out.anio = parseInt(query.anio)
+  if (query.mes) out.mes = parseInt(query.mes) - 1 // 1-12 → 0-11
+  return out
+}
 
 /**
  * POST /api/contador/init-plan-cuentas
  * Admin: Seed del plan de cuentas (SOLO primera vez)
  */
-router.post('/init-plan-cuentas', verificarToken, esAdmin, async (req, res) => {
+router.post('/init-plan-cuentas', verificarToken, soloAdmin, async (req, res) => {
   try {
     const PLAN_CUENTAS = [
       { codigo: '1.1.1', nombre: 'Caja MercadoPago (Disponible)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
@@ -63,7 +72,7 @@ router.post('/init-plan-cuentas', verificarToken, esAdmin, async (req, res) => {
  * GET /api/contador/resumen
  * Resumen financiero del mes actual
  */
-router.get('/resumen', verificarToken, esAdmin, async (req, res) => {
+router.get('/resumen', verificarToken, soloAdmin, async (req, res) => {
   try {
     const ahora = new Date()
     const inicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
@@ -129,7 +138,7 @@ router.get('/resumen', verificarToken, esAdmin, async (req, res) => {
  * GET /api/contador/cuadre
  * Verifica que el balance contable cuadre (Activos = Pasivos + Patrimonio)
  */
-router.get('/cuadre', verificarToken, esAdmin, async (req, res) => {
+router.get('/cuadre', verificarToken, soloAdmin, async (req, res) => {
   try {
     const resultado = await contabilidadService.cuadre()
     res.json(resultado)
@@ -143,7 +152,7 @@ router.get('/cuadre', verificarToken, esAdmin, async (req, res) => {
  * GET /api/contador/asientos
  * Listar asientos (con filtros opcionales)
  */
-router.get('/asientos', verificarToken, esAdmin, async (req, res) => {
+router.get('/asientos', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { tipo, desde, hasta, limit = 50, skip = 0 } = req.query
 
@@ -178,7 +187,7 @@ router.get('/asientos', verificarToken, esAdmin, async (req, res) => {
  * POST /api/contador/gasto
  * Carga manual de OPEX (pauta, hosting, honorarios)
  */
-router.post('/gasto', verificarToken, esAdmin, async (req, res) => {
+router.post('/gasto', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { categoria, concepto, monto, fechaGasto, comprobanteUrl, notas } = req.body
 
@@ -219,6 +228,106 @@ router.post('/gasto', verificarToken, esAdmin, async (req, res) => {
     }
 
     res.json({ gasto: gasto.toObject(), mensaje: 'Gasto registrado' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// ===== FASE 3: Las 7 secciones del panel =====
+
+/**
+ * GET /api/contador/panel?anio=&mes=
+ * Devuelve las 7 secciones de una sola vez (para el dashboard).
+ */
+router.get('/panel', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const panel = await reportesService.panelCompleto(parsearPeriodo(req.query))
+    res.json(panel)
+  } catch (error) {
+    console.error('Error en GET /panel:', error)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/facturacion?anio=&mes= */
+router.get('/facturacion', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionFacturacion(parsearPeriodo(req.query)))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/margen-bruto?anio=&mes= */
+router.get('/margen-bruto', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionMargenBruto(parsearPeriodo(req.query)))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/rentabilidad?anio=&mes= */
+router.get('/rentabilidad', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionRentabilidad(parsearPeriodo(req.query)))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/break-even?anio=&mes= */
+router.get('/break-even', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionBreakEven(parsearPeriodo(req.query)))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/cash-flow */
+router.get('/cash-flow', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionCashFlow())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/por-cobrar */
+router.get('/por-cobrar', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionPorCobrar())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** GET /api/contador/por-pagar?anio=&mes= */
+router.get('/por-pagar', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionPorPagar(parsearPeriodo(req.query)))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/**
+ * GET /api/contador/config — config contable (costos fijos, régimen fiscal)
+ * PUT /api/contador/config — actualizar config
+ */
+router.get('/config', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.obtenerConfigContable())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+router.put('/config', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const actualizada = await reportesService.guardarConfigContable(req.body)
+    res.json({ mensaje: 'Configuración actualizada', config: actualizada })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

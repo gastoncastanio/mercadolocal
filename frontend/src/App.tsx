@@ -82,6 +82,7 @@ const CarritosAbandonados = lazy(() => import('./pages/CarritosAbandonados'))
 const MisComprobantes = lazy(() => import('./pages/MisComprobantes'))
 const ComprobanteView = lazy(() => import('./pages/ComprobanteView'))
 const ConfiguracionFiscal = lazy(() => import('./pages/admin/ConfiguracionFiscal'))
+const PanelContador = lazy(() => import('./pages/PanelContador'))
 const MisDatosPrivacidad = lazy(() => import('./pages/MisDatosPrivacidad'))
 const LibroDeQuejas = lazy(() => import('./pages/LibroDeQuejas'))
 const RadarCentro = lazy(() => import('./pages/RadarCentro'))
@@ -231,6 +232,7 @@ function RutasConBoundary() {
           <Route path="/admin/pauta" element={<ConNavbar><RutaPrivada roles={['admin']}><PautaAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/ofertas-compartidas" element={<ConNavbar><RutaPrivada roles={['admin']}><OfertasCompartidasAdmin /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/configuracion-fiscal" element={<ConNavbar><RutaPrivada roles={['admin']}><ConfiguracionFiscal /></RutaPrivada></ConNavbar>} />
+          <Route path="/admin/contador" element={<ConNavbar><RutaPrivada roles={['admin']}><PanelContador /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/solicitudes-legales" element={<ConNavbar><RutaPrivada roles={['admin']}><SolicitudesLegales /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/comisionistas" element={<ConNavbar><RutaPrivada roles={['admin']}><VerificarComisionistas /></RutaPrivada></ConNavbar>} />
           <Route path="/admin/disputas" element={<ConNavbar><RutaPrivada roles={['admin']}><DisputasAdmin /></RutaPrivada></ConNavbar>} />
