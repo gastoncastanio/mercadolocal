@@ -7,6 +7,7 @@ interface Viaje {
   comisionista?: { _id: string; nombre: string; avatar: string } | null
   origen: { ciudad: string }
   destino: { ciudad: string }
+  paradas?: { ciudad: string }[]
   fechaSalida: string
   horaSalida: string
   tarifas: { bultoChico: number; bultoMediano: number; bultoGrande: number }
@@ -119,7 +120,10 @@ export default function ComisionistasPage() {
                   <span className="text-ml-violet">→</span>
                   <span>{v.destino.ciudad}</span>
                 </div>
-                <p className="text-sm text-ml-muted mb-3">📅 {fmtFecha(v.fechaSalida)}{v.horaSalida ? ` · ${v.horaSalida}` : ''}</p>
+                <p className="text-sm text-ml-muted mb-1">📅 {fmtFecha(v.fechaSalida)}{v.horaSalida ? ` · ${v.horaSalida}` : ''}</p>
+                {v.paradas && v.paradas.length > 0 && (
+                  <p className="text-xs text-ml-muted mb-3 truncate" title={v.paradas.map(p => p.ciudad).join(' · ')}>🛣️ Pasa por: {v.paradas.map(p => p.ciudad).join(' · ')}</p>
+                )}
 
                 {/* Comisionista */}
                 <div className="flex items-center gap-2 mb-3">

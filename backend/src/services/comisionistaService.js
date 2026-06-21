@@ -1,6 +1,7 @@
 import PerfilComisionista from '../models/PerfilComisionista.js'
 import Viaje from '../models/Viaje.js'
 import EnvioComisionista from '../models/EnvioComisionista.js'
+import ResenaComisionista from '../models/ResenaComisionista.js'
 import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import Orden from '../models/Orden.js'
 import Usuario from '../models/Usuario.js'
@@ -161,6 +162,24 @@ export async function comisionistasEnVivo({ ciudadDestino } = {}) {
 
 // ===== Viaje =====
 
+// Normaliza un punto del rumbo {ciudad, lat, lng}. La ciudad es la fuente de
+// verdad; lat/lng se aceptan solo si son números válidos dentro de rango (si no,
+// quedan null y el mapa simplemente no dibuja ese punto). Defensivo contra
+// strings, NaN y coordenadas fuera de rango.
+function puntoGeo(p) {
+  if (!p || typeof p !== 'object') return { ciudad: '', lat: null, lng: null }
+  const ciudad = typeof p.ciudad === 'string' ? p.ciudad.trim() : ''
+  const lat = Number(p.lat)
+  const lng = Number(p.lng)
+  const latOk = Number.isFinite(lat) && lat >= -90 && lat <= 90
+  const lngOk = Number.isFinite(lng) && lng >= -180 && lng <= 180
+  return {
+    ciudad,
+    lat: latOk ? lat : null,
+    lng: lngOk ? lng : null
+  }
+}
+
 export async function publicarViaje(comisionistaId, datos) {
   const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId }).select('_id')
   if (!perfil) throw new Error('Necesitás un perfil de comisionista para publicar viajes')
@@ -177,8 +196,11 @@ export async function publicarViaje(comisionistaId, datos) {
 
   const viaje = await new Viaje({
     comisionistaId,
-    origen: { ciudad: datos.origen.ciudad },
-    destino: { ciudad: datos.destino.ciudad },
+    origen: puntoGeo(datos.origen),
+    destino: puntoGeo(datos.destino),
+    paradas: Array.isArray(datos.paradas)
+      ? datos.paradas.map(puntoGeo).filter((p) => p.ciudad)
+      : [],
     fechaSalida: datos.fechaSalida,
     horaSalida: datos.horaSalida || '',
     tarifas: {
@@ -219,6 +241,62 @@ export async function buscarViajes(filtros = {}) {
 
 export async function obtenerViaje(id) {
   return await Viaje.findById(id).populate('comisionistaId', 'nombre avatar')
+}
+
+/**
+ * Cross-checkout: dada una orden paga del comprador, busca viajes programados
+ * que vayan de la ciudad del vendedor a la ciudad de entrega de la orden, con
+ * cupo disponible. Devuelve también las ciudades para mostrarlas en la UI.
+ */
+export async function viajesParaOrden(compradorId, ordenId) {
+  const orden = await Orden.findById(ordenId)
+  if (!orden) throw new Error('Orden no encontrada')
+  if (orden.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+
+  // Ciudad de origen = ciudad de la tienda del primer item.
+  let ciudadOrigen = ''
+  const primerItem = orden.items?.[0]
+  if (primerItem?.tiendaId) {
+    const { default: Tienda } = await import('../models/Tienda.js')
+    const tienda = await Tienda.findById(primerItem.tiendaId).select('ciudad').lean()
+    ciudadOrigen = tienda?.ciudad || ''
+  }
+  const ciudadDestino = orden.ciudadEntrega || ''
+
+  // Sin ciudades no podemos matchear: devolvemos vacío con el contexto.
+  if (!ciudadOrigen || !ciudadDestino) {
+    return { viajes: [], ciudadOrigen, ciudadDestino, yaAsignado: !!orden.envioComisionistaId }
+  }
+
+  // Match por origen exacto y destino que sea el destino del viaje O una parada.
+  const norm = (s) => s.trim().toLowerCase()
+  const viajes = await Viaje.find({
+    estado: 'programado',
+    fechaSalida: { $gte: new Date() },
+    capacidadDisponible: { $gte: 1 },
+    'origen.ciudad': new RegExp(`^${escaparRegex(ciudadOrigen)}$`, 'i')
+  })
+    .sort({ fechaSalida: 1 })
+    .limit(20)
+    .populate('comisionistaId', 'nombre avatar')
+
+  // Filtra a los que llegan al destino (como destino final o como parada en el camino).
+  const matchDestino = viajes.filter(v =>
+    norm(v.destino.ciudad) === norm(ciudadDestino) ||
+    (v.paradas || []).some(p => norm(p.ciudad) === norm(ciudadDestino))
+  )
+
+  return {
+    viajes: matchDestino,
+    ciudadOrigen,
+    ciudadDestino,
+    yaAsignado: !!orden.envioComisionistaId
+  }
+}
+
+// Escapa metacaracteres para usar un string como literal en RegExp.
+function escaparRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 export async function misViajes(comisionistaId) {
@@ -269,6 +347,17 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
   }
   if (viaje.estado !== 'programado') throw new Error('Este viaje ya no recibe reservas')
 
+  // Cross-checkout: si el envío nace de una compra (ordenId), validamos que la
+  // orden sea del contratante y esté paga, y que no tenga ya un envío ligado.
+  let orden = null
+  if (datos.ordenId) {
+    orden = await Orden.findById(datos.ordenId)
+    if (!orden) throw new Error('Orden no encontrada')
+    if (orden.compradorId.toString() !== contratanteId.toString()) throw new Error('No autorizado sobre esta orden')
+    if (orden.estado === 'pendiente') throw new Error('La orden todavía no está paga')
+    if (orden.envioComisionistaId) throw new Error('Esta orden ya tiene un envío asignado')
+  }
+
   const precio = viaje.precioPara(tamano, cantidad)
   if (precio == null) throw new Error('El viaje no tiene tarifa para ese tamaño')
 
@@ -291,6 +380,7 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
       viajeId,
       comisionistaId: viaje.comisionistaId,
       contratanteId,
+      ordenId: orden?._id || null,
       cantidadBultos: cantidad,
       tamano,
       descripcion,
@@ -303,6 +393,21 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
     throw err
   }
 
+  // Cross-checkout: ligar el envío a la orden (idempotente; solo si no tenía uno).
+  if (orden) {
+    const ordenLigada = await Orden.findOneAndUpdate(
+      { _id: orden._id, envioComisionistaId: null },
+      { $set: { envioComisionistaId: envio._id, comisionistaId: viaje.comisionistaId } },
+      { new: true }
+    )
+    // Carrera: otro envío ganó la orden entre la validación y acá. Revertimos.
+    if (!ordenLigada) {
+      await EnvioComisionista.findByIdAndDelete(envio._id)
+      await Viaje.findByIdAndUpdate(viajeId, { $inc: { capacidadDisponible: cantidad } })
+      throw new Error('Esta orden ya tiene un envío asignado')
+    }
+  }
+
   emitNotificacion(viaje.comisionistaId.toString(), {
     tipo: 'envio',
     titulo: 'Nueva reserva en tu viaje',
@@ -311,6 +416,95 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
   })
 
   return { envio, codigoEntrega: codigo }
+}
+
+/**
+ * El contratante paga un envío reservado: crea la preferencia de MP con split
+ * al comisionista. El envío pasa a estado 'pendiente_pago'.
+ */
+export async function pagarEnvio(contratanteId, envioId, compradorEmail) {
+  const { crearPreferenciaEnvio } = await import('./mercadoPagoService.js')
+
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.estado !== 'pendiente') throw new Error('El envío ya fue procesado o cancelado')
+  if (envio.pago?.estadoPago === 'pagado') throw new Error('Este envío ya fue pagado')
+
+  const viaje = await Viaje.findById(envio.viajeId)
+  if (!viaje) throw new Error('Viaje no encontrado')
+
+  const comisionista = await PerfilComisionista.findOne({ usuarioId: envio.comisionistaId })
+  if (!comisionista || !comisionista.mpVinculado) {
+    throw new Error('El comisionista todavía no vinculó su cuenta de Mercado Pago. Pedile que la vincule para poder pagar online.')
+  }
+
+  const { preferenceId, initPoint, marketplaceFee } = await crearPreferenciaEnvio({
+    envio, viaje, comisionista, compradorEmail
+  })
+
+  envio.pago = {
+    ...envio.pago,
+    mpPreferenceId: preferenceId,
+    comisionPlataforma: marketplaceFee,
+    estadoPago: 'pendiente_pago'
+  }
+  await envio.save()
+
+  return { initPoint, preferenceId }
+}
+
+/**
+ * Verifica el pago de un envío consultando a MP por external_reference
+ * (fallback al volver del checkout, por si el webhook no llegó).
+ */
+export async function verificarPagoEnvio(contratanteId, envioId) {
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.pago?.estadoPago === 'pagado') return envio
+
+  try {
+    const { MercadoPagoConfig, Payment } = await import('mercadopago')
+    const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' })
+    const search = await new Payment(client).search({
+      options: { external_reference: `envio:${envioId}` }
+    })
+    const resultados = search?.results || []
+    const aprobado = resultados.find(p => p.status === 'approved')
+    if (aprobado) {
+      return await marcarEnvioPagado(envioId, aprobado.id)
+    }
+  } catch (e) {
+    console.warn('verificarPagoEnvio: no se pudo consultar a MP:', e.message)
+  }
+  return envio
+}
+
+/**
+ * Marca el envío como pagado (lo invoca el webhook de MP). Idempotente.
+ */
+export async function marcarEnvioPagado(envioId, mpPaymentId) {
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) return null
+  if (envio.pago?.estadoPago === 'pagado') return envio // idempotencia
+
+  envio.pago = { ...envio.pago, mpPaymentId: mpPaymentId?.toString() || '', estadoPago: 'pagado' }
+  await envio.save()
+
+  emitNotificacion(envio.comisionistaId.toString(), {
+    tipo: 'envio',
+    titulo: 'Envío pagado',
+    mensaje: 'El contratante pagó el envío. Ya podés coordinar la entrega.',
+    enlace: '/comisionistas/envios-recibidos'
+  })
+  emitNotificacion(envio.contratanteId.toString(), {
+    tipo: 'envio',
+    titulo: 'Pago del envío confirmado',
+    mensaje: 'Tu pago del envío fue confirmado. Coordiná la entrega con el comisionista por chat.',
+    enlace: '/comisionistas/mis-envios'
+  })
+  return envio
 }
 
 export async function misEnviosContratante(contratanteId) {
@@ -411,6 +605,14 @@ export async function cancelarEnvio(usuarioId, envioId) {
 
   // Devolver el cupo reservado al viaje.
   await Viaje.findByIdAndUpdate(envio.viajeId, { $inc: { capacidadDisponible: envio.cantidadBultos } })
+
+  // Cross-checkout: desvincular la orden para que el comprador pueda elegir otro viaje.
+  if (envio.ordenId) {
+    await Orden.findOneAndUpdate(
+      { _id: envio.ordenId, envioComisionistaId: envio._id },
+      { $set: { envioComisionistaId: null, comisionistaId: null } }
+    )
+  }
 
   const otraParte = esContratante ? envio.comisionistaId : envio.contratanteId
   emitNotificacion(otraParte.toString(), {
@@ -680,4 +882,78 @@ export async function reportarIncidente(comisionistaId, solicitudId, descripcion
   emitNotificacion(solicitud.compradorId.toString(), aviso)
   if (solicitud.vendedorId) emitNotificacion(solicitud.vendedorId.toString(), aviso)
   return solicitud
+}
+
+// ===== Reseñas de comisionista =====
+
+/**
+ * Recalcula la calificación promedio del comisionista a partir de TODAS sus
+ * reseñas. Fuente única de verdad de PerfilComisionista.calificacion.
+ */
+async function recalcularCalificacionComisionista(comisionistaId) {
+  const resenas = await ResenaComisionista.find({ comisionistaId }).select('calificacion')
+  if (resenas.length === 0) {
+    await PerfilComisionista.findOneAndUpdate({ usuarioId: comisionistaId }, { calificacion: 0 })
+    return
+  }
+  const suma = resenas.reduce((acc, r) => acc + r.calificacion, 0)
+  const promedio = Math.round((suma / resenas.length) * 10) / 10
+  await PerfilComisionista.findOneAndUpdate({ usuarioId: comisionistaId }, { calificacion: promedio })
+}
+
+/**
+ * El contratante reseña al comisionista tras un envío entregado. Valida:
+ * - el envío existe y es del contratante
+ * - el envío está 'entregado'
+ * - no reseñó antes (índice unique + chequeo explícito para mensaje claro)
+ */
+export async function reseñarComisionista(contratanteId, envioId, { calificacion, comentario = '' }) {
+  const cal = Number(calificacion)
+  if (!Number.isInteger(cal) || cal < 1 || cal > 5) {
+    throw new Error('La calificación debe ser un número del 1 al 5')
+  }
+
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.estado !== 'entregado') throw new Error('Solo podés reseñar envíos ya entregados')
+
+  const yaResenado = await ResenaComisionista.findOne({ contratanteId, envioId }).select('_id')
+  if (yaResenado) throw new Error('Ya reseñaste este envío')
+
+  const resena = await new ResenaComisionista({
+    contratanteId,
+    comisionistaId: envio.comisionistaId,
+    envioId,
+    calificacion: cal,
+    comentario: (comentario || '').slice(0, 1000)
+  }).save()
+
+  await recalcularCalificacionComisionista(envio.comisionistaId)
+
+  emitNotificacion(envio.comisionistaId.toString(), {
+    tipo: 'envio',
+    titulo: 'Nueva reseña',
+    mensaje: `Recibiste una reseña de ${cal}★ por un envío.`,
+    enlace: '/comisionistas/mi-perfil'
+  })
+
+  return resena
+}
+
+/** Reseñas públicas de un comisionista (para mostrar en su perfil). */
+export async function resenasComisionista(comisionistaId, { skip = 0, limit = 20 } = {}) {
+  const resenas = await ResenaComisionista.find({ comisionistaId })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('contratanteId', 'nombre avatar')
+  const total = await ResenaComisionista.countDocuments({ comisionistaId })
+  return { resenas, total }
+}
+
+/** IDs de envíos que el contratante ya reseñó (para que el front oculte el botón). */
+export async function enviosReseñadosPor(contratanteId) {
+  const resenas = await ResenaComisionista.find({ contratanteId }).select('envioId')
+  return resenas.map(r => r.envioId.toString())
 }

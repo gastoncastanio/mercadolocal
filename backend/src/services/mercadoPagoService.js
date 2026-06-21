@@ -279,6 +279,97 @@ export async function crearPreferenciaTraslado({ solicitud, perfilComisionista, 
 }
 
 /**
+ * Crea una preferencia de pago para un EnvioComisionista (reserva en un viaje).
+ * El comisionista cobra el traslado; MercadoLocal retiene una comisión (%).
+ * Similar a crearPreferenciaTraslado pero sin requerer datos de SolicitudCotizacion.
+ */
+export async function crearPreferenciaEnvio({ envio, viaje, comisionista, compradorEmail }) {
+  const monto = Math.round(envio.precio)
+  if (!monto || monto <= 0) throw new Error('El envío no tiene un precio válido')
+  if (!comisionista?.mpVinculado) {
+    throw new Error('El comisionista todavía no vinculó su cuenta de Mercado Pago')
+  }
+
+  let comisionistaToken
+  try {
+    comisionistaToken = comisionista.getMpAccessToken()
+  } catch {
+    comisionistaToken = null
+  }
+  if (!comisionistaToken) throw new Error('No se pudo acceder a la cuenta de Mercado Pago del comisionista')
+
+  const porcentajeComision = await configService.obtenerPorcentajeComision('envio_comisionista') || 10
+  const marketplaceFee = Math.round(monto * porcentajeComision / 100 * 100) / 100
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const rutaDescripcion = `${viaje.origen.ciudad} → ${viaje.destino.ciudad}`.slice(0, 100)
+  const preferenceBody = {
+    items: [{
+      id: envio._id.toString(),
+      title: `Envío: ${rutaDescripcion}`.slice(0, 250),
+      description: `${envio.tamano}, ${envio.cantidadBultos} bulto(s). ${envio.descripcion || ''}`.slice(0, 250),
+      quantity: 1,
+      unit_price: monto,
+      currency_id: 'ARS'
+    }],
+    payer: { email: compradorEmail },
+    external_reference: `envio:${envio._id.toString()}`,
+    marketplace_fee: marketplaceFee,
+    back_urls: {
+      success: `${frontendUrl}/comisionistas/mis-envios?pago=ok`,
+      failure: `${frontendUrl}/comisionistas/mis-envios?pago=error`,
+      pending: `${frontendUrl}/comisionistas/mis-envios?pago=pendiente`
+    },
+    auto_return: 'approved',
+    statement_descriptor: 'MERCADOLOCAL ENVIO'
+  }
+
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+      }
+    } catch { /* URL inválida: se omite */ }
+  }
+
+  let result
+  try {
+    const comisionistaClient = new MercadoPagoConfig({ accessToken: comisionistaToken })
+    try {
+      result = await new Preference(comisionistaClient).create({ body: preferenceBody })
+    } catch (splitError) {
+      if (splitError?.status === 401 || splitError?.message?.includes('token')) {
+        const nuevoToken = await refrescarTokenComisionista(comisionista)
+        if (nuevoToken) {
+          const refreshed = new MercadoPagoConfig({ accessToken: nuevoToken })
+          result = await new Preference(refreshed).create({ body: preferenceBody })
+        } else {
+          throw splitError
+        }
+      } else {
+        throw splitError
+      }
+    }
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia de envío:', mpError?.message || mpError)
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
+  }
+
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  if (!initPoint) throw new Error('Mercado Pago no devolvió una URL de pago válida. Intentá de nuevo.')
+
+  console.log(`🚚 Preferencia de envío creada: envío ${envio._id} | $${monto} | Fee: $${marketplaceFee}`)
+  return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point, marketplaceFee }
+}
+
+/**
  * Crea una preferencia de pago para PAUTA PUBLICITARIA.
  *
  * A diferencia de una compra, acá el dinero va ENTERO a la cuenta de la

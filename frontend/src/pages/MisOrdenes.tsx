@@ -5,6 +5,7 @@ import api from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { Orden } from '../types'
 import PanelComisionistasEnVivo from '../components/PanelComisionistasEnVivo'
+import ViajesParaOrden from '../components/ViajesParaOrden'
 
 // ============================================================
 // Helpers
@@ -121,6 +122,7 @@ export default function MisOrdenes() {
   const [pagando, setPagando] = useState<string | null>(null)
   const [confirmandoOrden, setConfirmandoOrden] = useState<Orden | null>(null)
   const [comisionistaOrden, setComisionistaOrden] = useState<string | null>(null)
+  const [modoEnvio, setModoEnvio] = useState<Record<string, 'vivo' | 'programado'>>({})
 
   useEffect(() => {
     cargarOrdenes()
@@ -523,17 +525,44 @@ export default function MisOrdenes() {
 
                       {comisionistaOrden === orden._id && (
                         <div className="mt-4">
-                          <PanelComisionistasEnVivo
-                            ordenId={orden._id}
-                            ciudadDestino={(orden as any).ciudadEntrega || tiendaPrincipal?.ciudad}
-                            onSolicitado={() => toast.exito('Solicitud enviada. Te avisamos cuando te coticen.')}
-                          />
-                          <Link
-                            to="/comisionistas/mis-cotizaciones"
-                            className="block text-center text-xs text-ml-blue hover:underline mt-3"
-                          >
-                            Ver mis solicitudes de cotización →
-                          </Link>
+                          {/* Toggle: viajes programados vs comisionista en vivo */}
+                          <div className="flex gap-2 mb-4 p-1 bg-ml-bg rounded-lg">
+                            <button
+                              onClick={() => setModoEnvio(prev => ({ ...prev, [orden._id]: 'programado' }))}
+                              className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${(modoEnvio[orden._id] ?? 'programado') === 'programado' ? 'bg-white text-ml-violet shadow-sm' : 'text-ml-muted'}`}
+                            >
+                              🛣️ Viajes programados
+                            </button>
+                            <button
+                              onClick={() => setModoEnvio(prev => ({ ...prev, [orden._id]: 'vivo' }))}
+                              className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${modoEnvio[orden._id] === 'vivo' ? 'bg-white text-ml-violet shadow-sm' : 'text-ml-muted'}`}
+                            >
+                              🟢 En vivo
+                            </button>
+                          </div>
+
+                          {(modoEnvio[orden._id] ?? 'programado') === 'programado' ? (
+                            <>
+                              <ViajesParaOrden
+                                ordenId={orden._id}
+                                onContratado={() => toast.exito('Envío contratado. Ahora pagalo en "Mis envíos".')}
+                              />
+                              <Link to="/comisionistas/mis-envios" className="block text-center text-xs text-ml-blue hover:underline mt-3">
+                                Ver mis envíos →
+                              </Link>
+                            </>
+                          ) : (
+                            <>
+                              <PanelComisionistasEnVivo
+                                ordenId={orden._id}
+                                ciudadDestino={(orden as any).ciudadEntrega || tiendaPrincipal?.ciudad}
+                                onSolicitado={() => toast.exito('Solicitud enviada. Te avisamos cuando te coticen.')}
+                              />
+                              <Link to="/comisionistas/mis-cotizaciones" className="block text-center text-xs text-ml-blue hover:underline mt-3">
+                                Ver mis solicitudes de cotización →
+                              </Link>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

@@ -131,6 +131,21 @@ router.get('/viaje/:id', async (req, res) => {
   }
 })
 
+// GET /api/comisionistas/viajes-para-orden/:ordenId - Viajes que matchean una orden (cross-checkout)
+router.get('/viajes-para-orden/:ordenId', verificarToken, async (req, res) => {
+  try {
+    const r = await comisionistaService.viajesParaOrden(req.usuario.id, req.params.ordenId)
+    res.json({
+      viajes: r.viajes.map(v => v.toPublic()),
+      ciudadOrigen: r.ciudadOrigen,
+      ciudadDestino: r.ciudadDestino,
+      yaAsignado: r.yaAsignado
+    })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 // Transiciones de estado del viaje (solo el comisionista dueño)
 router.patch('/viaje/:id/iniciar', verificarToken, async (req, res) => {
   try {
@@ -171,6 +186,30 @@ router.post('/viaje/:id/contratar', verificarToken, async (req, res) => {
     )
     // El código de entrega se devuelve UNA sola vez (en BD solo queda el hash).
     res.status(201).json({ envio, codigoEntrega })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/comisionistas/envio/:id/pagar - Contratante paga envío (split al comisionista)
+router.post('/envio/:id/pagar', verificarToken, async (req, res) => {
+  try {
+    const { initPoint, preferenceId } = await comisionistaService.pagarEnvio(
+      req.usuario.id,
+      req.params.id,
+      req.usuario.email || ''
+    )
+    res.json({ initPoint, preferenceId })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/comisionistas/envio/:id/verificar-pago - Verificar pago al volver del checkout
+router.post('/envio/:id/verificar-pago', verificarToken, async (req, res) => {
+  try {
+    const envio = await comisionistaService.verificarPagoEnvio(req.usuario.id, req.params.id)
+    res.json(envio)
   } catch (error) {
     res.status(400).json({ error: error.message })
   }
@@ -230,6 +269,41 @@ router.patch('/envio/:id/cancelar', verificarToken, async (req, res) => {
     res.json(envio)
   } catch (error) {
     res.status(400).json({ error: error.message })
+  }
+})
+
+// ===== Reseñas de comisionista =====
+
+// POST /api/comisionistas/envio/:id/resena - Reseñar al comisionista tras la entrega
+router.post('/envio/:id/resena', verificarToken, async (req, res) => {
+  try {
+    const resena = await comisionistaService.reseñarComisionista(req.usuario.id, req.params.id, req.body)
+    res.status(201).json(resena)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/comisionistas/mis-resenas-hechas - IDs de envíos que ya reseñé
+router.get('/mis-resenas-hechas', verificarToken, async (req, res) => {
+  try {
+    const ids = await comisionistaService.enviosReseñadosPor(req.usuario.id)
+    res.json(ids)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/comisionistas/:usuarioId/resenas - Reseñas públicas de un comisionista
+router.get('/:usuarioId/resenas', async (req, res) => {
+  try {
+    const { skip = 0, limit = 20 } = req.query
+    const { resenas, total } = await comisionistaService.resenasComisionista(req.params.usuarioId, {
+      skip: parseInt(skip), limit: parseInt(limit)
+    })
+    res.json({ resenas, total })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 

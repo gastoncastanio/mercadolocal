@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import MapaRumbo from '../components/MapaRumbo'
 
+interface PuntoViaje { ciudad: string; lat?: number | null; lng?: number | null }
 interface Viaje {
   _id: string
   comisionistaId: string
   comisionista?: { _id: string; nombre: string; avatar: string } | null
-  origen: { ciudad: string }
-  destino: { ciudad: string }
+  origen: PuntoViaje
+  destino: PuntoViaje
+  paradas?: PuntoViaje[]
   fechaSalida: string
   horaSalida: string
   tarifas: { bultoChico: number; bultoMediano: number; bultoGrande: number }
@@ -16,6 +19,14 @@ interface Viaje {
   capacidadDisponible: number
   notas: string
   estado: string
+}
+
+interface Reseña {
+  _id: string
+  calificacion: number
+  comentario: string
+  createdAt: string
+  contratanteId?: { nombre: string; avatar: string } | null
 }
 
 const TAMANOS = [
@@ -38,6 +49,8 @@ export default function DetalleViajePage() {
   const [descripcion, setDescripcion] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [codigoEntrega, setCodigoEntrega] = useState('')
+  const [envioId, setEnvioId] = useState<string | null>(null) // para pagar después
+  const [reseñas, setReseñas] = useState<Reseña[]>([])
 
   useEffect(() => { if (id) cargar() }, [id])
 
@@ -47,6 +60,13 @@ export default function DetalleViajePage() {
     try {
       const res = await api.get(`/comisionistas/viaje/${id}`)
       setViaje(res.data)
+      // Reseñas del comisionista (mejor esfuerzo; no bloquea el viaje)
+      const comId = res.data?.comisionista?._id || res.data?.comisionistaId
+      if (comId) {
+        api.get(`/comisionistas/${comId}/resenas?limit=5`)
+          .then(r => setReseñas(r.data?.resenas || []))
+          .catch(() => {})
+      }
     } catch (e: any) {
       setError(e.response?.data?.error || 'No se pudo cargar el viaje')
     } finally {
@@ -59,6 +79,23 @@ export default function DetalleViajePage() {
     : 0
   const precioTotal = tarifaActual * cantidad
 
+  async function pagarEnvio() {
+    if (!envioId) return
+    setEnviando(true)
+    setError('')
+    try {
+      const res = await api.post(`/comisionistas/envio/${envioId}/pagar`)
+      if (res.data?.initPoint) {
+        window.location.href = res.data.initPoint
+      } else {
+        setError('No se obtuvo URL de pago. Intentá de nuevo.')
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo proceder al pago')
+      setEnviando(false)
+    }
+  }
+
   async function contratar(e: React.FormEvent) {
     e.preventDefault()
     if (!estaLogueado) { navigate(`/login?redirect=/comisionistas/viaje/${id}`); return }
@@ -69,10 +106,12 @@ export default function DetalleViajePage() {
         tamano, cantidadBultos: cantidad, descripcion
       })
       const codigo = res.data.codigoEntrega
+      const eid = res.data.envio?._id
       setCodigoEntrega(codigo)
+      setEnvioId(eid || null)
       // Guardamos el código en este dispositivo para poder mostrarlo luego en Mis envíos.
-      if (res.data.envio?._id) {
-        localStorage.setItem(`ml_envio_codigo_${res.data.envio._id}`, codigo)
+      if (eid) {
+        localStorage.setItem(`ml_envio_codigo_${eid}`, codigo)
       }
     } catch (e: any) {
       setError(e.response?.data?.error || 'No se pudo reservar el envío')
@@ -124,6 +163,20 @@ export default function DetalleViajePage() {
             {viaje.horaSalida ? ` · ${viaje.horaSalida}` : ''}
           </p>
 
+          {/* Ciudades en el camino */}
+          {viaje.paradas && viaje.paradas.length > 0 && (
+            <p className="text-sm text-ml-muted mb-3">
+              🛣️ Pasa por: {viaje.paradas.map(p => p.ciudad).join(' · ')}
+            </p>
+          )}
+
+          {/* Mapa del rumbo (solo si hay puntos geolocalizados) */}
+          {(viaje.origen?.lat != null || viaje.destino?.lat != null || (viaje.paradas || []).some(p => p.lat != null)) && (
+            <div className="mb-4">
+              <MapaRumbo origen={viaje.origen} destino={viaje.destino} paradas={viaje.paradas || []} altura={260} />
+            </div>
+          )}
+
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-ml-line">
             <img src={viaje.comisionista?.avatar || 'https://via.placeholder.com/40'} alt={viaje.comisionista?.nombre} className="w-10 h-10 rounded-full object-cover" />
             <div>
@@ -145,14 +198,36 @@ export default function DetalleViajePage() {
           {viaje.notas && <p className="text-ml-soft text-sm mt-3 whitespace-pre-line">{viaje.notas}</p>}
         </div>
 
+        {/* Reseñas del comisionista */}
+        {reseñas.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+            <h2 className="text-lg font-bold text-ml-ink mb-3">Reseñas del comisionista</h2>
+            <div className="space-y-3">
+              {reseñas.map(r => (
+                <div key={r._id} className="border-b border-ml-line last:border-0 pb-3 last:pb-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <img src={r.contratanteId?.avatar || 'https://via.placeholder.com/28'} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    <span className="text-sm font-semibold text-ml-ink">{r.contratanteId?.nombre || 'Cliente'}</span>
+                    <span className="text-amber-400 text-sm">{'★'.repeat(r.calificacion)}<span className="text-ml-line">{'★'.repeat(5 - r.calificacion)}</span></span>
+                  </div>
+                  {r.comentario && <p className="text-sm text-ml-soft">{r.comentario}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Código de entrega tras reservar */}
         {codigoEntrega ? (
           <div className="bg-green-50 border border-green-200 rounded-2xl p-6 text-center">
             <p className="text-green-800 font-semibold mb-2">✓ ¡Reserva confirmada!</p>
             <p className="text-sm text-ml-soft mb-3">Guardá este código de entrega. Se lo das al comisionista cuando recibas el bulto para cerrar el envío:</p>
             <p className="text-3xl font-extrabold tracking-widest text-ml-ink bg-white border border-green-200 rounded-xl py-3 mb-4">{codigoEntrega}</p>
-            <div className="flex gap-2 justify-center">
-              <button onClick={() => navigate('/comisionistas/mis-envios')} className="mlbtn ml-grad text-white px-5 py-2 rounded-lg font-bold">Ver mis envíos</button>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <button onClick={pagarEnvio} disabled={enviando} className="mlbtn ml-grad text-white px-5 py-2 rounded-lg font-bold disabled:opacity-60">
+                {enviando ? 'Procesando...' : '💳 Proceder al pago'}
+              </button>
+              <button onClick={() => navigate('/comisionistas/mis-envios')} className="px-5 py-2 border border-ml-line rounded-lg font-bold hover:bg-ml-bg">Ver mis envíos</button>
             </div>
           </div>
         ) : esPropio ? (

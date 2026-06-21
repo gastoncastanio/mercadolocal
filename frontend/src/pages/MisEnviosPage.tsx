@@ -11,6 +11,7 @@ interface Envio {
   descripcion: string
   comisionistaId?: { _id: string; nombre: string; avatar: string } | null
   viajeId?: { origen: { ciudad: string }; destino: { ciudad: string }; fechaSalida: string } | null
+  pago?: { estadoPago: string }
   createdAt: string
 }
 
@@ -28,18 +29,65 @@ export default function MisEnviosPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [accionando, setAccionando] = useState(false)
+  const [envioPagando, setEnvioPagando] = useState<string | null>(null)
+  // Reseñas: envíos ya reseñados + form abierto (envioId) + valores
+  const [reseñados, setReseñados] = useState<string[]>([])
+  const [reseñaAbierta, setReseñaAbierta] = useState<string | null>(null)
+  const [estrellas, setEstrellas] = useState(5)
+  const [comentario, setComentario] = useState('')
 
   useEffect(() => { cargar() }, [])
+
+  async function pagarEnvio(envioId: string) {
+    setEnvioPagando(envioId)
+    setError('')
+    try {
+      const res = await api.post(`/comisionistas/envio/${envioId}/pagar`)
+      if (res.data?.initPoint) {
+        window.location.href = res.data.initPoint
+      } else {
+        setError('No se obtuvo URL de pago. Intentá de nuevo.')
+        setEnvioPagando(null)
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo proceder al pago')
+      setEnvioPagando(null)
+    }
+  }
 
   async function cargar() {
     setCargando(true)
     try {
-      const res = await api.get('/comisionistas/mis-envios')
-      setEnvios(res.data || [])
+      const [resEnvios, resReseñas] = await Promise.all([
+        api.get('/comisionistas/mis-envios'),
+        api.get('/comisionistas/mis-resenas-hechas').catch(() => ({ data: [] }))
+      ])
+      setEnvios(resEnvios.data || [])
+      setReseñados(resReseñas.data || [])
     } catch (e: any) {
       setError(e.response?.data?.error || 'Error cargando tus envíos')
     } finally {
       setCargando(false)
+    }
+  }
+
+  function abrirReseña(envioId: string) {
+    setReseñaAbierta(envioId)
+    setEstrellas(5)
+    setComentario('')
+  }
+
+  async function enviarReseña(envioId: string) {
+    setAccionando(true)
+    setError('')
+    try {
+      await api.post(`/comisionistas/envio/${envioId}/resena`, { calificacion: estrellas, comentario })
+      setReseñaAbierta(null)
+      setReseñados(prev => [...prev, envioId])
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo enviar la reseña')
+    } finally {
+      setAccionando(false)
     }
   }
 
@@ -120,6 +168,18 @@ export default function MisEnviosPage() {
                   )}
 
                   <div className="flex flex-wrap gap-2 justify-end">
+                    {envio.estado === 'pendiente' && envio.pago?.estadoPago !== 'pagado' && (
+                      <button onClick={() => pagarEnvio(envio._id)} disabled={envioPagando === envio._id} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">
+                        {envioPagando === envio._id ? 'Procesando...' : '💳 Pagar'}
+                      </button>
+                    )}
+                    {/* Reseñar al comisionista (solo envíos entregados, sin reseña previa) */}
+                    {envio.estado === 'entregado' && !reseñados.includes(envio._id) && reseñaAbierta !== envio._id && (
+                      <button onClick={() => abrirReseña(envio._id)} className="px-4 py-2 border border-ml-violet text-ml-violet rounded-lg text-sm font-semibold hover:bg-violet-50">⭐ Calificar</button>
+                    )}
+                    {envio.estado === 'entregado' && reseñados.includes(envio._id) && (
+                      <span className="px-3 py-2 text-sm text-green-700 font-semibold">✓ Reseñado</span>
+                    )}
                     {envio.comisionistaId && envio.estado !== 'cancelado' && (
                       <button onClick={() => coordinarChat(envio.comisionistaId!._id, envio.comisionistaId!.nombre)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
                     )}
@@ -127,6 +187,23 @@ export default function MisEnviosPage() {
                       <button onClick={() => cancelar(envio._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700">Cancelar</button>
                     )}
                   </div>
+
+                  {/* Form de reseña */}
+                  {reseñaAbierta === envio._id && (
+                    <div className="mt-3 pt-3 border-t border-ml-line">
+                      <p className="text-sm font-semibold text-ml-ink mb-2">¿Cómo fue tu experiencia con {envio.comisionistaId?.nombre || 'el comisionista'}?</p>
+                      <div className="flex items-center gap-1 mb-3">
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <button key={n} type="button" onClick={() => setEstrellas(n)} className={`text-2xl ${n <= estrellas ? 'text-amber-400' : 'text-ml-line'}`}>★</button>
+                        ))}
+                      </div>
+                      <textarea value={comentario} onChange={(e) => setComentario(e.target.value)} placeholder="Contanos cómo fue (opcional)" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm mb-2 h-20" />
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => setReseñaAbierta(null)} className="px-4 py-2 text-sm font-semibold text-ml-muted">Cancelar</button>
+                        <button onClick={() => enviarReseña(envio._id)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">{accionando ? 'Enviando...' : 'Enviar reseña'}</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}

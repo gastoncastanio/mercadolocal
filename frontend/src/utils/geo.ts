@@ -59,6 +59,73 @@ export function obtenerUbicacion(): Promise<Coord> {
   })
 }
 
+// ===== Geocodificación (ciudad → coordenadas) vía Nominatim de OpenStreetMap =====
+// Servicio gratuito, sin API key. Política de uso: máx ~1 req/seg (por eso el
+// autocomplete debe ir con debounce desde el componente) y bias a Argentina.
+
+export interface SugerenciaLugar {
+  nombre: string // texto legible para mostrar (ej: "Tandil, Buenos Aires")
+  ciudad: string // nombre corto de la localidad
+  lat: number
+  lng: number
+}
+
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
+
+/**
+ * Busca localidades por nombre. Devuelve hasta `limite` sugerencias con coords.
+ * Sesgado a Argentina (countrycodes=ar) y en español. Tolerante a fallos: si la
+ * red o el servicio fallan, devuelve [] en lugar de romper el formulario.
+ */
+export async function buscarLugares(
+  consulta: string,
+  opciones: { limite?: number; signal?: AbortSignal } = {}
+): Promise<SugerenciaLugar[]> {
+  const q = consulta.trim()
+  if (q.length < 3) return []
+  const { limite = 5, signal } = opciones
+
+  const params = new URLSearchParams({
+    q,
+    format: 'jsonv2',
+    addressdetails: '1',
+    countrycodes: 'ar',
+    limit: String(limite),
+    'accept-language': 'es'
+  })
+
+  try {
+    const res = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
+      headers: { Accept: 'application/json' },
+      signal
+    })
+    if (!res.ok) return []
+    const datos = await res.json()
+    if (!Array.isArray(datos)) return []
+
+    return datos
+      .map((d: any): SugerenciaLugar | null => {
+        const lat = Number(d.lat)
+        const lng = Number(d.lon)
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+        const a = d.address || {}
+        const ciudad =
+          a.city || a.town || a.village || a.municipality || a.county || (d.display_name || '').split(',')[0]
+        return {
+          nombre: d.display_name || ciudad || q,
+          ciudad: (ciudad || '').trim(),
+          lat,
+          lng
+        }
+      })
+      .filter((s): s is SugerenciaLugar => s !== null && !!s.ciudad)
+  } catch {
+    // AbortError (debounce que reemplaza la búsqueda) o red caída: no es un error
+    // que deba ver el usuario; simplemente no hay sugerencias.
+    return []
+  }
+}
+
 /** Ordena una lista de items con coords por cercanía a un origen, agregando `distancia` (m). */
 export function ordenarPorCercania<T extends { ubicacion: Coord }>(
   items: T[],
