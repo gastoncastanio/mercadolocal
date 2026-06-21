@@ -19,6 +19,10 @@ export async function crearPreferencia(orden, compradorEmail) {
   const items = orden.items.map(item => ({
     id: item.productoId.toString(),
     title: item.nombre,
+    // description + category_id mejoran la tasa de aprobación y reducen rechazos
+    // del motor antifraude de MP (acción recomendada del reporte de integración).
+    description: (item.nombre || 'Producto').slice(0, 250),
+    category_id: 'others',
     quantity: item.cantidad,
     unit_price: item.precioUnitario,
     currency_id: 'ARS'
@@ -69,11 +73,25 @@ export async function crearPreferencia(orden, compradorEmail) {
 
   const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
 
+  // Datos del comprador (payer): cuantos más datos reales mandemos, mejor evalúa
+  // el motor antifraude de MP y más sube la tasa de aprobación (acción recomendada
+  // del reporte de integración). Se arman de forma defensiva: solo se incluye lo
+  // que existe en la orden, sin romper si falta algo.
+  const payer = { email: compradorEmail }
+  const nombreCompleto = (orden.nombreComprador || '').trim()
+  if (nombreCompleto) {
+    const partes = nombreCompleto.split(/\s+/)
+    payer.name = partes[0]
+    if (partes.length > 1) payer.surname = partes.slice(1).join(' ')
+  }
+  const tel = (orden.telefonoComprador || '').toString().replace(/[^\d]/g, '')
+  if (tel) payer.phone = { number: tel }
+  const dir = (orden.direccionEntrega || '').toString().trim()
+  if (dir) payer.address = { street_name: dir.slice(0, 250) }
+
   const preferenceBody = {
     items,
-    payer: {
-      email: compradorEmail
-    },
+    payer,
     external_reference: orden._id.toString(),
     back_urls: {
       success: `${frontendUrl}/pago-exitoso`,

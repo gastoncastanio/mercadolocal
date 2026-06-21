@@ -146,18 +146,20 @@ export async function seccionMargenBruto({ anio, mes } = {}) {
   const { inicio, fin } = rangoMes(anio, mes)
   const cfg = await obtenerConfigContable()
 
-  // Ingresos por comisión del período (del mayor: cuentas 4.1.1 + 4.1.2)
+  // Ingresos por comisión del período (del mayor: cuentas 4.1.1 + 4.1.2).
+  // Incluimos 'reverso' para netear reembolsos (que ponen 4.1.x al debe).
   const asientos = await AsientoContable.find({
     estado: 'confirmado',
     fechaContable: { $gte: inicio, $lte: fin },
-    tipo: { $in: ['venta_split', 'venta_sin_split'] }
+    tipo: { $in: ['venta_split', 'venta_sin_split', 'reverso'] }
   }).lean()
 
   let ingresoComisiones = 0
   for (const a of asientos) {
     for (const l of a.lineas) {
       if (l.codigoCuenta === '4.1.1' || l.codigoCuenta === '4.1.2') {
-        ingresoComisiones += l.haber || 0
+        // Neto: haber (ingreso) menos debe (reverso de reembolso)
+        ingresoComisiones += (l.haber || 0) - (l.debe || 0)
       }
     }
   }
@@ -213,11 +215,15 @@ export async function seccionRentabilidad({ anio, mes } = {}) {
   for (const a of asientos) {
     for (const l of a.lineas) {
       if (l.codigoCuenta.startsWith('4.')) {
-        ingresos += l.haber || 0
-        desglosIngresos[l.codigoCuenta] = (desglosIngresos[l.codigoCuenta] || 0) + (l.haber || 0)
+        // INGRESO neto: haber − debe (un reverso de reembolso resta)
+        const neto = (l.haber || 0) - (l.debe || 0)
+        ingresos += neto
+        desglosIngresos[l.codigoCuenta] = (desglosIngresos[l.codigoCuenta] || 0) + neto
       } else if (l.codigoCuenta.startsWith('5.')) {
-        egresos += l.debe || 0
-        desgloseEgresos[l.codigoCuenta] = (desgloseEgresos[l.codigoCuenta] || 0) + (l.debe || 0)
+        // EGRESO neto: debe − haber (un reverso de gasto resta)
+        const neto = (l.debe || 0) - (l.haber || 0)
+        egresos += neto
+        desgloseEgresos[l.codigoCuenta] = (desgloseEgresos[l.codigoCuenta] || 0) + neto
       }
     }
   }
@@ -262,12 +268,16 @@ export async function seccionBreakEven({ anio, mes } = {}) {
     ? (comisionesActual / gmvActual)
     : 0.05 // fallback 5% si no hay datos
 
-  // Costos fijos: usar OPEX real del mes si existe, sino el configurado
+  // Costos fijos para la meta de break-even: el MÁXIMO entre lo configurado
+  // (costo fijo mensual planificado) y el OPEX real del mes. Así la meta nunca
+  // baja del piso planificado por haber cargado un solo gasto chico, pero SÍ
+  // sube si el gasto real del mes superó el presupuesto.
   const opexReal = await GastoOperativo.aggregate([
     { $match: { fechaGasto: { $gte: inicio, $lte: fin }, activo: true } },
     { $group: { _id: null, total: { $sum: '$monto' } } }
   ])
-  const costosFijos = opexReal[0]?.total || cfg.costosFijosMensuales
+  const opexRealTotal = opexReal[0]?.total || 0
+  const costosFijos = Math.max(opexRealTotal, cfg.costosFijosMensuales || 0)
 
   // Break-even GMV = costos fijos / margen contribución
   const gmvBreakEven = margenContribucion > 0

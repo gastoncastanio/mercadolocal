@@ -23,48 +23,15 @@ function parsearPeriodo(query) {
  */
 router.post('/init-plan-cuentas', verificarToken, soloAdmin, async (req, res) => {
   try {
-    const PLAN_CUENTAS = [
-      { codigo: '1.1.1', nombre: 'Caja MercadoPago (Disponible)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.1.2', nombre: 'MercadoPago a Liberar (Clearing)', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.1.3', nombre: 'Caja Banco', tipo: 'ASSET', esSistema: true, moneda: 'ARS' },
-      { codigo: '1.2.1', nombre: 'Cuentas por Cobrar', tipo: 'ASSET', esSistema: false, moneda: 'ARS' },
-      { codigo: '2.1.1', nombre: 'Cuentas por Pagar a Vendedores', tipo: 'LIABILITY', esSistema: true, moneda: 'ARS' },
-      { codigo: '2.1.2', nombre: 'IVA Débito Fiscal', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '2.1.3', nombre: 'Provisión Impuestos (ARCA/IIBB)', tipo: 'LIABILITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '3.1.1', nombre: 'Capital', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '3.1.2', nombre: 'Resultados Acumulados', tipo: 'EQUITY', esSistema: false, moneda: 'ARS' },
-      { codigo: '4.1.1', nombre: 'Comisiones por Venta', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.2', nombre: 'Comisiones por Traslado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.3', nombre: 'Suscripciones Destacado', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.4', nombre: 'Pauta Publicitaria', tipo: 'REVENUE', esSistema: true, moneda: 'ARS' },
-      { codigo: '4.1.5', nombre: 'Otros Ingresos', tipo: 'REVENUE', esSistema: false, moneda: 'ARS' },
-      { codigo: '5.1.1', nombre: 'Costo Procesamiento MercadoPago', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.1', nombre: 'Marketing / Pauta Publicitaria', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.2', nombre: 'Hosting e Infraestructura', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.3', nombre: 'Honorarios Contables / Bancarios', tipo: 'EXPENSE', esSistema: true, moneda: 'ARS' },
-      { codigo: '5.2.4', nombre: 'Otros Gastos Operativos', tipo: 'EXPENSE', esSistema: false, moneda: 'ARS' }
-    ]
-
-    let creadas = 0
-    let actualizadas = 0
-
-    for (const cuenta of PLAN_CUENTAS) {
-      const resultado = await CuentaContable.findOneAndUpdate(
-        { codigo: cuenta.codigo },
-        cuenta,
-        { upsert: true, new: true }
-      )
-      resultado.isNew ? creadas++ : actualizadas++
-    }
-
+    const resultado = await contabilidadService.seedPlanCuentas()
     res.json({
       mensaje: 'Plan de cuentas inicializado',
-      creadas,
-      actualizadas
+      creadas: resultado.creadas,
+      actualizadas: resultado.existentes
     })
   } catch (error) {
     console.error('Error inicializando plan de cuentas:', error)
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: 'No se pudo inicializar el plan de cuentas' })
   }
 })
 
@@ -187,20 +154,31 @@ router.get('/cuadre', verificarToken, soloAdmin, async (req, res) => {
  */
 router.get('/asientos', verificarToken, soloAdmin, async (req, res) => {
   try {
-    const { tipo, desde, hasta, limit = 50, skip = 0 } = req.query
+    const { tipo, desde, hasta } = req.query
+
+    // Saneamiento de paginación: enteros válidos, con tope máximo (anti-DoS).
+    const TIPOS_VALIDOS = AsientoContable.schema.path('tipo').enumValues
+    let limit = parseInt(req.query.limit, 10)
+    if (!Number.isFinite(limit) || limit <= 0) limit = 50
+    limit = Math.min(limit, 200)
+    let skip = parseInt(req.query.skip, 10)
+    if (!Number.isFinite(skip) || skip < 0) skip = 0
 
     const filtro = {}
-    if (tipo) filtro.tipo = tipo
+    if (tipo && TIPOS_VALIDOS.includes(tipo)) filtro.tipo = tipo
     if (desde || hasta) {
       filtro.fechaContable = {}
-      if (desde) filtro.fechaContable.$gte = new Date(desde)
-      if (hasta) filtro.fechaContable.$lte = new Date(hasta)
+      const d = desde ? new Date(desde) : null
+      const h = hasta ? new Date(hasta) : null
+      if (d && !isNaN(d.getTime())) filtro.fechaContable.$gte = d
+      if (h && !isNaN(h.getTime())) filtro.fechaContable.$lte = h
+      if (Object.keys(filtro.fechaContable).length === 0) delete filtro.fechaContable
     }
 
     const asientos = await AsientoContable.find(filtro)
       .sort({ fechaContable: -1 })
-      .limit(parseInt(limit))
-      .skip(parseInt(skip))
+      .limit(limit)
+      .skip(skip)
       .lean()
 
     const total = await AsientoContable.countDocuments(filtro)
@@ -208,11 +186,12 @@ router.get('/asientos', verificarToken, soloAdmin, async (req, res) => {
     res.json({
       total,
       asientos,
-      pagina: Math.floor(parseInt(skip) / parseInt(limit)) + 1,
-      porPagina: parseInt(limit)
+      pagina: Math.floor(skip / limit) + 1,
+      porPagina: limit
     })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error('Error en GET /asientos:', error)
+    res.status(500).json({ error: 'No se pudieron obtener los asientos' })
   }
 })
 
@@ -224,18 +203,44 @@ router.post('/gasto', verificarToken, soloAdmin, async (req, res) => {
   try {
     const { categoria, concepto, monto, fechaGasto, comprobanteUrl, notas } = req.body
 
-    if (!categoria || !concepto || !monto || !fechaGasto) {
-      return res.status(400).json({ error: 'Campos requeridos: categoria, concepto, monto, fechaGasto' })
+    // Validación estricta: es plata que entra al libro mayor.
+    const CATEGORIAS = ['marketing', 'hosting', 'honorarios', 'infraestructura', 'otro']
+    if (!categoria || !CATEGORIAS.includes(categoria)) {
+      return res.status(400).json({ error: `Categoría inválida. Usá una de: ${CATEGORIAS.join(', ')}` })
     }
+    if (typeof concepto !== 'string' || concepto.trim().length < 2 || concepto.length > 200) {
+      return res.status(400).json({ error: 'El concepto debe tener entre 2 y 200 caracteres' })
+    }
+    const montoNum = Number(monto)
+    if (!Number.isFinite(montoNum) || montoNum <= 0) {
+      return res.status(400).json({ error: 'El monto debe ser un número mayor a 0' })
+    }
+    if (montoNum > 1e12) {
+      return res.status(400).json({ error: 'El monto es demasiado grande' })
+    }
+    const fecha = new Date(fechaGasto)
+    if (isNaN(fecha.getTime())) {
+      return res.status(400).json({ error: 'Fecha inválida' })
+    }
+    // No permitir fechas futuras (más de 1 día de margen por husos horarios)
+    if (fecha.getTime() > Date.now() + 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ error: 'La fecha del gasto no puede ser futura' })
+    }
+    if (notas !== undefined && (typeof notas !== 'string' || notas.length > 1000)) {
+      return res.status(400).json({ error: 'Notas demasiado largas' })
+    }
+
+    const conceptoLimpio = concepto.trim()
+    const montoRedondeado = Math.round(montoNum * 100) / 100
 
     const gasto = new GastoOperativo({
       categoria,
-      concepto,
-      monto,
-      fechaGasto: new Date(fechaGasto),
+      concepto: conceptoLimpio,
+      monto: montoRedondeado,
+      fechaGasto: fecha,
       cargadoPor: req.usuario.id,
-      comprobanteUrl: comprobanteUrl || '',
-      notas: notas || ''
+      comprobanteUrl: typeof comprobanteUrl === 'string' ? comprobanteUrl : '',
+      notas: typeof notas === 'string' ? notas : ''
     })
 
     await gasto.save()
@@ -244,9 +249,9 @@ router.post('/gasto', verificarToken, soloAdmin, async (req, res) => {
     try {
       const asiento = await contabilidadService.asientoEgresoOPEX({
         gastoId: gasto._id,
-        concepto,
+        concepto: conceptoLimpio,
         categoria,
-        monto,
+        monto: montoRedondeado,
         fecha: gasto.fechaGasto,
         creadoPor: req.usuario.id
       })
@@ -262,7 +267,8 @@ router.post('/gasto', verificarToken, soloAdmin, async (req, res) => {
 
     res.json({ gasto: gasto.toObject(), mensaje: 'Gasto registrado' })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    console.error('Error en POST /gasto:', error)
+    res.status(500).json({ error: 'No se pudo registrar el gasto' })
   }
 })
 

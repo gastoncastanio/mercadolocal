@@ -33,16 +33,25 @@ function verificarFirmaWebhook(req) {
 
   const webhookSecret = process.env.MP_WEBHOOK_SECRET
   if (!webhookSecret) {
-    // Si no hay secret configurado, validar que el pago exista en MP (fallback)
-    console.warn('⚠️ MP_WEBHOOK_SECRET no configurado - usando validación por consulta a MP')
+    // Sin secret no se puede verificar la firma. FAIL-SAFE: en producción se
+    // rechaza (no aceptamos webhooks no verificados que mueven plata). En
+    // desarrollo se deja pasar para poder testear localmente sin firma.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🚨 MP_WEBHOOK_SECRET ausente en producción → webhook RECHAZADO')
+      return false
+    }
+    console.warn('⚠️ MP_WEBHOOK_SECRET no configurado (dev) - firma NO verificada')
     return true
   }
 
   // Parsear x-signature: "ts=timestamp,v1=hash"
   const parts = {}
   xSignature.split(',').forEach(part => {
-    const [key, value] = part.split('=')
-    parts[key.trim()] = value.trim()
+    const idx = part.indexOf('=')
+    if (idx === -1) return
+    const key = part.slice(0, idx).trim()
+    const value = part.slice(idx + 1).trim()
+    if (key && value) parts[key] = value
   })
 
   const ts = parts['ts']
@@ -183,6 +192,70 @@ router.post('/webhook', async (req, res) => {
 
       if (!orden) {
         console.warn(`⚠️ Webhook: orden ${ordenId} no encontrada`)
+        return res.status(200).send('OK')
+      }
+
+      // 2-bis. REEMBOLSO / CONTRACARGO: una venta antes aprobada ahora se
+      // devolvió o tuvo chargeback. Hay que revertir el ingreso del libro mayor.
+      // Va ANTES del guard de idempotencia porque ese guard matchea el mismo
+      // paymentId de la aprobación original y, si no, cortaría el reembolso.
+      const esReembolso = ['refunded', 'charged_back'].includes(pago.status) ||
+        (pago.status === 'cancelled' && orden.estado === 'pagada')
+      if (esReembolso) {
+        // Idempotencia: si ya está reembolsada, no repetir.
+        if (orden.estado === 'reembolsada') {
+          return res.status(200).send('OK')
+        }
+        const ordenReemb = await Orden.findOneAndUpdate(
+          { _id: ordenId, estado: { $in: ['pagada', 'enviada', 'completada'] } },
+          { $set: { estado: 'reembolsada', mpStatus: pago.status } },
+          { new: true }
+        )
+        if (!ordenReemb) {
+          // No estaba en un estado reversible (p.ej. nunca se pagó). Nada que hacer.
+          return res.status(200).send('OK')
+        }
+
+        // Asiento reversor del libro mayor (fire-and-forget, idempotente por
+        // referenciaId reembolso:${ordenId}). Revierte split o sin-split.
+        contabilidadService.asientoReembolso({
+          ordenId: ordenReemb._id,
+          motivo: pago.status,
+          fecha: new Date(),
+          creadoPor: null
+        }).catch(e => console.warn('Error registrando asiento de reembolso:', e.message))
+
+        // Auditoría del reembolso
+        try {
+          await new AuditoriaFinanciera({
+            tipo: 'reembolso',
+            ordenId: ordenReemb._id,
+            mpPaymentId: pago.id.toString(),
+            monto: ordenReemb.total,
+            comision: ordenReemb.comision,
+            usaSplit: ordenReemb.usaSplit,
+            compradorId: ordenReemb.compradorId,
+            metadata: { mpStatus: pago.status, mpStatusDetail: pago.status_detail }
+          }).save()
+        } catch (auditErr) {
+          console.error('Error guardando auditoría de reembolso:', auditErr.message)
+        }
+
+        // Avisar al comprador (no bloquea)
+        try {
+          const notif = await new Notificacion({
+            usuarioId: ordenReemb.compradorId,
+            tipo: 'compra',
+            titulo: 'Pago reembolsado',
+            mensaje: `Se reembolsó tu pago de $${ordenReemb.total.toLocaleString('es-AR')} de la orden #${ordenReemb._id.toString().slice(-8)}.`,
+            enlace: '/mis-ordenes'
+          }).save()
+          emitNotificacion(ordenReemb.compradorId.toString(), notif)
+        } catch (notifErr) {
+          console.error('Error notificando reembolso:', notifErr.message)
+        }
+
+        console.log(`↩️ Reembolso procesado: orden ${ordenId} (${pago.status})`)
         return res.status(200).send('OK')
       }
 
@@ -350,24 +423,26 @@ router.post('/webhook', async (req, res) => {
               creadoPor: null
             }).catch(e => console.warn('Error registrando asiento venta split:', e.message))
           } else {
-            // Venta sin split: entra todo, le debés al vendedor
-            for (const tiendaId of tiendaIds) {
-              const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
-              const montoTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-              const comisionTienda = Math.round(montoTienda * porcentajeComision / 100 * 100) / 100
-              const payoutVendedor = montoTienda - comisionTienda
+            // Venta sin split: entra TODO el monto, le debés al vendedor.
+            // UN solo asiento por orden (el referenciaId es por-orden). Si
+            // iteráramos por tienda, la 2ª+ tienda colisionaría con el mismo
+            // referenciaId y se descartaría → subdeclaración. Usamos los totales
+            // de la orden, idéntico al backfill, para que ambas vías produzcan
+            // EXACTAMENTE el mismo asiento.
+            const totalOrden = Math.round((ordenActualizada.total || 0) * 100) / 100
+            const comisionOrden = Math.round((ordenActualizada.comision || 0) * 100) / 100
+            const payoutOrden = Math.round((totalOrden - comisionOrden) * 100) / 100
 
-              contabilidadService.asientoVentaSinSplit({
-                ordenId: ordenActualizada._id,
-                tiendaId,
-                vendedorId: (await Tienda.findById(tiendaId))?.usuarioId,
-                montoTotal: montoTienda,
-                montoComision: comisionTienda,
-                montoPayout: payoutVendedor,
-                fecha: new Date(),
-                creadoPor: null
-              }).catch(e => console.warn('Error registrando asiento venta sin split:', e.message))
-            }
+            contabilidadService.asientoVentaSinSplit({
+              ordenId: ordenActualizada._id,
+              tiendaId: tiendaIds[0],
+              vendedorId: (await Tienda.findById(tiendaIds[0]))?.usuarioId,
+              montoTotal: totalOrden,
+              montoComision: comisionOrden,
+              montoPayout: payoutOrden,
+              fecha: new Date(),
+              creadoPor: null
+            }).catch(e => console.warn('Error registrando asiento venta sin split:', e.message))
           }
         } catch (contabErr) {
           console.warn('Error en bloque de contabilidad:', contabErr.message)

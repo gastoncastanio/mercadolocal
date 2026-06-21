@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 
@@ -131,7 +131,15 @@ export default function PanelContador() {
     setSetupMsg('Importando histórico…')
     try {
       const res = await api.post('/contador/backfill')
-      setSetupMsg(`✅ ${res.data.asientosNuevos} movimientos nuevos importados.`)
+      const { asientosNuevos = 0, ventasError = 0, pautasError = 0, erroresDetalle = [] } = res.data || {}
+      const errores = ventasError + pautasError
+      if (errores > 0) {
+        setSetupMsg(`⚠️ ${asientosNuevos} importados, pero ${errores} fallaron${erroresDetalle[0] ? `: ${erroresDetalle[0]}` : '.'}`)
+      } else if (asientosNuevos === 0) {
+        setSetupMsg('✅ Todo ya estaba sincronizado (nada nuevo para importar).')
+      } else {
+        setSetupMsg(`✅ ${asientosNuevos} movimientos nuevos importados.`)
+      }
       await cargar()
     } catch (e: any) {
       setSetupMsg('❌ ' + (e?.response?.data?.error || 'No se pudo importar.'))
@@ -149,7 +157,14 @@ export default function PanelContador() {
         String(f.neto), String(f.iva), String(f.total), f.fiscal ? 'Sí' : 'Interno'
       ])
     ]
-    const csv = filas.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    // Anti CSV-injection: si una celda arranca con = + - @ (o tab/CR), Excel la
+    // interpreta como fórmula. La neutralizamos con un apóstrofo inicial.
+    const sanear = (c: any) => {
+      let s = String(c)
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s
+      return s.replace(/"/g, '""')
+    }
+    const csv = filas.map(r => r.map(c => `"${sanear(c)}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -163,35 +178,71 @@ export default function PanelContador() {
     <div className="min-h-screen bg-ml-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-ml-ink">📊 Panel del Contador</h1>
-            <p className="text-sm text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-ml-ink">📊 Panel del Contador</h1>
+              <p className="text-sm text-ml-muted mt-1">Libro mayor, rentabilidad y flujo de caja</p>
+            </div>
+            <Link to="/admin" className="hidden sm:block text-sm text-ml-soft hover:text-ml-ink px-3 py-2 self-start">← Admin</Link>
           </div>
-          <div className="flex items-center gap-2 flex-wrap print:hidden">
-            <Link to="/admin" className="text-sm text-ml-soft hover:text-ml-ink px-3 py-2">← Admin</Link>
-            <select
-              value={mes}
-              onChange={e => setMes(parseInt(e.target.value))}
-              className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-            </select>
-            <select
-              value={anio}
-              onChange={e => setAnio(parseInt(e.target.value))}
-              className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white"
-            >
-              {[ahora.getFullYear(), ahora.getFullYear() - 1, ahora.getFullYear() - 2].map(y =>
-                <option key={y} value={y}>{y}</option>
-              )}
-            </select>
-            <button onClick={importarHistorico} disabled={setupBusy} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 disabled:opacity-50" title="Volver a importar el histórico (no duplica)">↻ Sincronizar</button>
-            <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90">➕ Gasto</button>
-            <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">⚙️ Config</button>
-            <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50">🖨️ PDF</button>
+
+          {/* Controls Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 print:hidden">
+            {/* Date and Sync Controls */}
+            <div className="flex items-center gap-2">
+              <select
+                value={mes}
+                onChange={e => setMes(parseInt(e.target.value))}
+                className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white flex-1 sm:flex-none"
+              >
+                {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+              </select>
+              <select
+                value={anio}
+                onChange={e => setAnio(parseInt(e.target.value))}
+                className="border border-ml-line rounded-lg px-3 py-2 text-sm bg-white flex-1 sm:flex-none"
+              >
+                {[ahora.getFullYear(), ahora.getFullYear() - 1, ahora.getFullYear() - 2].map(y =>
+                  <option key={y} value={y}>{y}</option>
+                )}
+              </select>
+              <button onClick={importarHistorico} disabled={setupBusy} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap" title="Volver a importar el histórico (no duplica)">↻</button>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() => setModal('gasto')} className="text-sm px-3 py-2 bg-red-600 text-white rounded-lg hover:opacity-90 flex-1 sm:flex-none">➕ Gasto</button>
+              <button onClick={() => setModal('config')} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 flex-1 sm:flex-none">⚙️</button>
+              <button onClick={() => window.print()} className="text-sm px-3 py-2 bg-white border border-ml-line text-ml-soft rounded-lg hover:bg-gray-50 flex-1 sm:flex-none">🖨️</button>
+            </div>
           </div>
         </div>
+
+        {/* Detector de desincronización: la auditoría tiene comisiones que el
+            libro mayor todavía no registró (asientos faltantes → tocar Sincronizar).
+            Tolerancia de $1 para no disparar por redondeos. */}
+        {data && ((data.breakEven?.comisionesActual ?? 0) - (data.margenBruto?.ingresoComisiones ?? 0)) > 1 && (
+          <div className="mb-6 rounded-xl p-4 bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
+            <span className="text-2xl">⚠️</span>
+            <div className="text-sm flex-1">
+              <p className="font-semibold text-amber-800">Hay ventas sin sincronizar en el libro mayor</p>
+              <p className="text-amber-700">
+                La auditoría registró {pesos(data.breakEven?.comisionesActual)} de comisiones, pero el libro mayor
+                solo tiene {pesos(data.margenBruto?.ingresoComisiones)}. Faltan asientos por{' '}
+                {pesos((data.breakEven?.comisionesActual ?? 0) - (data.margenBruto?.ingresoComisiones ?? 0))}. Sincronizá para reconstruirlos.
+              </p>
+            </div>
+            <button
+              onClick={importarHistorico}
+              disabled={setupBusy}
+              className="text-sm px-4 py-2 bg-amber-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 whitespace-nowrap self-start"
+            >
+              {setupBusy ? 'Sincronizando…' : '↻ Sincronizar ahora'}
+            </button>
+            {setupMsg && <p className="text-xs text-amber-700 w-full sm:w-auto">{setupMsg}</p>}
+          </div>
+        )}
 
         {/* Estado de cuadre (banner) */}
         {data && (
@@ -247,8 +298,10 @@ export default function PanelContador() {
               />
               <KpiCard
                 titulo="Rentabilidad"
-                valor={`${data.rentabilidad.rentabilidadNeta}%`}
-                color={data.rentabilidad.rentabilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'}
+                valor={data.rentabilidad.ingresos > 0 ? `${data.rentabilidad.rentabilidadNeta}%` : '—'}
+                /* Color por el resultado real, no por el %: con ingresos $0 y
+                   egresos > 0 hay pérdida aunque el % sea 0. */
+                color={data.rentabilidad.resultadoNeto >= 0 ? 'text-green-600' : 'text-red-600'}
               />
             </div>
 
@@ -433,18 +486,24 @@ function ModalGasto({ onClose, onGuardado }: { onClose: () => void; onGuardado: 
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [err, setErr] = useState('')
+  const enviando = useRef(false)
 
   async function guardar() {
+    // Lock síncrono: dos clicks en el mismo tick (antes del re-render) no
+    // pueden disparar dos POST → evita un OPEX duplicado en el libro mayor.
+    if (enviando.current) return
     setErr('')
     const montoNum = parseFloat(monto)
     if (!concepto.trim()) return setErr('Poné un concepto (ej: "Pauta Meta Junio")')
     if (!montoNum || montoNum <= 0) return setErr('El monto debe ser mayor a cero')
+    enviando.current = true
     setGuardando(true)
     try {
       await api.post('/contador/gasto', { categoria, concepto: concepto.trim(), monto: montoNum, fechaGasto, notas })
       onGuardado()
     } catch (e: any) {
       setErr(e?.response?.data?.error || 'No se pudo guardar el gasto')
+      enviando.current = false
       setGuardando(false)
     }
   }
