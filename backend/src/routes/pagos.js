@@ -186,6 +186,70 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // 2-bis. REEMBOLSO / CONTRACARGO: una venta antes aprobada ahora se
+      // devolvió o tuvo chargeback. Hay que revertir el ingreso del libro mayor.
+      // Va ANTES del guard de idempotencia porque ese guard matchea el mismo
+      // paymentId de la aprobación original y, si no, cortaría el reembolso.
+      const esReembolso = ['refunded', 'charged_back'].includes(pago.status) ||
+        (pago.status === 'cancelled' && orden.estado === 'pagada')
+      if (esReembolso) {
+        // Idempotencia: si ya está reembolsada, no repetir.
+        if (orden.estado === 'reembolsada') {
+          return res.status(200).send('OK')
+        }
+        const ordenReemb = await Orden.findOneAndUpdate(
+          { _id: ordenId, estado: { $in: ['pagada', 'enviada', 'completada'] } },
+          { $set: { estado: 'reembolsada', mpStatus: pago.status } },
+          { new: true }
+        )
+        if (!ordenReemb) {
+          // No estaba en un estado reversible (p.ej. nunca se pagó). Nada que hacer.
+          return res.status(200).send('OK')
+        }
+
+        // Asiento reversor del libro mayor (fire-and-forget, idempotente por
+        // referenciaId reembolso:${ordenId}). Revierte split o sin-split.
+        contabilidadService.asientoReembolso({
+          ordenId: ordenReemb._id,
+          motivo: pago.status,
+          fecha: new Date(),
+          creadoPor: null
+        }).catch(e => console.warn('Error registrando asiento de reembolso:', e.message))
+
+        // Auditoría del reembolso
+        try {
+          await new AuditoriaFinanciera({
+            tipo: 'reembolso',
+            ordenId: ordenReemb._id,
+            mpPaymentId: pago.id.toString(),
+            monto: ordenReemb.total,
+            comision: ordenReemb.comision,
+            usaSplit: ordenReemb.usaSplit,
+            compradorId: ordenReemb.compradorId,
+            metadata: { mpStatus: pago.status, mpStatusDetail: pago.status_detail }
+          }).save()
+        } catch (auditErr) {
+          console.error('Error guardando auditoría de reembolso:', auditErr.message)
+        }
+
+        // Avisar al comprador (no bloquea)
+        try {
+          const notif = await new Notificacion({
+            usuarioId: ordenReemb.compradorId,
+            tipo: 'compra',
+            titulo: 'Pago reembolsado',
+            mensaje: `Se reembolsó tu pago de $${ordenReemb.total.toLocaleString('es-AR')} de la orden #${ordenReemb._id.toString().slice(-8)}.`,
+            enlace: '/mis-ordenes'
+          }).save()
+          emitNotificacion(ordenReemb.compradorId.toString(), notif)
+        } catch (notifErr) {
+          console.error('Error notificando reembolso:', notifErr.message)
+        }
+
+        console.log(`↩️ Reembolso procesado: orden ${ordenId} (${pago.status})`)
+        return res.status(200).send('OK')
+      }
+
       // 2. IDEMPOTENCIA: Si la orden ya fue procesada con este paymentId, ignorar
       if (orden.mpPaymentId && orden.mpPaymentId === pago.id.toString()) {
         console.log(`ℹ️ Webhook duplicado ignorado: orden ${ordenId} ya procesada con payment ${pago.id}`)

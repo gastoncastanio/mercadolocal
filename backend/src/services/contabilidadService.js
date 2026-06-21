@@ -313,24 +313,45 @@ export async function asientoSuscripcion({
 }
 
 /**
- * Asiento de reembolso/contracargo (reverso de ingreso).
+ * Asiento de reembolso/contracargo: REVERSO del asiento de venta original.
+ *
+ * Busca el asiento de la venta (split o sin-split) y crea su inverso exacto
+ * (cada línea con debe↔haber intercambiados). Así revierte correctamente
+ * cualquier tipo de venta: en split deshace la comisión; en sin-split deshace
+ * comisión + payout + caja. Idempotente por `reembolso:${ordenId}`.
+ *
+ * @returns el asiento reversor, o null si no había venta que revertir.
  */
 export async function asientoReembolso({
   ordenId,
-  montoReembolsado,
-  motivo,
+  motivo = 'reembolso',
   fecha,
   creadoPor
 }) {
+  if (!ordenId) return null
+
+  const idStr = ordenId.toString()
+  const original = await AsientoContable.findOne({
+    referenciaId: { $in: [`venta_split:${idStr}`, `venta_sin_split:${idStr}`] },
+    estado: 'confirmado'
+  }).lean()
+
+  // Si no hay asiento original (venta nunca asentada), no hay nada que revertir.
+  if (!original) return null
+
+  // Invertir cada línea: lo que fue debe pasa a haber y viceversa.
+  const lineasReverso = original.lineas.map(l => (
+    l.debe > 0
+      ? { codigoCuenta: l.codigoCuenta, haber: l.debe }
+      : { codigoCuenta: l.codigoCuenta, debe: l.haber }
+  ))
+
   return registrarAsiento({
-    referenciaId: `reembolso:${ordenId}`,
+    referenciaId: `reembolso:${idStr}`,
     tipo: 'reverso',
-    descripcion: `Reembolso orden #${ordenId?.toString?.().slice(-8)} | Motivo: ${motivo} | Monto: $${montoReembolsado}`,
+    descripcion: `Reembolso orden #${idStr.slice(-8)} | Motivo: ${motivo} | Reverso de ${original.referenciaId}`,
     fechaContable: fecha,
-    lineas: [
-      { codigoCuenta: '4.1.1', debe: montoReembolsado }, // Reversa ingresos
-      { codigoCuenta: '1.1.2', haber: montoReembolsado } // De caja disponible
-    ],
+    lineas: lineasReverso,
     referencias: { ordenId },
     origen: 'webhook',
     creadoPor
@@ -659,7 +680,26 @@ export async function backfillAsientos() {
     }
   }
 
-  // 2. Pautas (desde los comprobantes)
+  // 2. Reembolsos históricos (revierten la venta original). Se corren DESPUÉS
+  //    de las ventas para que el asiento original ya exista al revertirlo.
+  const reembolsos = await AuditoriaFinanciera.find({ tipo: 'reembolso' }).lean()
+  let reembolsosError = 0
+  for (const r of reembolsos) {
+    try {
+      await asientoReembolso({
+        ordenId: r.ordenId,
+        motivo: r.metadata?.mpStatus || 'reembolso',
+        fecha: r.createdAt || new Date(),
+        creadoPor: null
+      })
+    } catch (e) {
+      reembolsosError++
+      if (erroresDetalle.length < 5) erroresDetalle.push(`reembolso ${r.ordenId}: ${e.message}`)
+      console.warn(`Backfill reembolso ${r.ordenId}:`, e.message)
+    }
+  }
+
+  // 3. Pautas (desde los comprobantes)
   const pautas = await Comprobante.find({ tipo: 'pauta' }).lean()
   let pautasError = 0
   for (const c of pautas) {
@@ -680,9 +720,11 @@ export async function backfillAsientos() {
 
   return {
     ventasProcesadas: auditorias.length,
+    reembolsosProcesados: reembolsos.length,
     pautasProcesadas: pautas.length,
     asientosNuevos: despues - antes,
     ventasError,
+    reembolsosError,
     pautasError,
     erroresDetalle
   }

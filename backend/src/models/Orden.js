@@ -55,7 +55,7 @@ const ordenSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['pendiente', 'pagada', 'enviada', 'completada', 'cancelada'],
+    enum: ['pendiente', 'pagada', 'enviada', 'completada', 'cancelada', 'reembolsada'],
     default: 'pendiente'
   },
   direccionEntrega: {
