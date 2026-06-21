@@ -19,6 +19,10 @@ export async function crearPreferencia(orden, compradorEmail) {
   const items = orden.items.map(item => ({
     id: item.productoId.toString(),
     title: item.nombre,
+    // description + category_id mejoran la tasa de aprobación y reducen rechazos
+    // del motor antifraude de MP (acción recomendada del reporte de integración).
+    description: (item.nombre || 'Producto').slice(0, 250),
+    category_id: 'others',
     quantity: item.cantidad,
     unit_price: item.precioUnitario,
     currency_id: 'ARS'
