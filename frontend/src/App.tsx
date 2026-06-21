@@ -121,6 +121,11 @@ const MiPerfilComisionistaPage = lazy(() => import('./pages/MiPerfilComisionista
 const MisEnviosPage = lazy(() => import('./pages/MisEnviosPage'))
 const MisCotizacionesPage = lazy(() => import('./pages/MisCotizacionesPage'))
 
+// Remis (traslado de personas, mismo conductor verificado)
+const PedirRemisPage = lazy(() => import('./pages/PedirRemisPage'))
+const MisViajesRemisPage = lazy(() => import('./pages/MisViajesRemisPage'))
+const RemisConductorPage = lazy(() => import('./pages/RemisConductorPage'))
+
 function LoadingSpinner() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -229,6 +234,11 @@ function RutasConBoundary() {
           <Route path="/comisionistas/mis-envios" element={<ConNavbar><RutaPrivada><MisEnviosPage /></RutaPrivada></ConNavbar>} />
           <Route path="/comisionistas/mis-cotizaciones" element={<ConNavbar><RutaPrivada><MisCotizacionesPage /></RutaPrivada></ConNavbar>} />
           <Route path="/comisionistas/viaje/:id" element={<ConNavbar><DetalleViajePage /></ConNavbar>} />
+
+          {/* Remis (traslado de personas) */}
+          <Route path="/remis" element={<ConNavbar><RutaPrivada><PedirRemisPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/remis/mis-viajes" element={<ConNavbar><RutaPrivada><MisViajesRemisPage /></RutaPrivada></ConNavbar>} />
+          <Route path="/remis/conductor" element={<ConNavbar><RutaPrivada><RemisConductorPage /></RutaPrivada></ConNavbar>} />
 
           {/* Solo admin */}
           <Route path="/admin" element={<RutaPrivada roles={['admin']}><DashboardAdmin /></RutaPrivada>} />

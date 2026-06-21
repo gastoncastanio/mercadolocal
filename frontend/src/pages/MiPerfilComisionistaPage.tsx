@@ -21,6 +21,8 @@ interface Perfil {
   estaTrabajandoHoy?: boolean
   horariosActivos?: Record<string, { desde?: string; hasta?: string }>
   mpVinculado?: boolean
+  ofreceRemis?: boolean
+  tarifasRemis?: { banderita: number; porKm: number; porHoraEspera: number; minimo: number }
 }
 
 interface Cotizacion {
@@ -101,6 +103,10 @@ export default function MiPerfilComisionistaPage() {
   const [notasCot, setNotasCot] = useState<Record<string, string>>({})
   const [avisoMp, setAvisoMp] = useState('')
 
+  // Remis (traslado de personas): tarifas configurables del conductor.
+  const [tarifasRemis, setTarifasRemis] = useState({ banderita: 0, porKm: 0, porHoraEspera: 0, minimo: 0 })
+  const [guardandoRemis, setGuardandoRemis] = useState(false)
+
   // Form de perfil
   const [pf, setPf] = useState({
     nombreServicio: '', descripcion: '', tipo: 'auto', patente: '',
@@ -153,6 +159,13 @@ export default function MiPerfilComisionistaPage() {
         }
       }
       setHorarios(h)
+      // Tarifas de remis
+      setTarifasRemis({
+        banderita: res.data.tarifasRemis?.banderita || 0,
+        porKm: res.data.tarifasRemis?.porKm || 0,
+        porHoraEspera: res.data.tarifasRemis?.porHoraEspera || 0,
+        minimo: res.data.tarifasRemis?.minimo || 0
+      })
       await Promise.all([cargarViajes(), cargarEnvios(), cargarCotizaciones()])
     } catch (e: any) {
       if (e.response?.status === 404) {
@@ -226,6 +239,20 @@ export default function MiPerfilComisionistaPage() {
       setError(err.response?.data?.error || 'No se pudieron guardar los horarios')
     } finally {
       setAccionando(false)
+    }
+  }
+
+  // Activar/desactivar remis y guardar tarifas (traslado de personas).
+  async function guardarRemis(activar: boolean) {
+    setGuardandoRemis(true)
+    setError('')
+    try {
+      await api.patch('/remis/configuracion', { ofreceRemis: activar, tarifasRemis })
+      await cargar()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo guardar la configuración de remis')
+    } finally {
+      setGuardandoRemis(false)
     }
   }
 
@@ -516,6 +543,64 @@ export default function MiPerfilComisionistaPage() {
                   <span className="px-4 py-2 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm font-semibold">✓ MP vinculado</span>
                 ) : (
                   <button onClick={vincularMercadoPago} disabled={accionando} className="px-5 py-2.5 rounded-lg font-bold text-sm bg-ml-mp text-white disabled:opacity-50">Vincular Mercado Pago</button>
+                )}
+              </div>
+            </div>
+
+            {/* ===== MercadoLocal Remis (traslado de personas) ===== */}
+            <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 className="text-lg font-bold text-ml-ink flex items-center gap-2">🚕 MercadoLocal Remis</h2>
+                  <p className="text-xs text-ml-muted mt-1 max-w-md">Con el mismo vehículo verificado podés ofrecer traslado de personas: la gente te pide desde la app, sin llamadas. Sumá viajes simples, ida y vuelta o "días de compras".</p>
+                </div>
+                {perfil.ofreceRemis ? (
+                  <span className="px-3 py-1.5 rounded-full bg-green-50 text-green-700 border border-green-200 text-xs font-semibold shrink-0">🟢 Remis activo</span>
+                ) : (
+                  <span className="px-3 py-1.5 rounded-full bg-ml-bg text-ml-muted border border-ml-line text-xs font-semibold shrink-0">Desactivado</span>
+                )}
+              </div>
+
+              {perfil.estadoDocumento !== 'verificado' && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  Necesitás el documento del vehículo verificado para ofrecer remis (misma verificación que para los envíos).
+                </p>
+              )}
+
+              {/* Tarifas */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Bajada de bandera ($)</label>
+                  <input type="number" min={0} value={tarifasRemis.banderita || ''} onChange={e => setTarifasRemis(t => ({ ...t, banderita: Number(e.target.value) || 0 }))} placeholder="Base fija" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Por kilómetro ($)</label>
+                  <input type="number" min={0} value={tarifasRemis.porKm || ''} onChange={e => setTarifasRemis(t => ({ ...t, porKm: Number(e.target.value) || 0 }))} placeholder="Por km" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Por hora de espera ($)</label>
+                  <input type="number" min={0} value={tarifasRemis.porHoraEspera || ''} onChange={e => setTarifasRemis(t => ({ ...t, porHoraEspera: Number(e.target.value) || 0 }))} placeholder="Día de compras / ida y vuelta" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Tarifa mínima ($)</label>
+                  <input type="number" min={0} value={tarifasRemis.minimo || ''} onChange={e => setTarifasRemis(t => ({ ...t, minimo: Number(e.target.value) || 0 }))} placeholder="Mínimo por viaje" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                </div>
+              </div>
+              <p className="text-xs text-ml-muted">Precio estimado = bajada de bandera + (km × por km) + (horas de espera × por hora), nunca menor a la mínima.</p>
+
+              <div className="flex flex-wrap gap-2 justify-end pt-2 border-t border-ml-line">
+                {perfil.ofreceRemis && (
+                  <button onClick={() => navigate('/remis/conductor')} className="px-4 py-2 border border-ml-violet text-ml-violet rounded-lg text-sm font-semibold hover:bg-violet-50">📥 Ver pedidos de remis</button>
+                )}
+                {perfil.ofreceRemis ? (
+                  <>
+                    <button onClick={() => guardarRemis(true)} disabled={guardandoRemis} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">{guardandoRemis ? 'Guardando...' : 'Guardar tarifas'}</button>
+                    <button onClick={() => guardarRemis(false)} disabled={guardandoRemis} className="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700">Desactivar remis</button>
+                  </>
+                ) : (
+                  <button onClick={() => guardarRemis(true)} disabled={guardandoRemis || perfil.estadoDocumento !== 'verificado'} className="px-5 py-2.5 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-50" title={perfil.estadoDocumento !== 'verificado' ? 'Necesitás el documento verificado' : ''}>
+                    {guardandoRemis ? 'Activando...' : '🚕 Activar remis'}
+                  </button>
                 )}
               </div>
             </div>

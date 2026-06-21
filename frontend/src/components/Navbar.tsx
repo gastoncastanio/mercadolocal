@@ -301,6 +301,17 @@ export default function Navbar() {
                               🚚 Mis cotizaciones
                             </Link>
                           </GrupoMenu>
+                          <GrupoMenu id="remis" titulo="Remis" abierto={grupoMenu === 'remis'} onToggle={toggleGrupoMenu}>
+                            <Link to="/remis" onClick={cerrarMenuUsuario} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                              🚕 Pedir un remis
+                            </Link>
+                            <Link to="/remis/mis-viajes" onClick={cerrarMenuUsuario} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                              🧳 Mis viajes
+                            </Link>
+                            <Link to="/remis/conductor" onClick={cerrarMenuUsuario} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-ink hover:bg-ml-bg">
+                              🧑‍✈️ Conducir (panel)
+                            </Link>
+                          </GrupoMenu>
                           {esVendedor && (
                             <GrupoMenu id="vendedor" titulo="Vendedor" abierto={grupoMenu === 'vendedor'} onToggle={toggleGrupoMenu}>
                               <Link to="/publicar" onClick={cerrarMenuUsuario} className="flex items-center gap-3 px-4 py-2.5 text-sm text-ml-blue font-medium hover:bg-blue-50">
@@ -579,6 +590,14 @@ export default function Navbar() {
                   </>
                 )}
               </GrupoMenu>
+
+              {estaLogueado && (
+                <GrupoMenu id="remis" titulo="Remis" abierto={grupoMobile === 'remis'} onToggle={toggleGrupoMobile}>
+                  <Link to="/remis" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🚕 Pedir un remis</Link>
+                  <Link to="/remis/mis-viajes" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🧳 Mis viajes</Link>
+                  <Link to="/remis/conductor" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🧑‍✈️ Conducir (panel)</Link>
+                </GrupoMenu>
+              )}
 
               {estaLogueado && esVendedor && (
                 <GrupoMenu id="vendedor" titulo="Vendedor" abierto={grupoMobile === 'vendedor'} onToggle={toggleGrupoMobile}>
