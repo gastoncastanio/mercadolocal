@@ -213,11 +213,10 @@ export default function Landing() {
           style={{ background: 'radial-gradient(circle,rgba(124,58,237,.26),transparent 62%)', filter: 'blur(8px)' }} />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-8 py-8 sm:py-16 md:py-20 grid md:grid-cols-[1.05fr_.95fr] gap-8 md:gap-12 items-center">
-          {/* Columna texto */}
-          <div
-            className="transition-all duration-1000 ease-out"
-            style={{ opacity: hero.visible ? 1 : 0, transform: hero.visible ? 'translateY(0)' : 'translateY(24px)' }}
-          >
+          {/* Columna texto — SIN animación de entrada: está above-the-fold y es
+              el elemento LCP. Renderizarla oculta (opacity 0 + fade de 1s vía
+              IntersectionObserver) retrasaba el LCP varios cientos de ms. */}
+          <div>
             <span className="inline-flex items-center gap-2 text-[12px] sm:text-[13px] font-bold text-ml-violet bg-white/70 backdrop-blur-sm border border-[#e7dcff] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-5">
               <span className="w-[6px] h-[6px] rounded-full bg-green-500 ring-4 ring-green-500/20" />
               El marketplace que pone a competir a tu ciudad

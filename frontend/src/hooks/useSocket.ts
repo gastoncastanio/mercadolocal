@@ -12,6 +12,12 @@ export function useSocket(userId?: string) {
   const callbacksRef = useRef<Map<string, (data: any) => void>>(new Map())
 
   useEffect(() => {
+    // Sin userId (visitante anónimo) no abrimos socket: no hay sala personal a
+    // la que unirse y evitamos una conexión inútil en páginas públicas como la
+    // landing (además de posibles errores de consola si el WS no resuelve en
+    // ciertos entornos). Al loguearse, el efecto re-corre con userId y conecta.
+    if (!userId) return
+
     // Crear conexion solo si no existe
     if (!socketInstance) {
       socketInstance = io(SOCKET_URL, {
