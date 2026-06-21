@@ -50,7 +50,7 @@ const CATEGORIAS = [
 
 const TESTIMONIOS = [
   { nombre: 'Camila R.', ciudad: 'Córdoba', texto: 'Vendí más de 50 productos en el primer mes. La plataforma es súper intuitiva y el pago cae directo.', rol: 'Vendedora' },
-  { nombre: 'Martín L.', ciudad: 'Rosario', texto: 'Compré un celular y llegó perfecto. Me gusta que la plata queda retenida hasta que confirmo.', rol: 'Comprador' },
+  { nombre: 'Martín L.', ciudad: 'Rosario', texto: 'Compré un celular y llegó perfecto. Pagué con Mercado Pago, súper seguro y rápido.', rol: 'Comprador' },
   { nombre: 'Lucía G.', ciudad: 'Buenos Aires', texto: 'Abrí mi tienda de ropa vintage y ya tengo clientes fieles. Cero complicaciones.', rol: 'Vendedora' }
 ]
 
@@ -448,43 +448,91 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== CÓMO FUNCIONA / ESCROW (sección de confianza conservada) ===== */}
-      <section ref={escrow.ref as any} className="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14 md:py-16">
-        <div className="text-center mb-7 sm:mb-9 md:mb-10">
-          <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 bg-[#eef2ff] text-ml-blue rounded-full text-xs font-bold uppercase tracking-wide mb-2 sm:mb-3">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-            Compra sin riesgo
+      {/* ===== CÓMO FUNCIONA — Compra protegida por Mercado Pago ===== */}
+      <section ref={escrow.ref as any} className="relative max-w-7xl mx-auto px-5 sm:px-8 py-12 sm:py-16 md:py-20">
+        {/* Halo de fondo tech */}
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[760px] max-w-full aspect-square rounded-full bg-gradient-to-br from-ml-blue/[0.07] via-ml-purple/[0.06] to-transparent blur-3xl" />
+        </div>
+
+        <div className="text-center mb-10 sm:mb-14">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white border border-ml-line shadow-sm text-ml-blue rounded-full text-xs font-bold uppercase tracking-wide mb-4">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M9 12l2 2 4-4" /></svg>
+            Compra protegida por Mercado Pago
           </span>
-          <h2 className="font-display font-extrabold text-[26px] sm:text-[36px] tracking-[-0.02em]">¿Cómo funciona MercadoLocal?</h2>
-          <p className="text-[15px] sm:text-base text-ml-soft mt-3 max-w-2xl mx-auto leading-relaxed">
-            Tu plata está protegida en cada paso. No le pagamos al vendedor hasta que confirmes que todo está bien.
+          <h2 className="font-display font-extrabold text-[28px] sm:text-[40px] tracking-[-0.02em]">¿Cómo funciona <span className="ml-grad-text">MercadoLocal</span>?</h2>
+          <p className="text-[15px] sm:text-lg text-ml-soft mt-3 max-w-2xl mx-auto leading-relaxed">
+            Comprás en tu ciudad con el respaldo de <strong className="text-ml-ink">Mercado Pago</strong>. Pagás de forma segura y, si algo sale mal, ellos median y te devuelven la plata.
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 ${escrow.visible ? 'stagger-in' : ''}`}>
-          {[
-            { n: 1, icon: '\u{1F4B3}', titulo: 'Pagás tu compra', desc: 'El dinero queda retenido en MercadoLocal de forma segura. El vendedor no lo recibe aún.' },
-            { n: 2, icon: '\u{1F4E6}', titulo: 'Recibís el producto', desc: 'El vendedor prepara y te envía el producto. Seguí el estado desde "Mis pedidos".' },
-            { n: 3, icon: '✅', titulo: 'Confirmás la entrega', desc: 'Revisás que sea lo que esperabas. Si algo no está bien, abrís un reclamo.' },
-            { n: 4, icon: '\u{1F4B0}', titulo: 'Se libera el pago', desc: 'A las 24hs de tu confirmación, el vendedor recibe el dinero en su Mercado Pago.' }
-          ].map(paso => (
-            <div key={paso.n} className="text-center bg-white border border-ml-line rounded-[18px] p-6">
-              <div className="relative inline-flex mb-4">
-                <div className="w-16 h-16 rounded-2xl ml-grad text-white flex items-center justify-center text-3xl shadow-lg">{paso.icon}</div>
-                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white text-ml-violet border border-ml-line flex items-center justify-center font-extrabold text-sm shadow">{paso.n}</div>
+        {/* Timeline de 4 pasos */}
+        <div className="relative">
+          {/* Línea conectora (desktop) */}
+          <div className="hidden md:block absolute top-[52px] left-[14%] right-[14%] h-[2px] bg-gradient-to-r from-ml-blue/15 via-ml-purple/40 to-ml-blue/15" aria-hidden="true" />
+
+          <div className={`relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6 ${escrow.visible ? 'stagger-in' : ''}`}>
+            {[
+              {
+                n: 1, titulo: 'Pagás seguro', desc: 'Checkout encriptado de Mercado Pago: tarjeta, cuotas o el medio que prefieras. No compartís tus datos con el vendedor.',
+                icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5" /><path d="M2 10h20" /><path d="M6 15h4" /></svg>)
+              },
+              {
+                n: 2, titulo: 'El vendedor despacha', desc: 'Recibe tu pago y prepara el envío al instante. Seguí cada estado en vivo desde "Mis compras".',
+                icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M3 7.5h11V17H3z" /><path d="M14 10.5h4l3 3V17h-7z" /><circle cx="7" cy="18.5" r="1.7" /><circle cx="17.5" cy="18.5" r="1.7" /></svg>)
+              },
+              {
+                n: 3, titulo: 'Recibís y revisás', desc: 'Te llega el producto y confirmás que sea tal cual lo publicado. Todo desde la app.',
+                icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5" /><path d="M9 4h6v3H9z" /><path d="M9 13l2 2 4-4" /></svg>)
+              },
+              {
+                n: 4, titulo: 'Mercado Pago te respalda', desc: '¿Algo salió mal o te arrepentiste? Activás el reclamo o el botón de arrepentimiento en Mercado Pago. Ellos median y te devuelven el dinero.',
+                icon: (<svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M9 12l2 2 4-4" /></svg>)
+              }
+            ].map(paso => (
+              <div key={paso.n} className="group text-center bg-white border border-ml-line rounded-[20px] p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_18px_40px_-18px_rgba(37,99,235,0.35)] hover:border-ml-purple/30">
+                <div className="relative inline-flex mb-4">
+                  <div className="w-[68px] h-[68px] rounded-2xl ml-grad text-white flex items-center justify-center shadow-lg shadow-ml-blue/25 transition-transform duration-300 group-hover:scale-105">{paso.icon}</div>
+                  <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-white text-ml-violet border border-ml-line flex items-center justify-center font-extrabold text-sm shadow-sm">{paso.n}</div>
+                </div>
+                <h3 className="font-display font-bold text-ml-ink text-base mb-2">{paso.titulo}</h3>
+                <p className="text-[13px] text-ml-soft leading-relaxed max-w-[230px] mx-auto">{paso.desc}</p>
               </div>
-              <h3 className="font-display font-bold text-ml-ink text-base mb-2">{paso.titulo}</h3>
-              <p className="text-[13px] text-ml-soft leading-relaxed max-w-[220px] mx-auto">{paso.desc}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        <div className="mt-10 p-5 bg-[#fafaff] border border-ml-line rounded-2xl flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#eef2ff] flex items-center justify-center text-2xl shrink-0">&#x1F512;</div>
-          <div>
-            <p className="font-display font-bold text-ml-ink text-sm sm:text-base">Tu dinero está protegido al 100%</p>
-            <p className="text-[13px] sm:text-sm text-ml-soft mt-1 leading-relaxed">
-              Si el producto no llega, no coincide con lo publicado o tiene algún defecto, podés abrir un reclamo antes de confirmar la entrega y te devolvemos el total. Sin excusas, sin demoras.
+        {/* Banner de protección — derecho de arrepentimiento + protección al comprador */}
+        <div className="mt-10 sm:mt-12 rounded-[22px] p-[1.5px] bg-gradient-to-r from-ml-blue/30 via-ml-purple/40 to-ml-blue/30">
+          <div className="rounded-[21px] bg-white p-6 sm:p-7">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-11 h-11 rounded-xl ml-grad text-white flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M9 12l2 2 4-4" /></svg>
+              </div>
+              <p className="font-display font-extrabold text-ml-ink text-base sm:text-lg">Tu compra protegida de punta a punta</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#eef2ff] text-ml-blue flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
+                </div>
+                <div>
+                  <p className="font-display font-bold text-ml-ink text-sm">Botón de arrepentimiento</p>
+                  <p className="text-[13px] text-ml-soft mt-0.5 leading-relaxed">¿Te arrepentiste? Cancelás tu compra desde el botón de arrepentimiento de Mercado Pago y recuperás tu dinero según sus plazos.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#eef2ff] text-ml-blue flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z" /><path d="M9 12l2 2 4-4" /></svg>
+                </div>
+                <div>
+                  <p className="font-display font-bold text-ml-ink text-sm">Protección al Comprador</p>
+                  <p className="text-[13px] text-ml-soft mt-0.5 leading-relaxed">Si el producto no llega, no coincide o tiene defectos, abrís el reclamo en Mercado Pago. Ellos median y gestionan la devolución.</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-[12px] text-ml-muted mt-5 pt-4 border-t border-ml-line leading-relaxed">
+              MercadoLocal te conecta con vendedores de tu ciudad. El pago y la protección los procesa y garantiza <strong className="text-ml-soft">Mercado Pago</strong> a través de su Programa de Protección al Comprador.
             </p>
           </div>
         </div>

@@ -33,8 +33,8 @@ const BANNERS_BASE: BannerDef[] = [
     emoji: '\u{1F3EA}'
   },
   {
-    titulo: 'Compra 100% protegida',
-    subtitulo: 'Tu dinero queda retenido hasta que confirmes la entrega',
+    titulo: 'Compra protegida con Mercado Pago',
+    subtitulo: 'Pag\u00e1s seguro y, si algo sale mal, Mercado Pago te respalda',
     cta: '\u00bfC\u00f3mo funciona?',
     enlace: '/devoluciones',
     gradiente: 'from-fuchsia-600 via-purple-600 to-indigo-700',

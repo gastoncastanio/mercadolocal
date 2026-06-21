@@ -8,7 +8,7 @@ const categorias = [
     preguntas: [
       { pregunta: 'Como compro un producto?', respuesta: 'Busca el producto en el catalogo, hacé click en "Agregar al carrito", anda al carrito y luego al checkout. Completa tus datos de entrega y paga con Mercado Pago.' },
       { pregunta: 'Que medios de pago aceptan?', respuesta: 'Aceptamos todos los medios de Mercado Pago: tarjetas de credito y debito (Visa, Mastercard, Naranja), dinero en cuenta MP y Mercado Credito. Podes pagar en cuotas, el costo de financiacion depende de tu tarjeta y banco emisor.' },
-      { pregunta: 'Mi compra esta protegida?', respuesta: 'Si. Tu dinero queda retenido por MercadoLocal hasta que confirmes que recibiste el producto en buenas condiciones. No liberamos el pago al vendedor sin tu aprobacion.' },
+      { pregunta: 'Mi compra esta protegida?', respuesta: 'Si. Pagas con Mercado Pago y tu compra queda protegida por su Programa de Proteccion al Comprador. Si algo sale mal o te arrepentis, tenes el boton de arrepentimiento y el reclamo de Mercado Pago, que media y gestiona la devolucion.' },
       { pregunta: 'Como veo el estado de mi pedido?', respuesta: 'Anda a "Mis pedidos" desde el menu. Ahi vas a ver todos tus pedidos con su estado actual: pagado, enviado o completado.' },
     ]
   },
@@ -18,7 +18,7 @@ const categorias = [
     preguntas: [
       { pregunta: 'Como empiezo a vender?', respuesta: 'Registrate como vendedor, crea tu tienda desde "Central de vendedores" (nombre, descripcion, ciudad) y empeza a publicar productos.' },
       { pregunta: 'Cuanto cobra MercadoLocal de comision?', respuesta: 'La comision es del 10% sobre cada venta confirmada. Si vinculas tu Mercado Pago, el 90% va directo a tu billetera automaticamente.' },
-      { pregunta: 'Como recibo los pagos?', respuesta: 'Vincula tu cuenta de Mercado Pago desde la Central de Vendedores. Los pagos se acreditan automaticamente cuando el comprador confirma la entrega.' },
+      { pregunta: 'Como recibo los pagos?', respuesta: 'Vincula tu cuenta de Mercado Pago desde la Central de Vendedores. Al aprobarse el pago, Mercado Pago acredita tu parte de forma automatica (el 90%); MercadoLocal retiene solo su comision del 10%.' },
       { pregunta: 'Que pasa si el comprador no paga?', respuesta: 'La orden queda en estado "pendiente" y no aparece en tus ventas confirmadas. Solo ves ventas reales con pago aprobado. Podes enviar un recordatorio al comprador.' },
     ]
   },
@@ -29,7 +29,7 @@ const categorias = [
       { pregunta: 'Como funciona el envio?', respuesta: 'MercadoLocal es una plataforma que conecta compradores con vendedores locales. El vendedor coordina el envio directamente con vos despues de la compra. Al pagar, el vendedor recibe tu direccion y te contacta para coordinar.' },
       { pregunta: 'Cuanto cuesta el envio?', respuesta: 'El costo de envio depende del vendedor, la distancia y el peso del producto. En la pagina de cada producto podes usar el cotizador de envio ingresando tu codigo postal para ver un precio estimado de referencia.' },
       { pregunta: 'Cuanto tarda en llegar?', respuesta: 'Depende del vendedor y tu ubicacion. Generalmente entre 1-5 dias habiles para envios dentro de la misma ciudad, y 4-8 dias para envios a otra provincia.' },
-      { pregunta: 'Que hago si no recibo mi pedido?', respuesta: 'Si no recibis el pedido, abri un reclamo desde "Mis pedidos". Tu dinero queda retenido por MercadoLocal hasta que confirmes la recepcion, asi que estas protegido.' },
+      { pregunta: 'Que hago si no recibo mi pedido?', respuesta: 'Si no recibis el pedido, abri un reclamo desde "Mis pedidos" y, si hace falta, desde el reclamo de Mercado Pago. Tu compra esta protegida por el Programa de Proteccion al Comprador de Mercado Pago, que gestiona la devolucion.' },
     ]
   },
   {
@@ -46,7 +46,7 @@ const categorias = [
     icono: '🔒',
     titulo: 'Seguridad',
     preguntas: [
-      { pregunta: 'Es seguro comprar en MercadoLocal?', respuesta: 'Si. Tu dinero queda retenido hasta que confirmes la entrega. Usamos Mercado Pago como procesador de pagos, con toda su infraestructura de seguridad.' },
+      { pregunta: 'Es seguro comprar en MercadoLocal?', respuesta: 'Si. Pagas con Mercado Pago, que protege tu compra con su Programa de Proteccion al Comprador y toda su infraestructura de seguridad. Si algo sale mal, gestionas la devolucion directo con Mercado Pago.' },
       { pregunta: 'Como protegen mis datos?', respuesta: 'Usamos encriptacion para contraseñas, HTTPS para todas las comunicaciones, y no almacenamos datos de tarjetas. Cumplimos con la Ley 25.326 de Proteccion de Datos Personales. Consulta nuestra politica de privacidad para mas detalles.' },
       { pregunta: 'Puedo ver y descargar todos mis datos?', respuesta: 'Si. Desde tu menu de cuenta entra a "Privacidad y mis datos" y toca "Descargar mis datos" para obtener al instante un archivo con toda tu informacion: cuenta, tienda, pedidos, favoritos y el perfil de intereses publicitario que armamos. Es tu derecho de acceso de la Ley 25.326.' },
       { pregunta: 'Como funciona la publicidad personalizada y como la desactivo?', respuesta: 'Analizamos tu actividad (productos que miras, busquedas y compras) para mostrarte productos mas relevantes por categoria y ciudad. No usamos datos sensibles ni vendemos tu informacion. Podes oponerte cuando quieras desde "Privacidad y mis datos": al desactivarla dejamos de usar tu actividad y borramos el perfil. Los visitantes sin cuenta pueden rechazarlo desde el aviso de privacidad.' },

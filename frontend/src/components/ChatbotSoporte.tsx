@@ -6,13 +6,13 @@ interface Mensaje {
 }
 
 const FAQ: Record<string, string> = {
-  'como comprar': 'Para comprar: 1) Busca el producto en el catalogo, 2) Agregalo al carrito, 3) Anda al checkout, 4) Completa tus datos de entrega, 5) Paga con Mercado Pago. Tu dinero queda protegido hasta que confirmes la entrega.',
+  'como comprar': 'Para comprar: 1) Busca el producto en el catalogo, 2) Agregalo al carrito, 3) Anda al checkout, 4) Completa tus datos de entrega, 5) Paga con Mercado Pago. Tu compra queda protegida por el Programa de Proteccion al Comprador de Mercado Pago.',
   'como vender': 'Para vender: 1) Registrate como vendedor, 2) Crea tu tienda desde "Central de vendedores", 3) Publica tus productos con fotos y descripcion, 4) Vincula tu Mercado Pago para recibir pagos automaticamente.',
   'devolucion': 'Para pedir una devolucion: 1) Anda a "Mis pedidos", 2) Selecciona la compra, 3) Abri un reclamo explicando el motivo. El vendedor coordinara la devolucion. Una vez que confirme que recibio el producto, te reembolsamos en 48hs.',
-  'pago': 'Aceptamos todos los medios de pago de Mercado Pago: tarjetas de credito/debito, dinero en cuenta MP, Mercado Credito y cuotas. Tu dinero queda retenido hasta que confirmes que recibiste el producto.',
+  'pago': 'Aceptamos todos los medios de pago de Mercado Pago: tarjetas de credito/debito, dinero en cuenta MP, Mercado Credito y cuotas. Tu compra queda protegida por Mercado Pago: si algo sale mal o te arrepentis, gestionas la devolucion con ellos.',
   'envio': 'El envio lo coordina cada vendedor. Al comprar, el vendedor recibe tu direccion y prepara el envio. Podes ver el estado desde "Mis pedidos". Si no recibes el producto, abri un reclamo.',
   'reclamo': 'Para abrir un reclamo: anda a "Mis pedidos", selecciona la compra y hace click en "Abrir reclamo". Explica el motivo y adjunta fotos si es necesario. Nuestro equipo revisa cada caso en 72hs.',
-  'seguridad': 'Tu compra esta protegida. El dinero queda retenido por MercadoLocal hasta que confirmes que recibiste el producto en buenas condiciones. No liberamos el pago al vendedor hasta tu confirmacion.',
+  'seguridad': 'Tu compra esta protegida por Mercado Pago. Pagas de forma segura y, si el producto no llega, no coincide o te arrepentis, usas el boton de arrepentimiento o el reclamo de Mercado Pago, que media y gestiona la devolucion.',
   'cuenta': 'Para gestionar tu cuenta anda al menu de usuario (arriba a la derecha). Desde ahi podes ver tus pedidos, favoritos, notificaciones, y si sos vendedor acceder a tu central de ventas.',
   'comision': 'MercadoLocal cobra una comision del 10% sobre cada venta. Si sos vendedor y vinculas tu Mercado Pago, el 90% va directo a tu billetera y el 10% a MercadoLocal automaticamente.',
   'contacto': 'Podes escribirnos a soporte@mercadolocal.com.ar indicando tu numero de pedido. Tambien podes usar el chat con el vendedor directamente desde la plataforma.',
