@@ -18,8 +18,9 @@ self.addEventListener('activate', (event) => {
   })())
 })
 
-// NO interceptar fetch: nunca cacheamos assets (evita servir JS viejo)
-self.addEventListener('fetch', () => {})
+// NO registramos handler de 'fetch': nunca cacheamos assets (evita servir JS
+// viejo) y un listener vacío solo agrega overhead no-op en cada navegación
+// (lo advierte Chrome/Lighthouse). Sin listener, los fetch van directo a la red.
 
 // Llega un push del servidor → mostrar la notificación
 self.addEventListener('push', (event) => {
