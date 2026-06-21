@@ -157,7 +157,14 @@ export default function PanelContador() {
         String(f.neto), String(f.iva), String(f.total), f.fiscal ? 'Sí' : 'Interno'
       ])
     ]
-    const csv = filas.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    // Anti CSV-injection: si una celda arranca con = + - @ (o tab/CR), Excel la
+    // interpreta como fórmula. La neutralizamos con un apóstrofo inicial.
+    const sanear = (c: any) => {
+      let s = String(c)
+      if (/^[=+\-@\t\r]/.test(s)) s = "'" + s
+      return s.replace(/"/g, '""')
+    }
+    const csv = filas.map(r => r.map(c => `"${sanear(c)}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -213,16 +220,17 @@ export default function PanelContador() {
         </div>
 
         {/* Detector de desincronización: la auditoría tiene comisiones que el
-            libro mayor todavía no registró (asientos faltantes → tocar Sincronizar). */}
-        {data && (data.breakEven.comisionesActual - data.margenBruto.ingresoComisiones) > 1 && (
+            libro mayor todavía no registró (asientos faltantes → tocar Sincronizar).
+            Tolerancia de $1 para no disparar por redondeos. */}
+        {data && ((data.breakEven?.comisionesActual ?? 0) - (data.margenBruto?.ingresoComisiones ?? 0)) > 1 && (
           <div className="mb-6 rounded-xl p-4 bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
             <span className="text-2xl">⚠️</span>
             <div className="text-sm flex-1">
               <p className="font-semibold text-amber-800">Hay ventas sin sincronizar en el libro mayor</p>
               <p className="text-amber-700">
-                La auditoría registró {pesos(data.breakEven.comisionesActual)} de comisiones, pero el libro mayor
-                solo tiene {pesos(data.margenBruto.ingresoComisiones)}. Faltan asientos por{' '}
-                {pesos(data.breakEven.comisionesActual - data.margenBruto.ingresoComisiones)}. Sincronizá para reconstruirlos.
+                La auditoría registró {pesos(data.breakEven?.comisionesActual)} de comisiones, pero el libro mayor
+                solo tiene {pesos(data.margenBruto?.ingresoComisiones)}. Faltan asientos por{' '}
+                {pesos((data.breakEven?.comisionesActual ?? 0) - (data.margenBruto?.ingresoComisiones ?? 0))}. Sincronizá para reconstruirlos.
               </p>
             </div>
             <button
@@ -290,8 +298,10 @@ export default function PanelContador() {
               />
               <KpiCard
                 titulo="Rentabilidad"
-                valor={`${data.rentabilidad.rentabilidadNeta}%`}
-                color={data.rentabilidad.rentabilidadNeta >= 0 ? 'text-green-600' : 'text-red-600'}
+                valor={data.rentabilidad.ingresos > 0 ? `${data.rentabilidad.rentabilidadNeta}%` : '—'}
+                /* Color por el resultado real, no por el %: con ingresos $0 y
+                   egresos > 0 hay pérdida aunque el % sea 0. */
+                color={data.rentabilidad.resultadoNeto >= 0 ? 'text-green-600' : 'text-red-600'}
               />
             </div>
 

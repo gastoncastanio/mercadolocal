@@ -268,12 +268,16 @@ export async function seccionBreakEven({ anio, mes } = {}) {
     ? (comisionesActual / gmvActual)
     : 0.05 // fallback 5% si no hay datos
 
-  // Costos fijos: usar OPEX real del mes si existe, sino el configurado
+  // Costos fijos para la meta de break-even: el MÁXIMO entre lo configurado
+  // (costo fijo mensual planificado) y el OPEX real del mes. Así la meta nunca
+  // baja del piso planificado por haber cargado un solo gasto chico, pero SÍ
+  // sube si el gasto real del mes superó el presupuesto.
   const opexReal = await GastoOperativo.aggregate([
     { $match: { fechaGasto: { $gte: inicio, $lte: fin }, activo: true } },
     { $group: { _id: null, total: { $sum: '$monto' } } }
   ])
-  const costosFijos = opexReal[0]?.total || cfg.costosFijosMensuales
+  const opexRealTotal = opexReal[0]?.total || 0
+  const costosFijos = Math.max(opexRealTotal, cfg.costosFijosMensuales || 0)
 
   // Break-even GMV = costos fijos / margen contribución
   const gmvBreakEven = margenContribucion > 0

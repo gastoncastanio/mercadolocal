@@ -582,22 +582,27 @@ async function regenerarResumenDiario(fecha) {
     let ingresos = { comisiones: 0, comisionesTraslado: 0, suscripciones: 0, pautaPublicitaria: 0, otros: 0 }
     let egresos = { procesamientoMP: 0, marketing: 0, hosting: 0, honorarios: 0, otros: 0 }
 
-    // Mapear asientos a categorías
+    // Categorizar por CÓDIGO DE CUENTA de cada línea (no por tipo de asiento ni
+    // por substring de descripción). Así el payout (2.1.1, pasivo) NUNCA se cuenta
+    // como ingreso, y un reverso (debe en cuenta de ingreso) RESTA correctamente.
+    const mapaIngreso = {
+      '4.1.1': 'comisiones', '4.1.2': 'comisionesTraslado',
+      '4.1.3': 'suscripciones', '4.1.4': 'pautaPublicitaria', '4.1.5': 'otros'
+    }
+    const mapaEgreso = {
+      '5.1.1': 'procesamientoMP', '5.2.1': 'marketing', '5.2.2': 'hosting',
+      '5.2.3': 'honorarios', '5.2.4': 'otros'
+    }
+
     for (const asiento of asientos) {
-      if (asiento.tipo === 'venta_split' || asiento.tipo === 'venta_sin_split') {
-        ingresos.comisiones += asiento.totalHaber
-      } else if (asiento.tipo === 'suscripcion') {
-        ingresos.suscripciones += asiento.totalHaber
-      } else if (asiento.tipo === 'pauta_publicitaria') {
-        ingresos.pautaPublicitaria += asiento.totalHaber
-      } else if (asiento.tipo === 'egreso_opex') {
-        // Detectar subcategoría del asiento
-        if (asiento.descripcion?.includes('Marketing') || asiento.descripcion?.includes('Pauta')) {
-          egresos.marketing += asiento.totalDebe
-        } else if (asiento.descripcion?.includes('Hosting')) {
-          egresos.hosting += asiento.totalDebe
-        } else {
-          egresos.otros += asiento.totalDebe
+      for (const l of asiento.lineas) {
+        const codigo = l.codigoCuenta
+        if (mapaIngreso[codigo] !== undefined) {
+          // Ingreso neto: haber − debe (reverso resta)
+          ingresos[mapaIngreso[codigo]] += (l.haber || 0) - (l.debe || 0)
+        } else if (mapaEgreso[codigo] !== undefined) {
+          // Egreso neto: debe − haber (reverso resta)
+          egresos[mapaEgreso[codigo]] += (l.debe || 0) - (l.haber || 0)
         }
       }
     }
