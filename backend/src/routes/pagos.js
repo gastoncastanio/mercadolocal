@@ -350,24 +350,26 @@ router.post('/webhook', async (req, res) => {
               creadoPor: null
             }).catch(e => console.warn('Error registrando asiento venta split:', e.message))
           } else {
-            // Venta sin split: entra todo, le debés al vendedor
-            for (const tiendaId of tiendaIds) {
-              const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
-              const montoTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-              const comisionTienda = Math.round(montoTienda * porcentajeComision / 100 * 100) / 100
-              const payoutVendedor = montoTienda - comisionTienda
+            // Venta sin split: entra TODO el monto, le debés al vendedor.
+            // UN solo asiento por orden (el referenciaId es por-orden). Si
+            // iteráramos por tienda, la 2ª+ tienda colisionaría con el mismo
+            // referenciaId y se descartaría → subdeclaración. Usamos los totales
+            // de la orden, idéntico al backfill, para que ambas vías produzcan
+            // EXACTAMENTE el mismo asiento.
+            const totalOrden = Math.round((ordenActualizada.total || 0) * 100) / 100
+            const comisionOrden = Math.round((ordenActualizada.comision || 0) * 100) / 100
+            const payoutOrden = Math.round((totalOrden - comisionOrden) * 100) / 100
 
-              contabilidadService.asientoVentaSinSplit({
-                ordenId: ordenActualizada._id,
-                tiendaId,
-                vendedorId: (await Tienda.findById(tiendaId))?.usuarioId,
-                montoTotal: montoTienda,
-                montoComision: comisionTienda,
-                montoPayout: payoutVendedor,
-                fecha: new Date(),
-                creadoPor: null
-              }).catch(e => console.warn('Error registrando asiento venta sin split:', e.message))
-            }
+            contabilidadService.asientoVentaSinSplit({
+              ordenId: ordenActualizada._id,
+              tiendaId: tiendaIds[0],
+              vendedorId: (await Tienda.findById(tiendaIds[0]))?.usuarioId,
+              montoTotal: totalOrden,
+              montoComision: comisionOrden,
+              montoPayout: payoutOrden,
+              fecha: new Date(),
+              creadoPor: null
+            }).catch(e => console.warn('Error registrando asiento venta sin split:', e.message))
           }
         } catch (contabErr) {
           console.warn('Error en bloque de contabilidad:', contabErr.message)
