@@ -63,6 +63,44 @@ export async function bloqueActual() {
 }
 
 /**
+ * Cuando estamos en un gap horario (ningún bloque activo), devuelve el PRÓXIMO
+ * bloque que va a arrancar, para que el Radar muestre "Falta poco para ☕ Modo
+ * Merienda · 17:30" en vez de caer al tema neutro (que parece que está roto).
+ * Elige el bloque con el menor tiempo hasta su horaInicio, envolviendo la
+ * medianoche (ej. a las 23:45 el próximo es el desayuno de las 08:00).
+ * Returns: { nombre, titulo, horaInicio, tema, ... } o null si no hay bloques.
+ */
+export async function bloqueProximo() {
+  const ahora = ahoraART()
+  const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes()
+
+  const bloques = await BloqueHorarioConfig.find({ activo: true }).lean()
+  if (!bloques.length) return null
+
+  let mejor = null
+  let mejorDelta = Infinity
+  for (const bloque of bloques) {
+    let delta = horaAMinutos(bloque.horaInicio) - minutosAhora
+    if (delta <= 0) delta += 24 * 60 // ya pasó hoy → arranca mañana
+    if (delta < mejorDelta) {
+      mejorDelta = delta
+      mejor = bloque
+    }
+  }
+  if (!mejor) return null
+
+  return {
+    nombre: mejor.nombre,
+    titulo: mejor.titulo,
+    descripcion: mejor.descripcion,
+    horaInicio: mejor.horaInicio,
+    tipoDispatcher: mejor.tipoDispatcher,
+    distanciaMaxima: mejor.distanciaMaxima,
+    tema: mejor.tema || null
+  }
+}
+
+/**
  * ¿`minutos` cae dentro de la franja [inicio, fin)? Maneja cruce de medianoche:
  * si fin <= inicio (ej. 22:00–02:00), la franja envuelve la medianoche.
  */

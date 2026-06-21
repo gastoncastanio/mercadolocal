@@ -49,6 +49,16 @@ const destacadoSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // Puja opcional (ARS) — modelo HÍBRIDO: el plan es la entrada; la puja te sube
+  // MÁS ALTO en los espacios premium (banner, home, primeros puestos) donde hay
+  // competencia. Funciona estilo "Ad Rank": el ranking = puja × calidad
+  // (relevancia × CTR real), así una puja alta no garantiza el puesto si el
+  // anuncio no le interesa a nadie. Se cobra junto con el plan (va en precioTotal).
+  puja: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   // Cómo pagó el vendedor la pauta:
   //  - 'saldo': se descontó de las ganancias acumuladas en la plataforma
   //  - 'mercadopago': pagó con dinero real a la cuenta de la plataforma (ingreso fresco)

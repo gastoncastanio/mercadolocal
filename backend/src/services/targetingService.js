@@ -62,6 +62,17 @@ const W_CIUDAD = 0.04
 
 // Subasta / bandit
 const PESO_PLAN = { elite: 1, premium: 0.62, basico: 0.34 }
+// Boost por PUJA (modelo híbrido): convierte los ARS de puja en un multiplicador
+// sobre el peso del plan, con saturación. Puja de PUJA_REFERENCIA ARS ≈ +100%;
+// el boost satura en (1 + BOOST_PUJA_MAX) para que ofertar más no sea infinito y
+// la calidad (relevancia × CTR) siga mandando.
+const PUJA_REFERENCIA = 3000
+const BOOST_PUJA_MAX = 1.5
+
+/** Multiplicador de ranking que aporta la puja (1 = sin puja). */
+function boostPuja(puja) {
+  return 1 + Math.min(BOOST_PUJA_MAX, (Math.max(0, puja || 0)) / PUJA_REFERENCIA)
+}
 const CTR_PRIOR = 0.05           // CTR esperado a priori (5%)
 const FUERZA_PRIOR = 6           // evidencia previa (en "impresiones equivalentes")
 const PRIOR_PLAN_BOOST = { elite: 1.25, premium: 1.1, basico: 1 } // confianza inicial por plan
@@ -592,11 +603,15 @@ function ctrThompson(clicks, impresiones, plan) {
  * Ordena destacados (con productoId poblado) por VALOR ESPERADO para la
  * plataforma y el comprador, estilo subasta:
  *
- *   score = puja(plan) × CTR_muestreado × (0.2 + 0.8 × propensión)
+ *   score = plan × boostPuja × CTR_muestreado × (0.2 + 0.8 × propensión)
  *
- *  - puja(plan): el que paga más tiene piso de visibilidad.
+ *  - plan: el que contrata un plan más alto tiene piso de visibilidad.
+ *  - boostPuja: puja opcional (ARS) que sube más alto en espacios premium.
  *  - CTR muestreado: aprende qué anuncios realmente funcionan (bandit).
  *  - propensión: personaliza por cliente (lo lleva al comprador ideal).
+ *
+ * Estilo Ad Rank: oferta (plan × puja) × CALIDAD (CTR × propensión). Una puja
+ * alta NO garantiza el puesto si el anuncio no le interesa a nadie.
  *
  * Marca `_scoreRelevancia` (propensión 0..1) en cada destacado para métricas.
  */
@@ -605,9 +620,9 @@ export function ordenarDestacadosPorRelevancia(destacados, perfil) {
   const conScore = destacados.map(d => {
     const prod = d.productoId && typeof d.productoId === 'object' ? d.productoId : null
     const rel = prod ? scoreRelevancia(prod, perfil) : 0
-    const puja = PESO_PLAN[d.plan] || 0.34
+    const oferta = (PESO_PLAN[d.plan] || 0.34) * boostPuja(d.puja)
     const ctr = ctrThompson(d.clicks, d.impresiones, d.plan)
-    const final = puja * ctr * (0.2 + 0.8 * rel)
+    const final = oferta * ctr * (0.2 + 0.8 * rel)
     return { d, rel, final }
   })
   conScore.sort((a, b) => b.final - a.final)

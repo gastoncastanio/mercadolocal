@@ -36,14 +36,14 @@ export default function Devoluciones() {
           <section>
             <h2 className="text-xl font-semibold text-ml-ink mb-3">1. C&oacute;mo funciona nuestro sistema de pagos</h2>
             <p>
-              MercadoLocal act&uacute;a como <strong>intermediario seguro</strong> entre compradores y vendedores.
-              El dinero de cada compra queda retenido por nosotros hasta que el comprador confirme que recibi&oacute;
-              el producto en las condiciones esperadas. Reci&eacute;n a las 24 horas de esa confirmaci&oacute;n liberamos
-              el pago al vendedor.
+              MercadoLocal <strong>conecta</strong> a compradores con vendedores de tu ciudad. El pago lo procesa
+              <strong> Mercado Pago</strong>, que acredita al vendedor de forma autom&aacute;tica y, a la vez, protege tu
+              compra con su <strong>Programa de Protecci&oacute;n al Comprador</strong>. MercadoLocal no retiene tu dinero.
             </p>
             <p className="mt-2">
-              Este sistema protege a ambas partes: el comprador no pierde su dinero si algo sale mal, y el vendedor
-              tiene la garant&iacute;a de cobrar cuando el comprador queda conforme.
+              Si te arrepent&iacute;s o algo sale mal (el producto no llega, no coincide o tiene fallas), gestion&aacute;s el
+              reclamo y la devoluci&oacute;n directamente con Mercado Pago: ellos median entre las partes y procesan el
+              reintegro seg&uacute;n sus plazos. As&iacute; el comprador cuenta con respaldo y el vendedor cobra de forma &aacute;gil.
             </p>
           </section>
 

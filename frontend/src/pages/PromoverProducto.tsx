@@ -18,6 +18,7 @@ interface Promocion {
   plan: string
   duracionDias: number
   precioTotal: number
+  puja?: number
   fechaInicio: string
   fechaFin: string
   estado: string
@@ -50,6 +51,7 @@ export default function PromoverProducto() {
   const [metodoPago, setMetodoPago] = useState<'mercadopago' | 'saldo'>('mercadopago')
   const [segmentoCiudad, setSegmentoCiudad] = useState('')
   const [segmentoCategoria, setSegmentoCategoria] = useState('')
+  const [puja, setPuja] = useState(0)   // boost premium opcional (ARS)
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
@@ -103,6 +105,7 @@ export default function PromoverProducto() {
         plan: planSel,
         duracionDias: duracionSel,
         metodoPago,
+        puja,
         segmentoCiudad: planActual?.permiteSegmentar ? segmentoCiudad : '',
         segmentoCategoria: planActual?.permiteSegmentar ? segmentoCategoria : ''
       })
@@ -133,8 +136,9 @@ export default function PromoverProducto() {
 
   const planActual = planes[planSel]
   const precioActual = planActual?.precios?.[duracionSel] || 0
+  const costoTotal = precioActual + puja   // plan + boost por puja (modelo híbrido)
   const promosActivas = promociones.filter(p => p.estado === 'activo' && new Date(p.fechaFin) > new Date())
-  const saldoInsuficiente = metodoPago === 'saldo' && saldo < precioActual
+  const saldoInsuficiente = metodoPago === 'saldo' && saldo < costoTotal
 
   const ubicacionLabels: Record<string, string> = {
     catalogo: '📋 Catálogo (primeros puestos)',
@@ -329,10 +333,48 @@ export default function PromoverProducto() {
               )}
             </div>
 
+            {/* Boost premium por puja (opcional) */}
+            <div className="bg-white rounded-2xl shadow-sm p-5 border border-ml-line2">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-bold text-ml-ink">🚀 Boost premium <span className="text-ml-muted font-normal text-sm">(opcional)</span></h2>
+                {puja > 0 && (
+                  <button onClick={() => setPuja(0)} className="text-xs text-ml-muted hover:text-ml-ink">Quitar</button>
+                )}
+              </div>
+              <p className="text-xs text-ml-muted mb-3">
+                Sumá una puja para <span className="font-semibold text-ml-ink">subir más alto</span> que otros anuncios en los lugares competidos (banner, home y primeros puestos). El puesto se decide por <span className="font-semibold text-ml-ink">tu puja × qué tan relevante</span> es tu producto: ofrecer más ayuda, pero la calidad manda. Se cobra una sola vez, junto con el plan.
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {[0, 1500, 3000, 6000].map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setPuja(v)}
+                    className={`py-2.5 rounded-xl border-2 text-center transition-colors ${
+                      puja === v ? 'border-ml-purple bg-ml-purple/5' : 'border-ml-line2 hover:border-ml-line'
+                    }`}
+                  >
+                    <p className="font-bold text-sm text-ml-ink">{v === 0 ? 'Sin boost' : `$${v.toLocaleString('es-AR')}`}</p>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3">
+                <label className="text-xs font-semibold text-ml-soft">O ingresá un monto</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="text-ml-muted text-sm">$</span>
+                  <input
+                    type="number" min={0} step={500} value={puja || ''}
+                    onChange={e => setPuja(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+                    placeholder="0"
+                    className="w-40 border border-ml-line2 rounded-lg px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Resumen y confirmar */}
             <div className="ml-grad rounded-2xl p-5 text-white">
               <h2 className="font-bold text-lg mb-3">Resumen de tu campaña</h2>
-              <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+              <div className="grid grid-cols-3 gap-4 mb-3 text-center">
                 <div>
                   <p className="text-white/70 text-xs">Plan</p>
                   <p className="font-bold">{planActual?.nombre || '-'}</p>
@@ -343,9 +385,16 @@ export default function PromoverProducto() {
                 </div>
                 <div>
                   <p className="text-white/70 text-xs">Costo total</p>
-                  <p className="font-bold text-xl">${precioActual.toLocaleString('es-AR')}</p>
+                  <p className="font-bold text-xl">${costoTotal.toLocaleString('es-AR')}</p>
                 </div>
               </div>
+              {puja > 0 && (
+                <div className="text-[12px] text-white/85 mb-4 flex items-center justify-center gap-2">
+                  <span>Plan ${precioActual.toLocaleString('es-AR')}</span>
+                  <span className="text-white/50">+</span>
+                  <span>🚀 Boost ${puja.toLocaleString('es-AR')}</span>
+                </div>
+              )}
 
               {error && <div className="bg-red-500/20 border border-red-300/30 rounded-lg p-3 text-sm mb-3">{error}</div>}
 
@@ -356,8 +405,8 @@ export default function PromoverProducto() {
               >
                 {cargando ? 'Procesando…'
                   : metodoPago === 'mercadopago'
-                    ? `Pagar $${precioActual.toLocaleString('es-AR')} con Mercado Pago`
-                    : `Promocionar por $${precioActual.toLocaleString('es-AR')}`}
+                    ? `Pagar $${costoTotal.toLocaleString('es-AR')} con Mercado Pago`
+                    : `Promocionar por $${costoTotal.toLocaleString('es-AR')}`}
               </button>
             </div>
           </div>

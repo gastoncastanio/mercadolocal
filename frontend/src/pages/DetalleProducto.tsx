@@ -471,7 +471,7 @@ export default function DetalleProducto() {
                     </svg>
                     <div>
                       <p className="text-[13px] text-ml-ink">Compra Protegida</p>
-                      <p className="text-[11px] text-ml-muted">recib&iacute; el producto que esperabas o te devolvemos tu dinero</p>
+                      <p className="text-[11px] text-ml-muted">pag&aacute;s con Mercado Pago y su Protecci&oacute;n al Comprador te respalda</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">

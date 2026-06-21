@@ -76,7 +76,7 @@ router.get('/', tokenOpcional, async (req, res) => {
           fechaFin: { $gt: ahora },
           fechaInicio: { $lte: ahora },
           ubicacion: ubic
-        }).select('_id productoId plan segmentoCiudad segmentoCategoria').lean()
+        }).select('_id productoId plan puja segmentoCiudad segmentoCategoria').lean()
 
         // Respetar segmentación premium (ciudad/categoría) vs el filtro activo
         const aplicables = destacados.filter(d => {
@@ -87,10 +87,12 @@ router.get('/', tokenOpcional, async (req, res) => {
 
         if (aplicables.length > 0) {
           const planPorId = new Map()
+          const pujaPorId = new Map()
           const destIdPorProd = new Map()
           aplicables.forEach(d => {
             const pid = d.productoId.toString()
             planPorId.set(pid, d.plan)
+            pujaPorId.set(pid, d.puja || 0)
             destIdPorProd.set(pid, d._id)
           })
           const ids = [...planPorId.keys()]
@@ -115,12 +117,17 @@ router.get('/', tokenOpcional, async (req, res) => {
             const identity = resolverIdentidad(req)
             const perfil = await obtenerPerfil(identity)
             const pesoPlan = { elite: 1, premium: 0.6, basico: 0.3 }
+            // Modelo híbrido: la puja (ARS) da un boost multiplicativo sobre el
+            // peso del plan, con saturación (puja 3000 ≈ +100%, tope +150%). La
+            // relevancia sigue pesando más (Ad Rank: oferta × calidad).
             promocionados.forEach(p => {
+              const pid = p._id.toString()
               const rel = scoreRelevancia(p, perfil)
-              const plan = pesoPlan[planPorId.get(p._id.toString())] || 0.3
+              const plan = pesoPlan[planPorId.get(pid)] || 0.3
+              const boost = 1 + Math.min(1.5, (pujaPorId.get(pid) || 0) / 3000)
               p.promocionado = true
               p._rel = rel
-              p._score = rel * 6 + plan * 2
+              p._score = rel * 6 + plan * boost * 2
             })
             promocionados.sort((a, b) => b._score - a._score)
             promocionados = promocionados.slice(0, 12)

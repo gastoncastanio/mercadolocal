@@ -181,7 +181,7 @@ export default function Checkout() {
               <div className="mt-3 p-3 bg-green-50 rounded-xl border border-green-200">
                 <p className="text-xs text-ml-ink flex items-center gap-2">
                   <span className="text-base">🛡️</span>
-                  <span><strong>Compra protegida:</strong> tu dinero se retiene hasta que confirmes que recibiste el producto en las condiciones esperadas.</span>
+                  <span><strong>Compra protegida:</strong> pagás con Mercado Pago y tu compra queda respaldada por su Programa de Protección al Comprador. Si algo sale mal o te arrepentís, gestionás la devolución con Mercado Pago.</span>
                 </p>
               </div>
             </form>

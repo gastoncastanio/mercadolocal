@@ -589,7 +589,7 @@ export async function registrarCobroEfectivo(comisionistaId, viajeRemisId) {
   if (viaje.pago?.estadoPago === 'pagado') return viaje // idempotencia
 
   const monto = viaje.precioFinal != null ? viaje.precioFinal : viaje.precioEstimado
-  const { default: configService } = await import('./configService.js')
+  const configService = await import('./configService.js')
   const porcentaje = await configService.obtenerPorcentajeComision('remis') || 10
   const comision = Math.round((Number(monto) || 0) * porcentaje / 100)
 

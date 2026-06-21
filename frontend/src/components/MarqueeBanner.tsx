@@ -10,31 +10,28 @@ export default function MarqueeBanner() {
 
   const repeats = Array.from({ length: 4 }, (_, i) => i)
 
+  // Barra fina y discreta: poca altura, texto chico y separadores sutiles.
+  const fila = (prefijo: string, oculto = false) => (
+    <div className="flex animate-marquee whitespace-nowrap" aria-hidden={oculto || undefined}>
+      {repeats.map(r =>
+        items.map((item, i) => (
+          <span key={`${prefijo}${r}-${i}`} className="inline-flex items-center text-[11px] font-medium text-white/85">
+            <span className="mx-4 inline-flex items-center gap-1.5">
+              <span className="text-[10px] opacity-80">{item.icon}</span>
+              {item.text}
+            </span>
+            <span className="text-white/25">&bull;</span>
+          </span>
+        ))
+      )}
+    </div>
+  )
+
   return (
     <div className="ml-grad overflow-hidden">
-      <div className="relative flex whitespace-nowrap py-2">
-        <div className="flex animate-marquee whitespace-nowrap">
-          {repeats.map(r =>
-            items.map((item, i) => (
-              <span key={`a${r}-${i}`} className="mx-6 text-xs sm:text-sm font-medium text-white/90 inline-flex items-center gap-2">
-                <span>{item.icon}</span>
-                {item.text}
-                <span className="text-white/30 mx-2">&bull;</span>
-              </span>
-            ))
-          )}
-        </div>
-        <div className="flex animate-marquee whitespace-nowrap" aria-hidden="true">
-          {repeats.map(r =>
-            items.map((item, i) => (
-              <span key={`b${r}-${i}`} className="mx-6 text-xs sm:text-sm font-medium text-white/90 inline-flex items-center gap-2">
-                <span>{item.icon}</span>
-                {item.text}
-                <span className="text-white/30 mx-2">&bull;</span>
-              </span>
-            ))
-          )}
-        </div>
+      <div className="relative flex whitespace-nowrap py-[5px]">
+        {fila('a')}
+        {fila('b', true)}
       </div>
     </div>
   )

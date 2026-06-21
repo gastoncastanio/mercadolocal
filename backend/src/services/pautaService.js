@@ -44,6 +44,17 @@ const PLANES_DEFAULT = {
 
 const CONFIG_CLAVE_PRECIOS = 'pauta_precios'
 
+// Puja máxima permitida (ARS) para el boost premium. Tope sano para evitar
+// errores de tipeo (ej. un cero de más) y mantener la subasta razonable.
+const PUJA_MAX = 50000
+
+/** Normaliza la puja recibida del cliente: entero ≥ 0 y ≤ PUJA_MAX. */
+function sanitizarPuja(valor) {
+  const n = Math.round(Number(valor) || 0)
+  if (!Number.isFinite(n) || n <= 0) return 0
+  return Math.min(n, PUJA_MAX)
+}
+
 /**
  * Devuelve los planes con los precios efectivos (defaults + overrides del admin).
  * Nunca falla: si la config no existe o está corrupta, usa los defaults.
@@ -109,7 +120,7 @@ export async function guardarPrecios(nuevosPrecios) {
  * Valida la solicitud de pauta y devuelve los datos calculados (plan, precio,
  * fechaFin, ubicaciones). NO crea nada todavía. Lanza Error con .code en fallos.
  */
-export async function prepararPauta({ usuarioId, productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria }) {
+export async function prepararPauta({ usuarioId, productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria, puja }) {
   const planes = await obtenerPlanes()
   const planInfo = planes[plan]
   if (!planInfo) {
@@ -143,7 +154,10 @@ export async function prepararPauta({ usuarioId, productoId, plan, duracionDias,
     throw e
   }
 
-  const precioTotal = planInfo.precios[dias]
+  // Modelo híbrido: precio del plan + puja opcional (boost premium). La puja se
+  // cobra junto con el plan y alimenta el ranking en los espacios competidos.
+  const pujaLimpia = sanitizarPuja(puja)
+  const precioTotal = planInfo.precios[dias] + pujaLimpia
   const fechaFin = new Date()
   fechaFin.setDate(fechaFin.getDate() + dias)
 
@@ -151,7 +165,7 @@ export async function prepararPauta({ usuarioId, productoId, plan, duracionDias,
   const segCiudad = planInfo.permiteSegmentar ? String(segmentoCiudad || '').trim() : ''
   const segCategoria = planInfo.permiteSegmentar ? String(segmentoCategoria || '').trim() : ''
 
-  return { tienda, producto, planInfo, dias, precioTotal, fechaFin, segCiudad, segCategoria }
+  return { tienda, producto, planInfo, dias, precioTotal, puja: pujaLimpia, fechaFin, segCiudad, segCategoria }
 }
 
 /**
@@ -160,7 +174,7 @@ export async function prepararPauta({ usuarioId, productoId, plan, duracionDias,
  */
 export async function crearPautaMercadoPago(args) {
   const { usuarioId, productoId, plan } = args
-  const { tienda, producto, planInfo, dias, precioTotal, fechaFin, segCiudad, segCategoria } =
+  const { tienda, producto, planInfo, dias, precioTotal, puja, fechaFin, segCiudad, segCategoria } =
     await prepararPauta(args)
 
   const destacado = await new Destacado({
@@ -173,6 +187,7 @@ export async function crearPautaMercadoPago(args) {
     segmentoCategoria: segCategoria,
     duracionDias: dias,
     precioTotal,
+    puja,
     metodoPago: 'mercadopago',
     fechaFin,                 // provisional: se recalcula al aprobarse el pago
     estado: 'pendiente',
@@ -201,7 +216,7 @@ export async function crearPautaMercadoPago(args) {
  */
 export async function crearPautaSaldo(args) {
   const { usuarioId, productoId, plan } = args
-  const { tienda, producto, planInfo, dias, precioTotal, fechaFin, segCiudad, segCategoria } =
+  const { tienda, producto, planInfo, dias, precioTotal, puja, fechaFin, segCiudad, segCategoria } =
     await prepararPauta(args)
 
   if ((tienda.ganancias || 0) < precioTotal) {
@@ -222,6 +237,7 @@ export async function crearPautaSaldo(args) {
     segmentoCategoria: segCategoria,
     duracionDias: dias,
     precioTotal,
+    puja,
     metodoPago: 'saldo',
     fechaFin,
     estado: 'activo',
