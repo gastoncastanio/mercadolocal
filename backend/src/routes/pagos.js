@@ -33,16 +33,25 @@ function verificarFirmaWebhook(req) {
 
   const webhookSecret = process.env.MP_WEBHOOK_SECRET
   if (!webhookSecret) {
-    // Si no hay secret configurado, validar que el pago exista en MP (fallback)
-    console.warn('⚠️ MP_WEBHOOK_SECRET no configurado - usando validación por consulta a MP')
+    // Sin secret no se puede verificar la firma. FAIL-SAFE: en producción se
+    // rechaza (no aceptamos webhooks no verificados que mueven plata). En
+    // desarrollo se deja pasar para poder testear localmente sin firma.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🚨 MP_WEBHOOK_SECRET ausente en producción → webhook RECHAZADO')
+      return false
+    }
+    console.warn('⚠️ MP_WEBHOOK_SECRET no configurado (dev) - firma NO verificada')
     return true
   }
 
   // Parsear x-signature: "ts=timestamp,v1=hash"
   const parts = {}
   xSignature.split(',').forEach(part => {
-    const [key, value] = part.split('=')
-    parts[key.trim()] = value.trim()
+    const idx = part.indexOf('=')
+    if (idx === -1) return
+    const key = part.slice(0, idx).trim()
+    const value = part.slice(idx + 1).trim()
+    if (key && value) parts[key] = value
   })
 
   const ts = parts['ts']
