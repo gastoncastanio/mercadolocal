@@ -46,7 +46,7 @@ export default function RadarCentro() {
   const [cargandoComercios, setCargandoComercios] = useState(false)
   const [coords, setCoords] = useState<Coord | null>(null)
   const [liquidacion, setLiquidacion] = useState<Liquidacion | null>(null)
-  const { bloqueActual, cargando: cargandoBloque } = useBloqueHorario()
+  const { bloqueActual, bloqueProximo, cargando: cargandoBloque } = useBloqueHorario()
   const { alerta: alertaClima, cargando: cargandoClima } = useWeatherAlert(coords)
   const { on, off, emit, socket } = useSocket()
 
@@ -234,11 +234,15 @@ export default function RadarCentro() {
   const ciudad = ''
 
   // Radar Camaleón: el hero muta sus colores según el modo activo (desayuno,
-  // almuerzo, siesta, merienda, cena). En los gaps horarios usa el tema neutro.
-  const tema = bloqueActual?.tema || TEMA_NEUTRO
+  // almuerzo, siesta, merienda, cena). En los gaps horarios anuncia el PRÓXIMO
+  // modo (con un preview de su tema) en vez de caer al neutro, para que no
+  // parezca que el Radar está roto. Si no hay bloques, usa el tema neutro.
+  const tema = bloqueActual?.tema || bloqueProximo?.tema || TEMA_NEUTRO
   const subtituloModo = bloqueActual
     ? `${tema.emoji} ${bloqueActual.titulo} · activo ahora`
-    : 'Ordenado por cercanía a vos'
+    : bloqueProximo
+      ? `Falta poco para ${tema.emoji} ${bloqueProximo.titulo} · arranca ${bloqueProximo.horaInicio}`
+      : 'Ordenado por cercanía a vos'
 
   return (
     <div className="min-h-screen bg-ml-bg">

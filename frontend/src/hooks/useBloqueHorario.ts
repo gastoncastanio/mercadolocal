@@ -21,6 +21,18 @@ export interface BloqueHorario {
   tema?: TemaBloque | null
 }
 
+// En un gap horario, el backend devuelve el próximo bloque que va a arrancar
+// (con su hora de inicio) para anunciarlo en vez de caer al tema neutro.
+export interface BloqueProximo {
+  nombre: string
+  titulo: string
+  descripcion: string
+  horaInicio: string
+  tipoDispatcher: 'cercania' | 'cruzada' | 'general' | 'shopping'
+  distanciaMaxima: number
+  tema?: TemaBloque | null
+}
+
 // Tema neutro para los gaps horarios (cuando no hay bloque activo).
 export const TEMA_NEUTRO: TemaBloque = {
   emoji: '📍',
@@ -32,6 +44,7 @@ export const TEMA_NEUTRO: TemaBloque = {
 
 export function useBloqueHorario() {
   const [bloqueActual, setBloqueActual] = useState<BloqueHorario | null>(null)
+  const [bloqueProximo, setBloqueProximo] = useState<BloqueProximo | null>(null)
   const [bloques, setBloques] = useState<BloqueHorario[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -50,6 +63,7 @@ export function useBloqueHorario() {
         api.get('/centro/bloques')
       ])
       setBloqueActual(resBloque.data.bloque || null)
+      setBloqueProximo(resBloque.data.proximo || null)
       setBloques(resBloques.data || [])
     } catch (e) {
       setError('No pudimos cargar los bloques horarios.')
@@ -61,6 +75,7 @@ export function useBloqueHorario() {
 
   return {
     bloqueActual,
+    bloqueProximo,
     bloques,
     cargando,
     error,

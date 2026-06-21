@@ -6,7 +6,7 @@ import OfertaFlash from '../models/OfertaFlash.js'
 import CanjeAtribuido from '../models/CanjeAtribuido.js'
 import BloqueHorarioConfig from '../models/BloqueHorarioConfig.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
-import { bloqueActual, obtenerBloques, bloqueSiguienteGancho } from '../utils/bloqueHorario.js'
+import { bloqueActual, bloqueProximo, obtenerBloques, bloqueSiguienteGancho } from '../utils/bloqueHorario.js'
 import { crearPreferenciaOferta, obtenerPago, buscarPagoPorReferencia } from '../config/mercadopago.js'
 import { emitLiquidacionRelampago, emitNotificacion } from '../services/socketService.js'
 
@@ -896,10 +896,13 @@ router.get('/metricas/:comercioId', verificarToken, async (req, res) => {
 // ============================================================
 
 // GET /api/centro/bloque/actual - bloque horario activo AHORA
+// Si estamos en un gap (ningún bloque activo), devuelve también `proximo` para
+// que el Radar anuncie el modo que viene en vez de caer al tema neutro.
 router.get('/bloque/actual', async (req, res) => {
   try {
     const bloque = await bloqueActual()
-    res.json({ bloque })
+    const proximo = bloque ? null : await bloqueProximo()
+    res.json({ bloque, proximo })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
