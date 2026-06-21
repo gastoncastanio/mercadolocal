@@ -96,6 +96,9 @@ function buscarRespuesta(input: string): string {
   return 'Mmm, no estoy seguro de haber entendido bien 🤔. Te puedo ayudar con:\n\n🛒 Comprar y vender\n💳 Pagos, cuotas y Mercado Pago\n🚚 Envíos y seguimiento\n🔄 Devoluciones y arrepentimiento\n🚀 Promocionar tu producto\n🚕 Remis y 🔧 Servicios\n\nProbá reformular tu pregunta, o escribinos a soporte@mercadolocal.com.ar y te ayuda una persona.'
 }
 
+// Clave para recordar la posición a la que el usuario arrastró el chat.
+const POS_STORAGE_KEY = 'ml_chatbot_pos'
+
 export default function ChatbotSoporte() {
   const [abierto, setAbierto] = useState(false)
   const [mensajes, setMensajes] = useState<Mensaje[]>([
@@ -104,7 +107,17 @@ export default function ChatbotSoporte() {
   const [input, setInput] = useState('')
   const [escribiendo, setEscribiendo] = useState(false)
   // Posición de la ventana cuando el usuario la arrastra. null = anclada por defecto.
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  // Se recuerda entre sesiones (localStorage); si quedó fuera de pantalla, el
+  // efecto de re-encuadre la vuelve a meter al abrirse.
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(() => {
+    try {
+      const guardada = localStorage.getItem(POS_STORAGE_KEY)
+      if (!guardada) return null
+      const p = JSON.parse(guardada)
+      if (typeof p?.x === 'number' && typeof p?.y === 'number') return p
+    } catch { /* storage no disponible */ }
+    return null
+  })
   const chatRef = useRef<HTMLDivElement>(null)
   const winRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ dx: number; dy: number } | null>(null)
@@ -115,20 +128,25 @@ export default function ChatbotSoporte() {
     }
   }, [mensajes, escribiendo])
 
-  // Si cambia el tamaño de la ventana, re-encuadrar para que no quede fuera de pantalla.
+  // Mantener la ventana dentro de la pantalla: al abrir (por si la posición
+  // guardada quedó fuera en una pantalla más chica) y al redimensionar.
   useEffect(() => {
     if (!pos) return
     function reencuadrar() {
       const el = winRef.current
       if (!el) return
-      setPos(p => p && ({
-        x: Math.max(8, Math.min(p.x, window.innerWidth - el.offsetWidth - 8)),
-        y: Math.max(8, Math.min(p.y, window.innerHeight - el.offsetHeight - 8))
-      }))
+      setPos(p => {
+        if (!p) return p
+        const x = Math.max(8, Math.min(p.x, window.innerWidth - el.offsetWidth - 8))
+        const y = Math.max(8, Math.min(p.y, window.innerHeight - el.offsetHeight - 8))
+        // Devolver la MISMA referencia si no cambió evita un loop de renders.
+        return (x === p.x && y === p.y) ? p : { x, y }
+      })
     }
+    if (abierto) requestAnimationFrame(reencuadrar)   // clamp al abrirse (ya montada)
     window.addEventListener('resize', reencuadrar)
     return () => window.removeEventListener('resize', reencuadrar)
-  }, [pos])
+  }, [pos, abierto])
 
   function responder(pregunta: string) {
     setMensajes(prev => [...prev, { texto: pregunta, esBot: false }])
@@ -175,6 +193,10 @@ export default function ChatbotSoporte() {
   function onPointerUp(e: React.PointerEvent) {
     dragRef.current = null
     ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
+    // Recordar dónde la dejó para la próxima vez.
+    try {
+      if (pos) localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos))
+    } catch { /* storage no disponible */ }
   }
 
   const ventanaStyle = pos
