@@ -272,7 +272,7 @@ export default function Landing() {
             <div className="absolute top-0 right-2 w-[250px] bg-white border border-[#eeeef3] rounded-[20px] p-3.5 ml-float"
               style={{ boxShadow: '0 30px 60px -28px rgba(20,20,45,.42)' }}>
               <div className="aspect-[4/3] rounded-[13px] overflow-hidden bg-[#f1f1f8] mb-3">
-                <img className="ph w-full h-full object-cover" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=460&q=70" alt="" />
+                <img className="ph w-full h-full object-cover" src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=460&q=70" alt="" width={460} height={345} />
               </div>
               <span className="text-[10px] font-bold text-white ml-grad px-2.5 py-1 rounded-full">Mejor precio</span>
               <div className="font-display font-semibold text-sm mt-2">Notebook Lenovo i5</div>
