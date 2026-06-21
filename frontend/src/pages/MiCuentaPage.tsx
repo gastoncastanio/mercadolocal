@@ -98,17 +98,14 @@ export default function MiCuentaPage() {
         direccion: direccion.trim()
       }
 
+      // Si hay un archivo de avatar, convertirlo a base64 y esperar
       if (avatarFile) {
-        const reader = new FileReader()
-        reader.onload = async (event) => {
-          datosActualizar.avatar = event.target?.result
-          await api.put('/auth/perfil', datosActualizar)
-          setExito('Perfil actualizado correctamente')
-          setCargando(false)
-          setTimeout(() => setExito(''), 3000)
-        }
-        reader.readAsDataURL(avatarFile)
-        return
+        datosActualizar.avatar = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error('No se pudo leer el archivo'))
+          reader.readAsDataURL(avatarFile)
+        })
       }
 
       await api.put('/auth/perfil', datosActualizar)

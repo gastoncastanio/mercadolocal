@@ -274,12 +274,13 @@ router.get('/perfil', verificarToken, async (req, res) => {
 // PUT /api/auth/perfil
 router.put('/perfil', verificarToken, async (req, res) => {
   try {
-    // Sanitizar datos del perfil
+    // Sanitizar datos del perfil (avatar no se sanitiza: es base64 binario)
     const datosSanitizados = {}
     const camposPermitidos = ['nombre', 'direccion', 'telefono', 'avatar']
     for (const campo of camposPermitidos) {
       if (req.body[campo] !== undefined) {
-        datosSanitizados[campo] = sanitizar(req.body[campo])
+        // avatar es base64 (data:image/...), no se sanitiza para evitar romper data: URI
+        datosSanitizados[campo] = campo === 'avatar' ? req.body[campo] : sanitizar(req.body[campo])
       }
     }
 
