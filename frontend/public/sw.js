@@ -33,5 +33,6 @@ self.addEventListener('activate', async (event) => {
   })())
 })
 
-// No interceptar ningún fetch — todo va directo a la red
-self.addEventListener('fetch', () => {})
+// IMPORTANTE: no registramos handler de 'fetch'. Un listener vacío hace que el
+// navegador rutee TODAS las requests a través del SW sin motivo (overhead no-op
+// que Chrome/Lighthouse advierten). Sin listener, los fetch van directo a la red.
