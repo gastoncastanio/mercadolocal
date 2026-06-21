@@ -110,6 +110,8 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
           <img
             src={oferta.imagen}
             alt={oferta.titulo}
+            width={400}
+            height={160}
             className="absolute inset-0 w-full h-full object-cover"
             style={{ objectPosition: oferta.imagenPosicion || '50% 50%' }}
           />
@@ -132,7 +134,7 @@ export default function TarjetaOfertaFlash({ oferta, offsetMs, distanciaTexto, n
         {/* Comercio: logo redondo + nombre (con verificado) + título del producto */}
         <div className="flex items-start gap-3">
           {logoComercio ? (
-            <img src={logoComercio} alt={nombreComercio || ''} className="w-11 h-11 rounded-full object-cover border border-ml-line shrink-0" />
+            <img src={logoComercio} alt={nombreComercio || ''} width={44} height={44} className="w-11 h-11 rounded-full object-cover border border-ml-line shrink-0" />
           ) : (
             <span className="w-11 h-11 rounded-full bg-ml-bg border border-ml-line flex items-center justify-center text-xl shrink-0">{GANCHO_ICON[oferta.tipoGancho] || '🏪'}</span>
           )}

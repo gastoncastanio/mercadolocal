@@ -283,7 +283,7 @@ export default function Chat() {
                 ←
               </button>
               {convActiva?.productoImagen && (
-                <img src={convActiva.productoImagen} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                <img src={convActiva.productoImagen} alt="" width={40} height={40} className="w-10 h-10 rounded-lg object-cover" />
               )}
               <div>
                 <p className="font-semibold text-ml-ink">{otroUsuario?.nombre || 'Usuario'}</p>

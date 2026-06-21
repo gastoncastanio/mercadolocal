@@ -122,7 +122,7 @@ export default function ViajesParaOrden({ ordenId, onContratado }: Props) {
           {viajes.map(v => (
             <div key={v._id} className="rounded-xl border border-ml-line bg-white p-4">
               <div className="flex items-start gap-3">
-                <img src={v.comisionista?.avatar || 'https://via.placeholder.com/48'} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                <img src={v.comisionista?.avatar || 'https://via.placeholder.com/48'} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-ml-ink">{v.comisionista?.nombre || 'Comisionista'}</p>
                   <p className="text-xs text-ml-muted mt-0.5">

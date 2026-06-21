@@ -143,6 +143,8 @@ export default function BannersRotativos() {
                     src={banner.producto.imagenes[0]}
                     alt={banner.producto.nombre}
                     loading="lazy"
+                    width={160}
+                    height={160}
                     className="w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-2xl border-4 border-white/20 shadow-2xl group-hover:scale-105 group-hover:border-white/40 transition-all duration-300"
                   />
                 </Link>
