@@ -343,7 +343,7 @@ export default function RadarCentro() {
                       {/* Media / poster */}
                       <div className="w-full sm:w-28 h-28 sm:h-auto bg-gradient-to-br from-ml-violet/10 to-ml-blue/10 flex items-center justify-center shrink-0 overflow-hidden">
                         {c.media?.posterUrl ? (
-                          <img src={c.media.posterUrl} alt={c.nombre} className="w-full h-full object-cover" />
+                          <img src={c.media.posterUrl} alt={c.nombre} width={400} height={300} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-5xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
                         )}
@@ -354,7 +354,7 @@ export default function RadarCentro() {
                           <div className="min-w-0 flex-1 flex items-start gap-2">
                             {/* Logo redondo del comercio */}
                             {c.media?.logo ? (
-                              <img src={c.media.logo} alt={c.nombre} className="w-10 h-10 rounded-full object-cover border border-ml-line shrink-0" />
+                              <img src={c.media.logo} alt={c.nombre} width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-ml-line shrink-0" />
                             ) : (
                               <span className="w-10 h-10 rounded-full bg-ml-bg border border-ml-line flex items-center justify-center text-lg shrink-0">{RUBRO_ICON[c.rubro] || '🏬'}</span>
                             )}

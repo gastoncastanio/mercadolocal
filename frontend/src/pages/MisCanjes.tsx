@@ -31,7 +31,7 @@ function QrCanje({ codigo }: { codigo: string }) {
   }, [codigo])
 
   if (!dataUrl) return <div className="w-[220px] h-[220px] bg-ml-bg rounded-xl flex items-center justify-center"><div className="spinner" /></div>
-  return <img src={dataUrl} alt="QR de canje" className="w-[220px] h-[220px] rounded-xl" />
+  return <img src={dataUrl} alt="QR de canje" width={220} height={220} className="w-[220px] h-[220px] rounded-xl" />
 }
 
 function CuentaRegresiva({ expiraEn, offsetMs }: { expiraEn: string; offsetMs: number }) {
