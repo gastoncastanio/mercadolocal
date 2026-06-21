@@ -10,10 +10,12 @@ interface Destacado {
   plan: string
 }
 
+// Tres entradas de publicidad DIFERENCIADAS por intenci\u00f3n (no redundantes):
+// promocionar un producto, un servicio profesional o una tienda completa.
 const PLACEHOLDERS = [
-  { titulo: 'Tu marca ac\u00e1', desc: 'Espacio publicitario disponible.', color: 'from-blue-500 to-indigo-600', emoji: '\u{1F4E2}' },
-  { titulo: 'Promocion\u00e1 tu tienda', desc: 'Destac\u00e1 tus productos.', color: 'from-emerald-500 to-teal-600', emoji: '\u2B50' },
-  { titulo: 'Vend\u00e9 m\u00e1s r\u00e1pido', desc: 'Publicidad dirigida a tu p\u00fablico.', color: 'from-orange-500 to-pink-600', emoji: '\u{1F680}' }
+  { titulo: 'Publicit\u00e1 tu producto', desc: 'Aparec\u00e9 primero en el cat\u00e1logo y las b\u00fasquedas.', color: 'from-blue-500 to-indigo-600', emoji: '\u{1F4E6}', enlace: '/promover' },
+  { titulo: 'Publicit\u00e1 tu servicio', desc: 'Que m\u00e1s clientes te encuentren en tu rubro.', color: 'from-emerald-500 to-teal-600', emoji: '\u{1F527}', enlace: '/servicios/mi-perfil' },
+  { titulo: 'Publicit\u00e1 tu tienda', desc: 'Llev\u00e1 tu marca al banner y a la home.', color: 'from-orange-500 to-pink-600', emoji: '\u{1F3EA}', enlace: '/promover' }
 ]
 
 export default function EspaciosPublicitarios() {
@@ -82,11 +84,11 @@ export default function EspaciosPublicitarios() {
           return (
             <Link
               key={`ph-${i}`}
-              to="/promover"
+              to={ph.enlace}
               className={`relative block rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-gradient-to-r ${ph.color} text-white p-4`}
             >
               <span className="absolute top-1 right-2 text-[9px] uppercase tracking-wide bg-white/20 px-1.5 py-0.5 rounded">
-                Ad
+                Publicidad
               </span>
               <div className="flex items-center gap-3">
                 <span className="text-3xl shrink-0">{ph.emoji}</span>
