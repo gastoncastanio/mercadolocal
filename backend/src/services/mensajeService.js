@@ -5,6 +5,7 @@ import SolicitudServicio from '../models/SolicitudServicio.js'
 import TrabajoBuscado from '../models/TrabajoBuscado.js'
 import EnvioComisionista from '../models/EnvioComisionista.js'
 import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
+import ViajeRemis from '../models/ViajeRemis.js'
 import { censurarContacto } from '../utils/validacionContenido.js'
 
 /**
@@ -48,7 +49,7 @@ async function existeOrdenPagadaEntre(userA, userB) {
  * @returns {Promise<boolean>}
  */
 export async function existeServicioContratadoEntre(userA, userB) {
-  const [solicitud, trabajo, envio, cotizacion] = await Promise.all([
+  const [solicitud, trabajo, envio, cotizacion, remis] = await Promise.all([
     SolicitudServicio.findOne({
       $or: [
         // userA es cliente, userB es profesional
@@ -81,10 +82,19 @@ export async function existeServicioContratadoEntre(userA, userB) {
         { compradorId: userA, comisionistaId: userB },
         { compradorId: userB, comisionistaId: userA }
       ]
+    }).select('_id').lean(),
+    // Remis: chat desbloqueado cuando un conductor toma el viaje (aceptado en
+    // adelante), entre pasajero y conductor, para coordinar el punto de encuentro.
+    ViajeRemis.findOne({
+      estado: { $in: ['aceptado', 'en_camino', 'a_bordo', 'finalizado'] },
+      $or: [
+        { pasajeroId: userA, comisionistaId: userB },
+        { pasajeroId: userB, comisionistaId: userA }
+      ]
     }).select('_id').lean()
   ])
 
-  return !!solicitud || !!trabajo || !!envio || !!cotizacion
+  return !!solicitud || !!trabajo || !!envio || !!cotizacion || !!remis
 }
 
 // Enviar mensaje

@@ -370,6 +370,103 @@ export async function crearPreferenciaEnvio({ envio, viaje, comisionista, compra
 }
 
 /**
+ * Crea una preferencia de pago para un ViajeRemis (traslado de personas).
+ * El conductor cobra el viaje; MercadoLocal retiene una comisión (%). Mismo
+ * patrón de split que crearPreferenciaEnvio.
+ */
+export async function crearPreferenciaRemis({ viaje, perfilComisionista, pasajeroEmail, monto }) {
+  const total = Math.round(monto)
+  if (!total || total <= 0) throw new Error('El viaje no tiene un precio válido')
+  if (!perfilComisionista?.mpVinculado) {
+    throw new Error('El conductor todavía no vinculó su cuenta de Mercado Pago')
+  }
+
+  let comisionistaToken
+  try {
+    comisionistaToken = perfilComisionista.getMpAccessToken()
+  } catch {
+    comisionistaToken = null
+  }
+  if (!comisionistaToken) throw new Error('No se pudo acceder a la cuenta de Mercado Pago del conductor')
+
+  const porcentajeComision = await configService.obtenerPorcentajeComision('remis') || 10
+  const marketplaceFee = Math.round(total * porcentajeComision / 100 * 100) / 100
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const ruta = `${viaje.origen?.direccion || ''} → ${viaje.destino?.direccion || ''}`.slice(0, 100)
+  const etiquetaTipo = {
+    traslado: 'Traslado',
+    ida_vuelta: 'Ida y vuelta',
+    dia_compras: 'Día de compras'
+  }[viaje.tipoServicio] || 'Remis'
+
+  const preferenceBody = {
+    items: [{
+      id: viaje._id.toString(),
+      title: `Remis (${etiquetaTipo}): ${ruta}`.slice(0, 250),
+      description: 'Servicio de traslado de personas por MercadoLocal Remis',
+      quantity: 1,
+      unit_price: total,
+      currency_id: 'ARS'
+    }],
+    payer: { email: pasajeroEmail },
+    external_reference: `remis:${viaje._id.toString()}`,
+    marketplace_fee: marketplaceFee,
+    back_urls: {
+      success: `${frontendUrl}/remis/mis-viajes?pago=ok`,
+      failure: `${frontendUrl}/remis/mis-viajes?pago=error`,
+      pending: `${frontendUrl}/remis/mis-viajes?pago=pendiente`
+    },
+    auto_return: 'approved',
+    statement_descriptor: 'MERCADOLOCAL REMIS'
+  }
+
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+      }
+    } catch { /* URL inválida: se omite */ }
+  }
+
+  let result
+  try {
+    const comisionistaClient = new MercadoPagoConfig({ accessToken: comisionistaToken })
+    try {
+      result = await new Preference(comisionistaClient).create({ body: preferenceBody })
+    } catch (splitError) {
+      if (splitError?.status === 401 || splitError?.message?.includes('token')) {
+        const nuevoToken = await refrescarTokenComisionista(perfilComisionista)
+        if (nuevoToken) {
+          const refreshed = new MercadoPagoConfig({ accessToken: nuevoToken })
+          result = await new Preference(refreshed).create({ body: preferenceBody })
+        } else {
+          throw splitError
+        }
+      } else {
+        throw splitError
+      }
+    }
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia de remis:', mpError?.message || mpError)
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
+  }
+
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  if (!initPoint) throw new Error('Mercado Pago no devolvió una URL de pago válida. Intentá de nuevo.')
+
+  console.log(`🚕 Preferencia de remis creada: viaje ${viaje._id} | $${total} | Fee: $${marketplaceFee}`)
+  return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point, marketplaceFee }
+}
+
+/**
  * Crea una preferencia de pago para PAUTA PUBLICITARIA.
  *
  * A diferencia de una compra, acá el dinero va ENTERO a la cuenta de la

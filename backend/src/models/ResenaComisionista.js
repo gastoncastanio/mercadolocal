@@ -1,11 +1,14 @@
 import mongoose from 'mongoose'
 
 /**
- * ResenaComisionista — reseña 1-5 que un contratante deja sobre un comisionista
- * tras un envío entregado. Recalcula PerfilComisionista.calificacion (promedio).
+ * ResenaComisionista — reseña 1-5 que un contratante/pasajero deja sobre un
+ * comisionista. Recalcula PerfilComisionista.calificacion (promedio).
  *
- * Espejo de ResenaServicio: el contratante solo puede reseñar una vez por envío
- * (índice unique sparse) y solo si el envío llegó a estado 'entregado'.
+ * Cubre dos verticales del mismo conductor:
+ *   - Envíos (EnvioComisionista) → campo envioId
+ *   - Remis (ViajeRemis)         → campo viajeRemisId
+ * Exactamente uno de los dos está presente. Índices sparse unique para que el
+ * contratante reseñe una sola vez por envío y el pasajero una sola vez por viaje.
  */
 const resenaComisionistaSchema = new mongoose.Schema({
   contratanteId: {
@@ -18,10 +21,17 @@ const resenaComisionistaSchema = new mongoose.Schema({
     ref: 'Usuario',
     required: true
   },
+  // Reseña de envío (presente solo si la reseña es de un EnvioComisionista).
   envioId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'EnvioComisionista',
-    required: true
+    default: null
+  },
+  // Reseña de remis (presente solo si la reseña es de un ViajeRemis).
+  viajeRemisId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ViajeRemis',
+    default: null
   },
   calificacion: {
     type: Number,
@@ -44,8 +54,10 @@ const resenaComisionistaSchema = new mongoose.Schema({
 // ===== Índices =====
 // Reseñas del comisionista (para calcular calificación promedio y listar)
 resenaComisionistaSchema.index({ comisionistaId: 1, createdAt: -1 })
-// Un contratante reseña una sola vez por envío
-resenaComisionistaSchema.index({ contratanteId: 1, envioId: 1 }, { unique: true })
+// Un contratante reseña una sola vez por envío (sparse: ignora docs sin envioId)
+resenaComisionistaSchema.index({ contratanteId: 1, envioId: 1 }, { unique: true, sparse: true })
+// Un pasajero reseña una sola vez por viaje de remis
+resenaComisionistaSchema.index({ contratanteId: 1, viajeRemisId: 1 }, { unique: true, sparse: true })
 
 const ResenaComisionista = mongoose.model('ResenaComisionista', resenaComisionistaSchema)
 

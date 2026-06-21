@@ -45,6 +45,7 @@ import centroRouter from './routes/centro.js'
 import privacidadRouter from './routes/privacidad.js'
 import serviciosRouter from './routes/servicios.js'
 import comisionistasRouter from './routes/comisionistas.js'
+import remisRouter from './routes/remis.js'
 import ofertasCompartidasRouter from './routes/ofertasCompartidas.js'
 import { sembrarAgentesFundadores } from './services/seedAgentes.js'
 import { sembrarMemoriaFundador } from './services/seedMemoriaFundador.js'
@@ -318,6 +319,7 @@ app.use('/api/privacidad', privacidadRouter)
 app.use('/api/centro', centroRouter)
 app.use('/api/servicios', serviciosRouter)
 app.use('/api/comisionistas', comisionistasRouter)
+app.use('/api/remis', remisRouter)
 app.use('/api/ofertas-compartidas', ofertasCompartidasRouter)
 
 // Health check básico (rápido, para uptime monitors)

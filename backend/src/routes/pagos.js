@@ -199,6 +199,18 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // ===== Remis (external_reference "remis:<id>") =====
+      // El pasajero pagó un viaje de remis. Split al conductor; la plataforma
+      // retuvo su fee. Solo marcamos el pago y cortamos acá.
+      if (extRef.startsWith('remis:')) {
+        if (pago.status === 'approved') {
+          const viajeRemisId = extRef.slice('remis:'.length)
+          const { marcarRemisPagado } = await import('../services/remisService.js')
+          await marcarRemisPagado(viajeRemisId, pago.id)
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 

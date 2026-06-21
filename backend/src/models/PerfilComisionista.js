@@ -95,6 +95,26 @@ const perfilComisionistaSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // ===== Remis / traslado de personas (vertical "MercadoLocal Remis") =====
+  // El mismo conductor verificado puede ofrecer traslado de personas estilo app:
+  // el pasajero pide desde el teléfono, sin llamadas ni mensajes. Reemplaza a los
+  // remises tradicionales que mueren por falta de conexión digital.
+  ofreceRemis: {
+    type: Boolean,
+    default: false
+  },
+  // Tarifas de remis configurables por el conductor (ARS).
+  tarifasRemis: {
+    // "Bajada de bandera": costo base fijo de cualquier viaje.
+    banderita: { type: Number, default: 0, min: 0 },
+    // Costo por kilómetro recorrido.
+    porKm: { type: Number, default: 0, min: 0 },
+    // Costo por hora de espera/acompañamiento (clave para el "día de compras":
+    // el conductor lleva, espera mientras hacés las compras y devuelve a casa).
+    porHoraEspera: { type: Number, default: 0, min: 0 },
+    // Tarifa mínima: ningún viaje cobra menos que esto.
+    minimo: { type: Number, default: 0, min: 0 }
+  },
   // Mercado Pago — OAuth del comisionista (para cobrar el traslado con split).
   // Mismo patrón que Tienda: tokens encriptados en reposo.
   mpAccessToken: { type: String, default: '' },
@@ -132,6 +152,8 @@ perfilComisionistaSchema.methods.getMpRefreshToken = function () {
 
 // Búsqueda de comisionistas activos disponibles ahora
 perfilComisionistaSchema.index({ activo: 1, estaTrabajandoHoy: 1, calificacion: -1 })
+// Búsqueda de remiseros disponibles ahora (ofreceRemis + trabajando)
+perfilComisionistaSchema.index({ ofreceRemis: 1, estaTrabajandoHoy: 1, activo: 1, calificacion: -1 })
 // Búsqueda por estado de documento (para admin panel)
 perfilComisionistaSchema.index({ estadoDocumento: 1 })
 
@@ -159,6 +181,8 @@ perfilComisionistaSchema.methods.toPublic = function () {
     estadoDocumento: this.estadoDocumento,
     estaTrabajandoHoy: this.estaTrabajandoHoy,
     horariosActivos: this.horariosActivos,
+    ofreceRemis: this.ofreceRemis,
+    tarifasRemis: this.tarifasRemis,
     mpVinculado: this.mpVinculado,
     createdAt: this.createdAt
   }

@@ -130,9 +130,13 @@ export async function actualizarMultiplesConfig(cambios) {
 // Obtener porcentaje de comisión según tipo
 // tipo: 'venta' (productos) o 'traslado' (comisionistas)
 export async function obtenerPorcentajeComision(tipo = 'venta') {
-  const clave = tipo === 'traslado' ? 'comision_traslado_porcentaje' : 'comision_porcentaje'
+  const claves = {
+    traslado: 'comision_traslado_porcentaje',
+    remis: 'comision_remis_porcentaje'
+  }
+  const clave = claves[tipo] || 'comision_porcentaje'
   const valor = await obtenerConfig(clave)
-  return valor ? parseFloat(valor) : (tipo === 'traslado' ? 10 : 10)
+  return valor ? parseFloat(valor) : 10
 }
 
 // Obtener comisión mínima en ARS
