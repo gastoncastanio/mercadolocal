@@ -131,6 +131,21 @@ router.get('/viaje/:id', async (req, res) => {
   }
 })
 
+// GET /api/comisionistas/viajes-para-orden/:ordenId - Viajes que matchean una orden (cross-checkout)
+router.get('/viajes-para-orden/:ordenId', verificarToken, async (req, res) => {
+  try {
+    const r = await comisionistaService.viajesParaOrden(req.usuario.id, req.params.ordenId)
+    res.json({
+      viajes: r.viajes.map(v => v.toPublic()),
+      ciudadOrigen: r.ciudadOrigen,
+      ciudadDestino: r.ciudadDestino,
+      yaAsignado: r.yaAsignado
+    })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 // Transiciones de estado del viaje (solo el comisionista dueño)
 router.patch('/viaje/:id/iniciar', verificarToken, async (req, res) => {
   try {

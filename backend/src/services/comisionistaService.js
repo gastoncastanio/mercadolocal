@@ -243,6 +243,62 @@ export async function obtenerViaje(id) {
   return await Viaje.findById(id).populate('comisionistaId', 'nombre avatar')
 }
 
+/**
+ * Cross-checkout: dada una orden paga del comprador, busca viajes programados
+ * que vayan de la ciudad del vendedor a la ciudad de entrega de la orden, con
+ * cupo disponible. Devuelve también las ciudades para mostrarlas en la UI.
+ */
+export async function viajesParaOrden(compradorId, ordenId) {
+  const orden = await Orden.findById(ordenId)
+  if (!orden) throw new Error('Orden no encontrada')
+  if (orden.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+
+  // Ciudad de origen = ciudad de la tienda del primer item.
+  let ciudadOrigen = ''
+  const primerItem = orden.items?.[0]
+  if (primerItem?.tiendaId) {
+    const { default: Tienda } = await import('../models/Tienda.js')
+    const tienda = await Tienda.findById(primerItem.tiendaId).select('ciudad').lean()
+    ciudadOrigen = tienda?.ciudad || ''
+  }
+  const ciudadDestino = orden.ciudadEntrega || ''
+
+  // Sin ciudades no podemos matchear: devolvemos vacío con el contexto.
+  if (!ciudadOrigen || !ciudadDestino) {
+    return { viajes: [], ciudadOrigen, ciudadDestino, yaAsignado: !!orden.envioComisionistaId }
+  }
+
+  // Match por origen exacto y destino que sea el destino del viaje O una parada.
+  const norm = (s) => s.trim().toLowerCase()
+  const viajes = await Viaje.find({
+    estado: 'programado',
+    fechaSalida: { $gte: new Date() },
+    capacidadDisponible: { $gte: 1 },
+    'origen.ciudad': new RegExp(`^${escaparRegex(ciudadOrigen)}$`, 'i')
+  })
+    .sort({ fechaSalida: 1 })
+    .limit(20)
+    .populate('comisionistaId', 'nombre avatar')
+
+  // Filtra a los que llegan al destino (como destino final o como parada en el camino).
+  const matchDestino = viajes.filter(v =>
+    norm(v.destino.ciudad) === norm(ciudadDestino) ||
+    (v.paradas || []).some(p => norm(p.ciudad) === norm(ciudadDestino))
+  )
+
+  return {
+    viajes: matchDestino,
+    ciudadOrigen,
+    ciudadDestino,
+    yaAsignado: !!orden.envioComisionistaId
+  }
+}
+
+// Escapa metacaracteres para usar un string como literal en RegExp.
+function escaparRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export async function misViajes(comisionistaId) {
   return await Viaje.find({ comisionistaId }).sort({ fechaSalida: -1 })
 }
@@ -291,6 +347,17 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
   }
   if (viaje.estado !== 'programado') throw new Error('Este viaje ya no recibe reservas')
 
+  // Cross-checkout: si el envío nace de una compra (ordenId), validamos que la
+  // orden sea del contratante y esté paga, y que no tenga ya un envío ligado.
+  let orden = null
+  if (datos.ordenId) {
+    orden = await Orden.findById(datos.ordenId)
+    if (!orden) throw new Error('Orden no encontrada')
+    if (orden.compradorId.toString() !== contratanteId.toString()) throw new Error('No autorizado sobre esta orden')
+    if (orden.estado === 'pendiente') throw new Error('La orden todavía no está paga')
+    if (orden.envioComisionistaId) throw new Error('Esta orden ya tiene un envío asignado')
+  }
+
   const precio = viaje.precioPara(tamano, cantidad)
   if (precio == null) throw new Error('El viaje no tiene tarifa para ese tamaño')
 
@@ -313,6 +380,7 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
       viajeId,
       comisionistaId: viaje.comisionistaId,
       contratanteId,
+      ordenId: orden?._id || null,
       cantidadBultos: cantidad,
       tamano,
       descripcion,
@@ -323,6 +391,21 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
     // Si falla la creación, devolvemos el cupo reservado.
     await Viaje.findByIdAndUpdate(viajeId, { $inc: { capacidadDisponible: cantidad } })
     throw err
+  }
+
+  // Cross-checkout: ligar el envío a la orden (idempotente; solo si no tenía uno).
+  if (orden) {
+    const ordenLigada = await Orden.findOneAndUpdate(
+      { _id: orden._id, envioComisionistaId: null },
+      { $set: { envioComisionistaId: envio._id, comisionistaId: viaje.comisionistaId } },
+      { new: true }
+    )
+    // Carrera: otro envío ganó la orden entre la validación y acá. Revertimos.
+    if (!ordenLigada) {
+      await EnvioComisionista.findByIdAndDelete(envio._id)
+      await Viaje.findByIdAndUpdate(viajeId, { $inc: { capacidadDisponible: cantidad } })
+      throw new Error('Esta orden ya tiene un envío asignado')
+    }
   }
 
   emitNotificacion(viaje.comisionistaId.toString(), {
@@ -522,6 +605,14 @@ export async function cancelarEnvio(usuarioId, envioId) {
 
   // Devolver el cupo reservado al viaje.
   await Viaje.findByIdAndUpdate(envio.viajeId, { $inc: { capacidadDisponible: envio.cantidadBultos } })
+
+  // Cross-checkout: desvincular la orden para que el comprador pueda elegir otro viaje.
+  if (envio.ordenId) {
+    await Orden.findOneAndUpdate(
+      { _id: envio.ordenId, envioComisionistaId: envio._id },
+      { $set: { envioComisionistaId: null, comisionistaId: null } }
+    )
+  }
 
   const otraParte = esContratante ? envio.comisionistaId : envio.contratanteId
   emitNotificacion(otraParte.toString(), {
