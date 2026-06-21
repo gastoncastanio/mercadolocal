@@ -1,6 +1,7 @@
 import PerfilComisionista from '../models/PerfilComisionista.js'
 import Viaje from '../models/Viaje.js'
 import EnvioComisionista from '../models/EnvioComisionista.js'
+import ResenaComisionista from '../models/ResenaComisionista.js'
 import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import Orden from '../models/Orden.js'
 import Usuario from '../models/Usuario.js'
@@ -790,4 +791,78 @@ export async function reportarIncidente(comisionistaId, solicitudId, descripcion
   emitNotificacion(solicitud.compradorId.toString(), aviso)
   if (solicitud.vendedorId) emitNotificacion(solicitud.vendedorId.toString(), aviso)
   return solicitud
+}
+
+// ===== Reseñas de comisionista =====
+
+/**
+ * Recalcula la calificación promedio del comisionista a partir de TODAS sus
+ * reseñas. Fuente única de verdad de PerfilComisionista.calificacion.
+ */
+async function recalcularCalificacionComisionista(comisionistaId) {
+  const resenas = await ResenaComisionista.find({ comisionistaId }).select('calificacion')
+  if (resenas.length === 0) {
+    await PerfilComisionista.findOneAndUpdate({ usuarioId: comisionistaId }, { calificacion: 0 })
+    return
+  }
+  const suma = resenas.reduce((acc, r) => acc + r.calificacion, 0)
+  const promedio = Math.round((suma / resenas.length) * 10) / 10
+  await PerfilComisionista.findOneAndUpdate({ usuarioId: comisionistaId }, { calificacion: promedio })
+}
+
+/**
+ * El contratante reseña al comisionista tras un envío entregado. Valida:
+ * - el envío existe y es del contratante
+ * - el envío está 'entregado'
+ * - no reseñó antes (índice unique + chequeo explícito para mensaje claro)
+ */
+export async function reseñarComisionista(contratanteId, envioId, { calificacion, comentario = '' }) {
+  const cal = Number(calificacion)
+  if (!Number.isInteger(cal) || cal < 1 || cal > 5) {
+    throw new Error('La calificación debe ser un número del 1 al 5')
+  }
+
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.estado !== 'entregado') throw new Error('Solo podés reseñar envíos ya entregados')
+
+  const yaResenado = await ResenaComisionista.findOne({ contratanteId, envioId }).select('_id')
+  if (yaResenado) throw new Error('Ya reseñaste este envío')
+
+  const resena = await new ResenaComisionista({
+    contratanteId,
+    comisionistaId: envio.comisionistaId,
+    envioId,
+    calificacion: cal,
+    comentario: (comentario || '').slice(0, 1000)
+  }).save()
+
+  await recalcularCalificacionComisionista(envio.comisionistaId)
+
+  emitNotificacion(envio.comisionistaId.toString(), {
+    tipo: 'envio',
+    titulo: 'Nueva reseña',
+    mensaje: `Recibiste una reseña de ${cal}★ por un envío.`,
+    enlace: '/comisionistas/mi-perfil'
+  })
+
+  return resena
+}
+
+/** Reseñas públicas de un comisionista (para mostrar en su perfil). */
+export async function resenasComisionista(comisionistaId, { skip = 0, limit = 20 } = {}) {
+  const resenas = await ResenaComisionista.find({ comisionistaId })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .populate('contratanteId', 'nombre avatar')
+  const total = await ResenaComisionista.countDocuments({ comisionistaId })
+  return { resenas, total }
+}
+
+/** IDs de envíos que el contratante ya reseñó (para que el front oculte el botón). */
+export async function enviosReseñadosPor(contratanteId) {
+  const resenas = await ResenaComisionista.find({ contratanteId }).select('envioId')
+  return resenas.map(r => r.envioId.toString())
 }

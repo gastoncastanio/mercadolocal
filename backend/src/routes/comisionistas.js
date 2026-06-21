@@ -257,6 +257,41 @@ router.patch('/envio/:id/cancelar', verificarToken, async (req, res) => {
   }
 })
 
+// ===== Reseñas de comisionista =====
+
+// POST /api/comisionistas/envio/:id/resena - Reseñar al comisionista tras la entrega
+router.post('/envio/:id/resena', verificarToken, async (req, res) => {
+  try {
+    const resena = await comisionistaService.reseñarComisionista(req.usuario.id, req.params.id, req.body)
+    res.status(201).json(resena)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/comisionistas/mis-resenas-hechas - IDs de envíos que ya reseñé
+router.get('/mis-resenas-hechas', verificarToken, async (req, res) => {
+  try {
+    const ids = await comisionistaService.enviosReseñadosPor(req.usuario.id)
+    res.json(ids)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/comisionistas/:usuarioId/resenas - Reseñas públicas de un comisionista
+router.get('/:usuarioId/resenas', async (req, res) => {
+  try {
+    const { skip = 0, limit = 20 } = req.query
+    const { resenas, total } = await comisionistaService.resenasComisionista(req.params.usuarioId, {
+      skip: parseInt(skip), limit: parseInt(limit)
+    })
+    res.json({ resenas, total })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // ===== SolicitudCotizacion (comisionista en vivo desde el checkout) =====
 
 // POST /api/comisionistas/cotizacion - El comprador pide cotización a un comisionista

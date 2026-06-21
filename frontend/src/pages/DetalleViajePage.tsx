@@ -21,6 +21,14 @@ interface Viaje {
   estado: string
 }
 
+interface Reseña {
+  _id: string
+  calificacion: number
+  comentario: string
+  createdAt: string
+  contratanteId?: { nombre: string; avatar: string } | null
+}
+
 const TAMANOS = [
   { value: 'chico', label: 'Chico', campo: 'bultoChico' as const },
   { value: 'mediano', label: 'Mediano', campo: 'bultoMediano' as const },
@@ -42,6 +50,7 @@ export default function DetalleViajePage() {
   const [enviando, setEnviando] = useState(false)
   const [codigoEntrega, setCodigoEntrega] = useState('')
   const [envioId, setEnvioId] = useState<string | null>(null) // para pagar después
+  const [reseñas, setReseñas] = useState<Reseña[]>([])
 
   useEffect(() => { if (id) cargar() }, [id])
 
@@ -51,6 +60,13 @@ export default function DetalleViajePage() {
     try {
       const res = await api.get(`/comisionistas/viaje/${id}`)
       setViaje(res.data)
+      // Reseñas del comisionista (mejor esfuerzo; no bloquea el viaje)
+      const comId = res.data?.comisionista?._id || res.data?.comisionistaId
+      if (comId) {
+        api.get(`/comisionistas/${comId}/resenas?limit=5`)
+          .then(r => setReseñas(r.data?.resenas || []))
+          .catch(() => {})
+      }
     } catch (e: any) {
       setError(e.response?.data?.error || 'No se pudo cargar el viaje')
     } finally {
@@ -181,6 +197,25 @@ export default function DetalleViajePage() {
           <p className="text-sm text-ml-muted">{viaje.capacidadDisponible} de {viaje.capacidadTotal} bulto(s) disponibles</p>
           {viaje.notas && <p className="text-ml-soft text-sm mt-3 whitespace-pre-line">{viaje.notas}</p>}
         </div>
+
+        {/* Reseñas del comisionista */}
+        {reseñas.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-ml-line p-6">
+            <h2 className="text-lg font-bold text-ml-ink mb-3">Reseñas del comisionista</h2>
+            <div className="space-y-3">
+              {reseñas.map(r => (
+                <div key={r._id} className="border-b border-ml-line last:border-0 pb-3 last:pb-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <img src={r.contratanteId?.avatar || 'https://via.placeholder.com/28'} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    <span className="text-sm font-semibold text-ml-ink">{r.contratanteId?.nombre || 'Cliente'}</span>
+                    <span className="text-amber-400 text-sm">{'★'.repeat(r.calificacion)}<span className="text-ml-line">{'★'.repeat(5 - r.calificacion)}</span></span>
+                  </div>
+                  {r.comentario && <p className="text-sm text-ml-soft">{r.comentario}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Código de entrega tras reservar */}
         {codigoEntrega ? (
