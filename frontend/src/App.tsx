@@ -142,7 +142,9 @@ function RutaPrivada({ children, roles, requiereVendedor }: { children: React.Re
 }
 
 function ConNavbar({ children }: { children: React.ReactNode }) {
-  return <><MarqueeBanner /><Navbar />{children}</>
+  // <main> da el "punto de referencia principal" (landmark) que piden los
+  // lectores de pantalla y la auditoría de accesibilidad de Lighthouse.
+  return <><MarqueeBanner /><Navbar /><main id="contenido-principal">{children}</main></>
 }
 
 function RutasConBoundary() {

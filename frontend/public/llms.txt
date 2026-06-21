@@ -1,0 +1,26 @@
+# MercadoLocal
+
+> MercadoLocal es un marketplace argentino que conecta compradores y vendedores de la misma ciudad, con pago protegido a través de Mercado Pago, envíos locales y verticales de servicios profesionales y comisionistas/viajeros para traslados entre localidades.
+
+MercadoLocal es una aplicación web (SPA en React) servida desde Vercel, con backend en Node.js. El contenido principal (productos, tiendas, servicios) se carga dinámicamente vía API, por lo que los agentes deben usar la API pública para datos estructurados.
+
+## Secciones principales
+
+- [Inicio](https://mercadolocal-nu.vercel.app/): presentación del marketplace y accesos rápidos.
+- [Catálogo de productos](https://mercadolocal-nu.vercel.app/catalogo): listado de productos de vendedores locales.
+- [Servicios profesionales](https://mercadolocal-nu.vercel.app/servicios): plomeros, electricistas, gasistas y otros oficios por localidad.
+- [Bolsa de trabajo](https://mercadolocal-nu.vercel.app/trabajos): publicaciones de trabajos donde los profesionales ofertan.
+- [Comisionistas y viajeros](https://mercadolocal-nu.vercel.app/comisionistas): viajes programados para trasladar compras entre ciudades.
+
+## Cuenta y operación
+
+- [Iniciar sesión](https://mercadolocal-nu.vercel.app/login): acceso de usuarios registrados.
+- [Registro](https://mercadolocal-nu.vercel.app/registro): creación de cuenta gratuita.
+- [Mi tienda](https://mercadolocal-nu.vercel.app/mi-tienda): panel para vendedores.
+- [Mis órdenes](https://mercadolocal-nu.vercel.app/mis-ordenes): seguimiento de compras y envíos.
+
+## Notas para agentes
+
+- El pago se procesa con Mercado Pago y el dinero queda retenido hasta confirmar la entrega.
+- Las operaciones (comprar, vender, contratar) requieren autenticación.
+- Los datos personales se tratan según la Ley 25.326 de Protección de Datos Personales de Argentina.

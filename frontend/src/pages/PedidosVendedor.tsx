@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { io } from 'socket.io-client'
-import api from '../services/api'
+import api, { SOCKET_URL } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import { Orden, Usuario } from '../types'
@@ -74,7 +74,6 @@ export default function PedidosVendedor() {
 
   // Socket.IO: refrescar lista cuando llega una venta nueva
   useEffect(() => {
-    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
 
     socket.on('venta:confirmada', () => {

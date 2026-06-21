@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api from '../services/api'
+import api, { SOCKET_URL } from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import { trackBusqueda } from '../services/tracking'
@@ -46,7 +46,6 @@ export default function CatalogoProductos() {
 
   // Sincronizacion en tiempo real con Socket.IO
   useEffect(() => {
-    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
 
     // Producto nuevo: lo agregamos al inicio

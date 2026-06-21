@@ -6,6 +6,13 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 // en Vercel, hardcodeamos la URL correcta.
 const API_URL = 'https://mercadolocal-production.up.railway.app/api'
 
+// Origen del backend SIN el sufijo /api. Lo usan TODAS las conexiones de
+// Socket.IO. Antes cada archivo lo derivaba de import.meta.env.VITE_API_URL,
+// pero esa variable en Vercel todavía apunta al backend viejo de Render
+// (mercadolocal.onrender.com), que ya no existe → el WebSocket fallaba con
+// ERR_NAME_NOT_RESOLVED y rompía el tiempo real. Centralizamos en Railway.
+export const SOCKET_URL = API_URL.replace(/\/api\/?$/, '')
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
