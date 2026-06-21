@@ -264,3 +264,18 @@ export function emitTiendaActualizada(tienda) {
     timestamp: new Date()
   })
 }
+
+/**
+ * Notifica que hay un nuevo mensaje en una conversación (al receptor)
+ */
+export function emitNuevoMensaje(receptorId, mensaje) {
+  if (!io) return
+  io.to(`user:${receptorId}`).emit('mensaje:nuevo', {
+    _id: mensaje._id,
+    conversacionId: mensaje.conversacionId,
+    emisorId: mensaje.emisorId,
+    mensaje: mensaje.mensaje,
+    imagenUrl: mensaje.imagenUrl,
+    timestamp: mensaje.createdAt
+  })
+}

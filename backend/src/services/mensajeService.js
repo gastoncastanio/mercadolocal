@@ -6,6 +6,7 @@ import TrabajoBuscado from '../models/TrabajoBuscado.js'
 import EnvioComisionista from '../models/EnvioComisionista.js'
 import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import ViajeRemis from '../models/ViajeRemis.js'
+import { emitNuevoMensaje } from './socketService.js'
 import { censurarContacto } from '../utils/validacionContenido.js'
 
 /**
@@ -138,6 +139,9 @@ export async function enviarMensaje(emisorId, { receptorId, productoId, mensaje,
   })
 
   await nuevoMensaje.save()
+
+  // Emitir socket al receptor para que vea el mensaje en tiempo real
+  emitNuevoMensaje(receptorId, nuevoMensaje)
 
   return nuevoMensaje
 }

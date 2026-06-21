@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { subirImagenOptimizada } from '../utils/imageUpload'
+import { useSocket } from '../hooks/useSocket'
 
 interface OtroUsuario {
   _id: string
@@ -87,6 +88,22 @@ export default function Chat() {
       cargarMensajes(conversacionActiva)
       marcarLeidos(conversacionActiva)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversacionActiva])
+
+  // Escuchar nuevos mensajes en tiempo real
+  const { on, off } = useSocket(usuario?._id)
+  useEffect(() => {
+    const handleNuevoMensaje = (msg: any) => {
+      // Solo agregar si la conversación activa es la del mensaje
+      if (msg.conversacionId === conversacionActiva) {
+        setMensajes((prev) => [...prev, msg])
+      }
+      // Refrescar la lista de conversaciones para actualizar el preview del último mensaje
+      cargarConversaciones()
+    }
+    on('mensaje:nuevo', handleNuevoMensaje)
+    return () => off('mensaje:nuevo')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversacionActiva])
 
