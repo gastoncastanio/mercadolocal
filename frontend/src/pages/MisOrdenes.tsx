@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api from '../services/api'
+import api, { SOCKET_URL } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { Orden } from '../types'
 import PanelComisionistasEnVivo from '../components/PanelComisionistasEnVivo'
@@ -131,7 +131,6 @@ export default function MisOrdenes() {
   // Sincronización en tiempo real: cuando el vendedor cambia el estado,
   // el comprador lo ve al instante sin tener que recargar.
   useEffect(() => {
-    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
 
     socket.on('orden:estado', () => {

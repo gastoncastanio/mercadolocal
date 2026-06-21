@@ -14,7 +14,7 @@ export default {
           ink: '#101024',     // títulos / texto fuerte
           slate: '#3a3a48',   // texto medio
           soft: '#5f5f70',    // párrafos
-          muted: '#9a9aa8',   // texto tenue / placeholders
+          muted: '#6b6b78',   // texto tenue / placeholders (contraste AA 5.25:1 sobre blanco)
           line: '#eeeef3',    // bordes suaves
           line2: '#f0f0f5',   // bordes/separadores
           bg: '#fafafc',      // fondos suaves

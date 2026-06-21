@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api from '../services/api'
+import api, { SOCKET_URL } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
@@ -74,7 +74,6 @@ export default function MiTienda() {
   // Listeners de Socket.IO para sincronizacion en tiempo real
   useEffect(() => {
     if (!tienda) return
-    const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
 
     socket.on('producto:actualizado', (data: any) => {

@@ -37,6 +37,8 @@ export default function TarjetaProducto({ producto }: Props) {
             src={producto.imagenes[0]}
             alt={producto.nombre}
             loading="lazy"
+            width={400}
+            height={400}
             className="ph max-w-full max-h-full object-contain"
           />
         ) : (

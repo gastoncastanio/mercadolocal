@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { io, Socket } from 'socket.io-client'
-import api from '../services/api'
+import api, { SOCKET_URL } from '../services/api'
 
 // Mapa simple clave -> valor para configuraciones publicas
 type ConfigMap = Record<string, string>
@@ -13,9 +13,6 @@ interface ConfigContextType {
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
-
-// Derivar URL del socket a partir de la URL del API (sacando /api del final)
-const SOCKET_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001').replace(/\/api\/?$/, '')
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ConfigMap>({})
