@@ -187,6 +187,18 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // ===== Envío de comisionista (external_reference "envio:<id>") =====
+      // El contratante pagó un envío en un viaje. El dinero va al comisionista vía
+      // split; la plataforma retuvo su fee. Solo marcamos el pago y cortamos acá.
+      if (extRef.startsWith('envio:')) {
+        if (pago.status === 'approved') {
+          const envioId = extRef.slice('envio:'.length)
+          const { marcarEnvioPagado } = await import('../services/comisionistaService.js')
+          await marcarEnvioPagado(envioId, pago.id)
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 

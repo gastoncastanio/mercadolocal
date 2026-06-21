@@ -11,6 +11,7 @@ interface Envio {
   descripcion: string
   comisionistaId?: { _id: string; nombre: string; avatar: string } | null
   viajeId?: { origen: { ciudad: string }; destino: { ciudad: string }; fechaSalida: string } | null
+  pago?: { estadoPago: string }
   createdAt: string
 }
 
@@ -28,8 +29,26 @@ export default function MisEnviosPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
   const [accionando, setAccionando] = useState(false)
+  const [envioPagando, setEnvioPagando] = useState<string | null>(null)
 
   useEffect(() => { cargar() }, [])
+
+  async function pagarEnvio(envioId: string) {
+    setEnvioPagando(envioId)
+    setError('')
+    try {
+      const res = await api.post(`/comisionistas/envio/${envioId}/pagar`)
+      if (res.data?.initPoint) {
+        window.location.href = res.data.initPoint
+      } else {
+        setError('No se obtuvo URL de pago. Intentá de nuevo.')
+        setEnvioPagando(null)
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo proceder al pago')
+      setEnvioPagando(null)
+    }
+  }
 
   async function cargar() {
     setCargando(true)
@@ -120,6 +139,11 @@ export default function MisEnviosPage() {
                   )}
 
                   <div className="flex flex-wrap gap-2 justify-end">
+                    {envio.estado === 'pendiente' && envio.pago?.estadoPago !== 'pagado' && (
+                      <button onClick={() => pagarEnvio(envio._id)} disabled={envioPagando === envio._id} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">
+                        {envioPagando === envio._id ? 'Procesando...' : '💳 Pagar'}
+                      </button>
+                    )}
                     {envio.comisionistaId && envio.estado !== 'cancelado' && (
                       <button onClick={() => coordinarChat(envio.comisionistaId!._id, envio.comisionistaId!.nombre)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
                     )}

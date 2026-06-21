@@ -176,6 +176,30 @@ router.post('/viaje/:id/contratar', verificarToken, async (req, res) => {
   }
 })
 
+// POST /api/comisionistas/envio/:id/pagar - Contratante paga envío (split al comisionista)
+router.post('/envio/:id/pagar', verificarToken, async (req, res) => {
+  try {
+    const { initPoint, preferenceId } = await comisionistaService.pagarEnvio(
+      req.usuario.id,
+      req.params.id,
+      req.usuario.email || ''
+    )
+    res.json({ initPoint, preferenceId })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/comisionistas/envio/:id/verificar-pago - Verificar pago al volver del checkout
+router.post('/envio/:id/verificar-pago', verificarToken, async (req, res) => {
+  try {
+    const envio = await comisionistaService.verificarPagoEnvio(req.usuario.id, req.params.id)
+    res.json(envio)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 // GET /api/comisionistas/mis-envios - Envíos que contraté (como contratante)
 router.get('/mis-envios', verificarToken, async (req, res) => {
   try {

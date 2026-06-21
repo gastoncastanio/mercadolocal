@@ -41,6 +41,7 @@ export default function DetalleViajePage() {
   const [descripcion, setDescripcion] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [codigoEntrega, setCodigoEntrega] = useState('')
+  const [envioId, setEnvioId] = useState<string | null>(null) // para pagar después
 
   useEffect(() => { if (id) cargar() }, [id])
 
@@ -62,6 +63,23 @@ export default function DetalleViajePage() {
     : 0
   const precioTotal = tarifaActual * cantidad
 
+  async function pagarEnvio() {
+    if (!envioId) return
+    setEnviando(true)
+    setError('')
+    try {
+      const res = await api.post(`/comisionistas/envio/${envioId}/pagar`)
+      if (res.data?.initPoint) {
+        window.location.href = res.data.initPoint
+      } else {
+        setError('No se obtuvo URL de pago. Intentá de nuevo.')
+      }
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo proceder al pago')
+      setEnviando(false)
+    }
+  }
+
   async function contratar(e: React.FormEvent) {
     e.preventDefault()
     if (!estaLogueado) { navigate(`/login?redirect=/comisionistas/viaje/${id}`); return }
@@ -72,10 +90,12 @@ export default function DetalleViajePage() {
         tamano, cantidadBultos: cantidad, descripcion
       })
       const codigo = res.data.codigoEntrega
+      const eid = res.data.envio?._id
       setCodigoEntrega(codigo)
+      setEnvioId(eid || null)
       // Guardamos el código en este dispositivo para poder mostrarlo luego en Mis envíos.
-      if (res.data.envio?._id) {
-        localStorage.setItem(`ml_envio_codigo_${res.data.envio._id}`, codigo)
+      if (eid) {
+        localStorage.setItem(`ml_envio_codigo_${eid}`, codigo)
       }
     } catch (e: any) {
       setError(e.response?.data?.error || 'No se pudo reservar el envío')
@@ -168,8 +188,11 @@ export default function DetalleViajePage() {
             <p className="text-green-800 font-semibold mb-2">✓ ¡Reserva confirmada!</p>
             <p className="text-sm text-ml-soft mb-3">Guardá este código de entrega. Se lo das al comisionista cuando recibas el bulto para cerrar el envío:</p>
             <p className="text-3xl font-extrabold tracking-widest text-ml-ink bg-white border border-green-200 rounded-xl py-3 mb-4">{codigoEntrega}</p>
-            <div className="flex gap-2 justify-center">
-              <button onClick={() => navigate('/comisionistas/mis-envios')} className="mlbtn ml-grad text-white px-5 py-2 rounded-lg font-bold">Ver mis envíos</button>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <button onClick={pagarEnvio} disabled={enviando} className="mlbtn ml-grad text-white px-5 py-2 rounded-lg font-bold disabled:opacity-60">
+                {enviando ? 'Procesando...' : '💳 Proceder al pago'}
+              </button>
+              <button onClick={() => navigate('/comisionistas/mis-envios')} className="px-5 py-2 border border-ml-line rounded-lg font-bold hover:bg-ml-bg">Ver mis envíos</button>
             </div>
           </div>
         ) : esPropio ? (

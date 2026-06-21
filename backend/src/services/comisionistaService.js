@@ -334,6 +334,95 @@ export async function contratarEnvio(contratanteId, viajeId, datos) {
   return { envio, codigoEntrega: codigo }
 }
 
+/**
+ * El contratante paga un envío reservado: crea la preferencia de MP con split
+ * al comisionista. El envío pasa a estado 'pendiente_pago'.
+ */
+export async function pagarEnvio(contratanteId, envioId, compradorEmail) {
+  const { crearPreferenciaEnvio } = await import('./mercadoPagoService.js')
+
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.estado !== 'pendiente') throw new Error('El envío ya fue procesado o cancelado')
+  if (envio.pago?.estadoPago === 'pagado') throw new Error('Este envío ya fue pagado')
+
+  const viaje = await Viaje.findById(envio.viajeId)
+  if (!viaje) throw new Error('Viaje no encontrado')
+
+  const comisionista = await PerfilComisionista.findOne({ usuarioId: envio.comisionistaId })
+  if (!comisionista || !comisionista.mpVinculado) {
+    throw new Error('El comisionista todavía no vinculó su cuenta de Mercado Pago. Pedile que la vincule para poder pagar online.')
+  }
+
+  const { preferenceId, initPoint, marketplaceFee } = await crearPreferenciaEnvio({
+    envio, viaje, comisionista, compradorEmail
+  })
+
+  envio.pago = {
+    ...envio.pago,
+    mpPreferenceId: preferenceId,
+    comisionPlataforma: marketplaceFee,
+    estadoPago: 'pendiente_pago'
+  }
+  await envio.save()
+
+  return { initPoint, preferenceId }
+}
+
+/**
+ * Verifica el pago de un envío consultando a MP por external_reference
+ * (fallback al volver del checkout, por si el webhook no llegó).
+ */
+export async function verificarPagoEnvio(contratanteId, envioId) {
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) throw new Error('Envío no encontrado')
+  if (envio.contratanteId.toString() !== contratanteId.toString()) throw new Error('No autorizado')
+  if (envio.pago?.estadoPago === 'pagado') return envio
+
+  try {
+    const { MercadoPagoConfig, Payment } = await import('mercadopago')
+    const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' })
+    const search = await new Payment(client).search({
+      options: { external_reference: `envio:${envioId}` }
+    })
+    const resultados = search?.results || []
+    const aprobado = resultados.find(p => p.status === 'approved')
+    if (aprobado) {
+      return await marcarEnvioPagado(envioId, aprobado.id)
+    }
+  } catch (e) {
+    console.warn('verificarPagoEnvio: no se pudo consultar a MP:', e.message)
+  }
+  return envio
+}
+
+/**
+ * Marca el envío como pagado (lo invoca el webhook de MP). Idempotente.
+ */
+export async function marcarEnvioPagado(envioId, mpPaymentId) {
+  const envio = await EnvioComisionista.findById(envioId)
+  if (!envio) return null
+  if (envio.pago?.estadoPago === 'pagado') return envio // idempotencia
+
+  envio.pago = { ...envio.pago, mpPaymentId: mpPaymentId?.toString() || '', estadoPago: 'pagado' }
+  await envio.save()
+
+  emitNotificacion(envio.comisionistaId.toString(), {
+    tipo: 'envio',
+    titulo: 'Envío pagado',
+    mensaje: 'El contratante pagó el envío. Ya podés coordinar la entrega.',
+    enlace: '/comisionistas/envios-recibidos'
+  })
+  emitNotificacion(envio.contratanteId.toString(), {
+    tipo: 'envio',
+    titulo: 'Pago del envío confirmado',
+    mensaje: 'Tu pago del envío fue confirmado. Coordiná la entrega con el comisionista por chat.',
+    enlace: '/comisionistas/mis-envios'
+  })
+  return envio
+}
+
 export async function misEnviosContratante(contratanteId) {
   return await EnvioComisionista.find({ contratanteId })
     .sort({ createdAt: -1 })
