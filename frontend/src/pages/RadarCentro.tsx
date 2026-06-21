@@ -8,6 +8,7 @@ import RetornoPagoOferta from '../components/RetornoPagoOferta'
 import AlertaLiquidacion, { Liquidacion } from '../components/AlertaLiquidacion'
 import AlertaClima from '../components/AlertaClima'
 import { calcularOffset } from '../utils/canjes'
+import { imgCloudinary } from '../utils/cloudinary'
 import { useBloqueHorario, TEMA_NEUTRO } from '../hooks/useBloqueHorario'
 import { useWeatherAlert } from '../hooks/useWeatherAlert'
 import { useSocket } from '../hooks/useSocket'
@@ -343,7 +344,7 @@ export default function RadarCentro() {
                       {/* Media / poster */}
                       <div className="w-full sm:w-28 h-28 sm:h-auto bg-gradient-to-br from-ml-violet/10 to-ml-blue/10 flex items-center justify-center shrink-0 overflow-hidden">
                         {c.media?.posterUrl ? (
-                          <img src={c.media.posterUrl} alt={c.nombre} width={400} height={300} className="w-full h-full object-cover" />
+                          <img src={imgCloudinary(c.media.posterUrl, 500)} alt={c.nombre} width={400} height={300} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-5xl">{RUBRO_ICON[c.rubro] || '🏬'}</span>
                         )}
@@ -354,7 +355,7 @@ export default function RadarCentro() {
                           <div className="min-w-0 flex-1 flex items-start gap-2">
                             {/* Logo redondo del comercio */}
                             {c.media?.logo ? (
-                              <img src={c.media.logo} alt={c.nombre} width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-ml-line shrink-0" />
+                              <img src={imgCloudinary(c.media.logo, 96)} alt={c.nombre} width={40} height={40} className="w-10 h-10 rounded-full object-cover border border-ml-line shrink-0" />
                             ) : (
                               <span className="w-10 h-10 rounded-full bg-ml-bg border border-ml-line flex items-center justify-center text-lg shrink-0">{RUBRO_ICON[c.rubro] || '🏬'}</span>
                             )}
@@ -406,7 +407,7 @@ export default function RadarCentro() {
                         {c.media?.fotos && c.media.fotos.length > 0 && (
                           <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
                             {c.media.fotos.slice(0, 4).map((foto, idx) => (
-                              <img key={idx} src={foto} alt={`${c.nombre} ${idx + 1}`} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                              <img key={idx} src={imgCloudinary(foto, 96)} alt={`${c.nombre} ${idx + 1}`} width={48} height={48} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                             ))}
                             {c.media.fotos.length > 4 && (
                               <div className="w-12 h-12 rounded-lg bg-ml-bg border border-ml-line flex items-center justify-center flex-shrink-0 text-xs font-bold text-ml-muted">

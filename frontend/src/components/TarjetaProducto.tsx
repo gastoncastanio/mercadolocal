@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Producto, Tienda } from '../types'
+import { imgCloudinary } from '../utils/cloudinary'
 
 interface Props {
   producto: Producto
@@ -34,7 +35,7 @@ export default function TarjetaProducto({ producto }: Props) {
       <div className="relative aspect-square overflow-hidden flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg,#f3f3f8,#eef0fb)' }}>
         {producto.imagenes && producto.imagenes.length > 0 ? (
           <img
-            src={producto.imagenes[0]}
+            src={imgCloudinary(producto.imagenes[0], 400)}
             alt={producto.nombre}
             loading="lazy"
             width={400}

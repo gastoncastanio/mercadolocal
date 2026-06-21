@@ -10,6 +10,7 @@ import CalculadoraCuotas from '../components/CalculadoraCuotas'
 import CalculadorCostos from '../components/CalculadorCostos'
 import CotizadorEnvio from '../components/CotizadorEnvio'
 import { trackVista } from '../services/tracking'
+import { imgCloudinary } from '../utils/cloudinary'
 
 export default function DetalleProducto() {
   const { id } = useParams()
@@ -140,7 +141,7 @@ export default function DetalleProducto() {
                             i === imagenActual ? 'border-ml-blue' : 'border-ml-line hover:border-ml-purple/40'
                           }`}
                         >
-                          <img src={img} alt="" width={44} height={44} className="w-full h-full object-contain" />
+                          <img src={imgCloudinary(img, 96)} alt="" width={44} height={44} className="w-full h-full object-contain" />
                         </button>
                       ))}
                     </div>
@@ -150,7 +151,7 @@ export default function DetalleProducto() {
                   <div className="flex-1 aspect-square flex items-center justify-center overflow-hidden relative">
                     {producto.imagenes?.length > 0 ? (
                       <img
-                        src={producto.imagenes[imagenActual]}
+                        src={imgCloudinary(producto.imagenes[imagenActual], 700)}
                         alt={producto.nombre}
                         width={400}
                         height={400}
@@ -560,7 +561,7 @@ export default function DetalleProducto() {
               >
                 <div className="flex items-center gap-3 mb-3">
                   {tienda.logo ? (
-                    <img src={tienda.logo} alt={tienda.nombre} width={48} height={48} className="w-12 h-12 rounded-full object-cover border border-ml-line shrink-0" />
+                    <img src={imgCloudinary(tienda.logo, 96)} alt={tienda.nombre} width={48} height={48} className="w-12 h-12 rounded-full object-cover border border-ml-line shrink-0" />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-xl shrink-0">&#x1F3EA;</div>
                   )}

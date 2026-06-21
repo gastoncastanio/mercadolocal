@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Producto, Tienda } from '../types'
+import { imgCloudinary } from '../utils/cloudinary'
 
 interface Destacado {
   _id: string
@@ -59,7 +60,7 @@ export default function EspaciosPublicitarios() {
                 <div className="flex items-center gap-3 p-3">
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-ml-bg shrink-0">
                     {prod.imagenes?.[0] ? (
-                      <img src={prod.imagenes[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <img src={imgCloudinary(prod.imagenes[0], 128)} alt="" loading="lazy" width={64} height={64} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-2xl bg-gradient-to-br from-blue-50 to-purple-50">&#x1F4E6;</div>
                     )}

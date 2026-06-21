@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { Producto, Tienda } from '../types'
+import { imgCloudinary } from '../utils/cloudinary'
 
 interface BannerDef {
   titulo: string
@@ -140,7 +141,7 @@ export default function BannersRotativos() {
               {banner.producto?.imagenes?.[0] ? (
                 <Link to={banner.enlace} onClick={handleClickPromo} className="group">
                   <img
-                    src={banner.producto.imagenes[0]}
+                    src={imgCloudinary(banner.producto.imagenes[0], 320)}
                     alt={banner.producto.nombre}
                     loading="lazy"
                     width={160}
