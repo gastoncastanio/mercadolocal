@@ -7,6 +7,7 @@ import MarqueeBanner from './components/MarqueeBanner'
 import ErrorBoundary from './components/ErrorBoundary'
 import { BannerFlotanteInstalar } from './components/InstalarApp'
 import BannerConsentimiento from './components/BannerConsentimiento'
+import DeferMount from './components/DeferMount'
 
 // Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
@@ -278,10 +279,14 @@ export default function App() {
       <AuthProvider>
         <ConfigProvider>
           <AppContent />
-          <Suspense fallback={null}>
-            <ChatbotSoporte />
-          </Suspense>
-          <BannerFlotanteInstalar />
+          {/* Widgets no críticos: se montan recién cuando el navegador está
+              ocioso, así su JS no compite con la primera pintura de la home. */}
+          <DeferMount>
+            <Suspense fallback={null}>
+              <ChatbotSoporte />
+            </Suspense>
+            <BannerFlotanteInstalar />
+          </DeferMount>
         </ConfigProvider>
       </AuthProvider>
     </ErrorBoundary>

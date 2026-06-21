@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { io, Socket } from 'socket.io-client'
+import type { Socket } from 'socket.io-client'
 import api, { SOCKET_URL } from '../services/api'
 import { useAuth } from './AuthContext'
 
@@ -44,24 +44,31 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     if (!usuario) return
 
     let s: Socket | null = null
-    try {
-      s = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
-      s.on('config:actualizado', (data: { cambios: Array<{ clave: string; valor: string }> }) => {
-        setConfig(prev => {
-          const nuevo = { ...prev }
-          if (Array.isArray(data?.cambios)) {
-            data.cambios.forEach(c => {
-              if (c && c.clave) nuevo[c.clave] = c.valor
-            })
-          }
-          return nuevo
+    let cancelado = false
+
+    // Import dinámico de socket.io-client: así la librería NO entra al bundle
+    // inicial (la home anónima no la necesita) y solo se descarga al iniciar
+    // sesión, cuando de verdad abrimos la conexión en vivo.
+    import('socket.io-client')
+      .then(({ io }) => {
+        if (cancelado) return
+        s = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
+        s.on('config:actualizado', (data: { cambios: Array<{ clave: string; valor: string }> }) => {
+          setConfig(prev => {
+            const nuevo = { ...prev }
+            if (Array.isArray(data?.cambios)) {
+              data.cambios.forEach(c => {
+                if (c && c.clave) nuevo[c.clave] = c.valor
+              })
+            }
+            return nuevo
+          })
         })
       })
-    } catch (e) {
-      console.error('Error conectando socket de config:', e)
-    }
+      .catch(e => console.error('Error conectando socket de config:', e))
 
     return () => {
+      cancelado = true
       if (s) s.disconnect()
     }
   }, [usuario])
