@@ -2,6 +2,7 @@ import { lazy as lazyReact, Suspense, ComponentType } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ConfigProvider } from './context/ConfigContext'
+import { useKeepAlive } from './hooks/useKeepAlive'
 import Navbar from './components/Navbar'
 import MarqueeBanner from './components/MarqueeBanner'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -265,6 +266,11 @@ function RutasConBoundary() {
 }
 
 function AppContent() {
+  const { estaLogueado } = useAuth()
+  // Mantiene el backend caliente mientras hay sesión activa (anti cold-start de
+  // Railway). En la landing anónima no dispara pings.
+  useKeepAlive(estaLogueado)
+
   return (
     <Router>
       <RutasConBoundary />

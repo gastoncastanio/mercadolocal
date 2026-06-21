@@ -376,6 +376,27 @@ httpServer.listen(PORT, () => {
   console.log(``)
 })
 
+// ===== KEEP-WARM (anti cold-start) =====
+// Cada pocos minutos hacemos un ping liviano a Mongo. Esto mantiene "caliente"
+// el pool de conexiones y al runtime activo, así el primer request de un usuario
+// real no paga el costo de despertar la conexión (que en PageSpeed se veía como
+// ~1s extra en el árbol de dependencias). Se desactiva con KEEP_WARM=off y, al
+// apagar el server, el interval se limpia (unref para no bloquear la salida).
+if (process.env.KEEP_WARM !== 'off') {
+  const INTERVALO_KEEP_WARM = 1000 * 60 * 4 // 4 minutos
+  const keepWarm = setInterval(async () => {
+    try {
+      const mongoose = (await import('mongoose')).default
+      if (mongoose.connection.readyState === 1) {
+        await mongoose.connection.db.admin().ping()
+      }
+    } catch (e) {
+      console.warn('keep-warm ping falló:', e.message)
+    }
+  }, INTERVALO_KEEP_WARM)
+  keepWarm.unref()
+}
+
 // ===== APAGADO ELEGANTE (graceful shutdown) =====
 // Railway (y cualquier PaaS) manda SIGTERM antes de matar el contenedor en cada
 // deploy. Sin esto, las requests/webhooks en vuelo se cortan a la mitad: un pago
