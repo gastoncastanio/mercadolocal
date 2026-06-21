@@ -53,6 +53,8 @@ export default function Navbar() {
   const [menuMobile, setMenuMobile] = useState(false)
   // Qué vertical del menú del avatar está expandida (acordeón: solo una a la vez).
   const [grupoMenu, setGrupoMenu] = useState<string | null>(null)
+  // Ídem para el menú hamburguesa mobile.
+  const [grupoMobile, setGrupoMobile] = useState<string | null>(null)
   const [notifsNoLeidas, setNotifsNoLeidas] = useState(0)
   const refVendedor = useRef<HTMLDivElement>(null)
   const refUsuario = useRef<HTMLDivElement>(null)
@@ -95,8 +97,12 @@ export default function Navbar() {
   // abra arranca compacto.
   useEffect(() => { if (!menuUsuario) setGrupoMenu(null) }, [menuUsuario])
 
+  // Al cerrar el hamburguesa mobile, colapsar sus grupos también.
+  useEffect(() => { if (!menuMobile) setGrupoMobile(null) }, [menuMobile])
+
   const cerrarMenuUsuario = () => setMenuUsuario(false)
   const toggleGrupoMenu = (id: string) => setGrupoMenu(prev => (prev === id ? null : id))
+  const toggleGrupoMobile = (id: string) => setGrupoMobile(prev => (prev === id ? null : id))
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -525,43 +531,62 @@ export default function Navbar() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setMenuMobile(false)} />
           <div className="relative bg-white w-72 max-w-[80vw] h-full overflow-y-auto shadow-2xl animate-slide-in-left">
             <div className="py-3">
+              {/* Explorar: lo básico del marketplace, siempre visible y plano. */}
               <p className="px-4 py-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Explorar</p>
               <Link to="/catalogo" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Catálogo completo</Link>
               <Link to="/usados" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Usados</Link>
               <Link to="/ofertas" className="block px-4 py-3 text-ml-violet font-semibold hover:bg-ml-bg">Ofertas</Link>
               <Link to="/mas-vendidos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">Más vendidos</Link>
-              <Link to="/radar" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">📍 Radar del Centro</Link>
-              <Link to="/servicios" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">🔧 Servicios</Link>
-              <Link to="/trabajos" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">📣 Bolsa de trabajo</Link>
-              <Link to="/comisionistas" className="block px-4 py-3 text-ml-ink font-medium hover:bg-ml-bg">🚚 Comisionistas / Envíos</Link>
-              {estaLogueado && (
-                <>
-                  <Link to="/mis-canjes" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🎟️ Mis canjes</Link>
-                  <Link to="/comercio" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🏬 Mi comercio</Link>
-                  <Link to="/servicios/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">💼 Mi perfil profesional</Link>
-                  <Link to="/servicios/panel" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📋 Solicitudes recibidas</Link>
-                  <Link to="/trabajos/mis-publicaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🗂️ Mis publicaciones de trabajo</Link>
-                  <Link to="/comisionistas/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🧳 Mi perfil de comisionista</Link>
-                  <Link to="/comisionistas/mis-envios" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📦 Mis envíos</Link>
-                  <Link to="/comisionistas/mis-cotizaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🚚 Mis cotizaciones</Link>
-                </>
-              )}
 
-              <p className="px-4 py-2 mt-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Categorías</p>
-              {CATEGORIAS_NAV.map(cat => (
-                <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`} className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">
-                  {cat.nombre}
-                </Link>
-              ))}
+              {/* Verticales y categorías en acordeón para no alargar el menú. */}
+              <GrupoMenu id="categorias" titulo="Categorías" abierto={grupoMobile === 'categorias'} onToggle={toggleGrupoMobile}>
+                {CATEGORIAS_NAV.map(cat => (
+                  <Link key={cat.slug} to={`/catalogo?categoria=${cat.slug}`} className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">
+                    {cat.nombre}
+                  </Link>
+                ))}
+              </GrupoMenu>
+
+              <GrupoMenu id="radar" titulo="Radar del Centro" abierto={grupoMobile === 'radar'} onToggle={toggleGrupoMobile}>
+                <Link to="/radar" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📍 Ver Radar del Centro</Link>
+                {estaLogueado && (
+                  <>
+                    <Link to="/mis-canjes" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🎟️ Mis canjes</Link>
+                    <Link to="/comercio" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🏬 Mi comercio</Link>
+                  </>
+                )}
+              </GrupoMenu>
+
+              <GrupoMenu id="servicios" titulo="Servicios profesionales" abierto={grupoMobile === 'servicios'} onToggle={toggleGrupoMobile}>
+                <Link to="/servicios" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🔧 Buscar servicios</Link>
+                <Link to="/trabajos" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📣 Bolsa de trabajo</Link>
+                {estaLogueado && (
+                  <>
+                    <Link to="/servicios/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">💼 Mi perfil profesional</Link>
+                    <Link to="/servicios/panel" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📋 Solicitudes recibidas</Link>
+                    <Link to="/trabajos/mis-publicaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🗂️ Mis publicaciones</Link>
+                  </>
+                )}
+              </GrupoMenu>
+
+              <GrupoMenu id="comisionistas" titulo="Comisionistas / Envíos" abierto={grupoMobile === 'comisionistas'} onToggle={toggleGrupoMobile}>
+                <Link to="/comisionistas" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🚚 Buscar viajes</Link>
+                {estaLogueado && (
+                  <>
+                    <Link to="/comisionistas/mi-perfil" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🧳 Mi perfil de comisionista</Link>
+                    <Link to="/comisionistas/mis-envios" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">📦 Mis envíos</Link>
+                    <Link to="/comisionistas/mis-cotizaciones" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">🚚 Mis cotizaciones</Link>
+                  </>
+                )}
+              </GrupoMenu>
 
               {estaLogueado && esVendedor && (
-                <>
-                  <p className="px-4 py-2 mt-2 text-[10px] text-ml-muted uppercase font-semibold tracking-wider">Vendedor</p>
+                <GrupoMenu id="vendedor" titulo="Vendedor" abierto={grupoMobile === 'vendedor'} onToggle={toggleGrupoMobile}>
                   <Link to="/publicar" className="block px-4 py-3 text-ml-blue font-medium hover:bg-blue-50">Publicar producto</Link>
                   <Link to="/mi-tienda" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Mi tienda</Link>
                   <Link to="/pedidos-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Mis ventas</Link>
                   <Link to="/central-vendedor" className="block px-4 py-3 text-ml-ink hover:bg-ml-bg">Central vendedor</Link>
-                </>
+                </GrupoMenu>
               )}
 
               {/* Comprador sin tienda: invitación a vender (cuenta unificada) */}
