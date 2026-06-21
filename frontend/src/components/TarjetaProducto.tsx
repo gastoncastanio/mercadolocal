@@ -67,7 +67,7 @@ export default function TarjetaProducto({ producto }: Props) {
         )}
 
         {porcentajeOff && (
-          <span className="absolute bottom-3 left-3 bg-ml-mp text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm">
+          <span className="absolute bottom-3 left-3 bg-ml-mp text-ml-ink text-[11px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm">
             {porcentajeOff}% OFF
           </span>
         )}
