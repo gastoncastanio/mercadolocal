@@ -91,7 +91,7 @@ export default function RetornoPagoOferta() {
               MercadoPago todavía no acreditó el pago. Apenas se confirme, tu código aparece en "Mis canjes".
             </p>
             <div className="flex gap-3">
-              <button onClick={cerrar} className="flex-1 py-3 bg-white border border-ml-line rounded-2xl font-bold text-ml-soft">
+              <button onClick={cerrar} className="flex-1 py-3 bg-white border border-ml-line rounded-2xl font-bold text-ml-ink">
                 Cerrar
               </button>
               <button onClick={() => navigate('/mis-canjes')} className="flex-1 py-3 ml-grad text-white rounded-2xl font-bold">

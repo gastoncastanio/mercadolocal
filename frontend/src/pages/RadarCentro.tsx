@@ -283,11 +283,11 @@ export default function RadarCentro() {
           <button
             onClick={() => coords && cargarComercios(coords)}
             disabled={cargandoComercios}
-            className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet disabled:opacity-50"
+            className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-ink hover:border-ml-violet disabled:opacity-50"
           >
             🔄 Actualizar
           </button>
-          <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-soft hover:border-ml-violet">
+          <Link to="/mis-canjes" className="text-xs px-3 py-2 bg-white border border-ml-line rounded-xl font-semibold text-ml-ink hover:border-ml-violet">
             🎟️ Mis canjes
           </Link>
         </div>

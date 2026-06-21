@@ -92,7 +92,7 @@ export default function CheckoutOferta({
           <button
             onClick={onClose}
             disabled={cargando}
-            className="flex-1 py-3 bg-white border border-ml-line rounded-2xl font-bold text-ml-soft hover:border-ml-violet disabled:opacity-50"
+            className="flex-1 py-3 bg-white border border-ml-line rounded-2xl font-bold text-ml-ink hover:border-ml-violet disabled:opacity-50"
           >
             Cancelar
           </button>
