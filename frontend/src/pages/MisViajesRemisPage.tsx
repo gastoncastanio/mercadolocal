@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { useAuth } from '../context/AuthContext'
+import { useNotificacionesSocket } from '../hooks/useSocket'
 
 interface ViajeRemis {
   _id: string
@@ -45,6 +47,7 @@ const ESTADO_INFO: Record<string, { texto: string; clase: string }> = {
 
 export default function MisViajesRemisPage() {
   const navigate = useNavigate()
+  const { usuario } = useAuth()
   const [viajes, setViajes] = useState<ViajeRemis[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -62,6 +65,18 @@ export default function MisViajesRemisPage() {
     if (params.get('pago') === 'ok') verificarPagosPendientes()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Recargar en vivo cuando el conductor cambia el estado del viaje (acepta,
+  // en camino, a bordo, finaliza). El backend emite una notificación tipo 'remis'
+  // a la sala del pasajero; al recibirla refrescamos para mostrar el nuevo estado
+  // y habilitar el pago apenas finaliza, sin tener que salir y volver a entrar.
+  const onNotif = useCallback((data: any) => {
+    if (!data || data.tipo === 'remis' || data.enlace === '/remis/mis-viajes') {
+      cargar()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useNotificacionesSocket(usuario?._id, onNotif)
 
   async function cargar() {
     setCargando(true)
