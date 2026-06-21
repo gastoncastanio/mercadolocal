@@ -34,6 +34,7 @@ export default function PedirRemisPage() {
   const [horasEspera, setHorasEspera] = useState('')
   const [pasajeros, setPasajeros] = useState(1)
   const [notas, setNotas] = useState('')
+  const [pagoEfectivo, setPagoEfectivo] = useState(false)
 
   // Conductores disponibles
   const [remiseros, setRemiseros] = useState<Remisero[]>([])
@@ -81,7 +82,8 @@ export default function PedirRemisPage() {
         distanciaKm: distanciaKm ? Number(distanciaKm) : 0,
         horasEspera: requiereEspera && horasEspera ? Number(horasEspera) : 0,
         pasajeros,
-        notas
+        notas,
+        pagoEfectivo
       }
       if (comisionistaIdPreferido) payload.comisionistaIdPreferido = comisionistaIdPreferido
       await api.post('/remis/pedir', payload)
@@ -163,6 +165,19 @@ export default function PedirRemisPage() {
           <div>
             <label className="block text-xs font-semibold text-ml-muted mb-1">Notas para el conductor</label>
             <textarea value={notas} onChange={e => setNotas(e.target.value)} placeholder="Ej: tengo dos bolsos, voy con un nene" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm h-16" />
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" checked={pagoEfectivo} onChange={e => setPagoEfectivo(e.target.checked)} className="mt-1 w-4 h-4" />
+              <div>
+                <div className="font-semibold text-sm text-amber-900">¿Querés pagar en efectivo?</div>
+                <div className="text-xs text-amber-800 mt-1">
+                  ℹ️ Es excepcional. El conductor debe aceptarlo. Si acepta, le quedarás debiendo la comisión de la plataforma que podrá cobrar después.
+                  <strong className="block mt-1">Atención:</strong> Si el conductor acumula más de 3 semanas sin pagar la comisión, su cuenta se bloquea.
+                </div>
+              </div>
+            </label>
           </div>
 
           <div className="flex flex-wrap gap-2 justify-end">
