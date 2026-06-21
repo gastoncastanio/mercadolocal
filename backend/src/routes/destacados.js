@@ -123,13 +123,13 @@ function responderErrorPauta(res, error) {
 }
 
 // POST /api/destacados - Crear promoción (pago con Mercado Pago o con saldo)
-// Body: { productoId, plan, duracionDias, metodoPago, segmentoCiudad?, segmentoCategoria? }
+// Body: { productoId, plan, duracionDias, metodoPago, segmentoCiudad?, segmentoCategoria?, puja? }
 router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
-    const { productoId, plan, duracionDias, metodoPago, segmentoCiudad, segmentoCategoria } = req.body
+    const { productoId, plan, duracionDias, metodoPago, segmentoCiudad, segmentoCategoria, puja } = req.body
     const args = {
       usuarioId: req.usuario.id,
-      productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria
+      productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria, puja
     }
 
     // Pago con Mercado Pago (dinero real → cuenta de la plataforma)
