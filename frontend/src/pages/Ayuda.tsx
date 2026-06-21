@@ -33,6 +33,55 @@ const categorias = [
     ]
   },
   {
+    icono: '📦',
+    titulo: 'Comisionistas',
+    preguntas: [
+      { pregunta: 'Que es un comisionista o viajero?', respuesta: 'Es una persona verificada con vehiculo que viaja entre ciudades y puede llevar tu paquete o traerte una compra de otra localidad. Solo operan comisionistas con su documento del vehiculo verificado.' },
+      { pregunta: 'Como recibo una compra de otra ciudad?', respuesta: 'Al comprar, podes enganchar tu pedido a un viaje disponible cuyo origen sea la ciudad del vendedor y destino la tuya. Reservas lugar para tus bultos y pagas con Mercado Pago.' },
+      { pregunta: 'Como confirmo que recibi el paquete?', respuesta: 'Cuando el comisionista te entrega, le das tu codigo de entrega. Recien con ese codigo se cierra el envio (es tu garantia de que nadie lo cierra sin entregartelo).' },
+      { pregunta: 'Como sigo mi envio?', respuesta: 'Desde "Mis envios" (/comisionistas/mis-envios) ves el estado del envio (pendiente, aceptado, en transito, entregado) y podes chatear con el comisionista para coordinar.' },
+    ]
+  },
+  {
+    icono: '🚗',
+    titulo: 'Remis',
+    preguntas: [
+      { pregunta: 'Como pido un remis?', respuesta: 'Entra a Remis (/remis), carga el origen y el destino y pedilo. Un conductor verificado toma tu viaje y lo seguis en vivo desde "Mis viajes".' },
+      { pregunta: 'Como se calcula el precio?', respuesta: 'Con las tarifas del conductor: una bajada de bandera fija, mas un costo por kilometro, mas la espera cuando el servicio la incluye (por ejemplo ida y vuelta o dia de compras).' },
+      { pregunta: 'Como pago el viaje?', respuesta: 'Por la app con Mercado Pago. Tambien se puede pagar en efectivo, pero solo si vos lo solicitas y el conductor lo acepta.' },
+      { pregunta: 'Los conductores estan verificados?', respuesta: 'Si. Solo pueden ofrecer remis los conductores con su documento del vehiculo verificado por la plataforma.' },
+    ]
+  },
+  {
+    icono: '🔧',
+    titulo: 'Servicios',
+    preguntas: [
+      { pregunta: 'Como contrato un profesional?', respuesta: 'Entra a Servicios (/servicios), busca por rubro y zona, y pedi un presupuesto. Pedir presupuesto es gratis.' },
+      { pregunta: 'Cuando puedo chatear con el profesional?', respuesta: 'El chat seguro se habilita cuando aceptas la cotizacion o el profesional toma tu trabajo. Hasta ese momento se mantiene la privacidad de ambos.' },
+      { pregunta: 'Soy profesional, como me sumo?', respuesta: 'Crea tu perfil gratis desde "Mi perfil profesional" (/servicios/mi-perfil) con tu rubro, zona, experiencia y fotos. Publicar y cotizar es gratis.' },
+      { pregunta: 'Que es la bolsa de trabajo?', respuesta: 'En "Trabajos" (/trabajos) podes publicar un trabajo y que varios profesionales te coticen, o si sos profesional ofertar en trabajos abiertos. Cuando aceptan tu oferta se habilita el chat para coordinar.' },
+    ]
+  },
+  {
+    icono: '📍',
+    titulo: 'Radar',
+    preguntas: [
+      { pregunta: 'Que es el Radar del Centro?', respuesta: 'Es un radar de ofertas de comercios cerca tuyo. Te muestra promociones del centro de tu ciudad ordenadas por cercania.' },
+      { pregunta: 'Como lo activo?', respuesta: 'Entra al Radar (/radar) y permiti el acceso a tu ubicacion. Tu ubicacion se usa solo en tu dispositivo y no se almacena.' },
+      { pregunta: 'Por que cambian las ofertas durante el dia?', respuesta: 'El Radar se adapta a la hora: tiene modos por franja (desayuno, almuerzo, shopping de siesta, merienda y cena), priorizando lo que tiene sentido en ese momento del dia.' },
+    ]
+  },
+  {
+    icono: '🚀',
+    titulo: 'Promocionar',
+    preguntas: [
+      { pregunta: 'Como destaco mi producto?', respuesta: 'Si sos vendedor, entra a "Promover" (/promover), elegi el producto, un plan (Basico, Premium o Elite) y la duracion. Tu producto pasa a aparecer primero.' },
+      { pregunta: 'Como elige a quien se lo muestra?', respuesta: 'No es solo aparecer primero: estudiamos que mira, busca y compra cada cliente y mostramos tu producto a los compradores con mas chance de comprarlo. Incluso les avisamos por notificacion cuando sos justo lo que buscaban.' },
+      { pregunta: 'Que es el boost por puja?', respuesta: 'Es una puja opcional (en pesos) que te sube mas alto en los espacios premium (banner, home y primeros puestos). El puesto se define por tu puja combinada con que tan relevante es tu producto, asi que ofrecer mas ayuda pero la calidad tambien cuenta.' },
+      { pregunta: 'Como pago la promocion?', respuesta: 'Con tu saldo de ventas acumulado o con Mercado Pago. La promo se activa al instante si pagas con saldo, o al confirmarse el pago si elegis Mercado Pago.' },
+    ]
+  },
+  {
     icono: '🔄',
     titulo: 'Devoluciones',
     preguntas: [
@@ -66,17 +115,149 @@ const categorias = [
   }
 ]
 
+// Guías de punta a punta, fáciles de seguir, para cada servicio de MercadoLocal.
+// Pasos basados en cómo funciona realmente la plataforma.
+const GUIAS = [
+  {
+    icono: '🛒', titulo: 'Comprar un producto', color: 'from-blue-500 to-indigo-600',
+    pasos: [
+      'Buscá el producto y compará el mismo artículo en varias tiendas de tu ciudad.',
+      'Agregalo al carrito y andá al checkout con tu dirección.',
+      'Pagás con Mercado Pago (tarjeta, cuotas o dinero en cuenta).',
+      'Seguís el pedido en "Mis compras". Tu compra queda protegida por Mercado Pago.'
+    ],
+    link: { to: '/catalogo', label: 'Ir al catálogo' }
+  },
+  {
+    icono: '🏪', titulo: 'Vender en MercadoLocal', color: 'from-emerald-500 to-teal-600',
+    pasos: [
+      'Creá tu tienda gratis desde la Central de vendedores.',
+      'Publicá tus productos con fotos, precio y stock.',
+      'Vinculá tu Mercado Pago para cobrar automáticamente.',
+      'Al vender, recibís el 90% al instante (la comisión es del 10%).'
+    ],
+    link: { to: '/central-vendedor', label: 'Central de vendedores' }
+  },
+  {
+    icono: '🚀', titulo: 'Promocionar tu producto', color: 'from-fuchsia-600 to-purple-600',
+    pasos: [
+      'Entrá a "Promover" y elegí el producto a destacar.',
+      'Elegí un plan (Básico, Premium o Elite) y la duración.',
+      'Opcional: sumá un boost (puja) para subir más alto en los lugares premium.',
+      'Pagás con tu saldo o Mercado Pago. Tu anuncio aparece primero y a quien más chance tiene de comprarlo.'
+    ],
+    link: { to: '/promover', label: 'Promocionar' }
+  },
+  {
+    icono: '📍', titulo: 'Radar del Centro', color: 'from-violet-500 to-indigo-700',
+    pasos: [
+      'Entrá al Radar y permití el acceso a tu ubicación (queda solo en tu dispositivo).',
+      'Ves las ofertas de comercios cerca tuyo, ordenadas por cercanía.',
+      'El Radar cambia según la hora: desayuno, almuerzo, siesta, merienda y cena.',
+      'Aprovechás la promo del momento más cercana a vos.'
+    ],
+    link: { to: '/radar', label: 'Abrir el Radar' }
+  },
+  {
+    icono: '🚗', titulo: 'Pedir un Remis', color: 'from-pink-500 to-rose-600',
+    pasos: [
+      'Entrá a Remis y cargá origen y destino.',
+      'Un conductor verificado toma tu viaje y lo seguís en vivo.',
+      'Viajás y al finalizar ves el precio (banderita + km + espera si aplica).',
+      'Pagás por la app con Mercado Pago, o en efectivo si ambos lo acuerdan.'
+    ],
+    link: { to: '/remis', label: 'Pedir un remis' }
+  },
+  {
+    icono: '📦', titulo: 'Envíos entre ciudades', color: 'from-orange-500 to-amber-600',
+    pasos: [
+      'Comprás un producto de otra ciudad.',
+      'Enganchás tu compra a un viaje de un comisionista verificado.',
+      'Pagás con Mercado Pago.',
+      'Cuando te lo entrega, le das tu código de entrega y se cierra el envío.'
+    ],
+    link: { to: '/comisionistas', label: 'Ver viajes' }
+  },
+  {
+    icono: '🔧', titulo: 'Contratar un Servicio', color: 'from-cyan-500 to-blue-600',
+    pasos: [
+      'Entrá a Servicios y buscá un profesional por rubro y zona.',
+      'Pedí un presupuesto (es gratis).',
+      'Coordinás por chat seguro, que se habilita al aceptar la cotización.',
+      'Al terminar el trabajo, dejás tu reseña.'
+    ],
+    link: { to: '/servicios', label: 'Buscar profesionales' }
+  }
+]
+
 export default function Ayuda() {
   const [categoriaActiva, setCategoriaActiva] = useState(0)
   const [preguntaAbierta, setPreguntaAbierta] = useState<number | null>(null)
+  const [guiaAbierta, setGuiaAbierta] = useState(0)
 
   return (
     <div className="min-h-screen bg-ml-bg">
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <h1 className="font-display text-[28px] font-extrabold text-ml-ink">Centro de Ayuda</h1>
-          <p className="text-ml-muted mt-2">Encontra respuestas a las preguntas mas frecuentes</p>
+          <p className="text-ml-muted mt-2">Aprendé cómo funciona MercadoLocal y encontrá respuestas rápidas</p>
+        </div>
+
+        {/* Guías paso a paso (cómo funciona cada servicio) */}
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-xl">🧭</span>
+            <h2 className="font-display text-lg font-extrabold text-ml-ink">Cómo funciona, paso a paso</h2>
+          </div>
+
+          {/* Selector de servicio */}
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {GUIAS.map((g, i) => (
+              <button
+                key={g.titulo}
+                onClick={() => setGuiaAbierta(i)}
+                className={`shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                  guiaAbierta === i ? 'ml-grad text-white shadow-md' : 'bg-white text-ml-soft border border-ml-line hover:border-ml-line2'
+                }`}
+              >
+                <span className="mr-1.5">{GUIAS[i].icono}</span>{g.titulo}
+              </button>
+            ))}
+          </div>
+
+          {/* Pasos del servicio elegido */}
+          <div className="mt-4 bg-white rounded-2xl shadow-sm border border-ml-line overflow-hidden">
+            <div className={`p-5 text-white bg-gradient-to-r ${GUIAS[guiaAbierta].color}`}>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{GUIAS[guiaAbierta].icono}</span>
+                <h3 className="font-display text-xl font-extrabold">{GUIAS[guiaAbierta].titulo}</h3>
+              </div>
+            </div>
+            <ol className="p-5 sm:p-6 space-y-4">
+              {GUIAS[guiaAbierta].pasos.map((paso, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="shrink-0 w-7 h-7 rounded-full ml-grad text-white text-sm font-extrabold flex items-center justify-center">{i + 1}</span>
+                  <span className="text-ml-ink text-sm sm:text-[15px] leading-relaxed pt-0.5">{paso}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="px-5 sm:px-6 pb-5">
+              <Link
+                to={GUIAS[guiaAbierta].link.to}
+                className="inline-flex items-center gap-2 px-5 py-2.5 ml-grad text-white rounded-xl font-bold text-sm hover:shadow-lg transition-shadow"
+              >
+                {GUIAS[guiaAbierta].link.label}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Preguntas frecuentes */}
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-xl">❓</span>
+          <h2 className="font-display text-lg font-extrabold text-ml-ink">Preguntas frecuentes</h2>
         </div>
 
         {/* Categorias */}
