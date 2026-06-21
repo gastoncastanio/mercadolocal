@@ -414,7 +414,9 @@ export default function Landing() {
         <div className="border border-ml-line rounded-[20px] sm:rounded-[24px] overflow-hidden" style={{ background: 'linear-gradient(160deg,#fafaff,#fff)' }}>
           <div className="grid md:grid-cols-[1fr_1.05fr] items-center">
             <div className="p-6 sm:p-8 md:p-12">
-              <span className="inline-block text-[11px] sm:text-[12px] font-extrabold tracking-[0.06em] uppercase text-ml-mp bg-[#e7f6fd] border border-[#c5ecfa] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3 sm:mb-4">Próximamente</span>
+              {/* Azul MP oscurecido (#036aa2) para pasar contraste AA sobre el fondo
+                  celeste claro: el #009ee3 original daba ~2.8:1 (falla). */}
+              <span className="inline-block text-[11px] sm:text-[12px] font-extrabold tracking-[0.06em] uppercase text-[#036aa2] bg-[#e7f6fd] border border-[#c5ecfa] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full mb-3 sm:mb-4">Próximamente</span>
               <h2 className="font-display font-extrabold text-[22px] sm:text-[28px] md:text-[36px] leading-[1.08] tracking-[-0.02em]">Tu supermercado,<br />en competencia.</h2>
               <p className="text-[14px] sm:text-[15px] md:text-[16.5px] leading-[1.5] sm:leading-[1.6] text-ml-soft mt-3 sm:mt-4 max-w-[440px]">
                 El mismo producto de todas las cadenas, lado a lado. Armás el changuito una vez y cada artículo se compra donde está más barato. Menos vueltas, más ahorro — y ese ahorro vuelve a tu ciudad.

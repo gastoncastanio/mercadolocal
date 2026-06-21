@@ -38,12 +38,15 @@
     <link rel="dns-prefetch" href="https://api.mercadopago.com" />
 
     <!-- Tipografías del diseño (Plus Jakarta Sans = títulos, Manrope = texto) -->
-    <!-- Cargadas de forma asincrónica para no bloquear render -->
+    <!-- Cargadas de forma asincrónica para no bloquear render: arrancan con
+         media="print" (no bloqueante) y main.tsx las pasa a media="all" apenas
+         carga. Hacemos el swap desde JS externo (no inline) para no violar el
+         CSP script-src 'self'. -->
     <link
+      id="ml-fonts"
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Manrope:wght@400;500;600;700&display=fallback"
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
     />
     <noscript>
       <link
@@ -71,7 +74,7 @@
         background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
         padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
         opacity: 1;
-        transition: opacity .45s ease;
+        transition: opacity .3s ease;
         -webkit-tap-highlight-color: transparent;
       }
       #splash-screen.splash-oculto {

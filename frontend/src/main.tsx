@@ -4,6 +4,12 @@ import App from './App.tsx'
 import './styles/index.css'
 import { ToastProvider } from './context/ToastContext'
 
+// Activar las tipografías: el <link> arranca con media="print" (no bloquea el
+// render) y acá lo pasamos a "all". Se hace desde JS (módulo 'self') en vez de
+// un onload inline para no violar el CSP script-src 'self'.
+const linkFuentes = document.getElementById('ml-fonts') as HTMLLinkElement | null
+if (linkFuentes) linkFuentes.media = 'all'
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ToastProvider>
@@ -26,7 +32,10 @@ function ocultarSplash() {
   window.setTimeout(() => splash.remove(), 800)
 }
 
-const SPLASH_MIN_MS = 600
+// Tiempo mínimo visible del splash. Lo bajamos de 600→350ms: suficiente para
+// que no titile en conexiones rápidas, pero deja ver el contenido real antes
+// (mejora el Speed Index, que penalizaba el splash a pantalla completa).
+const SPLASH_MIN_MS = 350
 const arranque = performance.now()
 // Doble requestAnimationFrame: garantiza que el primer render de la app ya pintó.
 requestAnimationFrame(() => {
