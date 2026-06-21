@@ -39,6 +39,7 @@ const categorias = [
       { pregunta: 'Que es un comisionista o viajero?', respuesta: 'Es una persona verificada con vehiculo que viaja entre ciudades y puede llevar tu paquete o traerte una compra de otra localidad. Solo operan comisionistas con su documento del vehiculo verificado.' },
       { pregunta: 'Como recibo una compra de otra ciudad?', respuesta: 'Al comprar, podes enganchar tu pedido a un viaje disponible cuyo origen sea la ciudad del vendedor y destino la tuya. Reservas lugar para tus bultos y pagas con Mercado Pago.' },
       { pregunta: 'Como confirmo que recibi el paquete?', respuesta: 'Cuando el comisionista te entrega, le das tu codigo de entrega. Recien con ese codigo se cierra el envio (es tu garantia de que nadie lo cierra sin entregartelo).' },
+      { pregunta: 'Que son los comisionistas "en vivo"?', respuesta: 'Si no hay un viaje programado que te sirva, podes pedirle una cotizacion a medida a un comisionista que esta trabajando en ese momento. Le mandas la solicitud (aceptando que MercadoLocal solo conecta), te responde un precio y, si lo aceptas, se habilita el chat para coordinar. Pagas con Mercado Pago. Lo seguis en "Mis cotizaciones".' },
       { pregunta: 'Como sigo mi envio?', respuesta: 'Desde "Mis envios" (/comisionistas/mis-envios) ves el estado del envio (pendiente, aceptado, en transito, entregado) y podes chatear con el comisionista para coordinar.' },
     ]
   },
@@ -129,6 +130,18 @@ const GUIAS = [
     link: { to: '/catalogo', label: 'Ir al catálogo' }
   },
   {
+    icono: '🚚', titulo: 'Cómo te llega (el envío)', color: 'from-sky-500 to-blue-600',
+    pasos: [
+      'MercadoLocal conecta compradores con vendedores de tu ciudad: el envío lo coordina cada vendedor (no hay un correo central).',
+      'Antes de comprar, usá el cotizador en la página del producto (con tu código postal) para ver un costo de envío estimado de referencia.',
+      'Al pagar, el vendedor recibe tu dirección y se contacta con vos para coordinar la entrega a domicilio o el retiro.',
+      'Seguí el estado en "Mis compras": pagado → enviado → entregado.',
+      'Tiempos de referencia: 1 a 5 días hábiles dentro de la misma ciudad, y 4 a 8 días a otra provincia (dependen del vendedor).',
+      '¿Comprás en otra ciudad? También podés traerlo con un comisionista (mirá las guías de comisionistas).'
+    ],
+    link: { to: '/mis-ordenes', label: 'Ver mis compras' }
+  },
+  {
     icono: '🏪', titulo: 'Vender en MercadoLocal', color: 'from-emerald-500 to-teal-600',
     pasos: [
       'Creá tu tienda gratis desde la Central de vendedores.',
@@ -169,14 +182,26 @@ const GUIAS = [
     link: { to: '/remis', label: 'Pedir un remis' }
   },
   {
-    icono: '📦', titulo: 'Envíos entre ciudades', color: 'from-orange-500 to-amber-600',
+    icono: '📦', titulo: 'Traer de otra ciudad (comisionistas)', color: 'from-orange-500 to-amber-600',
     pasos: [
-      'Comprás un producto de otra ciudad.',
-      'Enganchás tu compra a un viaje de un comisionista verificado.',
-      'Pagás con Mercado Pago.',
-      'Cuando te lo entrega, le das tu código de entrega y se cierra el envío.'
+      'Un comisionista es un viajero verificado que recorre rutas entre ciudades y tiene lugar para llevar bultos.',
+      'Buscás un viaje cuyo origen sea la ciudad del vendedor y destino la tuya; o al comprar de otra ciudad, enganchás tu pedido a un viaje disponible desde el checkout.',
+      'Reservás lugar para tus bultos (elegís tamaño y cantidad) y pagás con Mercado Pago.',
+      'El comisionista acepta y lleva tu paquete. Lo seguís en "Mis envíos" y coordinás por chat (pendiente → aceptado → en tránsito → entregado).',
+      'Cuando te lo entrega, le das tu código de entrega. Recién con ese código se cierra el envío: es tu garantía de que nadie lo cierra sin entregártelo.'
     ],
-    link: { to: '/comisionistas', label: 'Ver viajes' }
+    link: { to: '/comisionistas', label: 'Ver viajes disponibles' }
+  },
+  {
+    icono: '⚡', titulo: 'Comisionistas en vivo', color: 'from-rose-500 to-orange-600',
+    pasos: [
+      '¿No hay un viaje programado que te sirva? Pedile una cotización a medida a un comisionista que está trabajando AHORA.',
+      'Al comprar de otra ciudad ves quién está "en vivo": comisionistas verificados y trabajando en este momento, ordenados por calificación.',
+      'Le enviás la solicitud aceptando los términos (MercadoLocal solo conecta; el traslado y su precio quedan a cargo del comisionista y el vendedor).',
+      'El comisionista te responde con un precio. Si lo aceptás, se habilita el chat seguro entre ustedes.',
+      'Pagás con Mercado Pago y coordinan por chat el retiro (en el vendedor) y la entrega en tu domicilio. Lo seguís en "Mis cotizaciones".'
+    ],
+    link: { to: '/comisionistas/mis-cotizaciones', label: 'Mis cotizaciones' }
   },
   {
     icono: '🔧', titulo: 'Contratar un Servicio', color: 'from-cyan-500 to-blue-600',
