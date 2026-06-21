@@ -97,7 +97,35 @@ const viajeRemisSchema = new mongoose.Schema({
       type: String,
       enum: ['no_aplica', 'pendiente_pago', 'pagado', 'reembolsado'],
       default: 'pendiente_pago'
-    }
+    },
+    // Método de pago del viaje.
+    //   app      → el pasajero paga online; split automático al conductor y la
+    //              plataforma retiene su comisión (camino por defecto y preferido).
+    //   efectivo → EXCEPCIÓN: el pasajero lo solicitó y el conductor lo aceptó.
+    //              El conductor cobra la tarifa en mano y QUEDA DEBIENDO la comisión
+    //              de la plataforma, que paga después (diaria/semanalmente).
+    metodo: {
+      type: String,
+      enum: ['app', 'efectivo'],
+      default: 'app'
+    },
+    // El pasajero pidió pagar en efectivo (requiere que el conductor lo acepte).
+    efectivoSolicitado: { type: Boolean, default: false },
+    // El conductor aceptó cobrar este viaje en efectivo.
+    efectivoAceptado: { type: Boolean, default: false },
+    // Estado de la comisión que el conductor nos debe por un viaje cobrado en
+    // efectivo. Sólo aplica cuando metodo='efectivo'.
+    //   no_aplica → viaje pagado por app (la comisión ya se retuvo en el split)
+    //   adeudada  → el conductor cobró en efectivo y nos debe la comisión
+    //   en_pago   → el conductor inició el pago de su comisión (esperando a MP)
+    //   pagada    → el conductor ya nos abonó la comisión de este viaje
+    comisionEfectivoEstado: {
+      type: String,
+      enum: ['no_aplica', 'adeudada', 'en_pago', 'pagada'],
+      default: 'no_aplica'
+    },
+    // Cuándo el conductor saldó la comisión de este viaje en efectivo.
+    comisionEfectivoPagadaEn: { type: Date, default: null }
   }
 }, {
   timestamps: true
@@ -108,6 +136,9 @@ viajeRemisSchema.index({ estado: 1, 'origen.ciudad': 1, createdAt: -1 })
 // Listados por pasajero / conductor + estado.
 viajeRemisSchema.index({ pasajeroId: 1, estado: 1 })
 viajeRemisSchema.index({ comisionistaId: 1, estado: 1 })
+// Deuda de comisión por viajes cobrados en efectivo (para calcular cuánto debe
+// el conductor y desde cuándo, y disparar el bloqueo a las 3 semanas).
+viajeRemisSchema.index({ comisionistaId: 1, 'pago.comisionEfectivoEstado': 1, finalizadoEn: 1 })
 
 viajeRemisSchema.methods.toPublic = function () {
   const poblar = (ref) =>
@@ -134,7 +165,14 @@ viajeRemisSchema.methods.toPublic = function () {
     estado: this.estado,
     aceptadoEn: this.aceptadoEn,
     finalizadoEn: this.finalizadoEn,
-    pago: { estadoPago: this.pago?.estadoPago || 'pendiente_pago' },
+    pago: {
+      estadoPago: this.pago?.estadoPago || 'pendiente_pago',
+      metodo: this.pago?.metodo || 'app',
+      efectivoSolicitado: !!this.pago?.efectivoSolicitado,
+      efectivoAceptado: !!this.pago?.efectivoAceptado,
+      comisionEfectivoEstado: this.pago?.comisionEfectivoEstado || 'no_aplica',
+      comisionPlataforma: this.pago?.comisionPlataforma || 0
+    },
     createdAt: this.createdAt
   }
 }

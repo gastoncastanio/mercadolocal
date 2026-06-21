@@ -536,3 +536,70 @@ export async function crearPreferenciaPauta({ destacado, producto, planInfo }) {
 
   return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point }
 }
+
+/**
+ * Crea una preferencia de pago para que el CONDUCTOR pague su COMISIÓN ADEUDADA
+ * de viajes cobrados en efectivo.
+ *
+ * A diferencia del split de un viaje (que va al conductor), acá el dinero va
+ * ENTERO a la plataforma (es un "pago de deuda", no una compra/servicio).
+ * El external_reference es "comisionremis:<comisionistaId>" para que el webhook
+ * lo distinga y marque la comisión como pagada.
+ */
+export async function crearPreferenciaComisionRemis({ comisionistaId, monto, email }) {
+  if (!monto || monto <= 0) throw new Error('Monto inválido')
+
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').trim().replace(/\/+$/, '')
+
+  const preferenceBody = {
+    items: [{
+      id: `comisionremis:${comisionistaId.toString()}`,
+      title: 'Comisión de viajes en efectivo (MercadoLocal Remis)',
+      description: 'Pago de comisión de la plataforma por viajes cobrados en efectivo',
+      quantity: 1,
+      unit_price: Math.round(monto),
+      currency_id: 'ARS'
+    }],
+    payer: { email },
+    external_reference: `comisionremis:${comisionistaId.toString()}`,
+    back_urls: {
+      success: `${frontendUrl}/remis/conductor?comision=pagada`,
+      failure: `${frontendUrl}/remis/conductor?comision=error`,
+      pending: `${frontendUrl}/remis/conductor?comision=pendiente`
+    },
+    auto_return: 'approved',
+    statement_descriptor: 'MERCADOLOCAL COMISION'
+  }
+
+  const rawBackendUrl = (process.env.BACKEND_URL || '').trim().replace(/\/+$/, '')
+  if (rawBackendUrl) {
+    try {
+      const webhookUrl = `${rawBackendUrl}/api/pagos/webhook`
+      const parsed = new URL(webhookUrl)
+      if (parsed.protocol === 'https:' && parsed.hostname.includes('.')) {
+        preferenceBody.notification_url = webhookUrl
+      }
+    } catch { /* URL inválida: se omite */ }
+  }
+
+  let result
+  try {
+    result = await new Preference(client).create({ body: preferenceBody })
+  } catch (mpError) {
+    console.error('❌ Error MP al crear preferencia de comisión remis:', mpError?.message || mpError)
+    throw new Error(`Mercado Pago rechazó la solicitud: ${mpError?.message || 'error desconocido'}`)
+  }
+
+  const esProduccion = process.env.NODE_ENV === 'production'
+  const initPoint = esProduccion
+    ? (result.init_point || result.sandbox_init_point)
+    : (result.sandbox_init_point || result.init_point)
+
+  if (!initPoint) {
+    throw new Error('Mercado Pago no devolvió una URL de pago válida.')
+  }
+
+  console.log(`💳 Preferencia de comisión remis creada: conductor ${comisionistaId} | $${monto}`)
+
+  return { preferenceId: result.id, initPoint, sandboxInitPoint: result.sandbox_init_point }
+}

@@ -9,6 +9,11 @@ import { emitNotificacion } from './socketService.js'
  * MP vinculado, toggle "estoy trabajando") y el patrón de split de pago.
  */
 
+// Días que el conductor puede acumular deuda de comisión (viajes en efectivo) sin
+// pagar antes de que se le bloquee operar como remisero. 3 semanas = 21 días.
+const DIAS_GRACIA_COMISION = 21
+const MS_POR_DIA = 24 * 60 * 60 * 1000
+
 // ===== Tarifas del conductor =====
 
 /**
@@ -68,7 +73,8 @@ export async function remiserosDisponibles({ ciudad, distanciaKm = 0, horasEsper
     ofreceRemis: true,
     estaTrabajandoHoy: true,
     activo: true,
-    estadoDocumento: 'verificado'
+    estadoDocumento: 'verificado',
+    bloqueadoRemis: false
   })
     .sort({ calificacion: -1, totalViajes: -1 })
     .limit(50)
@@ -107,7 +113,8 @@ export async function pedirRemis(pasajeroId, datos) {
   const {
     origen, destino, tipoServicio = 'traslado',
     distanciaKm = 0, horasEspera = 0, pasajeros = 1,
-    notas = '', programadoPara = null, comisionistaIdPreferido = null
+    notas = '', programadoPara = null, comisionistaIdPreferido = null,
+    pagoEfectivo = false
   } = datos
 
   if (!origen?.direccion || !destino?.direccion) {
@@ -149,7 +156,12 @@ export async function pedirRemis(pasajeroId, datos) {
     precioEstimado,
     notas: (notas || '').slice(0, 500),
     programadoPara: programadoPara ? new Date(programadoPara) : null,
-    estado: 'buscando'
+    estado: 'buscando',
+    // El pasajero puede SOLICITAR pagar en efectivo; queda pendiente de que el
+    // conductor lo acepte. Si no lo acepta, el viaje se paga por la app al cerrar.
+    pago: pagoEfectivo
+      ? { metodo: 'efectivo', efectivoSolicitado: true, estadoPago: 'pendiente_pago' }
+      : undefined
   }).save()
 
   // Notificar: a un conductor puntual, o a todos los remiseros disponibles.
@@ -217,6 +229,13 @@ export async function aceptarRemis(comisionistaId, viajeRemisId) {
   if (!perfil.ofreceRemis) throw new Error('No tenés activado el servicio de remis')
   if (perfil.estadoDocumento !== 'verificado') {
     throw new Error('Necesitás el documento del vehículo verificado para tomar remises')
+  }
+
+  // Bloqueo por deuda de comisión: si acumuló 3 semanas sin pagar lo que cobró
+  // en efectivo, no puede tomar nuevos viajes hasta saldar.
+  const bloqueado = await verificarBloqueoComision(comisionistaId, perfil)
+  if (bloqueado) {
+    throw new Error('Tu servicio de remis está bloqueado por comisiones impagas de viajes en efectivo. Pagá tu deuda para volver a tomar viajes.')
   }
 
   const viajePrevio = await ViajeRemis.findById(viajeRemisId)
@@ -516,4 +535,230 @@ async function recalcularCalificacion(comisionistaId) {
 export async function viajesRemisReseñadosPor(pasajeroId) {
   const resenas = await ResenaComisionista.find({ contratanteId: pasajeroId, viajeRemisId: { $ne: null } }).select('viajeRemisId')
   return resenas.map(r => r.viajeRemisId.toString())
+}
+
+// ===== Pago en efectivo (excepción con comisión adeudada) =====
+
+/**
+ * El conductor ACEPTA cobrar un viaje en efectivo. El pasajero tuvo que haberlo
+ * solicitado (efectivoSolicitado=true). A partir de acá, al finalizar el viaje el
+ * conductor registrará el cobro en mano y nos quedará debiendo la comisión.
+ */
+export async function aceptarPagoEfectivo(comisionistaId, viajeRemisId) {
+  const viaje = await ViajeRemis.findById(viajeRemisId)
+  if (!viaje) throw new Error('Viaje no encontrado')
+  if (!viaje.comisionistaId || viaje.comisionistaId.toString() !== comisionistaId.toString()) {
+    throw new Error('No autorizado')
+  }
+  if (!viaje.pago?.efectivoSolicitado) {
+    throw new Error('El pasajero no solicitó pago en efectivo en este viaje')
+  }
+  if (['finalizado', 'cancelado'].includes(viaje.estado)) {
+    throw new Error('El viaje ya no admite cambios de pago')
+  }
+
+  viaje.pago.metodo = 'efectivo'
+  viaje.pago.efectivoAceptado = true
+  await viaje.save()
+
+  emitNotificacion(viaje.pasajeroId.toString(), {
+    tipo: 'remis',
+    titulo: 'Pago en efectivo aceptado',
+    mensaje: 'El conductor aceptó cobrar este viaje en efectivo. Acordá el monto al finalizar.',
+    enlace: '/remis/mis-viajes'
+  })
+  return viaje
+}
+
+/**
+ * El conductor REGISTRA el cobro en efectivo de un viaje ya finalizado. Esto
+ * cierra el pago del viaje (estadoPago='pagado' por efectivo) y genera la deuda
+ * de comisión a favor de la plataforma (comisionEfectivoEstado='adeudada').
+ *
+ * Requiere que el pasajero lo hubiera solicitado y el conductor lo hubiera
+ * aceptado: nadie puede "convertir" un viaje a efectivo por su cuenta para evadir.
+ */
+export async function registrarCobroEfectivo(comisionistaId, viajeRemisId) {
+  const viaje = await ViajeRemis.findById(viajeRemisId)
+  if (!viaje) throw new Error('Viaje no encontrado')
+  if (!viaje.comisionistaId || viaje.comisionistaId.toString() !== comisionistaId.toString()) {
+    throw new Error('No autorizado')
+  }
+  if (viaje.estado !== 'finalizado') throw new Error('Solo podés registrar el cobro de un viaje finalizado')
+  if (!viaje.pago?.efectivoAceptado) throw new Error('Este viaje no fue acordado para pago en efectivo')
+  if (viaje.pago?.estadoPago === 'pagado') return viaje // idempotencia
+
+  const monto = viaje.precioFinal != null ? viaje.precioFinal : viaje.precioEstimado
+  const { default: configService } = await import('./configService.js')
+  const porcentaje = await configService.obtenerPorcentajeComision('remis') || 10
+  const comision = Math.round((Number(monto) || 0) * porcentaje / 100)
+
+  viaje.pago.metodo = 'efectivo'
+  viaje.pago.estadoPago = 'pagado'
+  viaje.pago.comisionPlataforma = comision
+  viaje.pago.comisionEfectivoEstado = comision > 0 ? 'adeudada' : 'no_aplica'
+  await viaje.save()
+
+  return viaje
+}
+
+/**
+ * Resumen de la deuda de comisión del conductor por viajes cobrados en efectivo.
+ * Es la fuente de verdad: se calcula sumando los viajes con comisión 'adeudada'
+ * (o 'en_pago'). Devuelve cuánto debe, desde cuándo y si está/quedará bloqueado.
+ */
+export async function resumenComisionConductor(comisionistaId) {
+  const pendientes = await ViajeRemis.find({
+    comisionistaId,
+    'pago.comisionEfectivoEstado': { $in: ['adeudada', 'en_pago'] }
+  }).select('pago.comisionPlataforma pago.comisionEfectivoEstado finalizadoEn createdAt').lean()
+
+  let deudaTotal = 0
+  let masViejo = null
+  let enPago = 0
+  for (const v of pendientes) {
+    deudaTotal += v.pago?.comisionPlataforma || 0
+    if (v.pago?.comisionEfectivoEstado === 'en_pago') enPago += v.pago?.comisionPlataforma || 0
+    const fecha = v.finalizadoEn || v.createdAt
+    if (fecha && (!masViejo || fecha < masViejo)) masViejo = fecha
+  }
+
+  const ahora = Date.now()
+  const fechaLimite = masViejo ? new Date(masViejo.getTime() + DIAS_GRACIA_COMISION * MS_POR_DIA) : null
+  const diasRestantes = fechaLimite ? Math.ceil((fechaLimite.getTime() - ahora) / MS_POR_DIA) : null
+
+  const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId }).select('bloqueadoRemis')
+
+  return {
+    deudaTotal: Math.round(deudaTotal),
+    enPago: Math.round(enPago),
+    cantidadViajes: pendientes.length,
+    viajeMasViejo: masViejo,
+    fechaLimite,
+    diasRestantes,
+    diasGracia: DIAS_GRACIA_COMISION,
+    bloqueado: !!perfil?.bloqueadoRemis
+  }
+}
+
+/**
+ * Evalúa si el conductor debe estar bloqueado por deuda vieja (>3 semanas) y
+ * sincroniza el flag bloqueadoRemis del perfil. Devuelve true si quedó bloqueado.
+ * Idempotente: también DESBLOQUEA si ya no hay deuda vieja (p. ej. tras pagar).
+ */
+export async function verificarBloqueoComision(comisionistaId, perfilPrecargado = null) {
+  const masViejo = await ViajeRemis.findOne({
+    comisionistaId,
+    'pago.comisionEfectivoEstado': 'adeudada'
+  }).sort({ finalizadoEn: 1 }).select('finalizadoEn createdAt').lean()
+
+  const fecha = masViejo ? (masViejo.finalizadoEn || masViejo.createdAt) : null
+  const debeBloquear = !!fecha && (Date.now() - fecha.getTime()) > DIAS_GRACIA_COMISION * MS_POR_DIA
+
+  const perfil = perfilPrecargado || await PerfilComisionista.findOne({ usuarioId: comisionistaId })
+  if (!perfil) return false
+
+  if (debeBloquear && !perfil.bloqueadoRemis) {
+    perfil.bloqueadoRemis = true
+    perfil.bloqueadoRemisMotivo = 'Comisiones impagas de viajes cobrados en efectivo (más de 3 semanas).'
+    perfil.bloqueadoRemisEn = new Date()
+    perfil.estaTrabajandoHoy = false
+    await perfil.save()
+    emitNotificacion(comisionistaId.toString(), {
+      tipo: 'remis',
+      titulo: 'Servicio de remis bloqueado',
+      mensaje: 'Acumulaste comisiones impagas de viajes en efectivo. Pagá tu deuda para reactivar el remis.',
+      enlace: '/remis/conductor'
+    })
+  } else if (!debeBloquear && perfil.bloqueadoRemis) {
+    // Ya no hay deuda vieja (pagó): desbloquear.
+    perfil.bloqueadoRemis = false
+    perfil.bloqueadoRemisMotivo = ''
+    perfil.bloqueadoRemisEn = null
+    await perfil.save()
+  }
+
+  return perfil.bloqueadoRemis
+}
+
+/**
+ * El conductor inicia el pago de su comisión adeudada. Marca los viajes en
+ * 'en_pago' (para no perderlos si finaliza más viajes mientras paga) y crea una
+ * preferencia de MP donde el dinero va ENTERO a la plataforma (no hay split).
+ */
+export async function pagarComisionAdeudada(comisionistaId, email) {
+  const adeudados = await ViajeRemis.find({
+    comisionistaId,
+    'pago.comisionEfectivoEstado': 'adeudada'
+  }).select('pago.comisionPlataforma')
+
+  if (adeudados.length === 0) throw new Error('No tenés comisiones pendientes de pago')
+
+  const monto = adeudados.reduce((acc, v) => acc + (v.pago?.comisionPlataforma || 0), 0)
+  if (monto <= 0) throw new Error('No hay un monto válido para pagar')
+
+  const { crearPreferenciaComisionRemis } = await import('./mercadoPagoService.js')
+  const { preferenceId, initPoint } = await crearPreferenciaComisionRemis({
+    comisionistaId, monto: Math.round(monto), email
+  })
+
+  // Reservar los viajes que está pagando.
+  await ViajeRemis.updateMany(
+    { comisionistaId, 'pago.comisionEfectivoEstado': 'adeudada' },
+    { $set: { 'pago.comisionEfectivoEstado': 'en_pago', 'pago.mpPreferenceId': preferenceId } }
+  )
+
+  return { initPoint, preferenceId, monto: Math.round(monto) }
+}
+
+/**
+ * Marca como pagadas las comisiones que el conductor estaba pagando (las que
+ * quedaron 'en_pago'). Lo invoca el webhook de MP al aprobarse. Idempotente.
+ * Luego revalúa el bloqueo (lo desbloquea si ya no hay deuda vieja).
+ */
+export async function marcarComisionRemisPagada(comisionistaId, mpPaymentId) {
+  const res = await ViajeRemis.updateMany(
+    { comisionistaId, 'pago.comisionEfectivoEstado': 'en_pago' },
+    { $set: { 'pago.comisionEfectivoEstado': 'pagada', 'pago.comisionEfectivoPagadaEn': new Date(), 'pago.mpPaymentId': mpPaymentId?.toString() || '' } }
+  )
+
+  await verificarBloqueoComision(comisionistaId)
+
+  emitNotificacion(comisionistaId.toString(), {
+    tipo: 'remis',
+    titulo: 'Comisión pagada',
+    mensaje: '¡Gracias! Registramos el pago de tu comisión. Tu servicio de remis sigue activo.',
+    enlace: '/remis/conductor'
+  })
+  return res.modifiedCount || 0
+}
+
+/**
+ * Verifica contra MP el pago de la comisión al volver del checkout (fallback si
+ * el webhook no llega). Si no se aprobó, revierte 'en_pago' → 'adeudada'.
+ */
+export async function verificarPagoComision(comisionistaId) {
+  const enPago = await ViajeRemis.countDocuments({ comisionistaId, 'pago.comisionEfectivoEstado': 'en_pago' })
+  if (enPago === 0) return resumenComisionConductor(comisionistaId)
+
+  try {
+    const { MercadoPagoConfig, Payment } = await import('mercadopago')
+    const client = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' })
+    const search = await new Payment(client).search({
+      options: { external_reference: `comisionremis:${comisionistaId}` }
+    })
+    const aprobado = (search?.results || []).find(p => p.status === 'approved')
+    if (aprobado) {
+      await marcarComisionRemisPagada(comisionistaId, aprobado.id)
+    } else {
+      // No aprobado: liberar la reserva para que vuelva a figurar como deuda.
+      await ViajeRemis.updateMany(
+        { comisionistaId, 'pago.comisionEfectivoEstado': 'en_pago' },
+        { $set: { 'pago.comisionEfectivoEstado': 'adeudada' } }
+      )
+    }
+  } catch (e) {
+    console.warn('verificarPagoComision: no se pudo consultar a MP:', e.message)
+  }
+  return resumenComisionConductor(comisionistaId)
 }

@@ -115,6 +115,13 @@ const perfilComisionistaSchema = new mongoose.Schema({
     // Tarifa mínima: ningún viaje cobra menos que esto.
     minimo: { type: Number, default: 0, min: 0 }
   },
+  // Bloqueo del servicio de remis por deuda de comisión. Cuando el conductor
+  // cobra viajes en efectivo nos debe la comisión; si acumula 3 semanas sin
+  // pagarla (puenteando la app), se le bloquea OPERAR como remisero (no puede
+  // tomar viajes ni ponerse disponible) hasta que salde la deuda.
+  bloqueadoRemis: { type: Boolean, default: false },
+  bloqueadoRemisMotivo: { type: String, default: '' },
+  bloqueadoRemisEn: { type: Date, default: null },
   // Mercado Pago — OAuth del comisionista (para cobrar el traslado con split).
   // Mismo patrón que Tienda: tokens encriptados en reposo.
   mpAccessToken: { type: String, default: '' },
@@ -183,6 +190,8 @@ perfilComisionistaSchema.methods.toPublic = function () {
     horariosActivos: this.horariosActivos,
     ofreceRemis: this.ofreceRemis,
     tarifasRemis: this.tarifasRemis,
+    bloqueadoRemis: this.bloqueadoRemis,
+    bloqueadoRemisMotivo: this.bloqueadoRemisMotivo,
     mpVinculado: this.mpVinculado,
     createdAt: this.createdAt
   }

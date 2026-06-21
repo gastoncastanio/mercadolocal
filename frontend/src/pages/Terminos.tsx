@@ -196,6 +196,23 @@ export default function Terminos() {
             </ul>
           </section>
 
+          {/* 12-bis. Servicio MercadoLocal Remis */}
+          <section>
+            <h2 className="text-xl font-semibold text-ml-ink mb-3">12.bis Servicio MercadoLocal Remis (Pago Obligatorio y Bloqueo por Deuda)</h2>
+            <p>
+              MercadoLocal Remis es un servicio de traslado de personas que conecta pasajeros con conductores verificados.
+              El usuario acepta la siguiente normativa especifica para este servicio:
+            </p>
+            <ul className="list-disc ml-6 mt-2 space-y-2">
+              <li><strong>Pago obligatorio por la Plataforma:</strong> El pago de los viajes debe realizarse <strong>OBLIGATORIAMENTE</strong> a traves de MercadoLocal (Mercado Pago). La Plataforma retiene una comision del <strong>10% (diez por ciento)</strong> del monto del viaje para cubrir costos operativos, soporte y mantenimiento del servicio.</li>
+              <li><strong>Excepcion: Pago en Efectivo:</strong> De manera <strong>excepcional</strong>, el pasajero puede <strong>solicitar</strong> pagar en efectivo durante el viaje. El conductor puede <strong>aceptar o rechazar</strong> esta solicitud. Si el conductor acepta, debe registrar el cobro en efectivo en la Plataforma inmediatamente al finalizar el viaje. En este caso, el conductor queda <strong>debiendo la comision del 10%</strong> a MercadoLocal.</li>
+              <li><strong>Bloqueo por Deuda (Regla de las 3 Semanas):</strong> Si el conductor acumula comisiones impagas de viajes en efectivo durante <strong>mas de 3 semanas (21 dias)</strong> sin realizar el pago, <strong>su cuenta sera bloqueada automaticamente</strong> y no podra tomar nuevos viajes de remis ni ofrecerse como disponible hasta que salde completamente su deuda. Este bloqueo es una medida de proteccion para garantizar que todos los usuarios respeten los compromisos financieros con la Plataforma y evitar que se "puentee" el sistema.</li>
+              <li><strong>Pago de Comisiones:</strong> El conductor puede pagar su comision adeudada en cualquier momento a traves de la seccion "Pagar Comision" en su panel de conductor, utilizando Mercado Pago de forma segura. Una vez aprobado el pago, se levantara automaticamente el bloqueo si existiera.</li>
+              <li><strong>Transparencia:</strong> La Plataforma notificara al conductor sobre su saldo adeudado y los dias que le quedan antes del bloqueo automático. El conductor es responsable de estar atento a estas notificaciones.</li>
+              <li><strong>Deteccion de "Puenteo":</strong> Si la Plataforma detecta que un usuario realizó transacciones fuera del sistema para evadir comisiones (acuerdos privados de pago sin registrar en la app), se procedera al bloqueo permanente de su cuenta y a acciones legales segun la legislacion argentina vigente.</li>
+            </ul>
+          </section>
+
           {/* 13. Modificaciones */}
           <section>
             <h2 className="text-xl font-semibold text-ml-ink mb-3">13. Modificacion de los Terminos</h2>

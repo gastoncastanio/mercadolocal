@@ -127,6 +127,60 @@ router.patch('/viaje/:id/finalizar', verificarToken, async (req, res) => {
   }
 })
 
+// ===== Pago en EFECTIVO (excepción con comisión adeudada) =====
+
+// PATCH /api/remis/viaje/:id/efectivo/aceptar - Conductor acepta pagar en efectivo
+router.patch('/viaje/:id/efectivo/aceptar', verificarToken, async (req, res) => {
+  try {
+    const viaje = await remisService.aceptarPagoEfectivo(req.usuario.id, req.params.id)
+    res.json(viaje.toPublic())
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/remis/viaje/:id/efectivo/registrar - Conductor registra cobro en efectivo
+router.patch('/viaje/:id/efectivo/registrar', verificarToken, async (req, res) => {
+  try {
+    const viaje = await remisService.registrarCobroEfectivo(req.usuario.id, req.params.id)
+    res.json(viaje.toPublic())
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/remis/conductor/comision - Resumen de comisión adeudada
+router.get('/conductor/comision', verificarToken, async (req, res) => {
+  try {
+    const resumen = await remisService.resumenComisionConductor(req.usuario.id)
+    res.json(resumen)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/remis/conductor/pagar-comision - Iniciar pago de comisión adeudada
+router.post('/conductor/pagar-comision', verificarToken, async (req, res) => {
+  try {
+    const { default: Usuario } = await import('../models/Usuario.js')
+    const usuario = await Usuario.findById(req.usuario.id).select('email')
+    const resultado = await remisService.pagarComisionAdeudada(req.usuario.id, usuario?.email || '')
+    res.json(resultado)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// POST /api/remis/conductor/verificar-comision - Verificar pago al volver del checkout
+router.post('/conductor/verificar-comision', verificarToken, async (req, res) => {
+  try {
+    const resumen = await remisService.verificarPagoComision(req.usuario.id)
+    res.json(resumen)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // PATCH /api/remis/viaje/:id/cancelar - Cancelar (pasajero o conductor)
 router.patch('/viaje/:id/cancelar', verificarToken, async (req, res) => {
   try {

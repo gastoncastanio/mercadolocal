@@ -211,6 +211,18 @@ router.post('/webhook', async (req, res) => {
         return res.status(200).send('OK')
       }
 
+      // ===== Comisión de remis (external_reference "comisionremis:<comisionistaId>") =====
+      // El conductor pagó su comisión adeudada por viajes cobrados en efectivo.
+      // La plataforma retiene TODO el dinero (no hay split). Marcamos como pagada.
+      if (extRef.startsWith('comisionremis:')) {
+        if (pago.status === 'approved') {
+          const comisionistaId = extRef.slice('comisionremis:'.length)
+          const { marcarComisionRemisPagada } = await import('../services/remisService.js')
+          await marcarComisionRemisPagada(comisionistaId, pago.id)
+        }
+        return res.status(200).send('OK')
+      }
+
       const ordenId = pago.external_reference
       const orden = await Orden.findById(ordenId)
 
