@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 
@@ -486,18 +486,24 @@ function ModalGasto({ onClose, onGuardado }: { onClose: () => void; onGuardado: 
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [err, setErr] = useState('')
+  const enviando = useRef(false)
 
   async function guardar() {
+    // Lock síncrono: dos clicks en el mismo tick (antes del re-render) no
+    // pueden disparar dos POST → evita un OPEX duplicado en el libro mayor.
+    if (enviando.current) return
     setErr('')
     const montoNum = parseFloat(monto)
     if (!concepto.trim()) return setErr('Poné un concepto (ej: "Pauta Meta Junio")')
     if (!montoNum || montoNum <= 0) return setErr('El monto debe ser mayor a cero')
+    enviando.current = true
     setGuardando(true)
     try {
       await api.post('/contador/gasto', { categoria, concepto: concepto.trim(), monto: montoNum, fechaGasto, notas })
       onGuardado()
     } catch (e: any) {
       setErr(e?.response?.data?.error || 'No se pudo guardar el gasto')
+      enviando.current = false
       setGuardando(false)
     }
   }
