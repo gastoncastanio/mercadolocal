@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
+import MapaRumbo from '../components/MapaRumbo'
 
+interface PuntoViaje { ciudad: string; lat?: number | null; lng?: number | null }
 interface Viaje {
   _id: string
   comisionistaId: string
   comisionista?: { _id: string; nombre: string; avatar: string } | null
-  origen: { ciudad: string }
-  destino: { ciudad: string }
+  origen: PuntoViaje
+  destino: PuntoViaje
+  paradas?: PuntoViaje[]
   fechaSalida: string
   horaSalida: string
   tarifas: { bultoChico: number; bultoMediano: number; bultoGrande: number }
@@ -123,6 +126,20 @@ export default function DetalleViajePage() {
             📅 {new Date(viaje.fechaSalida).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
             {viaje.horaSalida ? ` · ${viaje.horaSalida}` : ''}
           </p>
+
+          {/* Ciudades en el camino */}
+          {viaje.paradas && viaje.paradas.length > 0 && (
+            <p className="text-sm text-ml-muted mb-3">
+              🛣️ Pasa por: {viaje.paradas.map(p => p.ciudad).join(' · ')}
+            </p>
+          )}
+
+          {/* Mapa del rumbo (solo si hay puntos geolocalizados) */}
+          {(viaje.origen?.lat != null || viaje.destino?.lat != null || (viaje.paradas || []).some(p => p.lat != null)) && (
+            <div className="mb-4">
+              <MapaRumbo origen={viaje.origen} destino={viaje.destino} paradas={viaje.paradas || []} altura={260} />
+            </div>
+          )}
 
           <div className="flex items-center gap-3 mb-4 pb-4 border-b border-ml-line">
             <img src={viaje.comisionista?.avatar || 'https://via.placeholder.com/40'} alt={viaje.comisionista?.nombre} className="w-10 h-10 rounded-full object-cover" />

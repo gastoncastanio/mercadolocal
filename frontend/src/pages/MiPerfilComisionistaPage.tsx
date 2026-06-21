@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { subirImagenOptimizada } from '../utils/imageUpload'
 import DeslindeComisionista from '../components/DeslindeComisionista'
+import BuscadorLugar, { LugarSeleccionado } from '../components/BuscadorLugar'
+import MapaRumbo from '../components/MapaRumbo'
 
 interface Perfil {
   _id: string
@@ -43,16 +45,20 @@ const DIAS = [
   { key: 'domingo', label: 'Dom' }
 ]
 
+interface PuntoViaje { ciudad: string; lat?: number | null; lng?: number | null }
 interface Viaje {
   _id: string
-  origen: { ciudad: string }
-  destino: { ciudad: string }
+  origen: PuntoViaje
+  destino: PuntoViaje
+  paradas?: PuntoViaje[]
   fechaSalida: string
   horaSalida: string
   capacidadTotal: number
   capacidadDisponible: number
   estado: string
 }
+
+const LUGAR_VACIO: LugarSeleccionado = { ciudad: '', lat: null, lng: null }
 
 interface Envio {
   _id: string
@@ -103,9 +109,13 @@ export default function MiPerfilComisionistaPage() {
 
   // Form de viaje
   const [vf, setVf] = useState({
-    origen: '', destino: '', fecha: '', hora: '',
+    fecha: '', hora: '',
     chico: 0, mediano: 0, grande: 0, capacidad: 1, notas: ''
   })
+  // Lugares del rumbo (con coordenadas para el mapa)
+  const [origenViaje, setOrigenViaje] = useState<LugarSeleccionado>(LUGAR_VACIO)
+  const [destinoViaje, setDestinoViaje] = useState<LugarSeleccionado>(LUGAR_VACIO)
+  const [paradasViaje, setParadasViaje] = useState<LugarSeleccionado[]>([])
 
   useEffect(() => { cargar() }, [])
 
@@ -302,19 +312,27 @@ export default function MiPerfilComisionistaPage() {
 
   async function publicarViaje(e: React.FormEvent) {
     e.preventDefault()
+    if (!origenViaje.ciudad.trim() || !destinoViaje.ciudad.trim()) {
+      setError('Indicá origen y destino del viaje')
+      return
+    }
     setAccionando(true)
     setError('')
     try {
       await api.post('/comisionistas/viaje', {
-        origen: { ciudad: vf.origen },
-        destino: { ciudad: vf.destino },
+        origen: origenViaje,
+        destino: destinoViaje,
+        paradas: paradasViaje.filter(p => p.ciudad.trim()),
         fechaSalida: vf.fecha,
         horaSalida: vf.hora,
         tarifas: { bultoChico: Number(vf.chico), bultoMediano: Number(vf.mediano), bultoGrande: Number(vf.grande) },
         capacidadTotal: Number(vf.capacidad),
         notas: vf.notas
       })
-      setVf({ origen: '', destino: '', fecha: '', hora: '', chico: 0, mediano: 0, grande: 0, capacidad: 1, notas: '' })
+      setVf({ fecha: '', hora: '', chico: 0, mediano: 0, grande: 0, capacidad: 1, notas: '' })
+      setOrigenViaje(LUGAR_VACIO)
+      setDestinoViaje(LUGAR_VACIO)
+      setParadasViaje([])
       await cargarViajes()
     } catch (e: any) {
       setError(e.response?.data?.error || 'Error al publicar el viaje')
@@ -583,10 +601,59 @@ export default function MiPerfilComisionistaPage() {
             <form onSubmit={publicarViaje} className="bg-white rounded-2xl shadow-sm border border-ml-line p-6 space-y-4">
               <h2 className="text-lg font-bold text-ml-ink">Publicar un viaje</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <input value={vf.origen} onChange={(e) => setVf({ ...vf, origen: e.target.value })} placeholder="Origen (ciudad)" className="px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
-                <input value={vf.destino} onChange={(e) => setVf({ ...vf, destino: e.target.value })} placeholder="Destino (ciudad)" className="px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
-                <input type="date" value={vf.fecha} onChange={(e) => setVf({ ...vf, fecha: e.target.value })} className="px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
-                <input value={vf.hora} onChange={(e) => setVf({ ...vf, hora: e.target.value })} placeholder="Hora (ej: 14:30)" className="px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Origen</label>
+                  <BuscadorLugar valor={origenViaje} onChange={setOrigenViaje} placeholder="Ciudad de origen" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Destino</label>
+                  <BuscadorLugar valor={destinoViaje} onChange={setDestinoViaje} placeholder="Ciudad de destino" />
+                </div>
+              </div>
+
+              {/* Ciudades en el camino (paradas) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-ml-muted">Ciudades en el camino (opcional)</label>
+                  <button type="button" onClick={() => setParadasViaje(prev => [...prev, { ...LUGAR_VACIO }])} className="text-xs font-semibold text-ml-violet hover:underline">+ Agregar parada</button>
+                </div>
+                {paradasViaje.length === 0 ? (
+                  <p className="text-xs text-ml-muted">Agregá las localidades por las que pasás para que más gente encuentre tu viaje.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {paradasViaje.map((p, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <div className="flex-1">
+                          <BuscadorLugar
+                            valor={p}
+                            onChange={(lugar) => setParadasViaje(prev => prev.map((x, j) => j === i ? lugar : x))}
+                            placeholder={`Parada ${i + 1}`}
+                          />
+                        </div>
+                        <button type="button" onClick={() => setParadasViaje(prev => prev.filter((_, j) => j !== i))} className="text-red-500 hover:text-red-700 text-lg px-1" title="Quitar parada">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Vista previa del rumbo en el mapa */}
+              {(origenViaje.lat != null || destinoViaje.lat != null || paradasViaje.some(p => p.lat != null)) && (
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Rumbo en el mapa</label>
+                  <MapaRumbo origen={origenViaje} destino={destinoViaje} paradas={paradasViaje} altura={240} />
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Fecha de salida</label>
+                  <input type="date" value={vf.fecha} onChange={(e) => setVf({ ...vf, fecha: e.target.value })} className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-ml-muted mb-1">Hora</label>
+                  <input value={vf.hora} onChange={(e) => setVf({ ...vf, hora: e.target.value })} placeholder="Ej: 14:30" className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
+                </div>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>

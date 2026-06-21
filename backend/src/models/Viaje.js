@@ -22,12 +22,28 @@ const viajeSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  // Origen/destino con coordenadas opcionales (lat/lng) para dibujar el rumbo
+  // en el mapa. La ciudad sigue siendo la fuente de verdad para la búsqueda; las
+  // coordenadas son solo presentación. lat/lng null = no geolocalizado (se
+  // muestra solo el texto).
   origen: {
-    ciudad: { type: String, required: true, trim: true }
+    ciudad: { type: String, required: true, trim: true },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null }
   },
   destino: {
-    ciudad: { type: String, required: true, trim: true }
+    ciudad: { type: String, required: true, trim: true },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null }
   },
+  // Localidades intermedias por las que pasa el viaje (waypoints), en orden de
+  // recorrido. Permite a un contratante ver si el rumbo pasa cerca suyo.
+  paradas: [{
+    _id: false,
+    ciudad: { type: String, required: true, trim: true },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null }
+  }],
   fechaSalida: {
     type: Date,
     required: true
@@ -90,6 +106,7 @@ viajeSchema.methods.toPublic = function () {
     comisionista: comisionistaPoblado,
     origen: this.origen,
     destino: this.destino,
+    paradas: this.paradas || [],
     fechaSalida: this.fechaSalida,
     horaSalida: this.horaSalida,
     tarifas: this.tarifas,

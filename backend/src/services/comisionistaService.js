@@ -161,6 +161,24 @@ export async function comisionistasEnVivo({ ciudadDestino } = {}) {
 
 // ===== Viaje =====
 
+// Normaliza un punto del rumbo {ciudad, lat, lng}. La ciudad es la fuente de
+// verdad; lat/lng se aceptan solo si son números válidos dentro de rango (si no,
+// quedan null y el mapa simplemente no dibuja ese punto). Defensivo contra
+// strings, NaN y coordenadas fuera de rango.
+function puntoGeo(p) {
+  if (!p || typeof p !== 'object') return { ciudad: '', lat: null, lng: null }
+  const ciudad = typeof p.ciudad === 'string' ? p.ciudad.trim() : ''
+  const lat = Number(p.lat)
+  const lng = Number(p.lng)
+  const latOk = Number.isFinite(lat) && lat >= -90 && lat <= 90
+  const lngOk = Number.isFinite(lng) && lng >= -180 && lng <= 180
+  return {
+    ciudad,
+    lat: latOk ? lat : null,
+    lng: lngOk ? lng : null
+  }
+}
+
 export async function publicarViaje(comisionistaId, datos) {
   const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId }).select('_id')
   if (!perfil) throw new Error('Necesitás un perfil de comisionista para publicar viajes')
@@ -177,8 +195,11 @@ export async function publicarViaje(comisionistaId, datos) {
 
   const viaje = await new Viaje({
     comisionistaId,
-    origen: { ciudad: datos.origen.ciudad },
-    destino: { ciudad: datos.destino.ciudad },
+    origen: puntoGeo(datos.origen),
+    destino: puntoGeo(datos.destino),
+    paradas: Array.isArray(datos.paradas)
+      ? datos.paradas.map(puntoGeo).filter((p) => p.ciudad)
+      : [],
     fechaSalida: datos.fechaSalida,
     horaSalida: datos.horaSalida || '',
     tarifas: {
