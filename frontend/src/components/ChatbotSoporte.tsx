@@ -120,7 +120,7 @@ export default function ChatbotSoporte() {
   })
   const chatRef = useRef<HTMLDivElement>(null)
   const winRef = useRef<HTMLDivElement>(null)
-  const dragRef = useRef<{ dx: number; dy: number } | null>(null)
+  const latestPosRef = useRef<{ x: number; y: number } | null>(pos)
 
   useEffect(() => {
     if (chatRef.current) {
@@ -174,29 +174,40 @@ export default function ChatbotSoporte() {
   }
 
   // ===== Drag de la ventana (por el header) =====
+  // Usamos listeners a nivel window (patrón robusto): el pointermove/up siguen
+  // funcionando aunque el puntero salga del header o el componente re-renderice.
   function onPointerDown(e: React.PointerEvent) {
     const el = winRef.current
-    if (!el) return
+    if (!el || e.button === 2) return
     const rect = el.getBoundingClientRect()
-    dragRef.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top }
-    if (!pos) setPos({ x: rect.left, y: rect.top })
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-  }
-  function onPointerMove(e: React.PointerEvent) {
-    const drag = dragRef.current
-    const el = winRef.current
-    if (!drag || !el) return
-    const x = Math.max(8, Math.min(e.clientX - drag.dx, window.innerWidth - el.offsetWidth - 8))
-    const y = Math.max(8, Math.min(e.clientY - drag.dy, window.innerHeight - el.offsetHeight - 8))
-    setPos({ x, y })
-  }
-  function onPointerUp(e: React.PointerEvent) {
-    dragRef.current = null
-    ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
-    // Recordar dónde la dejó para la próxima vez.
-    try {
-      if (pos) localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(pos))
-    } catch { /* storage no disponible */ }
+    const dx = e.clientX - rect.left
+    const dy = e.clientY - rect.top
+    if (!pos) {
+      const inicial = { x: rect.left, y: rect.top }
+      latestPosRef.current = inicial
+      setPos(inicial)
+    }
+
+    function handleMove(ev: PointerEvent) {
+      const w = winRef.current
+      if (!w) return
+      const x = Math.max(8, Math.min(ev.clientX - dx, window.innerWidth - w.offsetWidth - 8))
+      const y = Math.max(8, Math.min(ev.clientY - dy, window.innerHeight - w.offsetHeight - 8))
+      const np = { x, y }
+      latestPosRef.current = np
+      setPos(np)
+    }
+    function handleUp() {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+      // Recordar dónde la dejó para la próxima vez.
+      try {
+        if (latestPosRef.current) localStorage.setItem(POS_STORAGE_KEY, JSON.stringify(latestPosRef.current))
+      } catch { /* storage no disponible */ }
+    }
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    e.preventDefault()
   }
 
   const ventanaStyle = pos
@@ -224,8 +235,6 @@ export default function ChatbotSoporte() {
           {/* Header (zona de arrastre) */}
           <div
             onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
             className="ml-grad text-white p-4 shrink-0 cursor-move select-none touch-none"
           >
             <div className="flex items-center gap-3">
