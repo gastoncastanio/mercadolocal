@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { io, Socket } from 'socket.io-client'
 import api, { SOCKET_URL } from '../services/api'
+import { useAuth } from './AuthContext'
 
 // Mapa simple clave -> valor para configuraciones publicas
 type ConfigMap = Record<string, string>
@@ -15,6 +16,7 @@ interface ConfigContextType {
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined)
 
 export function ConfigProvider({ children }: { children: ReactNode }) {
+  const { usuario } = useAuth()
   const [config, setConfig] = useState<ConfigMap>({})
   const [cargando, setCargando] = useState(true)
 
@@ -29,10 +31,18 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // El fetch HTTP de config corre siempre (también para visitantes anónimos).
   useEffect(() => {
     cargar()
+  }, [])
 
-    // Suscribirse a cambios de configuracion en tiempo real
+  // El socket de config en vivo solo se abre cuando hay sesión iniciada. En la
+  // landing anónima no aporta valor (el visitante ya tiene la config del fetch)
+  // y, de abrirlo para todos, sumaba una conexión en la home + un posible error
+  // de consola en entornos donde el WS no resuelve. Reconecta al loguearse.
+  useEffect(() => {
+    if (!usuario) return
+
     let s: Socket | null = null
     try {
       s = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
@@ -54,7 +64,7 @@ export function ConfigProvider({ children }: { children: ReactNode }) {
     return () => {
       if (s) s.disconnect()
     }
-  }, [])
+  }, [usuario])
 
   const getConfig = (clave: string, valorDefecto = '') => config[clave] ?? valorDefecto
 
