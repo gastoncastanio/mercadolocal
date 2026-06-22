@@ -7,9 +7,9 @@ import Resenas from '../components/Resenas'
 import BotonCompartir from '../components/BotonCompartir'
 import TarjetaProducto from '../components/TarjetaProducto'
 import CalculadoraCuotas from '../components/CalculadoraCuotas'
-import CalculadorCostos from '../components/CalculadorCostos'
 import CotizadorEnvio from '../components/CotizadorEnvio'
 import BadgeVerificado from '../components/BadgeVerificado'
+import { useCoeficientesCuotas, calcularCuota, formatPesos } from '../utils/cuotas'
 import { trackVista } from '../services/tracking'
 import { imgCloudinary } from '../utils/cloudinary'
 
@@ -19,6 +19,10 @@ export default function DetalleProducto() {
   const { estaLogueado } = useAuth()
   const [producto, setProducto] = useState<Producto | null>(null)
   const [cantidad, setCantidad] = useState(1)
+  // Cuotas: estado compartido entre la línea bajo el precio y la calculadora,
+  // con la fuente de verdad única (coeficientes de config).
+  const [cuotasSel, setCuotasSel] = useState(6)
+  const coefCuotas = useCoeficientesCuotas()
   const [agregando, setAgregando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [imagenActual, setImagenActual] = useState(0)
@@ -102,8 +106,10 @@ export default function DetalleProducto() {
   const tieneDescuento = producto.totalVentas > 5
   const precioAnterior = tieneDescuento ? Math.round(producto.precio * 1.35) : null
   const porcentajeOff = precioAnterior ? Math.round((1 - producto.precio / precioAnterior) * 100) : null
-  const cuota6 = Math.round(producto.precio / 6)
-  const cuota12 = Math.round(producto.precio / 12)
+  const cuotaInfo = calcularCuota(producto.precio, cuotasSel, coefCuotas)
+  const cuotaTexto = cuotasSel === 1
+    ? `1 pago de $${formatPesos(cuotaInfo.valorCuota)}`
+    : `${cuotasSel}x $${formatPesos(cuotaInfo.valorCuota)}`
 
   return (
     <div className="min-h-screen bg-ml-bg">
@@ -226,7 +232,7 @@ export default function DetalleProducto() {
                     )}
                   </div>
                   <p className="text-[15px] text-ml-muted font-normal mt-2">
-                    en 12x ${cuota12.toLocaleString('es-AR')} <span className="text-xs text-ml-muted">(precio referencial)</span>
+                    en {cuotaTexto} {cuotaInfo.recargo <= 0 && <span className="text-xs text-green-600 font-semibold">sin interés</span>}
                   </p>
                   <Link to="#cuotas" className="text-[13px] text-ml-blue hover:text-ml-violet">
                     Calcular cuotas con tu tarjeta
@@ -306,9 +312,10 @@ export default function DetalleProducto() {
                   )}
                 </div>
 
-                {/* Calculadora de cuotas - bien visible */}
+                {/* Calculadora de cuotas - bien visible. Sincronizada con la línea
+                    "en Nx $X" del precio (mismo cuotasSel + misma fuente de verdad). */}
                 <div id="cuotas" className="mb-4 scroll-mt-40">
-                  <CalculadoraCuotas precio={producto.precio} />
+                  <CalculadoraCuotas precio={producto.precio} value={cuotasSel} onChange={setCuotasSel} />
                 </div>
 
                 {/* Description short */}
@@ -385,7 +392,7 @@ export default function DetalleProducto() {
                     )}
                   </div>
                   <p className="text-sm text-ml-muted mt-1">
-                    en 6x ${cuota6.toLocaleString('es-AR')} <span className="text-xs text-ml-muted">(ver cuotas)</span>
+                    en {cuotaTexto} <span className="text-xs text-ml-muted">(ver cuotas)</span>
                   </p>
                 </div>
 
@@ -452,18 +459,6 @@ export default function DetalleProducto() {
                   </>
                 )}
 
-                {/* Desglose de costos transparente */}
-                <details className="mt-4 group">
-                  <summary className="cursor-pointer text-sm font-semibold text-ml-blue hover:text-ml-violet flex items-center gap-1.5 list-none">
-                    <span>💰 Ver desglose de costos</span>
-                    <svg className="w-4 h-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </summary>
-                  <div className="mt-3">
-                    <CalculadorCostos precioProducto={producto.precio * cantidad} vista="comprador" />
-                  </div>
-                </details>
 
                 {/* Garantia & devoluciones */}
                 <div className="mt-5 pt-4 border-t border-ml-line2 space-y-3">
