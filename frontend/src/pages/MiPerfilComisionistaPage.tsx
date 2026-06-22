@@ -130,6 +130,8 @@ export default function MiPerfilComisionistaPage() {
   const [enviosVivo, setEnviosVivo] = useState<any[]>([])
   const [montoVivo, setMontoVivo] = useState<Record<string, string>>({})
   const [tiempoVivo, setTiempoVivo] = useState<Record<string, string>>({})
+  // "Día rentable": ganancias y envíos del día (contador motivacional).
+  const [miDia, setMiDia] = useState<{ ganancia: number; cantidad: number; oportunidades: number } | null>(null)
 
   // Remis (traslado de personas): tarifas configurables del conductor.
   const [tarifasRemis, setTarifasRemis] = useState({ banderita: 0, porKm: 0, porHoraEspera: 0, minimo: 0 })
@@ -267,6 +269,25 @@ export default function MiPerfilComisionistaPage() {
   }
   async function cargarEnviosVivo() {
     try { const r = await api.get('/comisionistas/envios-vivo-abiertos'); setEnviosVivo(r.data || []) } catch {}
+    try { const d = await api.get('/comisionistas/mi-dia'); setMiDia(d.data) } catch {}
+  }
+
+  async function tomarVivo(ordenId: string) {
+    const monto = Number(montoVivo[ordenId])
+    if (!monto || monto <= 0) { setError('Ingresá un precio para agarrar el envío'); return }
+    setAccionando(true)
+    try {
+      await api.post(`/comisionistas/envio-vivo/${ordenId}/tomar`, {
+        monto, tiempoEstimado: tiempoVivo[ordenId] || ''
+      })
+      setEnviosVivo(prev => prev.filter(x => x.ordenId !== ordenId))
+      await Promise.all([cargarEnviosVivo(), cargarCotizaciones()])
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo tomar el envío (puede que otro se haya adelantado)')
+      await cargarEnviosVivo()
+    } finally {
+      setAccionando(false)
+    }
   }
 
   async function ofertarVivo(ordenId: string) {
@@ -745,6 +766,23 @@ export default function MiPerfilComisionistaPage() {
             {/* Deslinde legal informativo */}
             <DeslindeComisionista />
 
+            {/* 💸 Día rentable: contador motivacional de ganancias del día */}
+            {miDia && (
+              <div className="bg-gradient-to-r from-ml-violet to-ml-purple text-white rounded-2xl p-5 flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <p className="text-xs text-white/80 font-semibold uppercase tracking-wider">Tu día</p>
+                  <p className="text-3xl font-extrabold">${miDia.ganancia.toLocaleString('es-AR')}</p>
+                  <p className="text-sm text-white/90">{miDia.cantidad} envío{miDia.cantidad === 1 ? '' : 's'} completado{miDia.cantidad === 1 ? '' : 's'} hoy</p>
+                </div>
+                {miDia.oportunidades > 0 && (
+                  <div className="text-right">
+                    <p className="text-2xl font-extrabold">🔥 {miDia.oportunidades}</p>
+                    <p className="text-xs text-white/90">envío{miDia.oportunidades === 1 ? '' : 's'} esperando ahora</p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 🔥 Envíos en vivo disponibles AHORA — competí por ellos */}
             {enviosVivo.length > 0 && (
               <div className="border-2 border-orange-300 bg-orange-50 rounded-2xl p-5">
@@ -770,13 +808,19 @@ export default function MiPerfilComisionistaPage() {
                           )}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
                         <input type="number" min={0} value={montoVivo[e.ordenId] || ''} onChange={ev => setMontoVivo(prev => ({ ...prev, [e.ordenId]: ev.target.value }))} placeholder="Tu precio $" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
                         <input value={tiempoVivo[e.ordenId] || ''} onChange={ev => setTiempoVivo(prev => ({ ...prev, [e.ordenId]: ev.target.value }))} placeholder="Ej: 2 horas" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
-                        <button onClick={() => ofertarVivo(e.ordenId)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">
-                          🦈 Agarrar envío
+                        <button onClick={() => tomarVivo(e.ordenId)} disabled={accionando} className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-bold hover:bg-orange-700 disabled:opacity-60">
+                          🦈 Agarrar YA
+                        </button>
+                        <button onClick={() => ofertarVivo(e.ordenId)} disabled={accionando} className="px-4 py-2 border border-ml-violet text-ml-violet rounded-lg text-sm font-bold hover:bg-violet-50 disabled:opacity-60">
+                          Ofertar
                         </button>
                       </div>
+                      <p className="text-[10px] text-ml-muted mt-1">
+                        <strong>Agarrar YA</strong>: te lo quedás al instante (el primero gana). <strong>Ofertar</strong>: competís y el comprador elige.
+                      </p>
                     </div>
                   ))}
                 </div>

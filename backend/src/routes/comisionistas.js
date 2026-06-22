@@ -331,6 +331,27 @@ router.post('/envio-vivo/:ordenId/ofertar', verificarToken, async (req, res) => 
   }
 })
 
+// POST /api/comisionistas/envio-vivo/:ordenId/tomar - "Agarrar ya" (claim atómico)
+// Body: { monto, tiempoEstimado? }
+router.post('/envio-vivo/:ordenId/tomar', verificarToken, async (req, res) => {
+  try {
+    const solicitud = await comisionistaService.tomarEnvioEnVivo(req.usuario.id, req.params.ordenId, req.body)
+    res.status(201).json(solicitud)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// GET /api/comisionistas/mi-dia - Resumen del día (ganancias + envíos) del comisionista
+router.get('/mi-dia', verificarToken, async (req, res) => {
+  try {
+    const resumen = await comisionistaService.resumenDiaComisionista(req.usuario.id)
+    res.json(resumen)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // ===== SolicitudCotizacion (comisionista en vivo desde el checkout) =====
 
 // POST /api/comisionistas/cotizacion - El comprador pide cotización a un comisionista

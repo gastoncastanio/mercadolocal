@@ -314,6 +314,12 @@ export function emitEnvioVivoNuevo(payload) {
   io.to('comisionistas:vivo').emit('envio_vivo:nuevo', { ...payload, timestamp: new Date() })
 }
 
+/** Igual que emitEnvioVivoNuevo pero DIRIGIDO a un comisionista (acceso anticipado). */
+export function emitEnvioVivoNuevoA(usuarioId, payload) {
+  if (!io) return
+  io.to(`user:${usuarioId}`).emit('envio_vivo:nuevo', { ...payload, timestamp: new Date() })
+}
+
 /** Un envío en vivo se cerró (adjudicado o expirado): desaparece de los paneles. */
 export function emitEnvioVivoCerrado(ordenId) {
   if (!io) return
