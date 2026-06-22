@@ -343,6 +343,22 @@ router.post('/webhook', async (req, res) => {
           )
           if (prodActualizado) {
             emitStockActualizado(item.productoId.toString(), prodActualizado.stock)
+            // Avisar al vendedor si el producto quedó agotado o con poco stock,
+            // para que reponga antes de perder ventas.
+            if (prodActualizado.stock <= 3) {
+              const tienda = await Tienda.findById(item.tiendaId).select('usuarioId')
+              if (tienda?.usuarioId) {
+                const agotado = prodActualizado.stock === 0
+                emitNotificacion(tienda.usuarioId.toString(), {
+                  tipo: 'producto',
+                  titulo: agotado ? '📦 Producto agotado' : '📦 Poco stock',
+                  mensaje: agotado
+                    ? `"${item.nombre}" se quedó sin stock. Reponé para seguir vendiendo.`
+                    : `A "${item.nombre}" le quedan ${prodActualizado.stock} unidades. Reponé pronto.`,
+                  enlace: '/mi-tienda'
+                })
+              }
+            }
           } else {
             // Sobreventa: cuánto había realmente (para que el vendedor lo vea).
             const prod = await Producto.findById(item.productoId).select('stock')

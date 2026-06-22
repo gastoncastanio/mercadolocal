@@ -3,7 +3,8 @@ import Contador from '../models/Contador.js'
 import ConfigSitio from '../models/ConfigSitio.js'
 import Tienda from '../models/Tienda.js'
 import Usuario from '../models/Usuario.js'
-import { solicitarCAE } from './arcaService.js'
+import { solicitarCAE, facturacionFiscalActiva } from './arcaService.js'
+import { emitNotificacion } from './socketService.js'
 
 /**
  * SERVICIO DE FACTURACIÓN
@@ -73,6 +74,16 @@ export async function guardarDatosFiscalesPlataforma(datos = {}) {
 }
 
 /**
+ * Notifica a todos los admins (para alertas fiscales/operativas).
+ */
+async function notificarAdmins(notif) {
+  const admins = await Usuario.find({ rol: 'admin' }).select('_id').lean()
+  for (const a of admins) {
+    emitNotificacion(a._id.toString(), notif)
+  }
+}
+
+/**
  * Numeración correlativa por letra y punto de venta. Atómica (sin huecos).
  * Devuelve { numero, numeroFormateado }.
  */
@@ -121,6 +132,19 @@ async function emitir({ tipo, claveIdempotencia, letra, emisor, receptor, items,
     console.warn('Solicitud de CAE falló, se emite como interno:', e.message)
   }
   const autorizado = !!fiscalData.autorizado
+
+  // PREPARADO PARA ARCA: si la facturación fiscal está ENCENDIDA pero el CAE no
+  // se autorizó, es un problema fiscal real → avisamos a los admins. Hoy ARCA
+  // está desconectado (FACTURACION_FISCAL!=on), así que esto NO se dispara: queda
+  // listo para el día que se conecte, sin generar ruido mientras tanto.
+  if (!autorizado && facturacionFiscalActiva()) {
+    notificarAdmins({
+      tipo: 'comprobante',
+      titulo: '⚠️ Falló la emisión fiscal (ARCA)',
+      mensaje: `No se pudo obtener el CAE de un comprobante ${letra} (${tipo}). Motivo: ${fiscalData.motivo || 'desconocido'}. Se emitió como interno.`,
+      enlace: '/admin'
+    }).catch(() => {})
+  }
 
   try {
     const comprobante = await new Comprobante({
@@ -317,6 +341,19 @@ export async function emitirFacturaVenta(orden, tiendaId, opts = {}) {
     )
     comp.pdfUrl = opts.pdfUrl
     comp.origen = 'manual'
+  }
+
+  // Avisar al comprador que su comprobante está disponible. El texto se adapta
+  // solo: "Factura oficial" si tiene CAE (ARCA conectado) o "Comprobante" si es
+  // interno. Así, cuando se conecte ARCA, el mensaje ya queda correcto.
+  if (comp && orden.compradorId) {
+    const esFiscal = !!comp.fiscal
+    emitNotificacion(orden.compradorId.toString(), {
+      tipo: 'comprobante',
+      titulo: esFiscal ? 'Tu factura está lista' : 'Tu comprobante de compra está listo',
+      mensaje: `${comp.numeroFormateado} por $${total.toLocaleString('es-AR')} de ${emisor.nombre || 'tu vendedor'}.`,
+      enlace: '/mis-ordenes'
+    })
   }
   return comp
 }

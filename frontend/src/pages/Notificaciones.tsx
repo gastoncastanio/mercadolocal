@@ -25,6 +25,9 @@ const ICONOS: Record<string, string> = {
   sistema: '\u{1F514}',        // \uD83D\uDD14
   pago: '\u{1F4B3}',           // \uD83D\uDCB3
   pago_aprobado: '\u2705',     // \u2705
+  comprobante: '\u{1F9FE}',    // \uD83E\uDDFE
+  producto: '\u{1F4E6}',       // \uD83D\uDCE6
+  carrito: '\u{1F6D2}',        // \uD83D\uDED2
   reembolso: '\u{1F4B8}',      // \uD83D\uDCB8
   remis: '\u{1F695}',          // \uD83D\uDE95
   envio: '\u{1F4E6}',          // \uD83D\uDCE6
