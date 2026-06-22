@@ -11,18 +11,24 @@ interface BannerDef {
   enlace: string
   gradiente: string
   emoji: string
+  realce?: string        // texto grande del visual (ej. "12x")
+  realceLabel?: string   // etiqueta chica bajo el realce (ej. "cuotas")
+  nota?: string          // letra chica (disclaimer honesto)
   producto?: Producto | null
   destacadoId?: string
 }
 
 const BANNERS_BASE: BannerDef[] = [
   {
-    titulo: 'Pagá en cuotas con Mercado Pago',
-    subtitulo: 'Financiación con todas las tarjetas. El costo depende de tu banco.',
+    titulo: 'Llevátelo hoy, pagalo en cuotas',
+    subtitulo: 'Con todas las tarjetas y el respaldo de Mercado Pago.',
     cta: 'Ver productos',
     enlace: '/catalogo',
     gradiente: 'from-emerald-500 via-teal-600 to-cyan-700',
-    emoji: '\u{1F4B3}'
+    emoji: '\u{1F4B3}',
+    realce: 'Hasta 12',
+    realceLabel: 'cuotas',
+    nota: 'El costo de la financiación lo define tu banco.'
   },
   {
     titulo: 'Abr\u00ed tu tienda gratis',
@@ -136,6 +142,9 @@ export default function BannersRotativos() {
                 {banner.cta}
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
               </Link>
+              {banner.nota && (
+                <p className="text-[11px] text-white/70 mt-2.5">{banner.nota}</p>
+              )}
             </div>
             <div className="hidden md:flex justify-center items-center">
               {banner.producto?.imagenes?.[0] ? (
@@ -149,6 +158,22 @@ export default function BannersRotativos() {
                     className="w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-2xl border-4 border-white/20 shadow-2xl group-hover:scale-105 group-hover:border-white/40 transition-all duration-300"
                   />
                 </Link>
+              ) : banner.realce ? (
+                <div className="relative animate-float">
+                  {/* Tarjeta glassy inclinada */}
+                  <div className="w-56 h-36 rounded-2xl bg-gradient-to-br from-white/30 to-white/5 backdrop-blur-md border border-white/30 shadow-2xl -rotate-[8deg] flex flex-col justify-between p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 to-amber-400 shadow-inner" />
+                      <span className="text-white/85 text-[11px] font-bold tracking-wide">mercado pago</span>
+                    </div>
+                    <div className="text-white/90 tracking-[0.2em] text-base font-semibold">{'•••• 4480'}</div>
+                  </div>
+                  {/* Badge de cuotas */}
+                  <div className="absolute -bottom-5 -right-5 bg-white text-ml-ink rounded-2xl shadow-xl px-4 py-2.5 rotate-[6deg] text-center">
+                    <span className="block text-2xl lg:text-3xl font-extrabold leading-none">{banner.realce}</span>
+                    {banner.realceLabel && <span className="block text-[11px] font-bold text-ml-muted mt-0.5">{banner.realceLabel}</span>}
+                  </div>
+                </div>
               ) : (
                 <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center animate-float">
                   <span className="text-7xl lg:text-8xl drop-shadow-lg">{banner.emoji}</span>
