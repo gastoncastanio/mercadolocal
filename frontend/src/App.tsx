@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { BannerFlotanteInstalar } from './components/InstalarApp'
 import BannerConsentimiento from './components/BannerConsentimiento'
 import DeferMount from './components/DeferMount'
+import ModalBienvenidaLocalidad from './components/ModalBienvenidaLocalidad'
 
 // Landing se carga eager (es la primera pagina)
 import Landing from './pages/Landing'
@@ -285,6 +286,7 @@ function AppContent() {
     <Router>
       <RutasConBoundary />
       <BannerConsentimiento />
+      <ModalBienvenidaLocalidad />
     </Router>
   )
 }

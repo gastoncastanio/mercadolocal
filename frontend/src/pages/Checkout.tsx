@@ -3,13 +3,14 @@ import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import CalculadorCostos from '../components/CalculadorCostos'
 import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
+import { getLocalidadGuardada } from '../components/ModalBienvenidaLocalidad'
 
 export default function Checkout() {
   const { usuario } = useAuth()
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [direccion, setDireccion] = useState(usuario?.direccion || '')
-  const [ciudad, setCiudad] = useState((usuario as any)?.ciudad || '')
+  const [ciudad, setCiudad] = useState((usuario as any)?.ciudad || getLocalidadGuardada())
   const [nombre, setNombre] = useState(usuario?.nombre || '')
   const [telefono, setTelefono] = useState(usuario?.telefono || '')
   const [notas, setNotas] = useState('')
