@@ -286,17 +286,30 @@ export default function DetalleProducto() {
                         <div className="flex items-start gap-2">
                           <span className="text-lg leading-none mt-0.5">📦</span>
                           <div className="flex-1 text-sm">
-                            <p className="font-semibold text-ml-ink">Envío por correo</p>
+                            <p className="font-semibold text-ml-ink">Envío por correo / encomienda</p>
                             {producto.entrega.envioCorreo.empresas && (
                               <p className="text-xs text-ml-soft">{producto.entrega.envioCorreo.empresas}</p>
                             )}
-                            <p className="text-[11px] text-ml-muted">A coordinar con el vendedor</p>
+                            <a href="#cotizador" className="text-[12px] text-ml-blue hover:text-ml-violet font-semibold">📍 Calculá el costo por tu código postal →</a>
                           </div>
                         </div>
                       )}
+
+                      {/* Comisionista: traer desde otra localidad. Siempre disponible
+                          (es una función de la plataforma, no del vendedor). */}
+                      <div className="flex items-start gap-2 pt-2 border-t border-ml-line">
+                        <span className="text-lg leading-none mt-0.5">🚗</span>
+                        <div className="flex-1 text-sm">
+                          <p className="font-semibold text-ml-ink">Traer con un comisionista <span className="text-ml-muted font-normal">— otra localidad</span></p>
+                          <p className="text-xs text-ml-soft">Si sos de otra ciudad, un comisionista lo retira y te lo lleva.</p>
+                          <p className="text-[11px] text-ml-muted">Cada comisionista cobra distinto: ves el precio y elegís al confirmar la compra.{' '}
+                            <Link to="/comisionistas" className="text-ml-blue hover:text-ml-violet font-semibold">Ver comisionistas →</Link>
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <p className="text-[11px] text-ml-muted italic mt-3 border-t border-ml-line pt-2">
-                      💡 El costo del envío se coordina con el vendedor después de comprar. No se procesa por la app.
+                      💡 Elegís la forma de envío y coordinás el costo con quien lo lleva. MercadoLocal no cobra comisión sobre el envío.
                     </p>
                   </div>
                 )}
@@ -577,14 +590,16 @@ export default function DetalleProducto() {
               </Link>
             )}
 
-            {/* Cotizador de envio */}
-            <CotizadorEnvio
-              cpOrigen={(tienda as any)?.codigoPostal || ''}
-              pesoGr={producto.peso ? producto.peso * 1000 : undefined}
-              alto={producto.alto}
-              ancho={producto.ancho}
-              largo={producto.largo}
-            />
+            {/* Cotizador de envío (correo/encomienda) — ancla desde "Cómo recibís" */}
+            <div id="cotizador" className="scroll-mt-40">
+              <CotizadorEnvio
+                cpOrigen={(tienda as any)?.codigoPostal || ''}
+                pesoGr={producto.peso ? producto.peso * 1000 : undefined}
+                alto={producto.alto}
+                ancho={producto.ancho}
+                largo={producto.largo}
+              />
+            </div>
 
             {/* Medios de pago ya se muestra arriba junto al precio */}
           </div>
