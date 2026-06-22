@@ -68,6 +68,11 @@ export function initSocket(httpServer, corsOrigins) {
       }
     })
 
+    // Subasta "comisionista en vivo": el panel del comisionista se une a esta sala
+    // para ver aparecer/desaparecer envíos disponibles en tiempo real (frenesí).
+    socket.on('comisionista:vivo:join', () => socket.join('comisionistas:vivo'))
+    socket.on('comisionista:vivo:leave', () => socket.leave('comisionistas:vivo'))
+
     socket.on('disconnect', () => {
       console.log(`🔌 WebSocket desconectado: ${socket.id}`)
     })
@@ -297,5 +302,29 @@ export function emitNuevoMensaje(receptorId, mensaje) {
     mensaje: mensaje.mensaje,
     imagenUrl: mensaje.imagenUrl,
     timestamp: mensaje.createdAt
+  })
+}
+
+/**
+ * Subasta "comisionista en vivo": difunde a los comisionistas conectados que
+ * apareció un nuevo envío para competir (aparece solo en su panel, sin recargar).
+ */
+export function emitEnvioVivoNuevo(payload) {
+  if (!io) return
+  io.to('comisionistas:vivo').emit('envio_vivo:nuevo', { ...payload, timestamp: new Date() })
+}
+
+/** Un envío en vivo se cerró (adjudicado o expirado): desaparece de los paneles. */
+export function emitEnvioVivoCerrado(ordenId) {
+  if (!io) return
+  io.to('comisionistas:vivo').emit('envio_vivo:cerrado', { ordenId: ordenId.toString() })
+}
+
+/** Cambió la cantidad de competidores de un envío (para el contador en vivo). */
+export function emitEnvioVivoActualizado(ordenId, ofertasActuales) {
+  if (!io) return
+  io.to('comisionistas:vivo').emit('envio_vivo:actualizado', {
+    ordenId: ordenId.toString(),
+    ofertasActuales
   })
 }

@@ -6,7 +6,7 @@ import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import Orden from '../models/Orden.js'
 import Usuario from '../models/Usuario.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
-import { emitNotificacion } from './socketService.js'
+import { emitNotificacion, emitEnvioVivoNuevo, emitEnvioVivoCerrado, emitEnvioVivoActualizado } from './socketService.js'
 
 // ===== PerfilComisionista =====
 
@@ -809,6 +809,7 @@ async function adjudicarEnvioEnVivo(ordenId, solicitudGanadoraId) {
   if (orden.entregaEnVivo.estado === 'adjudicado') return
 
   await Orden.updateOne({ _id: ordenId }, { $set: { 'entregaEnVivo.estado': 'adjudicado' } })
+  emitEnvioVivoCerrado(ordenId)  // desaparece de los paneles en vivo
 
   // Rechazar las demás ofertas abiertas de esta orden.
   const perdedoras = await SolicitudCotizacion.find({
@@ -1104,6 +1105,19 @@ export async function abrirEnvioEnVivo(orden) {
     })
     avisados++
   }
+
+  // Tiempo real: aparece SOLO en el panel de los comisionistas conectados (frenesí).
+  emitEnvioVivoNuevo({
+    ordenId: orden._id.toString(),
+    compradorId: orden.compradorId.toString(),  // para que el cliente filtre su propia compra
+    ref,
+    ciudadOrigen,
+    ciudadDestino,
+    descripcionCarga: (orden.items || []).map(i => i.nombre).join(', '),
+    totalProductos: (orden.items || []).reduce((n, i) => n + i.cantidad, 0),
+    ofertasActuales: 0,
+    expiraEn
+  })
   return { ok: true, avisados, expiraEn }
 }
 
@@ -1213,6 +1227,9 @@ export async function ofertarEnvioEnVivo(comisionistaId, ordenId, { monto, tiemp
     enlace: '/comisionistas/mis-cotizaciones'
   })
 
+  // Tiempo real: actualiza el contador de competidores en los paneles.
+  emitEnvioVivoActualizado(ordenId, totalOfertas)
+
   return solicitud
 }
 
@@ -1231,6 +1248,7 @@ export async function expirarEnviosEnVivo() {
   let cerradas = 0
   for (const orden of vencidas) {
     await Orden.updateOne({ _id: orden._id }, { $set: { 'entregaEnVivo.estado': 'expirado' } })
+    emitEnvioVivoCerrado(orden._id)  // sacarlo de los paneles en vivo
     const tieneOfertas = await SolicitudCotizacion.countDocuments({
       ordenId: orden._id, estado: { $in: ['pendiente', 'cotizada'] }
     })

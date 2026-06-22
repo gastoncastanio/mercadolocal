@@ -6,6 +6,8 @@ import DeslindeComisionista from '../components/DeslindeComisionista'
 import SelectorLocalidad, { LugarSeleccionado } from '../components/SelectorLocalidad'
 import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 import MapaRumbo from '../components/MapaRumbo'
+import { useSocket } from '../hooks/useSocket'
+import { useAuth } from '../context/AuthContext'
 
 interface Perfil {
   _id: string
@@ -85,8 +87,28 @@ const ESTADO_ENVIO: Record<string, { texto: string; clase: string }> = {
   cancelado: { texto: 'Cancelado', clase: 'bg-red-50 text-red-600 border-red-200' }
 }
 
+// Cuenta regresiva hasta que expira la subasta del envío (urgencia visible).
+function CuentaRegresiva({ expiraEn }: { expiraEn: string }) {
+  const [restante, setRestante] = useState(() => new Date(expiraEn).getTime() - Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setRestante(new Date(expiraEn).getTime() - Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [expiraEn])
+  if (restante <= 0) return <span className="text-[11px] font-bold text-red-600">Cerrando…</span>
+  const min = Math.floor(restante / 60000)
+  const seg = Math.floor((restante % 60000) / 1000)
+  const urgente = restante < 5 * 60 * 1000
+  return (
+    <span className={`text-[11px] font-bold tabular-nums ${urgente ? 'text-red-600 animate-pulse' : 'text-orange-700'}`}>
+      ⏳ {min}:{String(seg).padStart(2, '0')}
+    </span>
+  )
+}
+
 export default function MiPerfilComisionistaPage() {
   const navigate = useNavigate()
+  const { usuario } = useAuth()
+  const { on, off, emit } = useSocket(usuario?._id)
   const [params, setParams] = useSearchParams()
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [viajes, setViajes] = useState<Viaje[]>([])
@@ -130,6 +152,56 @@ export default function MiPerfilComisionistaPage() {
   const [paradasViaje, setParadasViaje] = useState<LugarSeleccionado[]>([])
 
   useEffect(() => { cargar() }, [])
+
+  // 🦈 Subasta en vivo en TIEMPO REAL: los envíos aparecen/desaparecen solos y
+  // suena/vibra cuando entra uno nuevo (frenesí estilo apps de delivery).
+  useEffect(() => {
+    if (!usuario?._id) return
+    emit('comisionista:vivo:join')
+
+    const onNuevo = (e: any) => {
+      // No mostrar mi propia compra ni duplicados.
+      if (e.compradorId && e.compradorId === usuario._id) return
+      setEnviosVivo(prev => {
+        if (prev.some(x => x.ordenId === e.ordenId)) return prev
+        avisarNuevoEnvio()
+        return [e, ...prev]
+      })
+    }
+    const onCerrado = (e: any) => {
+      setEnviosVivo(prev => prev.filter(x => x.ordenId !== e.ordenId))
+    }
+    const onActualizado = (e: any) => {
+      setEnviosVivo(prev => prev.map(x => x.ordenId === e.ordenId ? { ...x, ofertasActuales: e.ofertasActuales } : x))
+    }
+
+    on('envio_vivo:nuevo', onNuevo)
+    on('envio_vivo:cerrado', onCerrado)
+    on('envio_vivo:actualizado', onActualizado)
+    return () => {
+      emit('comisionista:vivo:leave')
+      off('envio_vivo:nuevo'); off('envio_vivo:cerrado'); off('envio_vivo:actualizado')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario?._id, on, off, emit])
+
+  // Sonido + vibración al entrar un envío nuevo (gancho de atención).
+  function avisarNuevoEnvio() {
+    try { navigator.vibrate?.([120, 60, 120]) } catch { /* noop */ }
+    try {
+      const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext
+      if (!Ctx) return
+      const ctx = new Ctx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'; osc.frequency.value = 880
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35)
+      osc.connect(gain); gain.connect(ctx.destination)
+      osc.start(); osc.stop(ctx.currentTime + 0.36)
+    } catch { /* el navegador puede bloquear audio sin interacción; no pasa nada */ }
+  }
 
   // Feedback al volver del OAuth de Mercado Pago.
   useEffect(() => {
@@ -689,10 +761,11 @@ export default function MiPerfilComisionistaPage() {
                           <p className="font-bold text-ml-ink">{e.ciudadOrigen || '—'} → {e.ciudadDestino || '—'}</p>
                           <p className="text-xs text-ml-muted">{e.totalProductos} producto(s): {e.descripcionCarga}</p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col items-end gap-1">
+                          {e.expiraEn && <CuentaRegresiva expiraEn={e.expiraEn} />}
                           {e.ofertasActuales > 0 && (
                             <span className="text-[11px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
-                              {e.ofertasActuales} compitiendo
+                              🦈 {e.ofertasActuales} compitiendo
                             </span>
                           )}
                         </div>
