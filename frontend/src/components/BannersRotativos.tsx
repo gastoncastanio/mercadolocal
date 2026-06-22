@@ -11,9 +11,10 @@ interface BannerDef {
   enlace: string
   gradiente: string
   emoji: string
-  realce?: string        // texto grande del visual (ej. "12x")
+  realce?: string        // texto grande del badge (ej. "12x", "GRATIS")
   realceLabel?: string   // etiqueta chica bajo el realce (ej. "cuotas")
   nota?: string          // letra chica (disclaimer honesto)
+  visual?: 'tarjeta'     // visual especial (ej. mockup de tarjeta para cuotas)
   producto?: Producto | null
   destacadoId?: string
 }
@@ -28,7 +29,8 @@ const BANNERS_BASE: BannerDef[] = [
     emoji: '\u{1F4B3}',
     realce: 'Hasta 12',
     realceLabel: 'cuotas',
-    nota: 'El costo de la financiación lo define tu banco.'
+    nota: 'El costo de la financiación lo define tu banco.',
+    visual: 'tarjeta'
   },
   {
     titulo: 'Abr\u00ed tu tienda gratis',
@@ -36,7 +38,9 @@ const BANNERS_BASE: BannerDef[] = [
     cta: 'Crear mi tienda',
     enlace: '/registro?rol=vendedor',
     gradiente: 'from-orange-500 via-red-500 to-pink-600',
-    emoji: '\u{1F3EA}'
+    emoji: '\u{1F3EA}',
+    realce: 'GRATIS',
+    nota: 'Sin costo de alta ni mensualidad.'
   },
   {
     titulo: 'Compra protegida con Mercado Pago',
@@ -44,7 +48,10 @@ const BANNERS_BASE: BannerDef[] = [
     cta: '\u00bfC\u00f3mo funciona?',
     enlace: '/devoluciones',
     gradiente: 'from-fuchsia-600 via-purple-600 to-indigo-700',
-    emoji: '\u{1F6E1}\uFE0F'
+    emoji: '\u{1F6E1}\uFE0F',
+    realce: '\u2713',
+    realceLabel: 'protegida',
+    nota: 'Seg\u00FAn las condiciones de Compra Protegida de Mercado Pago.'
   }
 ]
 
@@ -158,7 +165,7 @@ export default function BannersRotativos() {
                     className="w-40 h-40 lg:w-48 lg:h-48 object-cover rounded-2xl border-4 border-white/20 shadow-2xl group-hover:scale-105 group-hover:border-white/40 transition-all duration-300"
                   />
                 </Link>
-              ) : banner.realce ? (
+              ) : banner.visual === 'tarjeta' ? (
                 <div className="relative animate-float">
                   {/* Tarjeta glassy inclinada */}
                   <div className="w-56 h-36 rounded-2xl bg-gradient-to-br from-white/30 to-white/5 backdrop-blur-md border border-white/30 shadow-2xl -rotate-[8deg] flex flex-col justify-between p-4">
@@ -170,6 +177,17 @@ export default function BannersRotativos() {
                   </div>
                   {/* Badge de cuotas */}
                   <div className="absolute -bottom-5 -right-5 bg-white text-ml-ink rounded-2xl shadow-xl px-4 py-2.5 rotate-[6deg] text-center">
+                    <span className="block text-2xl lg:text-3xl font-extrabold leading-none">{banner.realce}</span>
+                    {banner.realceLabel && <span className="block text-[11px] font-bold text-ml-muted mt-0.5">{banner.realceLabel}</span>}
+                  </div>
+                </div>
+              ) : banner.realce ? (
+                <div className="relative animate-float">
+                  <div className="w-36 h-36 lg:w-44 lg:h-44 rounded-3xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                    <span className="text-7xl lg:text-8xl drop-shadow-lg">{banner.emoji}</span>
+                  </div>
+                  {/* Badge que pisa la esquina (mismo gancho que el de cuotas) */}
+                  <div className="absolute -bottom-4 -right-4 bg-white text-ml-ink rounded-2xl shadow-xl px-4 py-2.5 rotate-[6deg] text-center min-w-[64px]">
                     <span className="block text-2xl lg:text-3xl font-extrabold leading-none">{banner.realce}</span>
                     {banner.realceLabel && <span className="block text-[11px] font-bold text-ml-muted mt-0.5">{banner.realceLabel}</span>}
                   </div>

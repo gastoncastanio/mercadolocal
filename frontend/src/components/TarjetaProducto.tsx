@@ -97,9 +97,10 @@ export default function TarjetaProducto({ producto }: Props) {
           )}
         </div>
 
-        {/* Cuotas */}
+        {/* Cuotas (sin afirmar "sin interés": el costo real lo define el banco,
+            coherente con el detalle del producto, el banner y el Centro de Ayuda) */}
         <p className="text-[12px] text-[#0a7d34] font-semibold mt-0.5">
-          en 6x ${cuota6.toLocaleString('es-AR')} sin inter&eacute;s
+          en 6x ${cuota6.toLocaleString('es-AR')}
         </p>
 
         {/* Envío gratis */}

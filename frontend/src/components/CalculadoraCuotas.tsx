@@ -43,7 +43,7 @@ export default function CalculadoraCuotas({ precio, compacto = false }: Props) {
   const opciones = [1, 3, 6, 9, 12, 18]
 
   const resultado = useMemo(() => calcularCuota(precio, cuotasSel), [precio, cuotasSel])
-  const cuota3SinInteres = useMemo(() => calcularCuota(precio, 3), [precio])
+  const cuotaTres = useMemo(() => calcularCuota(precio, 3), [precio])
 
   if (compacto) {
     // Vista compacta para tarjeta de producto: muestra solo la mejor opci\u00f3n
@@ -63,7 +63,7 @@ export default function CalculadoraCuotas({ precio, compacto = false }: Props) {
       </div>
 
       <p className="text-xs text-ml-soft mb-3">
-        En 3 cuotas de <strong className="text-green-700">${formatMoney(cuota3SinInteres.valorCuota)}</strong>
+        En 3 cuotas de <strong className="text-green-700">${formatMoney(cuotaTres.valorCuota)}</strong>
       </p>
 
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 mb-3">
