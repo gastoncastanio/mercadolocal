@@ -7,9 +7,13 @@ const notificacionSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  // Categoría libre (no enum): cada vertical usa la suya (venta, compra, pago,
+  // remis, envio, cotizacion, comisionista, servicio, trabajo, disputa, resena,
+  // mensaje, sistema...). El frontend mapea las conocidas a un ícono y cae a uno
+  // por defecto si no la reconoce. Un enum rígido hacía que la persistencia
+  // fallara en silencio cuando un servicio nuevo usaba un tipo no listado.
   tipo: {
     type: String,
-    enum: ['venta', 'compra', 'mensaje', 'pregunta', 'resena', 'disputa', 'sistema', 'pago'],
     default: 'sistema'
   },
   titulo: {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import api from '../services/api'
 import { useSocket } from '../hooks/useSocket'
 
@@ -43,6 +44,7 @@ function GrupoMenu({ id, titulo, abierto, onToggle, children }: {
 
 export default function Navbar() {
   const { usuario, estaLogueado, esVendedor, esAdmin, logout } = useAuth()
+  const toast = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const [busqueda, setBusqueda] = useState('')
@@ -75,20 +77,27 @@ export default function Navbar() {
   // Escuchar notificaciones via WebSocket
   useEffect(() => {
     if (!estaLogueado || !usuario?._id) return
-    const handler = () => {
+    // Notificación con contenido: subimos el badge Y mostramos un toast con el
+    // título/mensaje, así el usuario ve DE QUÉ es al instante (no solo un número).
+    const handlerNotif = (data?: { titulo?: string; mensaje?: string }) => {
       setNotifsNoLeidas(prev => prev + 1)
+      if (data?.titulo) {
+        toast.info(data.mensaje ? `${data.titulo} — ${data.mensaje}` : data.titulo)
+      }
     }
-    on('notificacion', handler)
-    on('pago:aprobado', handler)
-    on('venta:confirmada', handler)
-    on('orden:estado', handler)
+    // Señales sin contenido (pago/venta/estado): solo actualizan el badge.
+    const handlerBadge = () => setNotifsNoLeidas(prev => prev + 1)
+    on('notificacion', handlerNotif)
+    on('pago:aprobado', handlerBadge)
+    on('venta:confirmada', handlerBadge)
+    on('orden:estado', handlerBadge)
     return () => {
       off('notificacion')
       off('pago:aprobado')
       off('venta:confirmada')
       off('orden:estado')
     }
-  }, [estaLogueado, usuario?._id, on, off])
+  }, [estaLogueado, usuario?._id, on, off, toast])
 
   // Cerrar menú mobile al cambiar de ruta
   useEffect(() => { setMenuMobile(false) }, [location.pathname])

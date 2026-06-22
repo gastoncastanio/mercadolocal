@@ -4,6 +4,7 @@ import Producto from '../models/Producto.js'
 import Tienda from '../models/Tienda.js'
 import Notificacion from '../models/Notificacion.js'
 import * as configService from './configService.js'
+import { emitNotificacion } from './socketService.js'
 
 // Crear orden desde carrito
 export async function crearOrden(usuarioId, datosEntrega) {
@@ -189,18 +190,15 @@ export async function actualizarEstadoOrden(ordenId, nuevoEstado, tiendaId, dato
     completada: 'Tu pedido fue completado. \u00a1Gracias por tu compra!',
     cancelada: 'Tu pedido fue cancelado. Si ten\u00e9s dudas, contact\u00e1 soporte.'
   }
-  try {
-    if (mensajesEstado[nuevoEstado]) {
-      await new Notificacion({
-        usuarioId: orden.compradorId,
-        tipo: 'compra',
-        titulo: `Pedido ${nuevoEstado}`,
-        mensaje: mensajesEstado[nuevoEstado],
-        enlace: '/mis-ordenes'
-      }).save()
-    }
-  } catch (e) {
-    console.error('Error notificaci\u00f3n estado:', e.message)
+  // emitNotificacion persiste + manda push al celular + tiempo real (antes solo
+  // se guardaba en DB, as\u00ed que el comprador no se enteraba hasta abrir la app).
+  if (mensajesEstado[nuevoEstado]) {
+    emitNotificacion(orden.compradorId.toString(), {
+      tipo: 'compra',
+      titulo: `Pedido ${nuevoEstado}`,
+      mensaje: mensajesEstado[nuevoEstado],
+      enlace: '/mis-ordenes'
+    })
   }
 
   return orden

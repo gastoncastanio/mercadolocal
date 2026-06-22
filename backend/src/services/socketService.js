@@ -1,6 +1,7 @@
 import { Server } from 'socket.io'
 import jwt from 'jsonwebtoken'
 import { enviarPush } from './pushService.js'
+import Notificacion from '../models/Notificacion.js'
 
 let io = null
 
@@ -91,6 +92,25 @@ export function getIO() {
  * Notifica a un usuario específico que tiene una nueva notificación
  */
 export function emitNotificacion(usuarioId, notificacion) {
+  // 0. PERSISTIR en el centro de notificaciones de la app.
+  //    Esto es lo que hace que la notificación aparezca en /notificaciones y
+  //    cuente en el badge de forma consistente. Antes solo se emitía por socket
+  //    (badge en vivo que se perdía al refrescar) y push (llegaba al celular),
+  //    pero NO quedaba registrada: el centro de notificaciones estaba vacío.
+    //    Solo persistimos si:
+    //    - trae título (los emits sin título son señales auxiliares), y
+    //    - NO es ya un documento guardado (los que pasan `new Notificacion().save()`
+    //      tienen `_id`: esos ya están persistidos, no los dupliquemos).
+  if (notificacion.titulo && !notificacion._id) {
+    Notificacion.create({
+      usuarioId,
+      tipo: notificacion.tipo || 'sistema',
+      titulo: notificacion.titulo,
+      mensaje: notificacion.mensaje || '',
+      enlace: notificacion.enlace || ''
+    }).catch((e) => console.error('No se pudo persistir notificación:', e.message))
+  }
+
   // 1. Tiempo real para pestañas abiertas (WebSocket)
   if (io) {
     io.to(`user:${usuarioId}`).emit('notificacion', {

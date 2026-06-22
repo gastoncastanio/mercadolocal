@@ -14,14 +14,32 @@ interface Notificacion {
 }
 
 const ICONOS: Record<string, string> = {
-  venta: '\u{1F4B0}',
-  compra: '\u{1F4E6}',
-  mensaje: '\u{1F4AC}',
-  pregunta: '\u2753',
-  resena: '\u2B50',
-  disputa: '\u26A0\uFE0F',
-  sistema: '\u{1F514}',
-  pago: '\u{1F4B3}'
+  venta: '\u{1F4B0}',          // \uD83D\uDCB0
+  venta_split: '\u{1F4B0}',
+  venta_sin_split: '\u{1F4B0}',
+  compra: '\u{1F4E6}',         // \uD83D\uDCE6
+  mensaje: '\u{1F4AC}',        // \uD83D\uDCAC
+  pregunta: '\u2753',          // \u2753
+  resena: '\u2B50',            // \u2B50
+  disputa: '\u26A0\uFE0F',     // \u26A0\uFE0F
+  sistema: '\u{1F514}',        // \uD83D\uDD14
+  pago: '\u{1F4B3}',           // \uD83D\uDCB3
+  pago_aprobado: '\u2705',     // \u2705
+  reembolso: '\u{1F4B8}',      // \uD83D\uDCB8
+  remis: '\u{1F695}',          // \uD83D\uDE95
+  envio: '\u{1F4E6}',          // \uD83D\uDCE6
+  cotizacion: '\u{1F4CB}',     // \uD83D\uDCCB
+  comisionista: '\u{1F69A}',   // \uD83D\uDE9A
+  incidente: '\u26A0\uFE0F',   // \u26A0\uFE0F
+  servicio: '\u{1F527}',       // \uD83D\uDD27
+  suscripcion: '\u2B50',       // \u2B50
+  trabajo: '\u{1F4BC}',        // \uD83D\uDCBC
+  trabajo_oferta: '\u{1F4BC}',
+  trabajo_asignado: '\u{1F4BC}',
+  trabajo_completado: '\u2705',
+  pauta: '\u{1F4E2}',          // \uD83D\uDCE2
+  oferta_compartida_propuesta: '\u{1F91D}', // \uD83E\uDD1D
+  incidencia_stock: '\u26A0\uFE0F'
 }
 
 export default function Notificaciones() {
