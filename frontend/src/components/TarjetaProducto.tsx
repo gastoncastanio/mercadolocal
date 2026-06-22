@@ -119,6 +119,11 @@ export default function TarjetaProducto({ producto }: Props) {
           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ml-line2">
             <span className="shrink-0 w-6 h-6 rounded-full ml-grad text-white text-[11px] font-bold flex items-center justify-center">{inicial}</span>
             {tienda.nombre && <span className="text-[12.5px] text-ml-soft font-semibold truncate">{tienda.nombre}</span>}
+            {tienda.oficial && (
+              <span title="Tienda Oficial verificada" className="shrink-0 inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white">
+                <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z" /></svg>
+              </span>
+            )}
             {tienda.ciudad && (
               <span className="ml-auto shrink-0 flex items-center gap-0.5 text-[11.5px] text-ml-muted whitespace-nowrap">
                 <svg className="w-3 h-3 text-ml-violet" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

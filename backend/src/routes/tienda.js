@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
-import { crearTienda, obtenerTienda, obtenerMiTienda, actualizarTienda, listarTiendas } from '../services/tiendaService.js'
+import { crearTienda, obtenerTienda, obtenerMiTienda, actualizarTienda, listarTiendas, listarTiendasOficiales } from '../services/tiendaService.js'
 import { emitNuevaTienda, emitTiendaActualizada } from '../services/socketService.js'
 
 const router = Router()
@@ -15,10 +15,19 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/tienda/oficiales - Vidriera de marcas (tiendas oficiales verificadas).
+// IMPORTANTE: definida ANTES de /:id para que no la capture como un id.
+router.get('/oficiales', async (req, res) => {
+  try {
+    res.json(await listarTiendasOficiales())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // GET /api/tienda/mi-tienda - Mi tienda (comprador que tiene tienda)
 router.get('/mi-tienda', verificarToken, soloTieneVendedor, async (req, res) => {
-  try {
-    const tienda = await obtenerMiTienda(req.usuario.id)
+  try {    const tienda = await obtenerMiTienda(req.usuario.id)
     if (!tienda) {
       return res.status(404).json({ error: 'No tienes una tienda todavía' })
     }

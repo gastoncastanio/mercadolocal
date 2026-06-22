@@ -10,6 +10,7 @@ interface Usuario {
 interface Tienda {
   _id: string; nombre: string; ciudad: string; tipo: string; calificacion: number
   totalVentas: number; ganancias: number; activo: boolean; usuarioId: { nombre: string; email: string }
+  oficial?: boolean; marca?: string
 }
 interface Producto {
   _id: string; nombre: string; precio: number; stock: number; totalVentas: number
@@ -402,6 +403,23 @@ function SeccionVendedores() {
     api.get('/admin/vendedores').then(r => setTiendas(r.data)).catch(console.error).finally(() => setCargando(false))
   }, [])
 
+  // Marca/desmarca una tienda como Oficial (marca verificada que vende dentro de la app).
+  async function toggleOficial(t: Tienda) {
+    const activar = !t.oficial
+    let marca = t.marca || ''
+    if (activar) {
+      const input = prompt(`Marca que representa "${t.nombre}" (ej. Samsung). Vacío = su propio nombre:`, marca)
+      if (input === null) return
+      marca = input.trim()
+    }
+    try {
+      const r = await api.patch(`/admin/tiendas/${t._id}/oficial`, { oficial: activar, marca })
+      setTiendas(prev => prev.map(x => x._id === t._id ? { ...x, oficial: r.data.oficial, marca: r.data.marca } : x))
+    } catch (e: any) {
+      alert(e?.response?.data?.error || 'No se pudo actualizar la tienda')
+    }
+  }
+
   if (cargando) return <Cargando />
 
   return (
@@ -443,6 +461,19 @@ function SeccionVendedores() {
               {t.usuarioId && typeof t.usuarioId === 'object' && (
                 <p className="text-xs text-ml-muted mt-3">Dueño: {t.usuarioId.nombre} ({t.usuarioId.email})</p>
               )}
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-ml-line2">
+                <span className="text-xs">
+                  {t.oficial
+                    ? <span className="inline-flex items-center gap-1 text-blue-600 font-semibold">✓ Tienda Oficial{t.marca ? ` · ${t.marca}` : ''}</span>
+                    : <span className="text-ml-muted">Tienda estándar</span>}
+                </span>
+                <button
+                  onClick={() => toggleOficial(t)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-semibold border ${t.oficial ? 'border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100' : 'border-ml-line text-ml-soft hover:bg-gray-50'}`}
+                >
+                  {t.oficial ? 'Quitar oficial' : 'Marcar oficial'}
+                </button>
+              </div>
             </div>
           ))}
         </div>

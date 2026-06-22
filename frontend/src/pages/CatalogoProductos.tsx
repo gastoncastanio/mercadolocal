@@ -5,6 +5,7 @@ import api, { SOCKET_URL } from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import ParaVos from '../components/ParaVos'
+import VidrieraMarcas from '../components/VidrieraMarcas'
 import { trackBusqueda } from '../services/tracking'
 
 export default function CatalogoProductos() {
@@ -298,6 +299,9 @@ export default function CatalogoProductos() {
             </button>
           ))}
         </div>
+
+        {/* Vidriera de marcas oficiales (verificadas, venden dentro de la app) */}
+        <VidrieraMarcas />
 
         {/* Resultados count */}
         {!cargando && (

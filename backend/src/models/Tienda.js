@@ -57,6 +57,21 @@ const tiendaSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  // Tienda Oficial / Marca verificada: la plataforma la verificó como
+  // representante oficial de una marca de primera línea. Vende DENTRO de la app
+  // (con su split de MP), a diferencia de un afiliado que manda al usuario afuera.
+  oficial: {
+    type: Boolean,
+    default: false
+  },
+  marca: {
+    type: String,
+    default: ''
+  },
+  oficialDesde: {
+    type: Date,
+    default: null
+  },
   // Mercado Pago Marketplace - OAuth del vendedor
   mpAccessToken: {
     type: String,
@@ -107,6 +122,8 @@ const tiendaSchema = new mongoose.Schema({
 tiendaSchema.index({ activo: 1, ciudad: 1, calificacion: -1 })
 // Tiendas con MP vinculado (para listar las que pueden vender)
 tiendaSchema.index({ mpVinculado: 1, activo: 1 })
+// Vidriera de marcas: tiendas oficiales activas
+tiendaSchema.index({ oficial: 1, activo: 1 })
 // Búsqueda por nombre
 tiendaSchema.index({ nombre: 'text', descripcion: 'text' })
 

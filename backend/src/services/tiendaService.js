@@ -88,3 +88,23 @@ export async function actualizarTienda(usuarioId, datos) {
 export async function listarTiendas() {
   return await Tienda.find({ activo: true }).populate('usuarioId', 'nombre')
 }
+
+// Vidriera de marcas: tiendas oficiales (marca verificada) activas.
+export async function listarTiendasOficiales() {
+  return await Tienda.find({ activo: true, oficial: true })
+    .select('nombre marca logo ciudad calificacion oficial oficialDesde')
+    .sort({ oficialDesde: -1, calificacion: -1 })
+    .lean()
+}
+
+// Admin: marca/desmarca una tienda como Oficial (marca verificada).
+export async function marcarTiendaOficial(tiendaId, { oficial, marca }) {
+  const tienda = await Tienda.findById(tiendaId)
+  if (!tienda) throw new Error('Tienda no encontrada')
+  tienda.oficial = !!oficial
+  if (marca !== undefined) tienda.marca = String(marca || '').trim()
+  tienda.oficialDesde = tienda.oficial ? (tienda.oficialDesde || new Date()) : null
+  if (!tienda.oficial) tienda.marca = ''
+  await tienda.save()
+  return tienda
+}

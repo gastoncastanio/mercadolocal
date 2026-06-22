@@ -87,6 +87,12 @@ export default function TiendaPublica() {
             <div className="flex-1 text-center sm:text-left min-w-0">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                 <h1 className="text-2xl sm:text-3xl font-bold">{tienda.nombre}</h1>
+                {tienda.oficial && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-500 rounded-full text-xs font-bold self-center sm:self-auto" title="Marca verificada por MercadoLocal">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z" /></svg>
+                    Tienda Oficial
+                  </span>
+                )}
                 <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-sm rounded-full text-xs font-bold uppercase tracking-wide self-center sm:self-auto">
                   {nivel.desc}
                 </span>

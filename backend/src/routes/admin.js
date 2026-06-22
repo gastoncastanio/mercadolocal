@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { verificarToken, soloAdmin } from '../middleware/auth.js'
 import { todasLasOrdenes, estadisticasAdmin } from '../services/ordenService.js'
-import { listarTiendas } from '../services/tiendaService.js'
+import { listarTiendas, marcarTiendaOficial } from '../services/tiendaService.js'
 import * as configService from '../services/configService.js'
 import Producto from '../models/Producto.js'
 import Usuario from '../models/Usuario.js'
@@ -50,6 +50,19 @@ router.get('/vendedores', verificarToken, soloAdmin, async (req, res) => {
     res.json(tiendas)
   } catch (error) {
     res.status(500).json({ error: error.message })
+  }
+})
+
+// PATCH /api/admin/tiendas/:id/oficial - Marcar/desmarcar Tienda Oficial (marca verificada)
+router.patch('/tiendas/:id/oficial', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const tienda = await marcarTiendaOficial(req.params.id, {
+      oficial: req.body.oficial,
+      marca: req.body.marca
+    })
+    res.json({ _id: tienda._id, oficial: tienda.oficial, marca: tienda.marca, oficialDesde: tienda.oficialDesde })
+  } catch (error) {
+    res.status(400).json({ error: error.message })
   }
 })
 

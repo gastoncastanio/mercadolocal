@@ -33,6 +33,10 @@ export interface Tienda {
   // Estado de vinculación con Mercado Pago (requisito para vender)
   mpVinculado?: boolean
   mpVinculadoEn?: string
+  // Tienda Oficial / Marca verificada (vende dentro de la app)
+  oficial?: boolean
+  marca?: string
+  oficialDesde?: string
   createdAt?: string
 }
 
