@@ -36,6 +36,16 @@ interface PanelData {
     real: { disponible: number; aLiberar: number; total: number; etiqueta: string }
     informativo: { gmvTransaccionadoMes: number; gmvLiquidadoDirectoVendedor: number; etiqueta: string }
   }
+  conciliacionMP?: {
+    reconstruido: number
+    mpReal: number | null
+    fuente: 'api' | 'manual' | 'no_disponible'
+    fecha: string | null
+    diferencia: number | null
+    cuadra: boolean | null
+    umbral: number
+    etiqueta: string
+  }
   porCobrar: {
     mpALiberar: number
     suscripcionesEnReintento: { cantidad: number; monto: number }
@@ -91,7 +101,7 @@ export default function PanelContador() {
   const [data, setData] = useState<PanelData | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-  const [modal, setModal] = useState<'gasto' | 'config' | null>(null)
+  const [modal, setModal] = useState<'gasto' | 'config' | 'conciliacion' | null>(null)
   const [setupMsg, setSetupMsg] = useState('')
   const [setupBusy, setSetupBusy] = useState(false)
 
@@ -347,6 +357,41 @@ export default function PanelContador() {
                   <p className="text-[11px] text-amber-600 mt-3 font-medium">{data.cashFlow.informativo.etiqueta}</p>
                 </div>
               </div>
+
+              {/* Conciliación: reconstrucción del mayor vs saldo REAL de Mercado Pago */}
+              {data.conciliacionMP && (
+                <div className={`mt-5 rounded-xl border p-5 ${
+                  data.conciliacionMP.cuadra === true ? 'bg-green-50 border-green-200'
+                  : data.conciliacionMP.cuadra === false ? 'bg-red-50 border-red-200'
+                  : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                    <p className="text-sm font-bold text-ml-ink flex items-center gap-2">
+                      🔁 Conciliación con Mercado Pago
+                      {data.conciliacionMP.fuente === 'api' && <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">en vivo (API)</span>}
+                      {data.conciliacionMP.fuente === 'manual' && <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">carga manual</span>}
+                    </p>
+                    <button onClick={() => setModal('conciliacion')} className="text-xs px-3 py-1.5 bg-white border border-ml-line rounded-lg hover:bg-gray-50">
+                      {data.conciliacionMP.mpReal == null ? 'Cargar saldo MP' : 'Actualizar saldo MP'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <Dato label="Reconstruido (libro mayor)" valor={pesos(data.conciliacionMP.reconstruido)} />
+                    <Dato label="Saldo real en MP" valor={data.conciliacionMP.mpReal == null ? '—' : pesos(data.conciliacionMP.mpReal)} />
+                    <Dato
+                      label="Diferencia"
+                      valor={data.conciliacionMP.diferencia == null ? '—' : pesos(data.conciliacionMP.diferencia)}
+                      color={data.conciliacionMP.cuadra === true ? 'text-green-600' : data.conciliacionMP.cuadra === false ? 'text-red-600' : undefined}
+                    />
+                  </div>
+                  <p className={`text-[11px] mt-3 ${data.conciliacionMP.cuadra === false ? 'text-red-600 font-medium' : 'text-ml-muted'}`}>
+                    {data.conciliacionMP.cuadra === true && '✅ El libro mayor coincide con tu saldo de Mercado Pago.'}
+                    {data.conciliacionMP.cuadra === false && `🚨 Diferencia de ${pesos(Math.abs(data.conciliacionMP.diferencia || 0))} entre el mayor y MP. Revisá movimientos sin registrar.`}
+                    {data.conciliacionMP.cuadra === null && data.conciliacionMP.etiqueta}
+                    {data.conciliacionMP.fecha && ` · Saldo MP al ${fechaCorta(data.conciliacionMP.fecha)}`}
+                  </p>
+                </div>
+              )}
             </Seccion>
 
             {/* ===== SECCIONES 2 + 3: Margen y Rentabilidad ===== */}
@@ -464,7 +509,62 @@ export default function PanelContador() {
       {modal === 'config' && data && (
         <ModalConfig configActual={data.config} onClose={() => setModal(null)} onGuardado={() => { setModal(null); cargar() }} />
       )}
+      {modal === 'conciliacion' && data && (
+        <ModalConciliacion
+          actual={data.conciliacionMP?.mpReal ?? null}
+          onClose={() => setModal(null)}
+          onGuardado={() => { setModal(null); cargar() }}
+        />
+      )}
     </div>
+  )
+}
+
+// ===================== MODAL: Conciliar saldo de Mercado Pago =====================
+function ModalConciliacion({ actual, onClose, onGuardado }: { actual: number | null; onClose: () => void; onGuardado: () => void }) {
+  const [saldo, setSaldo] = useState(actual != null ? String(actual) : '')
+  const [guardando, setGuardando] = useState(false)
+  const [err, setErr] = useState('')
+
+  async function guardar() {
+    const monto = parseFloat(saldo)
+    if (!isFinite(monto) || monto < 0) { setErr('Ingresá un saldo válido'); return }
+    setGuardando(true)
+    setErr('')
+    try {
+      await api.post('/contador/conciliacion-mp', { saldoMP: monto })
+      onGuardado()
+    } catch (e: any) {
+      setErr(e?.response?.data?.error || 'No se pudo guardar el saldo')
+      setGuardando(false)
+    }
+  }
+
+  return (
+    <Overlay onClose={onClose} titulo="🔁 Conciliar con Mercado Pago">
+      <div className="space-y-3">
+        <p className="text-sm text-ml-soft">
+          Entrá a tu cuenta de Mercado Pago, mirá el <strong>dinero disponible</strong> y cargalo acá.
+          El panel lo compara con lo reconstruido del libro mayor y te avisa si hay diferencia.
+        </p>
+        <Campo label="Saldo disponible real en Mercado Pago ($)">
+          <input
+            type="number"
+            value={saldo}
+            onChange={e => setSaldo(e.target.value)}
+            placeholder="Ej: 1250000"
+            className="w-full border border-ml-line rounded-lg px-3 py-2 text-sm bg-white"
+          />
+        </Campo>
+        {err && <p className="text-sm text-red-600">{err}</p>}
+        <div className="flex gap-2 justify-end pt-2">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-ml-soft">Cancelar</button>
+          <button onClick={guardar} disabled={guardando} className="px-4 py-2 text-sm bg-ml-ink text-white rounded-lg disabled:opacity-50">
+            {guardando ? 'Guardando…' : 'Guardar y conciliar'}
+          </button>
+        </div>
+      </div>
+    </Overlay>
   )
 }
 

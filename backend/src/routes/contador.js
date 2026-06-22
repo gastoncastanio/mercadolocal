@@ -372,4 +372,23 @@ router.put('/config', verificarToken, soloAdmin, async (req, res) => {
   }
 })
 
+/** GET /api/contador/conciliacion-mp — reconstrucción del mayor vs saldo real de MP */
+router.get('/conciliacion-mp', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    res.json(await reportesService.seccionConciliacionMP())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+/** POST /api/contador/conciliacion-mp — cargar a mano el saldo real de MP */
+router.post('/conciliacion-mp', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    await reportesService.guardarSaldoMPManual(req.body.saldoMP)
+    res.json(await reportesService.seccionConciliacionMP())
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 export default router

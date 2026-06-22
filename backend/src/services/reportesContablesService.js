@@ -27,7 +27,9 @@ const CONFIG_DEFAULT = {
   regimenFiscal: 'Monotributo',    // 'Monotributo' | 'Responsable Inscripto'
   alicuotaIVA: 21,                 // % IVA si RI
   costoProcesamientoMP: 2.9,       // % aprox que retiene MP (para margen bruto)
-  metaGMVMensual: 21000000         // meta de break-even editable
+  metaGMVMensual: 21000000,        // meta de break-even editable
+  saldoMPManual: null,             // saldo real de MP cargado a mano (conciliación)
+  saldoMPManualFecha: null         // fecha de esa carga manual (ISO)
 }
 
 /**
@@ -51,7 +53,9 @@ export async function obtenerConfigContable() {
  * Guarda la config contable (admin).
  */
 export async function guardarConfigContable(datos = {}) {
-  const limpio = { ...CONFIG_DEFAULT }
+  // Partimos de lo YA guardado (no de los defaults) para que un guardado parcial
+  // —ej. solo el saldo de MP— no pise el resto de la config.
+  const limpio = await obtenerConfigContable()
   for (const k of Object.keys(CONFIG_DEFAULT)) {
     if (datos[k] !== undefined) limpio[k] = datos[k]
   }
@@ -354,6 +358,96 @@ export async function seccionCashFlow() {
   }
 }
 
+// ===== CONCILIACIÓN CON MERCADO PAGO (Fase 5: API real vs reconstrucción) =====
+
+/**
+ * Intenta traer el saldo disponible REAL de la cuenta de Mercado Pago de la
+ * plataforma vía API. Es best-effort: la API de saldo de MP no está garantizada
+ * para toda cuenta, así que si falla devolvemos null y caemos al saldo manual.
+ */
+export async function obtenerSaldoMPReal() {
+  const token = process.env.MP_ACCESS_TOKEN || process.env.MERCADOPAGO_ACCESS_TOKEN || ''
+  if (!token || typeof fetch !== 'function') return null
+  const headers = { Authorization: `Bearer ${token}` }
+  try {
+    const meRes = await fetch('https://api.mercadopago.com/users/me', { headers })
+    if (!meRes.ok) return null
+    const me = await meRes.json()
+    if (!me?.id) return null
+    const balRes = await fetch(`https://api.mercadopago.com/users/${me.id}/mercadopago_account/balance`, { headers })
+    if (!balRes.ok) return null
+    const bal = await balRes.json()
+    const disponible = Number(bal?.available_balance ?? bal?.total_amount)
+    if (!Number.isFinite(disponible)) return null
+    return { disponible: Math.round(disponible * 100) / 100, fecha: new Date().toISOString() }
+  } catch {
+    return null
+  }
+}
+
+/** Guarda el saldo real de MP cargado a mano por el contador (conciliación). */
+export async function guardarSaldoMPManual(saldoMP) {
+  const monto = Number(saldoMP)
+  if (!Number.isFinite(monto) || monto < 0) throw new Error('Saldo de Mercado Pago inválido')
+  return await guardarConfigContable({
+    saldoMPManual: Math.round(monto * 100) / 100,
+    saldoMPManualFecha: new Date().toISOString()
+  })
+}
+
+/**
+ * Concilia el "disponible" reconstruido del mayor (caja MP + banco) contra el
+ * saldo real de Mercado Pago (API si está disponible; si no, el cargado a mano).
+ * Devuelve la diferencia y si cuadra dentro de una tolerancia por redondeos.
+ */
+export async function seccionConciliacionMP() {
+  const ahora = new Date()
+
+  // Reconstruido del mayor: caja MP disponible (1.1.1) + caja banco (1.1.3).
+  let reconstruido = 0
+  for (const codigo of ['1.1.1', '1.1.3']) {
+    try { reconstruido += (await contabilidadService.balanceCuenta(codigo, ahora)).saldo } catch { /* 0 */ }
+  }
+  reconstruido = Math.round(reconstruido * 100) / 100
+
+  // Saldo real de MP: primero API, fallback al manual de la config.
+  let mpReal = null
+  let fuente = 'no_disponible'
+  let fecha = null
+  const api = await obtenerSaldoMPReal()
+  if (api) {
+    mpReal = api.disponible
+    fuente = 'api'
+    fecha = api.fecha
+  } else {
+    const cfg = await obtenerConfigContable()
+    if (cfg.saldoMPManual != null) {
+      mpReal = Number(cfg.saldoMPManual)
+      fuente = 'manual'
+      fecha = cfg.saldoMPManualFecha || null
+    }
+  }
+
+  const umbral = 1 // $1 de tolerancia por redondeos
+  const diferencia = mpReal != null ? Math.round((mpReal - reconstruido) * 100) / 100 : null
+  const cuadra = diferencia != null ? Math.abs(diferencia) <= umbral : null
+
+  return {
+    reconstruido,
+    mpReal,
+    fuente,          // 'api' | 'manual' | 'no_disponible'
+    fecha,
+    diferencia,      // mpReal - reconstruido (null si no hay dato)
+    cuadra,          // true/false/null
+    umbral,
+    etiqueta: fuente === 'api'
+      ? 'Saldo traído en vivo desde Mercado Pago.'
+      : fuente === 'manual'
+        ? 'Saldo cargado a mano (no se pudo traer por API). Actualizalo desde tu cuenta de Mercado Pago.'
+        : 'Todavía no hay saldo real para conciliar. Cargá el disponible de tu cuenta de Mercado Pago.'
+  }
+}
+
 // ===== SECCIÓN 6: POR COBRAR =====
 
 /**
@@ -455,7 +549,8 @@ export async function panelCompleto({ anio, mes } = {}) {
     porCobrar,
     porPagar,
     cuadre,
-    config
+    config,
+    conciliacionMP
   ] = await Promise.all([
     seccionFacturacion({ anio, mes }),
     seccionMargenBruto({ anio, mes }),
@@ -465,7 +560,8 @@ export async function panelCompleto({ anio, mes } = {}) {
     seccionPorCobrar(),
     seccionPorPagar({ anio, mes }),
     contabilidadService.cuadre(),
-    obtenerConfigContable()
+    obtenerConfigContable(),
+    seccionConciliacionMP()
   ])
 
   return {
@@ -478,7 +574,8 @@ export async function panelCompleto({ anio, mes } = {}) {
     porCobrar,
     porPagar,
     cuadre,
-    config
+    config,
+    conciliacionMP
   }
 }
 
@@ -490,6 +587,9 @@ export default {
   seccionRentabilidad,
   seccionBreakEven,
   seccionCashFlow,
+  seccionConciliacionMP,
+  obtenerSaldoMPReal,
+  guardarSaldoMPManual,
   seccionPorCobrar,
   seccionPorPagar,
   panelCompleto
