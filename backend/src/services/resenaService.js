@@ -1,6 +1,7 @@
 import Resena from '../models/Resena.js'
 import Orden from '../models/Orden.js'
 import Producto from '../models/Producto.js'
+import { emitNotificacion } from './socketService.js'
 
 // Crear resena
 export async function crearResena(compradorId, { productoId, ordenId, calificacion, comentario }) {
@@ -38,6 +39,24 @@ export async function crearResena(compradorId, { productoId, ordenId, calificaci
   // Actualizar calificacion promedio del producto
   await calificacionPromedio(productoId)
 
+  // Avisar al vendedor que recibió una reseña (las malas requieren respuesta
+  // rápida para cuidar la reputación; antes se enteraba solo si entraba al perfil).
+  try {
+    const producto = await Producto.findById(productoId).populate('tiendaId', 'usuarioId nombre')
+    const vendedorId = producto?.tiendaId?.usuarioId
+    if (vendedorId) {
+      const estrellas = '★'.repeat(calificacion) + '☆'.repeat(5 - calificacion)
+      emitNotificacion(vendedorId.toString(), {
+        tipo: 'resena',
+        titulo: `Nueva reseña ${estrellas} en "${producto.nombre}"`,
+        mensaje: (comentario || '').slice(0, 120) || `Recibiste una calificación de ${calificacion}/5.`,
+        enlace: `/producto/${productoId}`
+      })
+    }
+  } catch (e) {
+    console.error('Error notificando reseña al vendedor:', e.message)
+  }
+
   return resena
 }
 
@@ -62,6 +81,14 @@ export async function responderResena(resenaId, vendedorId, respuesta) {
 
   resena.respuestaVendedor = respuesta
   await resena.save()
+
+  // Avisar al comprador que el vendedor respondió su reseña.
+  emitNotificacion(resena.compradorId.toString(), {
+    tipo: 'resena',
+    titulo: 'El vendedor respondió tu reseña',
+    mensaje: (respuesta || '').slice(0, 120),
+    enlace: `/producto/${resena.productoId}`
+  })
 
   return resena
 }

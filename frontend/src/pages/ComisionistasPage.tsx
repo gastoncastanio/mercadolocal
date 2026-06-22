@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { LOCALIDADES } from '../constants/localidades'
 
 interface Viaje {
   _id: string
@@ -74,20 +75,22 @@ export default function ComisionistasPage() {
             onSubmit={(e) => { e.preventDefault(); cargar() }}
             className="grid grid-cols-1 md:grid-cols-4 gap-3"
           >
-            <input
-              type="text"
-              placeholder="Origen (ej: Neuquén)"
+            <select
               value={origen}
               onChange={(e) => setOrigen(e.target.value)}
-              className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-            />
-            <input
-              type="text"
-              placeholder="Destino (ej: Bariloche)"
+              className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet bg-white"
+            >
+              <option value="">Origen (todas)</option>
+              {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <select
               value={destino}
               onChange={(e) => setDestino(e.target.value)}
-              className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-            />
+              className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet bg-white"
+            >
+              <option value="">Destino (todas)</option>
+              {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
             <input
               type="date"
               value={fecha}

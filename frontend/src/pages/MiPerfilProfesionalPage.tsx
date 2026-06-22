@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import { subirImagenOptimizada } from '../utils/imageUpload'
+import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 
 interface Perfil {
   _id: string
@@ -44,7 +45,6 @@ export default function MiPerfilProfesionalPage() {
     logo: ''
   })
   const [habilidadInput, setHabilidadInput] = useState('')
-  const [zonaInput, setZonaInput] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [subiendoFoto, setSubiendoFoto] = useState(false)
@@ -178,14 +178,6 @@ export default function MiPerfilProfesionalPage() {
       setFormData(prev => ({ ...prev, habilidades: [...prev.habilidades, h] }))
     }
     setHabilidadInput('')
-  }
-
-  function agregarZona() {
-    const z = zonaInput.trim()
-    if (z && !formData.zonasCobertura.includes(z)) {
-      setFormData(prev => ({ ...prev, zonasCobertura: [...prev.zonasCobertura, z] }))
-    }
-    setZonaInput('')
   }
 
   async function suscribirse() {
@@ -547,38 +539,39 @@ export default function MiPerfilProfesionalPage() {
             {/* Localidad */}
             <div>
               <label className="block text-sm font-semibold text-ml-ink mb-2">Localidad *</label>
-              <input
-                type="text"
+              <select
                 value={formData.localidad}
                 onChange={(e) => setFormData({ ...formData, localidad: e.target.value })}
-                placeholder="Ej: La Plata"
-                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-              />
+                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet bg-white"
+              >
+                <option value="">Elegí tu localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
             </div>
 
             {/* Zonas de cobertura */}
             <div>
               <label className="block text-sm font-semibold text-ml-ink mb-2">Zonas de cobertura</label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={zonaInput}
-                  onChange={(e) => setZonaInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarZona() } }}
-                  placeholder="Ej: Zona norte, Centro..."
-                  className="flex-1 px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-                />
-                <button type="button" onClick={agregarZona} className="px-4 py-2 border border-ml-violet text-ml-violet rounded-lg font-semibold hover:bg-violet-50">
-                  Agregar
-                </button>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {formData.zonasCobertura.map(z => (
-                  <span key={z} className="bg-ml-bg border border-ml-line px-3 py-1 rounded-full text-sm flex items-center gap-2">
-                    📍 {z}
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, zonasCobertura: prev.zonasCobertura.filter(x => x !== z) }))} className="text-ml-muted hover:text-ml-ink">✕</button>
-                  </span>
-                ))}
+              <p className="text-xs text-ml-muted mb-2">{COBERTURA_TEXTO}</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {LOCALIDADES.map((loc) => {
+                  const activa = formData.zonasCobertura.includes(loc)
+                  return (
+                    <button
+                      type="button"
+                      key={loc}
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        zonasCobertura: activa
+                          ? prev.zonasCobertura.filter(z => z !== loc)
+                          : [...prev.zonasCobertura, loc]
+                      }))}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${activa ? 'bg-ml-violet text-white border-ml-violet' : 'bg-white text-ml-ink border-ml-line hover:border-ml-violet'}`}
+                    >
+                      {activa ? '✓ ' : ''}{loc}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

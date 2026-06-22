@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { obtenerErrorDNI } from '../utils/dniValidator'
+import { LOCALIDADES } from '../constants/localidades'
 
 export default function Registro() {
   const navigate = useNavigate()
@@ -259,14 +260,15 @@ export default function Registro() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-ml-slate mb-1">Ciudad</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-semibold text-ml-slate mb-1">Localidad</label>
+                <select
                   value={tiendaForm.ciudad}
                   onChange={(e) => setTiendaForm({ ...tiendaForm, ciudad: e.target.value })}
-                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none"
-                  placeholder="Ej: Buenos Aires"
-                />
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/25 focus:border-ml-purple/40 outline-none bg-white"
+                >
+                  <option value="">Elegí tu localidad</option>
+                  {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
               </div>
 
               <div>

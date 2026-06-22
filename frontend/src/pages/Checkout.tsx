@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import CalculadorCostos from '../components/CalculadorCostos'
+import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 
 export default function Checkout() {
   const { usuario } = useAuth()
@@ -125,10 +126,13 @@ export default function Checkout() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ml-ink mb-1">Ciudad de entrega</label>
-                <input type="text" value={ciudad} onChange={e => setCiudad(e.target.value)}
-                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none" placeholder="Ej: Neuquén" />
-                <p className="text-xs text-ml-muted mt-1">La usamos para sugerirte comisionistas que llegan a tu zona.</p>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Localidad de entrega</label>
+                <select value={ciudad} onChange={e => setCiudad(e.target.value)}
+                  className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none bg-white">
+                  <option value="">Elegí tu localidad</option>
+                  {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+                </select>
+                <p className="text-xs text-ml-muted mt-1">{COBERTURA_TEXTO}</p>
               </div>
 
               <div>

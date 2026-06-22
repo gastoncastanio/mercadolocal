@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { LOCALIDADES } from '../constants/localidades'
 
 export default function SolicitudServicioPage() {
   const { profesionalId } = useParams<{ profesionalId: string }>()
@@ -94,15 +95,16 @@ export default function SolicitudServicioPage() {
             {/* Zona */}
             <div>
               <label className="block text-sm font-semibold text-ml-ink mb-2">
-                Zona o localidad
+                Localidad
               </label>
-              <input
-                type="text"
+              <select
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
-                placeholder="Ej: Centro, Zona norte, Casco"
-                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-              />
+                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet bg-white"
+              >
+                <option value="">Elegí una localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
             </div>
 
             {/* Error */}

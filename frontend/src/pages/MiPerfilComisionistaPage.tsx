@@ -3,7 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { subirImagenOptimizada } from '../utils/imageUpload'
 import DeslindeComisionista from '../components/DeslindeComisionista'
-import BuscadorLugar, { LugarSeleccionado } from '../components/BuscadorLugar'
+import SelectorLocalidad, { LugarSeleccionado } from '../components/SelectorLocalidad'
+import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 import MapaRumbo from '../components/MapaRumbo'
 
 interface Perfil {
@@ -464,8 +465,29 @@ export default function MiPerfilComisionistaPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-ml-ink mb-2">Zonas habituales (separadas por coma)</label>
-            <input value={pf.zonas} onChange={(e) => setPf({ ...pf, zonas: e.target.value })} placeholder="Ej: Neuquén, Cipolletti, Bariloche" className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet" />
+            <label className="block text-sm font-semibold text-ml-ink mb-2">Localidades que cubrís</label>
+            <p className="text-xs text-ml-muted mb-2">{COBERTURA_TEXTO}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {LOCALIDADES.map((loc) => {
+                const seleccionadas = pf.zonas.split(',').map(z => z.trim()).filter(Boolean)
+                const activa = seleccionadas.includes(loc)
+                return (
+                  <button
+                    type="button"
+                    key={loc}
+                    onClick={() => {
+                      const nuevas = activa
+                        ? seleccionadas.filter(z => z !== loc)
+                        : [...seleccionadas, loc]
+                      setPf({ ...pf, zonas: nuevas.join(', ') })
+                    }}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${activa ? 'bg-ml-violet text-white border-ml-violet' : 'bg-white text-ml-ink border-ml-line hover:border-ml-violet'}`}
+                  >
+                    {activa ? '✓ ' : ''}{loc}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <button type="submit" disabled={accionando} className="w-full py-3 mlbtn ml-grad text-white rounded-lg font-bold disabled:opacity-60">
             {accionando ? 'Guardando...' : perfil ? 'Guardar cambios' : 'Crear perfil'}
@@ -692,18 +714,18 @@ export default function MiPerfilComisionistaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-ml-muted mb-1">Origen</label>
-                  <BuscadorLugar valor={origenViaje} onChange={setOrigenViaje} placeholder="Ciudad de origen" />
+                  <SelectorLocalidad valor={origenViaje} onChange={setOrigenViaje} placeholder="Localidad de origen" />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-ml-muted mb-1">Destino</label>
-                  <BuscadorLugar valor={destinoViaje} onChange={setDestinoViaje} placeholder="Ciudad de destino" />
+                  <SelectorLocalidad valor={destinoViaje} onChange={setDestinoViaje} placeholder="Localidad de destino" />
                 </div>
               </div>
 
               {/* Ciudades en el camino (paradas) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-ml-muted">Ciudades en el camino (opcional)</label>
+                  <label className="block text-xs font-semibold text-ml-muted">Localidades en el camino (opcional)</label>
                   <button type="button" onClick={() => setParadasViaje(prev => [...prev, { ...LUGAR_VACIO }])} className="text-xs font-semibold text-ml-violet hover:underline">+ Agregar parada</button>
                 </div>
                 {paradasViaje.length === 0 ? (
@@ -713,7 +735,7 @@ export default function MiPerfilComisionistaPage() {
                     {paradasViaje.map((p, i) => (
                       <div key={i} className="flex gap-2 items-center">
                         <div className="flex-1">
-                          <BuscadorLugar
+                          <SelectorLocalidad
                             valor={p}
                             onChange={(lugar) => setParadasViaje(prev => prev.map((x, j) => j === i ? lugar : x))}
                             placeholder={`Parada ${i + 1}`}

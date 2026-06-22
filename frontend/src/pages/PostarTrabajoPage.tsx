@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { LOCALIDADES } from '../constants/localidades'
 
 const rubros = ['sanitarios', 'electricista', 'gasista', 'carpintero', 'plomero', 'pintor', 'limpieza', 'otros']
 
@@ -109,13 +110,14 @@ export default function PostarTrabajoPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-ml-ink mb-2">Localidad *</label>
-              <input
-                type="text"
+              <select
                 value={form.localidad}
                 onChange={(e) => setForm({ ...form, localidad: e.target.value })}
-                placeholder="Ej: La Plata"
-                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet"
-              />
+                className="w-full px-4 py-2 border border-ml-line rounded-lg focus:outline-none focus:ring-2 focus:ring-ml-violet bg-white"
+              >
+                <option value="">Elegí una localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
             </div>
           </div>
 
