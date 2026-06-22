@@ -307,6 +307,30 @@ router.get('/:usuarioId/resenas', async (req, res) => {
   }
 })
 
+// ===== Subasta "comisionista en vivo" (broadcast competitivo) =====
+
+// GET /api/comisionistas/envios-vivo-abiertos - Envíos en vivo disponibles AHORA
+// para que el comisionista compita (los que aún no ofertó).
+router.get('/envios-vivo-abiertos', verificarToken, async (req, res) => {
+  try {
+    const lista = await comisionistaService.enviosEnVivoAbiertos(req.usuario.id)
+    res.json(lista)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/comisionistas/envio-vivo/:ordenId/ofertar - El comisionista oferta
+// Body: { monto, tiempoEstimado? }
+router.post('/envio-vivo/:ordenId/ofertar', verificarToken, async (req, res) => {
+  try {
+    const solicitud = await comisionistaService.ofertarEnvioEnVivo(req.usuario.id, req.params.ordenId, req.body)
+    res.status(201).json(solicitud)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 // ===== SolicitudCotizacion (comisionista en vivo desde el checkout) =====
 
 // POST /api/comisionistas/cotizacion - El comprador pide cotización a un comisionista

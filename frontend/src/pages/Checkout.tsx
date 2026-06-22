@@ -14,6 +14,9 @@ export default function Checkout() {
   const [nombre, setNombre] = useState(usuario?.nombre || '')
   const [telefono, setTelefono] = useState(usuario?.telefono || '')
   const [notas, setNotas] = useState('')
+  // Método de entrega: 'estandar' (lo coordina el vendedor) o 'comisionista_vivo'
+  // (al pagar, se hace un broadcast a los comisionistas para que compitan por el envío).
+  const [tipoEnvio, setTipoEnvio] = useState<'estandar' | 'comisionista_vivo'>('estandar')
   const [error, setError] = useState('')
   const [procesando, setProcesando] = useState(false)
 
@@ -60,7 +63,7 @@ export default function Checkout() {
     try {
       // 1. Crear la(s) orden(es). El backend separa el carrito por vendedor,
       //    así que puede devolver varias órdenes (una por vendedor).
-      const resOrden = await api.post('/ordenes/crear', { direccion, ciudad, nombre, telefono, notas })
+      const resOrden = await api.post('/ordenes/crear', { direccion, ciudad, nombre, telefono, notas, tipoEnvio })
       const ordenes: any[] = resOrden.data?.ordenes || []
 
       if (ordenes.length === 0) {
@@ -148,18 +151,26 @@ export default function Checkout() {
                   className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 focus:border-ml-purple/40 outline-none resize-none" placeholder="Instrucciones especiales..." />
               </div>
 
-              {/* Aviso sobre envío — el costo se coordina aparte */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="text-xs text-ml-ink leading-relaxed">
-                  <span className="font-semibold">📦 Sobre el envío:</span> el costo NO está incluido en este pago.
-                  Una vez confirmada la compra, vas a poder coordinar el envío o retiro directamente con el
-                  vendedor por WhatsApp (las formas de entrega están en cada producto).
-                </p>
-                <p className="text-xs text-ml-ink leading-relaxed mt-2">
-                  <span className="font-semibold">🚚 Comisionista en vivo:</span> después de pagar, en
-                  "Mis pedidos" vas a poder pedirle cotización a un comisionista que esté trabajando ahora
-                  para que te lleve la compra. El traslado se acuerda entre vos, el vendedor y el comisionista.
-                </p>
+              {/* Método de entrega */}
+              <div>
+                <label className="block text-sm font-medium text-ml-ink mb-2">¿Cómo querés recibirlo?</label>
+                <div className="grid gap-2">
+                  <button type="button" onClick={() => setTipoEnvio('estandar')}
+                    className={`text-left p-3 rounded-xl border transition-colors ${tipoEnvio === 'estandar' ? 'border-ml-purple bg-ml-bg ring-2 ring-ml-purple/30' : 'border-ml-line hover:border-ml-purple/40'}`}>
+                    <p className="text-sm font-semibold text-ml-ink">📦 Lo coordino con el vendedor</p>
+                    <p className="text-xs text-ml-muted mt-0.5">El vendedor te despacha o coordinás el retiro por WhatsApp. El costo del envío no está incluido en este pago.</p>
+                  </button>
+                  <button type="button" onClick={() => setTipoEnvio('comisionista_vivo')}
+                    className={`text-left p-3 rounded-xl border transition-colors ${tipoEnvio === 'comisionista_vivo' ? 'border-ml-purple bg-ml-bg ring-2 ring-ml-purple/30' : 'border-ml-line hover:border-ml-purple/40'}`}>
+                    <p className="text-sm font-semibold text-ml-ink">🚚 Comisionista en vivo <span className="text-[10px] font-bold text-white ml-grad px-2 py-0.5 rounded-full align-middle">HOY</span></p>
+                    <p className="text-xs text-ml-muted mt-0.5">Apenas pagás, avisamos a los comisionistas que están trabajando ahora y compiten por llevarte la compra. Vos elegís la mejor oferta en "Mis cotizaciones".</p>
+                  </button>
+                </div>
+                {tipoEnvio === 'comisionista_vivo' && (
+                  <p className="text-[11px] text-ml-muted mt-2 leading-relaxed">
+                    MercadoLocal solo conecta: el precio y el traslado los acordás con el comisionista. El pago del traslado es aparte, cuando aceptás una oferta.
+                  </p>
+                )}
               </div>
 
               {/* Botón Mercado Pago */}

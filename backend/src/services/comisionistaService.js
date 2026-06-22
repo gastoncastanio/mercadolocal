@@ -790,7 +790,42 @@ export async function aceptarCotizacion(compradorId, solicitudId) {
       enlace: '/pedidos-vendedor'
     })
   }
+
+  // Si la orden estaba en "subasta" en vivo: adjudicarla y CERRAR la competencia.
+  // Las otras ofertas pasan a rechazada y se les avisa a esos comisionistas que
+  // el envío ya fue tomado (no quedan esperando).
+  await adjudicarEnvioEnVivo(solicitud.ordenId, solicitud._id)
+
   return solicitud
+}
+
+/**
+ * Cierra la subasta en vivo de una orden: marca la orden como adjudicada y
+ * rechaza las ofertas perdedoras (avisándoles). Idempotente.
+ */
+async function adjudicarEnvioEnVivo(ordenId, solicitudGanadoraId) {
+  const orden = await Orden.findById(ordenId).select('entregaEnVivo')
+  if (!orden || !orden.entregaEnVivo?.activa) return
+  if (orden.entregaEnVivo.estado === 'adjudicado') return
+
+  await Orden.updateOne({ _id: ordenId }, { $set: { 'entregaEnVivo.estado': 'adjudicado' } })
+
+  // Rechazar las demás ofertas abiertas de esta orden.
+  const perdedoras = await SolicitudCotizacion.find({
+    ordenId,
+    _id: { $ne: solicitudGanadoraId },
+    estado: { $in: ['pendiente', 'cotizada'] }
+  })
+  for (const p of perdedoras) {
+    p.estado = 'rechazada'
+    await p.save()
+    emitNotificacion(p.comisionistaId.toString(), {
+      tipo: 'cotizacion',
+      titulo: 'Envío tomado por otro comisionista',
+      mensaje: 'El comprador eligió otra oferta para este envío. ¡Seguí atento, que vienen más!',
+      enlace: '/comisionistas/mi-perfil'
+    })
+  }
 }
 
 // Rechazar/cancelar una cotización (cualquiera de las partes).
@@ -1007,4 +1042,207 @@ export async function resenasComisionista(comisionistaId, { skip = 0, limit = 20
 export async function enviosReseñadosPor(contratanteId) {
   const resenas = await ResenaComisionista.find({ contratanteId }).select('envioId')
   return resenas.map(r => r.envioId.toString())
+}
+
+// ===== Envío "comisionista en vivo" — SUBASTA / BROADCAST competitivo =====
+//
+// Cuando el comprador elige "comisionista en vivo" en el checkout y paga, se hace
+// un BROADCAST a los comisionistas trabajando: compiten ofertando precio y el
+// comprador elige. Reusa SolicitudCotizacion (una oferta por comisionista, índice
+// único ordenId+comisionistaId). Reusa también aceptar/pagar/chat/código.
+
+const VENTANA_EN_VIVO_MIN = 30  // minutos que dura la "subasta" antes de expirar
+
+// Deriva vendedor + ciudades de una orden (para el retiro y el match geográfico).
+async function contextoEntregaOrden(orden) {
+  let vendedorId = null
+  let ciudadOrigen = orden.ciudadEntrega || ''
+  const primerItem = orden.items?.[0]
+  if (primerItem?.tiendaId) {
+    const { default: Tienda } = await import('../models/Tienda.js')
+    const tienda = await Tienda.findById(primerItem.tiendaId).select('usuarioId ciudad').lean()
+    if (tienda) {
+      vendedorId = tienda.usuarioId
+      ciudadOrigen = tienda.ciudad || ciudadOrigen
+    }
+  }
+  return { vendedorId, ciudadOrigen, ciudadDestino: orden.ciudadEntrega || '' }
+}
+
+/**
+ * Abre la subasta en vivo de una orden paga y NOTIFICA a los comisionistas
+ * elegibles (trabajando + verificados, priorizando los que cubren el destino).
+ * Idempotente: si ya está en 'buscando'/'adjudicado' no hace nada.
+ * Se llama desde el webhook al confirmarse el pago.
+ */
+export async function abrirEnvioEnVivo(orden) {
+  if (!orden?.entregaEnVivo?.activa) return { ok: false, motivo: 'no_aplica' }
+  if (['buscando', 'adjudicado'].includes(orden.entregaEnVivo.estado)) {
+    return { ok: false, motivo: 'ya_abierta' }
+  }
+
+  const { ciudadDestino, ciudadOrigen } = await contextoEntregaOrden(orden)
+  const expiraEn = new Date(Date.now() + VENTANA_EN_VIVO_MIN * 60 * 1000)
+  await Orden.updateOne(
+    { _id: orden._id },
+    { $set: { 'entregaEnVivo.estado': 'buscando', 'entregaEnVivo.expiraEn': expiraEn } }
+  )
+
+  // Elegibles: trabajando ahora + documento verificado (comisionistasEnVivo ya
+  // los ordena priorizando a los que cubren el destino).
+  const elegibles = await comisionistasEnVivo({ ciudadDestino })
+  const ref = `#${orden._id.toString().slice(-8).toUpperCase()}`
+  let avisados = 0
+  for (const c of elegibles) {
+    const uid = (c.usuarioId || c.usuario?._id)?.toString()
+    if (!uid) continue
+    emitNotificacion(uid, {
+      tipo: 'envio',
+      titulo: '🔥 Nuevo envío en vivo — ¡agarralo!',
+      mensaje: `Retiro en ${ciudadOrigen || 'tu zona'} → entrega en ${ciudadDestino || 'destino'} (orden ${ref}). Ofertá tu precio antes que otro.`,
+      enlace: '/comisionistas/mi-perfil'
+    })
+    avisados++
+  }
+  return { ok: true, avisados, expiraEn }
+}
+
+/**
+ * Lista las órdenes con subasta en vivo ABIERTA para que un comisionista las vea
+ * y compita. Excluye las que ese comisionista ya ofertó. Incluye un contador de
+ * ofertas actuales (señal de competencia → "apurate").
+ */
+export async function enviosEnVivoAbiertos(comisionistaId) {
+  const ahora = new Date()
+  const ordenes = await Orden.find({
+    'entregaEnVivo.activa': true,
+    'entregaEnVivo.estado': 'buscando',
+    'entregaEnVivo.expiraEn': { $gt: ahora }
+  })
+    .sort({ 'entregaEnVivo.expiraEn': 1 })
+    .limit(50)
+    .lean()
+
+  const resultado = []
+  for (const orden of ordenes) {
+    // El comisionista no puede ofertar a su propia compra.
+    if (orden.compradorId.toString() === comisionistaId.toString()) continue
+
+    const yaOferto = await SolicitudCotizacion.findOne({
+      ordenId: orden._id, comisionistaId
+    }).select('_id estado').lean()
+    if (yaOferto) continue
+
+    const { ciudadOrigen, ciudadDestino } = await contextoEntregaOrden(orden)
+    const totalOfertas = await SolicitudCotizacion.countDocuments({
+      ordenId: orden._id, estado: { $in: ['pendiente', 'cotizada'] }
+    })
+    resultado.push({
+      ordenId: orden._id,
+      ref: `#${orden._id.toString().slice(-8).toUpperCase()}`,
+      ciudadOrigen,
+      ciudadDestino,
+      descripcionCarga: (orden.items || []).map(i => i.nombre).join(', '),
+      totalProductos: (orden.items || []).reduce((n, i) => n + i.cantidad, 0),
+      ofertasActuales: totalOfertas,
+      expiraEn: orden.entregaEnVivo.expiraEn
+    })
+  }
+  return resultado
+}
+
+/**
+ * Un comisionista OFERTA por un envío en vivo (compite). Crea una
+ * SolicitudCotizacion ya cotizada (con su precio). El comprador la verá junto a
+ * las demás y elige. Valida elegibilidad, ventana y que no haya ofertado ya.
+ */
+export async function ofertarEnvioEnVivo(comisionistaId, ordenId, { monto, tiempoEstimado }) {
+  const montoNum = Number(monto)
+  if (!Number.isFinite(montoNum) || montoNum <= 0) throw new Error('Ingresá un precio válido')
+
+  const orden = await Orden.findById(ordenId)
+  if (!orden) throw new Error('Orden no encontrada')
+  if (!orden.entregaEnVivo?.activa || orden.entregaEnVivo.estado !== 'buscando') {
+    throw new Error('Este envío ya no está disponible')
+  }
+  if (orden.entregaEnVivo.expiraEn && orden.entregaEnVivo.expiraEn < new Date()) {
+    throw new Error('La ventana para ofertar expiró')
+  }
+  if (orden.compradorId.toString() === comisionistaId.toString()) {
+    throw new Error('No podés ofertar a tu propia compra')
+  }
+
+  // El comisionista debe estar activo y verificado.
+  const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId })
+  if (!perfil || !perfil.activo || perfil.estadoDocumento !== 'verificado') {
+    throw new Error('Necesitás estar verificado y activo para ofertar')
+  }
+
+  const { vendedorId, ciudadOrigen, ciudadDestino } = await contextoEntregaOrden(orden)
+  const notas = tiempoEstimado ? `Tiempo estimado: ${tiempoEstimado}` : ''
+
+  let solicitud
+  try {
+    solicitud = await new SolicitudCotizacion({
+      ordenId,
+      compradorId: orden.compradorId,
+      comisionistaId,
+      vendedorId,
+      ciudadOrigen,
+      ciudadDestino,
+      descripcionCarga: (orden.items || []).map(i => i.nombre).join(', '),
+      terminosAceptados: true,  // el comprador aceptó el deslinde al elegir "en vivo"
+      estado: 'cotizada',
+      cotizacion: { monto: montoNum, notas, fecha: new Date() }
+    }).save()
+  } catch (err) {
+    if (err.code === 11000) throw new Error('Ya ofertaste por este envío')
+    throw err
+  }
+
+  // Avisar al comprador que tiene una oferta (y cuántos están compitiendo).
+  const totalOfertas = await SolicitudCotizacion.countDocuments({
+    ordenId, estado: { $in: ['pendiente', 'cotizada'] }
+  })
+  emitNotificacion(orden.compradorId.toString(), {
+    tipo: 'cotizacion',
+    titulo: '🔥 Tenés una oferta para tu envío',
+    mensaje: totalOfertas > 1
+      ? `${totalOfertas} comisionistas se están peleando por tu envío. Mirá las ofertas y elegí la mejor.`
+      : `Un comisionista te ofertó $${montoNum.toLocaleString('es-AR')}. Mirá la oferta y aceptá si te sirve.`,
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+
+  return solicitud
+}
+
+/**
+ * Cron: expira las subastas en vivo sin adjudicar pasada la ventana y le avisa
+ * al comprador para que use envío estándar (no queda colgado).
+ */
+export async function expirarEnviosEnVivo() {
+  const ahora = new Date()
+  const vencidas = await Orden.find({
+    'entregaEnVivo.activa': true,
+    'entregaEnVivo.estado': 'buscando',
+    'entregaEnVivo.expiraEn': { $lt: ahora }
+  }).select('_id compradorId entregaEnVivo').limit(100)
+
+  let cerradas = 0
+  for (const orden of vencidas) {
+    await Orden.updateOne({ _id: orden._id }, { $set: { 'entregaEnVivo.estado': 'expirado' } })
+    const tieneOfertas = await SolicitudCotizacion.countDocuments({
+      ordenId: orden._id, estado: { $in: ['pendiente', 'cotizada'] }
+    })
+    emitNotificacion(orden.compradorId.toString(), {
+      tipo: 'envio',
+      titulo: tieneOfertas > 0 ? 'Tus ofertas de envío están por vencer' : 'No hubo comisionistas disponibles',
+      mensaje: tieneOfertas > 0
+        ? 'Todavía tenés ofertas para tu envío: elegí una antes de que se enfríen.'
+        : 'Por ahora no hay comisionistas en vivo para tu compra. El vendedor puede despacharla por envío estándar.',
+      enlace: '/comisionistas/mis-cotizaciones'
+    })
+    cerradas++
+  }
+  return cerradas
 }

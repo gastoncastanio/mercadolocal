@@ -50,6 +50,10 @@ export async function crearOrden(usuarioId, datosEntrega) {
     })
   }
 
+  // ¿El comprador eligió "comisionista en vivo"? El broadcast competitivo se
+  // dispara recién cuando el pago se confirma (en el webhook de pagos).
+  const quiereEnVivo = datosEntrega.tipoEnvio === 'comisionista_vivo'
+
   // Crear una orden por cada vendedor, con su propio total y comisión.
   const ordenesCreadas = []
   const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
@@ -70,7 +74,8 @@ export async function crearOrden(usuarioId, datosEntrega) {
       ciudadEntrega: datosEntrega.ciudad || '',
       notasComprador: datosEntrega.notas || '',
       nombreComprador: datosEntrega.nombre || '',
-      telefonoComprador: datosEntrega.telefono || ''
+      telefonoComprador: datosEntrega.telefono || '',
+      entregaEnVivo: { activa: quiereEnVivo, estado: 'no_aplica', expiraEn: null }
     })
     await orden.save()
     ordenesCreadas.push(orden)

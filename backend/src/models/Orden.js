@@ -133,6 +133,20 @@ const ordenSchema = new mongoose.Schema({
   ciudadEntrega: {
     type: String,
     default: '' // Extraída de direccionEntrega, usada para filtrar comisionistas
+  },
+  // Entrega "comisionista en vivo": el comprador eligió en el checkout que un
+  // comisionista activo retire y entregue HOY. Al confirmarse el pago, se hace
+  // un BROADCAST a los comisionistas trabajando y compiten por el envío (ofertan
+  // precio). El comprador elige la mejor. Si nadie oferta en la ventana, expira
+  // y se le avisa al comprador para que use envío estándar.
+  entregaEnVivo: {
+    activa: { type: Boolean, default: false },
+    estado: {
+      type: String,
+      enum: ['no_aplica', 'buscando', 'adjudicado', 'expirado'],
+      default: 'no_aplica'
+    },
+    expiraEn: { type: Date, default: null }
   }
 }, {
   timestamps: true

@@ -131,18 +131,36 @@ export async function recuperarCarritosAbandonados() {
     const cantTotal = carrito.items.reduce((n, i) => n + i.cantidad, 0)
     const total = calcularTotal(carrito)
 
-    // Mensaje escalonado: suave primero, con gancho después.
+    // URGENCIA REAL (no inventada): leemos el producto EN VIVO y solo usamos
+    // ganchos verdaderos — bajó de precio respecto a lo que tenía en el carrito,
+    // o queda poco stock. Si no hay señal real, mandamos un recordatorio neutro.
+    let gancho = ''
+    try {
+      const prod = await Producto.findById(primerItem.productoId).select('precio stock activo').lean()
+      if (prod && prod.activo) {
+        if (prod.precio < primerItem.precio) {
+          const baja = Math.round((1 - prod.precio / primerItem.precio) * 100)
+          if (baja >= 1) gancho = `¡"${primerItem.nombre}" bajó ${baja}%! Ahora $${prod.precio.toLocaleString('es-AR')}.`
+        } else if (prod.stock > 0 && prod.stock <= 3) {
+          gancho = `Quedan solo ${prod.stock} de "${primerItem.nombre}". No te quedes sin el tuyo.`
+        }
+      }
+    } catch { /* si falla la lectura, seguimos sin gancho */ }
+
+    // Mensaje escalonado: suave primero; en la 2ª etapa priorizamos el gancho real.
     const notif = etapa === 0
       ? {
           tipo: 'carrito',
           titulo: '🛒 Te quedaron cosas en el carrito',
-          mensaje: `Tenés ${cantTotal} producto(s) esperándote, como "${primerItem.nombre}". Terminá tu compra en un toque.`,
+          mensaje: gancho || `Tenés ${cantTotal} producto(s) esperándote, como "${primerItem.nombre}". Terminá tu compra en un toque.`,
           enlace: '/carrito'
         }
       : {
           tipo: 'carrito',
-          titulo: '🛒 ¿Lo terminamos?',
-          mensaje: `"${primerItem.nombre}"${cantTotal > 1 ? ' y más' : ''} siguen en tu carrito ($${total.toLocaleString('es-AR')}). Puede agotarse: completá la compra antes de que vuele.`,
+          titulo: gancho ? '🛒 Tu carrito tiene novedades' : '🛒 ¿Lo terminamos?',
+          mensaje: gancho
+            ? `${gancho} Está en tu carrito ($${total.toLocaleString('es-AR')}) — completá la compra.`
+            : `"${primerItem.nombre}"${cantTotal > 1 ? ' y más' : ''} siguen en tu carrito ($${total.toLocaleString('es-AR')}). Completá la compra cuando quieras.`,
           enlace: '/carrito'
         }
 

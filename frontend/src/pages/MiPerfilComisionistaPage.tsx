@@ -104,6 +104,10 @@ export default function MiPerfilComisionistaPage() {
   const [montos, setMontos] = useState<Record<string, string>>({})
   const [notasCot, setNotasCot] = useState<Record<string, string>>({})
   const [avisoMp, setAvisoMp] = useState('')
+  // Subasta "comisionista en vivo": envíos disponibles ahora para competir.
+  const [enviosVivo, setEnviosVivo] = useState<any[]>([])
+  const [montoVivo, setMontoVivo] = useState<Record<string, string>>({})
+  const [tiempoVivo, setTiempoVivo] = useState<Record<string, string>>({})
 
   // Remis (traslado de personas): tarifas configurables del conductor.
   const [tarifasRemis, setTarifasRemis] = useState({ banderita: 0, porKm: 0, porHoraEspera: 0, minimo: 0 })
@@ -168,7 +172,7 @@ export default function MiPerfilComisionistaPage() {
         porHoraEspera: res.data.tarifasRemis?.porHoraEspera || 0,
         minimo: res.data.tarifasRemis?.minimo || 0
       })
-      await Promise.all([cargarViajes(), cargarEnvios(), cargarCotizaciones()])
+      await Promise.all([cargarViajes(), cargarEnvios(), cargarCotizaciones(), cargarEnviosVivo()])
     } catch (e: any) {
       if (e.response?.status === 404) {
         setPerfil(null) // todavía no tiene perfil → mostrar form de creación
@@ -188,6 +192,27 @@ export default function MiPerfilComisionistaPage() {
   }
   async function cargarCotizaciones() {
     try { const r = await api.get('/comisionistas/cotizaciones-recibidas'); setCotizaciones(r.data || []) } catch {}
+  }
+  async function cargarEnviosVivo() {
+    try { const r = await api.get('/comisionistas/envios-vivo-abiertos'); setEnviosVivo(r.data || []) } catch {}
+  }
+
+  async function ofertarVivo(ordenId: string) {
+    const monto = Number(montoVivo[ordenId])
+    if (!monto || monto <= 0) { setError('Ingresá un precio para ofertar'); return }
+    setAccionando(true)
+    try {
+      await api.post(`/comisionistas/envio-vivo/${ordenId}/ofertar`, {
+        monto, tiempoEstimado: tiempoVivo[ordenId] || ''
+      })
+      setMontoVivo(prev => ({ ...prev, [ordenId]: '' }))
+      setTiempoVivo(prev => ({ ...prev, [ordenId]: '' }))
+      await Promise.all([cargarEnviosVivo(), cargarCotizaciones()])
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo enviar la oferta')
+    } finally {
+      setAccionando(false)
+    }
   }
 
   // Subir documento del vehículo (foto del título / cédula / licencia).
@@ -647,6 +672,43 @@ export default function MiPerfilComisionistaPage() {
 
             {/* Deslinde legal informativo */}
             <DeslindeComisionista />
+
+            {/* 🔥 Envíos en vivo disponibles AHORA — competí por ellos */}
+            {enviosVivo.length > 0 && (
+              <div className="border-2 border-orange-300 bg-orange-50 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-lg font-bold text-ml-ink">🔥 Envíos disponibles ahora ({enviosVivo.length})</h2>
+                  <button onClick={cargarEnviosVivo} className="text-xs font-semibold text-ml-violet hover:underline">↻ Actualizar</button>
+                </div>
+                <p className="text-xs text-ml-muted mb-3">Ofertá tu precio. El comprador elige: el más rápido y conveniente se lleva el envío.</p>
+                <div className="space-y-3">
+                  {enviosVivo.map(e => (
+                    <div key={e.ordenId} className="bg-white rounded-xl border border-orange-200 p-4">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div>
+                          <p className="font-bold text-ml-ink">{e.ciudadOrigen || '—'} → {e.ciudadDestino || '—'}</p>
+                          <p className="text-xs text-ml-muted">{e.totalProductos} producto(s): {e.descripcionCarga}</p>
+                        </div>
+                        <div className="text-right">
+                          {e.ofertasActuales > 0 && (
+                            <span className="text-[11px] font-bold text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
+                              {e.ofertasActuales} compitiendo
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
+                        <input type="number" min={0} value={montoVivo[e.ordenId] || ''} onChange={ev => setMontoVivo(prev => ({ ...prev, [e.ordenId]: ev.target.value }))} placeholder="Tu precio $" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                        <input value={tiempoVivo[e.ordenId] || ''} onChange={ev => setTiempoVivo(prev => ({ ...prev, [e.ordenId]: ev.target.value }))} placeholder="Ej: 2 horas" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
+                        <button onClick={() => ofertarVivo(e.ordenId)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-60">
+                          🦈 Agarrar envío
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Cotizaciones recibidas (comisionista en vivo) */}
             {cotizaciones.length > 0 && (

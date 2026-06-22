@@ -558,6 +558,16 @@ router.post('/webhook', async (req, res) => {
           console.error('Error enviando notificaciones post-pago:', notifErr.message)
         }
 
+        // SUBASTA "COMISIONISTA EN VIVO": si el comprador eligió esta entrega,
+        // al confirmarse el pago se hace el broadcast a los comisionistas para que
+        // compitan por el envío. Fire-and-forget: no bloquea el 200 del webhook.
+        if (ordenActualizada.entregaEnVivo?.activa) {
+          import('../services/comisionistaService.js')
+            .then(({ abrirEnvioEnVivo }) => abrirEnvioEnVivo(ordenActualizada))
+            .then(r => { if (r?.avisados) console.log(`🦈 Envío en vivo ${ordenActualizada._id}: ${r.avisados} comisionistas avisados`) })
+            .catch(e => console.warn('No se pudo abrir el envío en vivo:', e.message))
+        }
+
       } else if (pago.status === 'rejected') {
         orden.mpStatus = 'rejected'
         await orden.save()

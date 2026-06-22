@@ -15,6 +15,7 @@ import hpp from 'hpp'
 import { connectDB, disconnectDB } from './config/database.js'
 import { limpiarOrdenesPendientes } from './services/ordenService.js'
 import { recuperarCarritosAbandonados } from './services/carritoService.js'
+import { expirarEnviosEnVivo } from './services/comisionistaService.js'
 import { initSocket, getIO } from './services/socketService.js'
 
 // Rutas del Marketplace
@@ -298,6 +299,17 @@ connectDB().then(async () => {
       console.warn('Error recuperando carritos abandonados:', err.message)
     }
   }, 60 * 60 * 1000)
+
+  // Subastas "comisionista en vivo" vencidas: cada 5 min cerramos las que nadie
+  // tomó y le avisamos al comprador (que no quede colgado esperando).
+  setInterval(async () => {
+    try {
+      const cerradas = await expirarEnviosEnVivo()
+      if (cerradas > 0) console.log(`🦈 ${cerradas} subasta(s) de envío en vivo expiradas`)
+    } catch (err) {
+      console.warn('Error expirando envíos en vivo:', err.message)
+    }
+  }, 5 * 60 * 1000)
 }).catch((err) => {
   console.error('Error conectando a MongoDB:', err)
 })
