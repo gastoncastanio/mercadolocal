@@ -6,6 +6,7 @@ import SolicitudCotizacion from '../models/SolicitudCotizacion.js'
 import Orden from '../models/Orden.js'
 import Usuario from '../models/Usuario.js'
 import { generarCodigoCanje, hashCodigoCanje } from '../utils/crypto.js'
+import { esLocalidadValida, COBERTURA_TEXTO } from '../constants/localidades.js'
 import { emitNotificacion, emitEnvioVivoNuevo, emitEnvioVivoNuevoA, emitEnvioVivoCerrado, emitEnvioVivoActualizado } from './socketService.js'
 
 // ===== PerfilComisionista =====
@@ -186,6 +187,10 @@ export async function publicarViaje(comisionistaId, datos) {
 
   if (!datos.origen?.ciudad || !datos.destino?.ciudad) {
     throw new Error('Origen y destino son obligatorios')
+  }
+  // Validación de cobertura en el servidor (no confiar solo en el front).
+  if (!esLocalidadValida(datos.origen.ciudad) || !esLocalidadValida(datos.destino.ciudad)) {
+    throw new Error(`Origen y destino deben ser localidades donde operamos. ${COBERTURA_TEXTO}`)
   }
   if (!datos.fechaSalida) throw new Error('La fecha de salida es obligatoria')
 
@@ -710,12 +715,14 @@ export async function cotizacionesRecibidas(comisionistaId) {
     .lean()
 }
 
-// Solicitudes que envió un comprador.
+// Solicitudes que envió un comprador. No exponemos el hash del código de entrega;
+// solo un booleano de si ya fue generado (el código en claro vive en el cliente).
 export async function misCotizaciones(compradorId) {
-  return await SolicitudCotizacion.find({ compradorId })
+  const lista = await SolicitudCotizacion.find({ compradorId })
     .sort({ createdAt: -1 })
     .populate('comisionistaId', 'nombre avatar')
     .lean()
+  return lista.map(({ codigoEntregaHash, ...c }) => ({ ...c, tieneCodigoEntrega: !!codigoEntregaHash }))
 }
 
 /**
@@ -745,6 +752,13 @@ export async function responderCotizacion(comisionistaId, solicitudId, { monto, 
   if (solicitud.comisionistaId.toString() !== comisionistaId.toString()) throw new Error('No autorizado')
   if (!['pendiente', 'cotizada'].includes(solicitud.estado)) {
     throw new Error('Esta solicitud ya no admite cotización')
+  }
+
+  // El comisionista DEBE tener MP vinculado para poder cobrar el traslado. Si no,
+  // el comprador llegaría al pago y quedaría en un callejón sin salida.
+  const perfilCot = await PerfilComisionista.findOne({ usuarioId: comisionistaId }).select('mpVinculado')
+  if (!perfilCot?.mpVinculado) {
+    throw new Error('Vinculá tu cuenta de Mercado Pago antes de cotizar: el comprador necesita poder pagarte el traslado.')
   }
 
   solicitud.cotizacion = { monto: montoNum, notas: notas || '', fecha: new Date() }
@@ -840,7 +854,10 @@ export async function cancelarCotizacion(usuarioId, solicitudId) {
   const esComprador = solicitud.compradorId.toString() === usuarioId.toString()
   const esComisionista = solicitud.comisionistaId.toString() === usuarioId.toString()
   if (!esComprador && !esComisionista) throw new Error('No autorizado')
-  if (['rechazada', 'cancelada'].includes(solicitud.estado)) return solicitud
+  if (['rechazada', 'cancelada', 'entregado'].includes(solicitud.estado)) return solicitud
+  if (solicitud.estado === 'en_transito') {
+    throw new Error('El traslado ya está en camino: no se puede cancelar. Coordiná con la otra parte por chat.')
+  }
 
   solicitud.estado = esComisionista ? 'rechazada' : 'cancelada'
   await solicitud.save()
@@ -978,6 +995,94 @@ export async function reportarIncidente(comisionistaId, solicitudId, descripcion
   emitNotificacion(solicitud.compradorId.toString(), aviso)
   if (solicitud.vendedorId) emitNotificacion(solicitud.vendedorId.toString(), aviso)
   return solicitud
+}
+
+// ===== Cierre del traslado en vivo: código de entrega + tránsito + entrega =====
+
+/**
+ * Genera (UNA sola vez) el código de entrega del traslado para el comprador.
+ * Guardamos solo el HASH; el código en claro viaja al comprador una vez y vive en
+ * su dispositivo. El comisionista lo ingresa al entregar para cerrar el flujo.
+ * Requiere que el traslado esté pagado. Idempotente: si ya se generó, no lo revela
+ * de nuevo (el comprador lo tiene en su dispositivo).
+ */
+export async function generarCodigoEntregaTraslado(compradorId, solicitudId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.compradorId.toString() !== compradorId.toString()) throw new Error('No autorizado')
+  if (solicitud.pago?.estadoPago !== 'pagado') {
+    throw new Error('Tenés que pagar el traslado antes de obtener el código de entrega')
+  }
+  if (solicitud.codigoEntregaHash) return { codigoEntrega: null, yaGenerado: true }
+
+  const { codigo, codigoHash } = generarCodigoCanje()
+  solicitud.codigoEntregaHash = codigoHash
+  await solicitud.save()
+  return { codigoEntrega: codigo, yaGenerado: false }
+}
+
+/**
+ * El comisionista marca el traslado en tránsito (ya retiró el paquete del vendedor).
+ * Requiere traslado aceptado y pagado. Transición atómica aceptada → en_transito.
+ */
+export async function marcarTrasladoEnTransito(comisionistaId, solicitudId) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.comisionistaId.toString() !== comisionistaId.toString()) throw new Error('No autorizado')
+  if (solicitud.estado !== 'aceptada') throw new Error('El traslado debe estar aceptado para marcarlo en tránsito')
+  if (solicitud.pago?.estadoPago !== 'pagado') throw new Error('El comprador todavía no pagó el traslado')
+
+  const actualizado = await SolicitudCotizacion.findOneAndUpdate(
+    { _id: solicitudId, estado: 'aceptada', 'pago.estadoPago': 'pagado' },
+    { $set: { estado: 'en_transito' } },
+    { new: true }
+  )
+  if (!actualizado) throw new Error('El traslado ya fue procesado')
+
+  emitNotificacion(actualizado.compradorId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Tu compra va en camino',
+    mensaje: 'El comisionista retiró tu compra y va en camino. Tené a mano tu código de entrega para dárselo al recibir.',
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+  return actualizado
+}
+
+/**
+ * El comisionista confirma la entrega ingresando el código que le da el comprador.
+ * Valida el hash (un solo uso) y cierra el flujo (en_transito → entregado).
+ */
+export async function confirmarEntregaTraslado(comisionistaId, solicitudId, codigo) {
+  const solicitud = await SolicitudCotizacion.findById(solicitudId)
+  if (!solicitud) throw new Error('Solicitud no encontrada')
+  if (solicitud.comisionistaId.toString() !== comisionistaId.toString()) throw new Error('No autorizado')
+  if (solicitud.estado !== 'en_transito') throw new Error('El traslado debe estar en tránsito para confirmar la entrega')
+  if (!codigo || !solicitud.codigoEntregaHash || hashCodigoCanje(codigo) !== solicitud.codigoEntregaHash) {
+    throw new Error('Código de entrega inválido')
+  }
+
+  const actualizado = await SolicitudCotizacion.findOneAndUpdate(
+    { _id: solicitudId, estado: 'en_transito' },
+    { $set: { estado: 'entregado', entregadoEn: new Date() } },
+    { new: true }
+  )
+  if (!actualizado) throw new Error('El traslado ya fue procesado')
+
+  emitNotificacion(actualizado.compradorId.toString(), {
+    tipo: 'cotizacion',
+    titulo: 'Entrega confirmada',
+    mensaje: 'Confirmaste la recepción de tu compra. ¡Gracias por usar MercadoLocal!',
+    enlace: '/comisionistas/mis-cotizaciones'
+  })
+  if (actualizado.vendedorId) {
+    emitNotificacion(actualizado.vendedorId.toString(), {
+      tipo: 'venta',
+      titulo: 'Traslado entregado',
+      mensaje: `El comisionista entregó el traslado de tu venta #${actualizado.ordenId.toString().slice(-8).toUpperCase()}.`,
+      enlace: '/pedidos-vendedor'
+    })
+  }
+  return actualizado
 }
 
 // ===== Reseñas de comisionista =====
@@ -1220,6 +1325,10 @@ export async function ofertarEnvioEnVivo(comisionistaId, ordenId, { monto, tiemp
   if (!perfil || !perfil.activo || perfil.estadoDocumento !== 'verificado') {
     throw new Error('Necesitás estar verificado y activo para ofertar')
   }
+  // Sin MP vinculado, el comprador no podría pagarte: lo exigimos al ofertar.
+  if (!perfil.mpVinculado) {
+    throw new Error('Vinculá tu cuenta de Mercado Pago antes de ofertar: el comprador necesita poder pagarte.')
+  }
 
   const { vendedorId, ciudadOrigen, ciudadDestino } = await contextoEntregaOrden(orden)
   const notas = tiempoEstimado ? `Tiempo estimado: ${tiempoEstimado}` : ''
@@ -1307,6 +1416,11 @@ export async function tomarEnvioEnVivo(comisionistaId, ordenId, { monto, tiempoE
   const perfil = await PerfilComisionista.findOne({ usuarioId: comisionistaId })
   if (!perfil || !perfil.activo || perfil.estadoDocumento !== 'verificado') {
     throw new Error('Necesitás estar verificado y activo para tomar envíos')
+  }
+  // Sin MP vinculado no hay forma de cobrar: lo exigimos ANTES del claim atómico
+  // para no adjudicar un envío que después no se podría pagar.
+  if (!perfil.mpVinculado) {
+    throw new Error('Vinculá tu cuenta de Mercado Pago antes de tomar envíos: el comprador necesita poder pagarte.')
   }
 
   // Claim atómico: solo adjudica si sigue 'buscando' y dentro de la ventana.

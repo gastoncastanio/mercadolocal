@@ -12,11 +12,19 @@ import mongoose from 'mongoose'
  * igual/similar). Ver campos `incidente` y `terminosAceptados`.
  *
  * Máquina de estados:
- *   pendiente  → el comprador envió la solicitud (espera cotización)
- *   cotizada   → el comisionista respondió con un precio
- *   aceptada   → el comprador aceptó la cotización (desbloquea coordinación)
- *   rechazada  → el comisionista no puede / el comprador no aceptó
- *   cancelada  → alguna de las partes la dio de baja
+ *   pendiente   → el comprador envió la solicitud (espera cotización)
+ *   cotizada    → el comisionista respondió con un precio
+ *   aceptada    → el comprador aceptó la cotización (desbloquea coordinación)
+ *   en_transito → traslado pagado y el comisionista ya retiró el paquete
+ *   entregado   → se validó el código de entrega en destino (CIERRA el flujo)
+ *   rechazada   → el comisionista no puede / el comprador no aceptó
+ *   cancelada   → alguna de las partes la dio de baja
+ *
+ * Anti-fraude entrega (igual que EnvioComisionista): guardamos solo el HASH del
+ * código de entrega. El comprador recibe el código en claro una sola vez (vive en
+ * su dispositivo) y se lo da al comisionista al recibir; el comisionista lo ingresa
+ * para pasar a 'entregado'. Así "el comprador confirma recepción" sin que el
+ * comisionista pueda cerrar el traslado sin haber entregado de verdad.
  */
 const solicitudCotizacionSchema = new mongoose.Schema({
   // Orden del marketplace que se quiere trasladar.
@@ -50,7 +58,7 @@ const solicitudCotizacionSchema = new mongoose.Schema({
   descripcionCarga: { type: String, default: '' },
   estado: {
     type: String,
-    enum: ['pendiente', 'cotizada', 'aceptada', 'rechazada', 'cancelada'],
+    enum: ['pendiente', 'cotizada', 'aceptada', 'en_transito', 'entregado', 'rechazada', 'cancelada'],
     default: 'pendiente',
     index: true
   },
@@ -69,6 +77,16 @@ const solicitudCotizacionSchema = new mongoose.Schema({
       enum: ['no_iniciado', 'pendiente_pago', 'pagado', 'reembolsado'],
       default: 'no_iniciado'
     }
+  },
+  // Hash sha256 del código de entrega (el código en claro vive solo en el cliente
+  // del comprador). Se genera al confirmarse el pago del traslado.
+  codigoEntregaHash: {
+    type: String,
+    default: null
+  },
+  entregadoEn: {
+    type: Date,
+    default: null
   },
   // El comprador debió aceptar el deslinde de responsabilidad de la plataforma.
   terminosAceptados: {

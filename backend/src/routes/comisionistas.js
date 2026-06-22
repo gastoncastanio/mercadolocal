@@ -457,4 +457,34 @@ router.patch('/cotizacion/:id/incidente', verificarToken, async (req, res) => {
   }
 })
 
+// POST /api/comisionistas/cotizacion/:id/codigo-entrega - Comprador obtiene su código (una vez)
+router.post('/cotizacion/:id/codigo-entrega', verificarToken, async (req, res) => {
+  try {
+    const r = await comisionistaService.generarCodigoEntregaTraslado(req.usuario.id, req.params.id)
+    res.json(r)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/comisionistas/cotizacion/:id/transito - Comisionista marca el traslado en tránsito
+router.patch('/cotizacion/:id/transito', verificarToken, async (req, res) => {
+  try {
+    const solicitud = await comisionistaService.marcarTrasladoEnTransito(req.usuario.id, req.params.id)
+    res.json(solicitud)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
+// PATCH /api/comisionistas/cotizacion/:id/entregar - Comisionista confirma entrega con el código
+router.patch('/cotizacion/:id/entregar', verificarToken, async (req, res) => {
+  try {
+    const solicitud = await comisionistaService.confirmarEntregaTraslado(req.usuario.id, req.params.id, req.body.codigo)
+    res.json(solicitud)
+  } catch (error) {
+    res.status(400).json({ error: error.message })
+  }
+})
+
 export default router

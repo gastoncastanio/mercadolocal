@@ -12,6 +12,7 @@ interface Cotizacion {
   pago?: { estadoPago: string }
   incidente?: { reportado: boolean; descripcion: string; fecha: string | null }
   comisionistaId?: { _id: string; nombre: string; avatar: string } | null
+  tieneCodigoEntrega?: boolean
   createdAt: string
 }
 
@@ -19,6 +20,8 @@ const ESTADO_INFO: Record<string, { texto: string; clase: string }> = {
   pendiente: { texto: 'Esperando cotización', clase: 'bg-amber-50 text-amber-700 border-amber-200' },
   cotizada: { texto: 'Cotizada', clase: 'bg-blue-50 text-blue-700 border-blue-200' },
   aceptada: { texto: 'Aceptada', clase: 'bg-green-50 text-green-700 border-green-200' },
+  en_transito: { texto: 'En camino', clase: 'bg-violet-50 text-ml-violet border-violet-200' },
+  entregado: { texto: 'Entregado', clase: 'bg-green-50 text-green-700 border-green-200' },
   rechazada: { texto: 'Rechazada', clase: 'bg-red-50 text-red-600 border-red-200' },
   cancelada: { texto: 'Cancelada', clase: 'bg-ml-bg text-ml-soft border-ml-line' }
 }
@@ -31,8 +34,36 @@ export default function MisCotizacionesPage() {
   const [error, setError] = useState('')
   const [accionando, setAccionando] = useState(false)
   const [aviso, setAviso] = useState('')
+  // Código de entrega por solicitud (vive en este dispositivo, se muestra una vez).
+  const [codigos, setCodigos] = useState<Record<string, string>>({})
 
   useEffect(() => { cargar() }, [])
+
+  // Para cada traslado ya pagado, asegurar que el comprador tenga su código de
+  // entrega: si no está en este dispositivo y no se generó antes, lo pedimos (el
+  // backend lo devuelve UNA sola vez y guarda solo el hash).
+  useEffect(() => {
+    if (!lista.length) return
+    const desdeLocal: Record<string, string> = {}
+    lista.forEach(c => {
+      const v = localStorage.getItem(`ml_cotizacion_codigo_${c._id}`)
+      if (v) desdeLocal[c._id] = v
+    })
+    if (Object.keys(desdeLocal).length) setCodigos(prev => ({ ...prev, ...desdeLocal }))
+
+    lista.forEach(async c => {
+      if (c.pago?.estadoPago !== 'pagado') return
+      if (['entregado', 'rechazada', 'cancelada'].includes(c.estado)) return
+      if (desdeLocal[c._id] || c.tieneCodigoEntrega) return
+      try {
+        const r = await api.post(`/comisionistas/cotizacion/${c._id}/codigo-entrega`)
+        if (r.data?.codigoEntrega) {
+          localStorage.setItem(`ml_cotizacion_codigo_${c._id}`, r.data.codigoEntrega)
+          setCodigos(prev => ({ ...prev, [c._id]: r.data.codigoEntrega }))
+        }
+      } catch { /* lo reintentamos en la próxima carga */ }
+    })
+  }, [lista])
 
   // Al volver del checkout de MP (?pago=ok), verificar el pago de todas las
   // cotizaciones aceptadas pendientes (best-effort por si no llegó el webhook).
@@ -187,12 +218,28 @@ export default function MisCotizacionesPage() {
                     </div>
                   )}
 
-                  {/* Estado de pago del traslado */}
-                  {c.estado === 'aceptada' && c.pago?.estadoPago === 'pagado' && (
+                  {/* Cierre del traslado: pago → código de entrega → en camino → entregado */}
+                  {c.estado === 'entregado' ? (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 text-sm text-green-800 font-semibold">
-                      ✓ Traslado pagado. Coordiná la entrega con el comisionista.
+                      ✓ Entrega confirmada. ¡Listo!
                     </div>
-                  )}
+                  ) : (['aceptada', 'en_transito'].includes(c.estado) && c.pago?.estadoPago === 'pagado' && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 space-y-2">
+                      <p className="text-sm text-green-800 font-semibold">
+                        {c.estado === 'en_transito'
+                          ? '🚚 Tu compra va en camino. Dale el código al comisionista al recibirla.'
+                          : '✓ Traslado pagado. El comisionista va a retirar tu compra y coordinar la entrega.'}
+                      </p>
+                      {codigos[c._id] ? (
+                        <div className="bg-white border border-green-200 rounded-lg p-3 text-center">
+                          <p className="text-xs text-ml-muted mb-1">Código de entrega (dáselo al comisionista al recibir)</p>
+                          <p className="text-xl font-extrabold tracking-widest text-ml-ink">{codigos[c._id]}</p>
+                        </div>
+                      ) : c.tieneCodigoEntrega ? (
+                        <p className="text-xs text-amber-700">Generaste el código en otro dispositivo. Coordiná la entrega con el comisionista por chat.</p>
+                      ) : null}
+                    </div>
+                  ))}
 
                   <div className="flex flex-wrap gap-2 justify-end">
                     {c.estado === 'cotizada' && (
@@ -201,7 +248,7 @@ export default function MisCotizacionesPage() {
                     {c.estado === 'aceptada' && c.pago?.estadoPago !== 'pagado' && (
                       <button onClick={() => pagarTraslado(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-bold rounded-lg bg-ml-mp text-white disabled:opacity-50">💳 Pagar traslado</button>
                     )}
-                    {c.comisionistaId && ['cotizada', 'aceptada'].includes(c.estado) && (
+                    {c.comisionistaId && ['cotizada', 'aceptada', 'en_transito'].includes(c.estado) && (
                       <button onClick={() => coordinarChat(c.comisionistaId!._id, c.comisionistaId!.nombre)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
                     )}
                     {!['rechazada', 'cancelada'].includes(c.estado) && c.pago?.estadoPago !== 'pagado' && (

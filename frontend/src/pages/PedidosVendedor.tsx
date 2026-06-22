@@ -11,7 +11,7 @@ import { Orden, Usuario } from '../types'
 interface CotizacionVenta {
   _id: string
   ordenId: string
-  estado: 'pendiente' | 'cotizada' | 'aceptada'
+  estado: 'pendiente' | 'cotizada' | 'aceptada' | 'en_transito' | 'entregado'
   comisionistaId?: { _id: string; nombre?: string; avatar?: string }
   cotizacion?: { monto?: number | null }
   pago?: { estadoPago?: string }
@@ -71,6 +71,26 @@ function linkWhatsApp(tel: string, mensaje: string): string {
 function descripcionCotiz(c: CotizacionVenta) {
   const nombre = c.comisionistaId?.nombre || 'Un comisionista'
   const pagado = c.pago?.estadoPago === 'pagado'
+  if (c.estado === 'entregado') {
+    return {
+      tono: 'bg-green-50 border-green-200',
+      titColor: 'text-green-800',
+      txtColor: 'text-green-700',
+      titulo: '✓ Retiro entregado',
+      texto: `${nombre} ya entregó este pedido al comprador. ¡Listo!`,
+      comisionista: c.comisionistaId || null
+    }
+  }
+  if (c.estado === 'en_transito') {
+    return {
+      tono: 'bg-violet-50 border-violet-200',
+      titColor: 'text-ml-violet',
+      txtColor: 'text-ml-violet',
+      titulo: '🚚 Retiro en camino',
+      texto: `${nombre} ya retiró este pedido de tu local y va en camino al comprador.`,
+      comisionista: c.comisionistaId || null
+    }
+  }
   if (c.estado === 'aceptada') {
     return {
       tono: 'bg-blue-50 border-blue-200',
@@ -138,7 +158,7 @@ export default function PedidosVendedor() {
 
       // Indexar por ordenId, quedándonos con la más avanzada por orden
       // (aceptada > cotizada > pendiente) por si el comprador pidió a varios.
-      const peso: Record<string, number> = { pendiente: 1, cotizada: 2, aceptada: 3 }
+      const peso: Record<string, number> = { pendiente: 1, cotizada: 2, aceptada: 3, en_transito: 4, entregado: 5 }
       const mapa: Record<string, CotizacionVenta> = {}
       for (const c of (resCotiz.data as CotizacionVenta[])) {
         const oid = String(c.ordenId)

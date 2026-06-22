@@ -36,6 +36,7 @@ interface Cotizacion {
   descripcionCarga: string
   cotizacion: { monto: number | null; notas: string }
   incidente?: { reportado: boolean }
+  pago?: { estadoPago: string }
   compradorId?: { _id: string; nombre: string; avatar: string } | null
   vendedorId?: { _id: string; nombre: string; avatar: string } | null
   ordenId?: { total: number } | null
@@ -527,6 +528,35 @@ export default function MiPerfilComisionistaPage() {
     }
   }
 
+  // Traslado en vivo (SolicitudCotizacion): marcar en tránsito tras retirar.
+  async function trasladoEnTransito(id: string) {
+    setAccionando(true)
+    try {
+      await api.patch(`/comisionistas/cotizacion/${id}/transito`)
+      await cargarCotizaciones()
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'No se pudo marcar en tránsito')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
+  // Confirmar la entrega del traslado con el código que da el comprador.
+  async function confirmarEntregaTraslado(id: string) {
+    const codigo = codigos[id]
+    if (!codigo) { setError('Ingresá el código de entrega'); return }
+    setAccionando(true)
+    try {
+      await api.patch(`/comisionistas/cotizacion/${id}/entregar`, { codigo })
+      setCodigos(prev => ({ ...prev, [id]: '' }))
+      await cargarCotizaciones()
+    } catch (e: any) {
+      setError(e.response?.data?.error || 'Código inválido')
+    } finally {
+      setAccionando(false)
+    }
+  }
+
   if (cargando) {
     return <div className="min-h-screen flex items-center justify-center"><div className="spinner" /></div>
   }
@@ -863,21 +893,43 @@ export default function MiPerfilComisionistaPage() {
 
                       {c.estado === 'aceptada' && (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-2 text-sm text-green-800">
-                          ✓ El comprador aceptó tu cotización de <strong>${c.cotizacion?.monto?.toLocaleString('es-AR')}</strong>. Coordiná el traslado por chat.
+                          ✓ El comprador aceptó tu cotización de <strong>${c.cotizacion?.monto?.toLocaleString('es-AR')}</strong>.{' '}
+                          {c.pago?.estadoPago === 'pagado'
+                            ? 'Ya está pagado: retirá el paquete del vendedor y marcá el traslado en tránsito.'
+                            : 'Esperando que el comprador pague el traslado para coordinar el retiro.'}
+                        </div>
+                      )}
+
+                      {c.estado === 'en_transito' && (
+                        <div className="bg-violet-50 border border-violet-200 rounded-lg p-3 mb-2">
+                          <p className="text-sm text-ml-violet font-semibold mb-2">🚚 En tránsito. Al entregar, pedile el código al comprador e ingresalo:</p>
+                          <div className="flex gap-2 items-end flex-wrap">
+                            <input value={codigos[c._id] || ''} onChange={(e) => setCodigos(prev => ({ ...prev, [c._id]: e.target.value }))} placeholder="ABCD-2345" className="flex-1 min-w-[140px] px-3 py-2 border border-ml-line rounded-lg uppercase" />
+                            <button onClick={() => confirmarEntregaTraslado(c._id)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold">Confirmar entrega</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {c.estado === 'entregado' && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-2 text-sm text-green-800 font-semibold">
+                          ✓ Entrega confirmada. ¡Listo!
                         </div>
                       )}
 
                       <div className="flex flex-wrap gap-2 justify-end mt-2">
-                        {c.compradorId && ['cotizada', 'aceptada'].includes(c.estado) && (
+                        {c.estado === 'aceptada' && c.pago?.estadoPago === 'pagado' && (
+                          <button onClick={() => trasladoEnTransito(c._id)} disabled={accionando} className="px-4 py-2 mlbtn ml-grad text-white rounded-lg text-sm font-bold">Marcar en tránsito</button>
+                        )}
+                        {c.compradorId && ['cotizada', 'aceptada', 'en_transito'].includes(c.estado) && (
                           <button onClick={() => navigate(`/chat?con=${c.compradorId!._id}&nombre=${encodeURIComponent(c.compradorId!.nombre)}`)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat comprador</button>
                         )}
-                        {c.vendedorId && c.estado === 'aceptada' && (
+                        {c.vendedorId && ['aceptada', 'en_transito'].includes(c.estado) && (
                           <button onClick={() => navigate(`/chat?con=${c.vendedorId!._id}&nombre=${encodeURIComponent(c.vendedorId!.nombre)}`)} className="px-4 py-2 border border-amber-300 bg-amber-50 rounded-lg text-sm font-semibold text-amber-800 hover:bg-amber-100">📍 Coordinar retiro</button>
                         )}
-                        {c.estado === 'aceptada' && !c.incidente?.reportado && (
+                        {['aceptada', 'en_transito'].includes(c.estado) && !c.incidente?.reportado && (
                           <button onClick={() => reportarIncidente(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-amber-700 hover:text-amber-800">⚠️ Reportar problema</button>
                         )}
-                        {!['rechazada', 'cancelada'].includes(c.estado) && (
+                        {!['en_transito', 'entregado', 'rechazada', 'cancelada'].includes(c.estado) && (
                           <button onClick={() => cancelarCotizacion(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-red-600">Rechazar</button>
                         )}
                       </div>
