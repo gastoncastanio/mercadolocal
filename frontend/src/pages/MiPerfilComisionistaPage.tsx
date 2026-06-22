@@ -34,6 +34,7 @@ interface Cotizacion {
   cotizacion: { monto: number | null; notas: string }
   incidente?: { reportado: boolean }
   compradorId?: { _id: string; nombre: string; avatar: string } | null
+  vendedorId?: { _id: string; nombre: string; avatar: string } | null
   ordenId?: { total: number } | null
 }
 
@@ -667,7 +668,10 @@ export default function MiPerfilComisionistaPage() {
 
                       <div className="flex flex-wrap gap-2 justify-end mt-2">
                         {c.compradorId && ['cotizada', 'aceptada'].includes(c.estado) && (
-                          <button onClick={() => navigate(`/chat?con=${c.compradorId!._id}&nombre=${encodeURIComponent(c.compradorId!.nombre)}`)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat</button>
+                          <button onClick={() => navigate(`/chat?con=${c.compradorId!._id}&nombre=${encodeURIComponent(c.compradorId!.nombre)}`)} className="px-4 py-2 border border-ml-line rounded-lg text-sm font-semibold text-ml-ink hover:bg-ml-bg">💬 Chat comprador</button>
+                        )}
+                        {c.vendedorId && c.estado === 'aceptada' && (
+                          <button onClick={() => navigate(`/chat?con=${c.vendedorId!._id}&nombre=${encodeURIComponent(c.vendedorId!.nombre)}`)} className="px-4 py-2 border border-amber-300 bg-amber-50 rounded-lg text-sm font-semibold text-amber-800 hover:bg-amber-100">📍 Coordinar retiro</button>
                         )}
                         {c.estado === 'aceptada' && !c.incidente?.reportado && (
                           <button onClick={() => reportarIncidente(c._id)} disabled={accionando} className="px-4 py-2 text-sm font-semibold text-amber-700 hover:text-amber-800">⚠️ Reportar problema</button>

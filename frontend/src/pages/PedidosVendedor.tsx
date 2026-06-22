@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import api, { SOCKET_URL } from '../services/api'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import { Orden, Usuario } from '../types'
+
+// Cotización "en vivo" que afecta a una venta: el retiro lo hace un comisionista,
+// no el vendedor. Llega de /comisionistas/cotizaciones-de-mis-ventas.
+interface CotizacionVenta {
+  _id: string
+  ordenId: string
+  estado: 'pendiente' | 'cotizada' | 'aceptada'
+  comisionistaId?: { _id: string; nombre?: string; avatar?: string }
+  cotizacion?: { monto?: number | null }
+  pago?: { estadoPago?: string }
+}
 
 const estadoColores: Record<string, string> = {
   pagada: 'bg-ml-bg text-blue-700',
@@ -55,10 +67,40 @@ function linkWhatsApp(tel: string, mensaje: string): string {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`
 }
 
+// Describe, para el vendedor, qué significa una cotización en vivo sobre su venta.
+function descripcionCotiz(c: CotizacionVenta) {
+  const nombre = c.comisionistaId?.nombre || 'Un comisionista'
+  const pagado = c.pago?.estadoPago === 'pagado'
+  if (c.estado === 'aceptada') {
+    return {
+      tono: 'bg-blue-50 border-blue-200',
+      titColor: 'text-blue-800',
+      txtColor: 'text-blue-700',
+      titulo: pagado ? '🚗 Retiro confirmado y pagado' : '🚗 Retiro por comisionista confirmado',
+      texto: pagado
+        ? `${nombre} va a pasar a retirar este pedido en tu local. El traslado ya está pagado: tenelo listo. NO lo despaches por correo.`
+        : `${nombre} va a pasar a retirar este pedido en tu local. Prepará el paquete y coordiná el retiro por chat. NO lo despaches por correo.`,
+      comisionista: c.comisionistaId || null
+    }
+  }
+  return {
+    tono: 'bg-amber-50 border-amber-200',
+    titColor: 'text-amber-800',
+    txtColor: 'text-amber-700',
+    titulo: '🚗 El comprador eligió comisionista en vivo',
+    texto: c.estado === 'cotizada'
+      ? 'Un comisionista ya cotizó el retiro; esperamos que el comprador lo confirme. No despaches este pedido por correo todavía.'
+      : 'El comprador está buscando un comisionista que pase a retirar. No despaches este pedido por correo todavía.',
+    comisionista: null
+  }
+}
+
 export default function PedidosVendedor() {
   const toast = useToast()
   const { tienda } = useAuth()
   const [ordenes, setOrdenes] = useState<Orden[]>([])
+  // Cotizaciones en vivo indexadas por ordenId (retiro por comisionista).
+  const [cotizPorOrden, setCotizPorOrden] = useState<Record<string, CotizacionVenta>>({})
   const [cargando, setCargando] = useState(true)
   const [filtro, setFiltro] = useState<'todos' | 'pagada' | 'enviada' | 'completada'>('todos')
 
@@ -87,8 +129,24 @@ export default function PedidosVendedor() {
 
   async function cargarOrdenes() {
     try {
-      const res = await api.get('/ordenes/vendedor')
-      setOrdenes(res.data)
+      // En paralelo: las órdenes y las cotizaciones en vivo que afectan al retiro.
+      const [resOrdenes, resCotiz] = await Promise.all([
+        api.get('/ordenes/vendedor'),
+        api.get('/comisionistas/cotizaciones-de-mis-ventas').catch(() => ({ data: [] }))
+      ])
+      setOrdenes(resOrdenes.data)
+
+      // Indexar por ordenId, quedándonos con la más avanzada por orden
+      // (aceptada > cotizada > pendiente) por si el comprador pidió a varios.
+      const peso: Record<string, number> = { pendiente: 1, cotizada: 2, aceptada: 3 }
+      const mapa: Record<string, CotizacionVenta> = {}
+      for (const c of (resCotiz.data as CotizacionVenta[])) {
+        const oid = String(c.ordenId)
+        if (!mapa[oid] || (peso[c.estado] || 0) > (peso[mapa[oid].estado] || 0)) {
+          mapa[oid] = c
+        }
+      }
+      setCotizPorOrden(mapa)
     } catch (error: any) {
       console.error('Error:', error)
       toast.error('No pudimos cargar tus pedidos')
@@ -273,6 +331,10 @@ export default function PedidosVendedor() {
 
               const mensajeWA = `Hola ${nombreFinal.split(' ')[0]}, soy de ${tienda?.nombre || 'tu compra'}. Te confirmo el pedido #${orden._id.slice(-8).toUpperCase()} y coordino el envío.`
 
+              // ¿Esta venta la retira un comisionista en vivo? (cambia el rol del vendedor)
+              const cotiz = cotizPorOrden[orden._id]
+              const info = cotiz ? descripcionCotiz(cotiz) : null
+
               return (
                 <div key={orden._id} className="bg-white rounded-2xl shadow-sm border border-ml-line2 overflow-hidden">
                   {/* Header */}
@@ -304,6 +366,22 @@ export default function PedidosVendedor() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {/* Retiro por comisionista en vivo: el vendedor NO despacha */}
+                  {info && (
+                    <div className={`px-5 py-3 border-b ${info.tono}`}>
+                      <p className={`text-xs font-bold ${info.titColor}`}>{info.titulo}</p>
+                      <p className={`text-[11px] mt-0.5 ${info.txtColor}`}>{info.texto}</p>
+                      {info.comisionista && (
+                        <Link
+                          to={`/chat?con=${info.comisionista._id}&nombre=${encodeURIComponent(info.comisionista.nombre || 'Comisionista')}`}
+                          className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          💬 Coordinar retiro con {info.comisionista.nombre || 'el comisionista'}
+                        </Link>
+                      )}
                     </div>
                   )}
 
@@ -455,13 +533,18 @@ export default function PedidosVendedor() {
                           🧾 Facturar
                         </button>
                       )}
-                      {orden.estado === 'pagada' && (
+                      {orden.estado === 'pagada' && !info && (
                         <button
                           onClick={() => abrirModalEnvio(orden)}
                           className="px-5 py-3 bg-purple-600 text-white text-sm font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
                         >
                           📦 Marcar como enviado
                         </button>
+                      )}
+                      {orden.estado === 'pagada' && info && (
+                        <span className="px-4 py-3 bg-blue-50 text-blue-700 text-sm font-semibold rounded-xl text-center">
+                          🚗 Lo retira un comisionista
+                        </span>
                       )}
                       {orden.estado === 'enviada' && (
                         <button

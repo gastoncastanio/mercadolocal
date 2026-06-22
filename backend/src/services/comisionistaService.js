@@ -682,6 +682,18 @@ export async function solicitarCotizacion(compradorId, { ordenId, comisionistaId
       enlace: '/comisionistas/mi-perfil'
     })
 
+    // Aviso TEMPRANO al vendedor: que NO despache por correo, porque el comprador
+    // está gestionando el retiro con un comisionista en vivo. Se confirma recién
+    // cuando el comprador acepte y pague una cotización.
+    if (vendedorId) {
+      emitNotificacion(vendedorId.toString(), {
+        tipo: 'venta',
+        titulo: 'Retiro por comisionista en vivo',
+        mensaje: `El comprador de tu venta #${ordenId.toString().slice(-8).toUpperCase()} está buscando un comisionista que pase a retirar. No la despaches por correo todavía; te avisamos cuando se confirme.`,
+        enlace: '/pedidos-vendedor'
+      })
+    }
+
     return solicitud
   } catch (err) {
     if (err.code === 11000) throw new Error('Ya le pediste cotización a este comisionista por esta orden')
@@ -703,6 +715,23 @@ export async function misCotizaciones(compradorId) {
   return await SolicitudCotizacion.find({ compradorId })
     .sort({ createdAt: -1 })
     .populate('comisionistaId', 'nombre avatar')
+    .lean()
+}
+
+/**
+ * Cotizaciones "en vivo" que afectan a las ventas de un vendedor. Le permite ver,
+ * por cada orden, que el retiro lo hace un comisionista (y en qué estado está) en
+ * vez de despacharla él. Solo las que ya tienen un comisionista en juego
+ * (estado distinto de cancelada/rechazada) para no ensuciar el panel.
+ */
+export async function cotizacionesDeMisVentas(vendedorId) {
+  return await SolicitudCotizacion.find({
+    vendedorId,
+    estado: { $nin: ['rechazada', 'cancelada'] }
+  })
+    .sort({ createdAt: -1 })
+    .populate('comisionistaId', 'nombre avatar')
+    .populate('compradorId', 'nombre avatar')
     .lean()
 }
 
@@ -744,9 +773,23 @@ export async function aceptarCotizacion(compradorId, solicitudId) {
   emitNotificacion(solicitud.comisionistaId.toString(), {
     tipo: 'cotizacion',
     titulo: 'Cotización aceptada',
-    mensaje: 'Un comprador aceptó tu cotización. Coordinen el traslado por chat.',
+    mensaje: 'Un comprador aceptó tu cotización. Coordiná el retiro con el vendedor y la entrega con el comprador por chat.',
     enlace: '/comisionistas/mi-perfil'
   })
+
+  // El vendedor YA tiene certeza: este pedido lo retira un comisionista, no lo
+  // despacha él. Le pasamos el nombre del comisionista para que lo reconozca al
+  // retirar, y se desbloquea el chat vendedor↔comisionista para coordinar.
+  if (solicitud.vendedorId) {
+    const comisionista = await Usuario.findById(solicitud.comisionistaId).select('nombre').lean()
+    const nombreCom = comisionista?.nombre || 'un comisionista'
+    emitNotificacion(solicitud.vendedorId.toString(), {
+      tipo: 'venta',
+      titulo: 'Retiro confirmado por comisionista',
+      mensaje: `${nombreCom} va a pasar a retirar tu venta #${solicitud.ordenId.toString().slice(-8).toUpperCase()}. Prepará el paquete; coordiná el retiro por chat.`,
+      enlace: '/pedidos-vendedor'
+    })
+  }
   return solicitud
 }
 
@@ -857,6 +900,14 @@ export async function marcarTrasladoPagado(solicitudId, mpPaymentId) {
     mensaje: 'Tu pago del traslado fue confirmado. Coordiná la entrega con el comisionista.',
     enlace: '/comisionistas/mis-cotizaciones'
   })
+  if (solicitud.vendedorId) {
+    emitNotificacion(solicitud.vendedorId.toString(), {
+      tipo: 'venta',
+      titulo: 'Traslado pagado — preparar retiro',
+      mensaje: `El traslado de tu venta #${solicitud.ordenId.toString().slice(-8).toUpperCase()} ya está pagado. Tené el paquete listo para cuando pase el comisionista.`,
+      enlace: '/pedidos-vendedor'
+    })
+  }
   return solicitud
 }
 
