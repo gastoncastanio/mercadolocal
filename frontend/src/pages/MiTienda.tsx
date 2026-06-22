@@ -24,6 +24,7 @@ export default function MiTienda() {
   const [guardandoRapido, setGuardandoRapido] = useState(false)
   const [form, setForm] = useState({
     nombre: tienda?.nombre || '',
+    nombreCorto: tienda?.nombreCorto || '',
     descripcion: tienda?.descripcion || '',
     ciudad: tienda?.ciudad || '',
     tipo: tienda?.tipo || 'online',
@@ -399,6 +400,13 @@ export default function MiTienda() {
                 className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
+              <label className="block text-sm font-medium text-ml-ink mb-1">Nombre corto <span className="text-ml-muted font-normal">(opcional)</span></label>
+              <input type="text" maxLength={40} value={form.nombreCorto} onChange={e => setForm({...form, nombreCorto: e.target.value})}
+                placeholder="Cómo se muestra en las tarjetas (ej. tu marca)"
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+              <p className="text-[11px] text-ml-muted mt-1">Si el nombre completo es largo, este se usa en las tarjetas de producto. Vacío = el nombre completo.</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-ml-ink mb-1">Localidad</label>
               <select required value={form.ciudad} onChange={e => setForm({...form, ciudad: e.target.value})}
                 className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white">
@@ -466,7 +474,7 @@ export default function MiTienda() {
               <p className="text-sm text-ml-muted">Ganancias totales</p>
               <p className="text-2xl font-bold text-green-600">${tienda?.ganancias?.toLocaleString('es-AR') || 0}</p>
               <p className="text-xs text-ml-muted">{tienda?.totalVentas || 0} ventas</p>
-              <button onClick={() => { setForm({nombre: tienda?.nombre||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||''}); setEditando(true) }}
+              <button onClick={() => { setForm({nombre: tienda?.nombre||'', nombreCorto: tienda?.nombreCorto||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||''}); setEditando(true) }}
                 className="mt-2 text-sm text-ml-blue hover:underline font-medium">Editar tienda</button>
             </div>
           </div>

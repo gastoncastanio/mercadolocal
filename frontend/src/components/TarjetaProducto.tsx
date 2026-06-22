@@ -26,6 +26,8 @@ export default function TarjetaProducto({ producto }: Props) {
   const cuota6 = Math.round(producto.precio / 6)
   const tieneTienda = tienda && typeof tienda === 'object'
   const inicial = (tieneTienda && tienda.nombre ? tienda.nombre : producto.nombre).charAt(0).toUpperCase()
+  // Nombre corto (editable por el vendedor) para no romper el layout de la tarjeta.
+  const nombreTienda = tieneTienda ? (tienda.nombreCorto || tienda.nombre) : ''
 
   return (
     <Link
@@ -119,7 +121,7 @@ export default function TarjetaProducto({ producto }: Props) {
         {tieneTienda && (tienda.nombre || tienda.ciudad) && (
           <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ml-line2">
             <span className="shrink-0 w-6 h-6 rounded-full ml-grad text-white text-[11px] font-bold flex items-center justify-center">{inicial}</span>
-            {tienda.nombre && <span className="text-[12.5px] text-ml-soft font-semibold truncate">{tienda.nombre}</span>}
+            {nombreTienda && <span className="text-[12.5px] text-ml-soft font-semibold truncate">{nombreTienda}</span>}
             {tienda.oficial && <BadgeVerificado className="w-4 h-4 shrink-0" titulo="Tienda Oficial verificada" />}
             {tienda.ciudad && (
               <span className="ml-auto shrink-0 flex items-center gap-0.5 text-[11.5px] text-ml-muted whitespace-nowrap">

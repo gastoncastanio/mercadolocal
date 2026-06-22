@@ -255,7 +255,7 @@ export async function crearProducto(tiendaId, datos) {
 
 // Obtener producto por ID
 export async function obtenerProducto(productoId) {
-  const producto = await Producto.findById(productoId).populate('tiendaId', 'nombre ciudad logo')
+  const producto = await Producto.findById(productoId).populate('tiendaId', 'nombre nombreCorto ciudad logo oficial marca')
   if (!producto) throw new Error('Producto no encontrado')
   return producto
 }
@@ -376,9 +376,12 @@ export async function listarProductos(filtros = {}) {
         tiendaId: {
           _id: '$tienda._id',
           nombre: '$tienda.nombre',
+          nombreCorto: '$tienda.nombreCorto',
           ciudad: '$tienda.ciudad',
           logo: '$tienda.logo',
-          calificacion: '$tienda.calificacion'
+          calificacion: '$tienda.calificacion',
+          oficial: '$tienda.oficial',
+          marca: '$tienda.marca'
         }
       }
     },
@@ -434,9 +437,12 @@ export async function listarProductosPorIds(ids = []) {
         tiendaId: {
           _id: '$tienda._id',
           nombre: '$tienda.nombre',
+          nombreCorto: '$tienda.nombreCorto',
           ciudad: '$tienda.ciudad',
           logo: '$tienda.logo',
-          calificacion: '$tienda.calificacion'
+          calificacion: '$tienda.calificacion',
+          oficial: '$tienda.oficial',
+          marca: '$tienda.marca'
         }
       }
     },

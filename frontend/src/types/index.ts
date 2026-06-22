@@ -37,6 +37,8 @@ export interface Tienda {
   oficial?: boolean
   marca?: string
   oficialDesde?: string
+  // Nombre corto opcional para tarjetas (si está vacío se usa `nombre`)
+  nombreCorto?: string
   createdAt?: string
 }
 

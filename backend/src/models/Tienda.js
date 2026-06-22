@@ -13,6 +13,14 @@ const tiendaSchema = new mongoose.Schema({
     required: [true, 'El nombre de la tienda es obligatorio'],
     trim: true
   },
+  // Nombre corto opcional para mostrar en espacios chicos (tarjetas de producto).
+  // Si está vacío se usa `nombre`. Editable por el vendedor.
+  nombreCorto: {
+    type: String,
+    default: '',
+    trim: true,
+    maxlength: 40
+  },
   descripcion: {
     type: String,
     default: ''

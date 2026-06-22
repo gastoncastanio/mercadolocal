@@ -9,6 +9,7 @@ import TarjetaProducto from '../components/TarjetaProducto'
 import CalculadoraCuotas from '../components/CalculadoraCuotas'
 import CalculadorCostos from '../components/CalculadorCostos'
 import CotizadorEnvio from '../components/CotizadorEnvio'
+import BadgeVerificado from '../components/BadgeVerificado'
 import { trackVista } from '../services/tracking'
 import { imgCloudinary } from '../utils/cloudinary'
 
@@ -351,8 +352,9 @@ export default function DetalleProducto() {
                 {tienda && typeof tienda === 'object' && (
                   <div className="mb-4 pb-4 border-b border-ml-line2">
                     <p className="text-[13px] text-ml-muted mb-1">Vendido por</p>
-                    <Link to={`/tienda/${tienda._id}`} className="text-sm text-ml-blue hover:text-ml-violet font-medium">
+                    <Link to={`/tienda/${tienda._id}`} className="text-sm text-ml-blue hover:text-ml-violet font-medium inline-flex items-center gap-1">
                       {tienda.nombre}
+                      {tienda.oficial && <BadgeVerificado className="w-4 h-4" titulo="Tienda Oficial" />}
                     </Link>
                     {(tienda.calificacion ?? 0) > 0 && (
                       <div className="flex items-center gap-1 mt-1">

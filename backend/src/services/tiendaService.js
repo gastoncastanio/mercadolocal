@@ -71,6 +71,7 @@ export async function actualizarTienda(usuarioId, datos) {
     { usuarioId },
     {
       nombre: datos.nombre,
+      nombreCorto: datos.nombreCorto,
       descripcion: datos.descripcion,
       logo: datos.logo,
       ciudad: datos.ciudad,
