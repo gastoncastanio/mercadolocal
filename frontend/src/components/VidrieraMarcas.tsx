@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../services/api'
 import { imgCloudinary } from '../utils/cloudinary'
+import BadgeVerificado from './BadgeVerificado'
 
 /**
  * Vidriera de marcas: muestra las "Tiendas Oficiales" (marcas verificadas) que
@@ -17,12 +18,6 @@ interface TiendaOficial {
   ciudad?: string
 }
 
-const Check = ({ className }: { className: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M9 16.17 5.53 12.7a.996.996 0 1 0-1.41 1.41l4.18 4.18c.39.39 1.02.39 1.41 0L20.29 7.71a.996.996 0 1 0-1.41-1.41L9 16.17z" />
-  </svg>
-)
-
 export default function VidrieraMarcas() {
   const [tiendas, setTiendas] = useState<TiendaOficial[]>([])
 
@@ -37,7 +32,7 @@ export default function VidrieraMarcas() {
       <div className="flex items-center gap-2 mb-3">
         <h2 className="text-lg font-bold text-ml-ink">Tiendas Oficiales</h2>
         <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
-          <Check className="w-3 h-3" /> marcas verificadas
+          <BadgeVerificado className="w-3.5 h-3.5" titulo="verificada" /> marcas verificadas
         </span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
@@ -58,7 +53,7 @@ export default function VidrieraMarcas() {
             </div>
             <p className="text-[13px] font-bold text-ml-ink truncate w-full">{t.marca || t.nombre}</p>
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 mt-1">
-              <Check className="w-2.5 h-2.5" /> Oficial
+              <BadgeVerificado className="w-3 h-3" titulo="Oficial" /> Oficial
             </span>
           </Link>
         ))}
