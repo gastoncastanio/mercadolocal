@@ -1,6 +1,7 @@
 import Disputa from '../models/Disputa.js'
 import Orden from '../models/Orden.js'
 import Tienda from '../models/Tienda.js'
+import { emitNotificacion } from './socketService.js'
 
 // Crear disputa
 export async function crearDisputa(compradorId, { ordenId, motivo, descripcion }) {
@@ -23,6 +24,22 @@ export async function crearDisputa(compradorId, { ordenId, motivo, descripcion }
   })
 
   await disputa.save()
+
+  // Aviso CRÍTICO al vendedor: tiene que responder (en disputa, el silencio
+  // suele resolverse a favor del comprador). Y confirmación al comprador.
+  const ref = `#${ordenId.toString().slice(-8).toUpperCase()}`
+  emitNotificacion(tienda.usuarioId.toString(), {
+    tipo: 'disputa',
+    titulo: 'Se abrió una disputa en tu venta',
+    mensaje: `El comprador abrió una disputa por la orden ${ref} (motivo: ${motivo}). Respondé cuanto antes con tu evidencia.`,
+    enlace: '/disputas'
+  })
+  emitNotificacion(compradorId.toString(), {
+    tipo: 'disputa',
+    titulo: 'Disputa iniciada',
+    mensaje: `Registramos tu disputa por la orden ${ref}. Te avisamos cuando haya novedades.`,
+    enlace: '/disputas'
+  })
 
   return disputa
 }
@@ -56,6 +73,23 @@ export async function resolverDisputa(disputaId, resolucion, estadoFinal) {
   disputa.resolucion = resolucion
   disputa.estado = estadoFinal
   await disputa.save()
+
+  // Avisar a ambas partes del resultado.
+  const ref = `#${disputa.ordenId.toString().slice(-8).toUpperCase()}`
+  const favorComprador = estadoFinal === 'resuelta_comprador'
+  const detalle = estadoFinal === 'cerrada'
+    ? 'La disputa se cerró sin cambios.'
+    : favorComprador
+      ? 'Se resolvió a favor del comprador.'
+      : 'Se resolvió a favor del vendedor.'
+  for (const uid of [disputa.compradorId, disputa.vendedorId]) {
+    emitNotificacion(uid.toString(), {
+      tipo: 'disputa',
+      titulo: `Disputa resuelta (orden ${ref})`,
+      mensaje: `${detalle}${resolucion ? ` ${resolucion}` : ''}`,
+      enlace: '/disputas'
+    })
+  }
 
   return disputa
 }

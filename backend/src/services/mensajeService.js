@@ -76,12 +76,15 @@ export async function existeServicioContratadoEntre(userA, userB) {
       ]
     }).select('_id').lean(),
     // Comisionista en vivo: chat desbloqueado cuando el comprador acepta la
-    // cotización (entre comprador y comisionista).
+    // cotización. Se habilita tanto comprador↔comisionista (coordinar la entrega)
+    // como vendedor↔comisionista (coordinar el RETIRO del paquete en el local).
     SolicitudCotizacion.findOne({
       estado: 'aceptada',
       $or: [
         { compradorId: userA, comisionistaId: userB },
-        { compradorId: userB, comisionistaId: userA }
+        { compradorId: userB, comisionistaId: userA },
+        { vendedorId: userA, comisionistaId: userB },
+        { vendedorId: userB, comisionistaId: userA }
       ]
     }).select('_id').lean(),
     // Remis: chat desbloqueado cuando un conductor toma el viaje (aceptado en

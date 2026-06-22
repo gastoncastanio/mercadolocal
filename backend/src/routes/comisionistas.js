@@ -339,6 +339,17 @@ router.get('/mis-cotizaciones', verificarToken, async (req, res) => {
   }
 })
 
+// GET /api/comisionistas/cotizaciones-de-mis-ventas - Cotizaciones en vivo que afectan
+// a las ventas del vendedor (para que sepa que el retiro lo hace un comisionista)
+router.get('/cotizaciones-de-mis-ventas', verificarToken, async (req, res) => {
+  try {
+    const lista = await comisionistaService.cotizacionesDeMisVentas(req.usuario.id)
+    res.json(lista)
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // PATCH /api/comisionistas/cotizacion/:id/responder - El comisionista cotiza un precio
 router.patch('/cotizacion/:id/responder', verificarToken, async (req, res) => {
   try {

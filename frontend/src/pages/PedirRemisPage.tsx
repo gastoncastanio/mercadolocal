@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { LOCALIDADES } from '../constants/localidades'
 
 interface Remisero {
   usuarioId: string
@@ -132,7 +133,10 @@ export default function PedirRemisPage() {
             <label className="block text-sm font-bold text-ml-ink mb-2">📍 Te paso a buscar en</label>
             <input value={origenDir} onChange={e => setOrigenDir(e.target.value)} placeholder="Dirección (calle y número)" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm mb-2" />
             <div className="grid grid-cols-2 gap-2">
-              <input value={origenCiudad} onChange={e => setOrigenCiudad(e.target.value)} placeholder="Ciudad / localidad" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
+              <select value={origenCiudad} onChange={e => setOrigenCiudad(e.target.value)} className="px-3 py-2 border border-ml-line rounded-lg text-sm bg-white">
+                <option value="">Localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
               <input value={origenRef} onChange={e => setOrigenRef(e.target.value)} placeholder="Referencia (portón, timbre)" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
             </div>
           </div>
@@ -140,7 +144,10 @@ export default function PedirRemisPage() {
             <label className="block text-sm font-bold text-ml-ink mb-2">🏁 Destino</label>
             <input value={destinoDir} onChange={e => setDestinoDir(e.target.value)} placeholder="Dirección (calle y número)" className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm mb-2" />
             <div className="grid grid-cols-2 gap-2">
-              <input value={destinoCiudad} onChange={e => setDestinoCiudad(e.target.value)} placeholder="Ciudad / localidad" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
+              <select value={destinoCiudad} onChange={e => setDestinoCiudad(e.target.value)} className="px-3 py-2 border border-ml-line rounded-lg text-sm bg-white">
+                <option value="">Localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
               <input value={destinoRef} onChange={e => setDestinoRef(e.target.value)} placeholder="Referencia" className="px-3 py-2 border border-ml-line rounded-lg text-sm" />
             </div>
           </div>

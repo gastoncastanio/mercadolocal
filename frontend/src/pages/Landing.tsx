@@ -49,9 +49,9 @@ const CATEGORIAS = [
 ]
 
 const TESTIMONIOS = [
-  { nombre: 'Camila R.', ciudad: 'Córdoba', texto: 'Vendí más de 50 productos en el primer mes. La plataforma es súper intuitiva y el pago cae directo.', rol: 'Vendedora' },
-  { nombre: 'Martín L.', ciudad: 'Rosario', texto: 'Compré un celular y llegó perfecto. Pagué con Mercado Pago, súper seguro y rápido.', rol: 'Comprador' },
-  { nombre: 'Lucía G.', ciudad: 'Buenos Aires', texto: 'Abrí mi tienda de ropa vintage y ya tengo clientes fieles. Cero complicaciones.', rol: 'Vendedora' }
+  { nombre: 'Camila R.', ciudad: 'Lobos', texto: 'Vendí más de 50 productos en el primer mes. La plataforma es súper intuitiva y el pago cae directo.', rol: 'Vendedora' },
+  { nombre: 'Martín L.', ciudad: 'Cañuelas', texto: 'Compré un celular y llegó perfecto. Pagué con Mercado Pago, súper seguro y rápido.', rol: 'Comprador' },
+  { nombre: 'Lucía G.', ciudad: 'General Las Heras', texto: 'Abrí mi tienda de ropa vintage y ya tengo clientes fieles. Cero complicaciones.', rol: 'Vendedora' }
 ]
 
 const TIENDAS_MARQUEE = ['TecnoStore', 'Mueblería Centro', 'AudioCenter', 'DeporLocal', 'Ferretería Norte', 'Bazar Lobos', 'Granja Don Pedro', 'Farmacia Central']
@@ -230,6 +230,15 @@ export default function Landing() {
             <p className="text-[15px] sm:text-[17px] leading-[1.5] text-ml-soft max-w-[500px] mt-3 sm:mt-4">
               El mismo producto, de todas las tiendas de tu zona, con todos los precios a la vista. Elegís el más barato, pagás con Mercado Pago y recibís hoy. Dejá de recorrer 10 negocios.
             </p>
+
+            {/* Cobertura: dejamos MUY claro en qué localidades operamos */}
+            <div className="mt-3 inline-flex items-start gap-2 bg-ml-bg border border-ml-line rounded-xl px-3 py-2 max-w-[520px]">
+              <span className="text-base leading-none mt-0.5">📍</span>
+              <p className="text-[12.5px] sm:text-[13px] text-ml-slate leading-snug">
+                <strong>Disponible en:</strong> General Las Heras, Cañuelas, Lobos, Navarro y Roque Pérez.
+                <span className="text-ml-muted"> Pronto, más localidades.</span>
+              </p>
+            </div>
 
             {/* Buscador funcional */}
             <form onSubmit={buscar} className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white border border-ml-line rounded-2xl p-2 max-w-[560px]"

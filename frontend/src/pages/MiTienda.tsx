@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { subirImagenOptimizada, UploadProgress } from '../utils/imageUpload'
 import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/categorias'
+import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 import SelectorEntrega from '../components/SelectorEntrega'
 import { ENTREGA_VACIA, EntregaProducto } from '../types'
@@ -398,9 +399,13 @@ export default function MiTienda() {
                 className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ml-ink mb-1">Ciudad</label>
-              <input type="text" required value={form.ciudad} onChange={e => setForm({...form, ciudad: e.target.value})}
-                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
+              <label className="block text-sm font-medium text-ml-ink mb-1">Localidad</label>
+              <select required value={form.ciudad} onChange={e => setForm({...form, ciudad: e.target.value})}
+                className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none bg-white">
+                <option value="">Elegí tu localidad</option>
+                {LOCALIDADES.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <p className="text-xs text-ml-muted mt-1">{COBERTURA_TEXTO}</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-ml-ink mb-1">Descripcion</label>
