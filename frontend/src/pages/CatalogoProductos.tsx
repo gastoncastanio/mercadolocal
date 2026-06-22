@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import api, { SOCKET_URL } from '../services/api'
 import { Producto } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
+import ParaVos from '../components/ParaVos'
 import { trackBusqueda } from '../services/tracking'
 
 export default function CatalogoProductos() {
@@ -328,6 +329,11 @@ export default function CatalogoProductos() {
             ))}
           </div>
         )}
+
+        {/* Recomendaciones según el historial del cliente */}
+        <div className="mt-12">
+          <ParaVos />
+        </div>
       </div>
     </div>
   )

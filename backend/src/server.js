@@ -14,6 +14,7 @@ import mongoSanitize from 'express-mongo-sanitize'
 import hpp from 'hpp'
 import { connectDB, disconnectDB } from './config/database.js'
 import { limpiarOrdenesPendientes } from './services/ordenService.js'
+import { recuperarCarritosAbandonados } from './services/carritoService.js'
 import { initSocket, getIO } from './services/socketService.js'
 
 // Rutas del Marketplace
@@ -286,6 +287,17 @@ connectDB().then(async () => {
       console.warn('Error en limpieza periódica:', err.message)
     }
   }, 30 * 60 * 1000)
+
+  // Recuperación de carritos abandonados: cada hora avisamos a los clientes que
+  // dejaron productos sin comprar (recordatorio escalonado, máx 2 por ciclo).
+  setInterval(async () => {
+    try {
+      const avisados = await recuperarCarritosAbandonados()
+      if (avisados > 0) console.log(`🛒 ${avisados} recordatorio(s) de carrito abandonado enviados`)
+    } catch (err) {
+      console.warn('Error recuperando carritos abandonados:', err.message)
+    }
+  }, 60 * 60 * 1000)
 }).catch((err) => {
   console.error('Error conectando a MongoDB:', err)
 })

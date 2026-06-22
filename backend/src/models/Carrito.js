@@ -38,10 +38,20 @@ const carritoSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  items: [itemCarritoSchema]
+  items: [itemCarritoSchema],
+  // Recuperación de carrito abandonado: cuántos recordatorios mandamos y cuándo,
+  // para escalonarlos (suave → con gancho) y NO spamear. El contador se reinicia
+  // cuando el cliente vuelve a tocar el carrito (ver agregar/actualizar).
+  recordatorios: {
+    enviados: { type: Number, default: 0 },
+    ultimo: { type: Date, default: null }
+  }
 }, {
   timestamps: true
 })
+
+// Índice para el cron de recuperación: barrer carritos por antigüedad.
+carritoSchema.index({ updatedAt: 1 })
 
 const Carrito = mongoose.model('Carrito', carritoSchema)
 

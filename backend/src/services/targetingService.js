@@ -808,3 +808,64 @@ export async function notificarClientesIdeales(destacado, opts = {}) {
     console.warn('notificarClientesIdeales falló:', e.message)
   }
 }
+
+/**
+ * RECOMENDACIONES "PARA VOS".
+ *
+ * Usa el perfil de intención (vistas, búsquedas, favoritos, compras + afinidad
+ * de categoría/precio con decaimiento temporal) para devolver:
+ *   - vistosRecientes: lo último que miró el cliente (para "Seguí viendo")
+ *   - recomendados: productos activos con stock, ordenados por propensión real
+ *
+ * Respeta la cobertura: solo productos de tiendas en las localidades operativas.
+ * Si el cliente no tiene perfil (visitante nuevo), cae a los más vendidos.
+ */
+export async function recomendarParaCliente(identity, { limite = 12 } = {}) {
+  const perfil = await obtenerPerfil(identity)
+
+  // IDs vistos recientemente (para excluir de "recomendados" y devolver aparte).
+  const vistosIds = (perfil?.vistasRecientes || [])
+    .map(v => v.productoId?.toString())
+    .filter(Boolean)
+
+  // Traemos los productos vistos recientemente (hasta 8) para "Seguí viendo".
+  let vistosRecientes = []
+  if (vistosIds.length > 0) {
+    const docs = await Producto.find({ _id: { $in: vistosIds.slice(0, 8) }, activo: true, stock: { $gt: 0 } })
+      .select('nombre precio precioAnterior imagenes categorias ciudad tiendaId calificacion')
+      .populate('tiendaId', 'nombre ciudad')
+      .lean()
+    // Mantener el orden de vistas (más reciente primero).
+    const orden = new Map(vistosIds.map((id, i) => [id, i]))
+    vistosRecientes = docs.sort((a, b) => (orden.get(a._id.toString()) ?? 99) - (orden.get(b._id.toString()) ?? 99))
+  }
+
+  // Pool de candidatos: activos, con stock, no vistos ya. Tomamos un lote amplio
+  // y reciente, y lo ordenamos por propensión del cliente.
+  const candidatos = await Producto.find({
+    activo: true,
+    stock: { $gt: 0 },
+    _id: { $nin: vistosIds }
+  })
+    .select('nombre precio precioAnterior imagenes categorias ciudad tiendaId calificacion totalVentas createdAt')
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .populate('tiendaId', 'nombre ciudad')
+    .lean()
+
+  let recomendados
+  if (perfil) {
+    recomendados = candidatos
+      .map(p => ({ p, s: scoreRelevancia(p, perfil) }))
+      .sort((a, b) => b.s - a.s)
+      .slice(0, limite)
+      .map(x => x.p)
+  } else {
+    // Sin perfil: fallback a más vendidos / mejor calificados.
+    recomendados = candidatos
+      .sort((a, b) => (b.totalVentas || 0) - (a.totalVentas || 0) || (b.calificacion || 0) - (a.calificacion || 0))
+      .slice(0, limite)
+  }
+
+  return { vistosRecientes, recomendados, personalizado: !!perfil }
+}

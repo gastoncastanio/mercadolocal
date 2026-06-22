@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { tokenOpcional } from '../middleware/auth.js'
 import Producto from '../models/Producto.js'
-import { resolverIdentidad, registrarVista, registrarBusqueda } from '../services/targetingService.js'
+import { resolverIdentidad, registrarVista, registrarBusqueda, recomendarParaCliente } from '../services/targetingService.js'
 
 const router = Router()
 
@@ -46,6 +46,20 @@ router.post('/busqueda', tokenOpcional, async (req, res) => {
     await registrarBusqueda(identity, termino, categoria)
   } catch {
     // noop
+  }
+})
+
+// GET /api/senales/para-vos
+// Recomendaciones personalizadas + "Seguí viendo" según el historial del cliente
+// (logueado o anónimo vía x-anon-id). Es la cara visible del algoritmo de intención.
+router.get('/para-vos', tokenOpcional, async (req, res) => {
+  try {
+    const identity = resolverIdentidad(req)
+    const limite = Math.min(24, Math.max(4, Number(req.query.limite) || 12))
+    const data = await recomendarParaCliente(identity, { limite })
+    res.json(data)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
   }
 })
 
