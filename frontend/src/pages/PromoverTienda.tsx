@@ -197,10 +197,9 @@ export default function PromoverTienda() {
           </div>
         </div>
 
-        {/* Pago */}
+        {/* Pago — el precio del plan es el mismo con cualquier método. */}
         <div className="bg-white rounded-2xl border border-ml-line p-5 mb-4">
-          <h2 className="font-bold text-ml-ink mb-1">2. ¿Cómo querés pagar?</h2>
-          <p className="text-xs text-ml-soft mb-3">Con saldo o con tus próximas ventas <strong className="text-green-700">no pagás comisión de Mercado Pago</strong>.</p>
+          <h2 className="font-bold text-ml-ink mb-3">2. ¿Cómo querés pagar?</h2>
           <div className="space-y-2.5">
             {/* Saldo de ventas */}
             <button
@@ -208,11 +207,8 @@ export default function PromoverTienda() {
               disabled={saldo < total}
               className={`w-full text-left p-4 rounded-xl border transition-colors disabled:opacity-50 ${metodoPago === 'saldo' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-bold text-ml-ink">🏦 Saldo de ventas</p>
-                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full shrink-0">SIN COMISIÓN</span>
-              </div>
-              <p className="text-xs text-ml-muted mt-0.5">Disponible: <strong>${fmt(saldo)}</strong>{saldo < total ? ' — no alcanza para este plan' : ''}</p>
+              <p className="font-bold text-ml-ink">🏦 Saldo de ventas</p>
+              <p className="text-xs text-ml-muted mt-0.5">Se descuenta de tu saldo. Disponible: <strong>${fmt(saldo)}</strong>{saldo < total ? ' — no alcanza para este plan' : ''}</p>
             </button>
 
             {/* Próximas ventas (neteo) — solo si está habilitado para el vendedor */}
@@ -222,11 +218,8 @@ export default function PromoverTienda() {
                 disabled={total > credito.disponibleNeteo}
                 className={`w-full text-left p-4 rounded-xl border transition-colors disabled:opacity-50 ${metodoPago === 'neteo' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-ml-ink">🔁 Mis próximas ventas</p>
-                  <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full shrink-0">SIN COMISIÓN</span>
-                </div>
-                <p className="text-xs text-ml-muted mt-0.5">Se descuenta de lo que vendas. Disponible hasta <strong>${fmt(credito.disponibleNeteo)}</strong>.</p>
+                <p className="font-bold text-ml-ink">🔁 Mis próximas ventas</p>
+                <p className="text-xs text-ml-muted mt-0.5">Lo pagás con lo que vendas, sin poner plata ahora. Disponible hasta <strong>${fmt(credito.disponibleNeteo)}</strong>.</p>
               </button>
             )}
 
@@ -235,11 +228,8 @@ export default function PromoverTienda() {
               onClick={() => setMetodoPago('mercadopago')}
               className={`w-full text-left p-4 rounded-xl border transition-colors ${metodoPago === 'mercadopago' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="font-bold text-ml-ink">💳 Mercado Pago</p>
-                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">con comisión MP</span>
-              </div>
-              <p className="text-xs text-ml-muted mt-0.5">Con tarjeta o dinero en cuenta. Disponible siempre.</p>
+              <p className="font-bold text-ml-ink">💳 Mercado Pago</p>
+              <p className="text-xs text-ml-muted mt-0.5">Con tarjeta o dinero en cuenta. Al instante.</p>
             </button>
           </div>
         </div>
