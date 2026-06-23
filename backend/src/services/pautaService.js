@@ -55,6 +55,55 @@ function sanitizarPuja(valor) {
   return Math.min(n, PUJA_MAX)
 }
 
+// "Crédito de publicidad": deuda máxima (ARS) que un vendedor puede tomar pagando
+// la pauta con sus PRÓXIMAS ventas (método 'neteo'). La pauta se activa sin pasar
+// por Mercado Pago (fee $0) y la deuda se cubre sola con las ventas siguientes.
+// Default 0 = deshabilitado, hasta que el admin defina un tope en /config.
+const CONFIG_CLAVE_CREDITO = 'pauta_credito_max'
+
+export async function obtenerCreditoMaxPauta() {
+  try {
+    const cfg = await ConfigSitio.findOne({ clave: CONFIG_CLAVE_CREDITO }).lean()
+    const v = cfg ? Number(cfg.valor) : NaN
+    return Number.isFinite(v) && v >= 0 ? Math.round(v) : 0
+  } catch {
+    return 0
+  }
+}
+
+/** Info de crédito de publicidad de un vendedor (para la UI del flujo de pauta). */
+export async function infoCreditoPauta(usuarioId) {
+  const tienda = await Tienda.findOne({ usuarioId }).lean()
+  const ganancias = tienda?.ganancias || 0
+  const creditoMax = await obtenerCreditoMaxPauta()
+  // Solo habilitamos neteo a vendedores con MP vinculado (verificados).
+  const habilitado = !!tienda?.mpVinculado && creditoMax > 0
+  const disponibleNeteo = habilitado ? ganancias + creditoMax : 0
+  return { ganancias, creditoMax, habilitado, disponibleNeteo }
+}
+
+/** Valida un pago interno (saldo o neteo) antes de crear la pauta. Lanza Error con .code. */
+async function validarPagoInterno({ tienda, metodo, saldo, precioTotal }) {
+  if (metodo === 'neteo') {
+    if (!tienda.mpVinculado) {
+      const e = new Error('Para pagar con tus próximas ventas necesitás tener Mercado Pago vinculado.')
+      e.code = 'SIN_MP'; throw e
+    }
+    const creditoMax = await obtenerCreditoMaxPauta()
+    if (creditoMax <= 0) {
+      const e = new Error('El pago con próximas ventas no está habilitado por ahora.')
+      e.code = 'NETEO_DESHABILITADO'; throw e
+    }
+    if (saldo - precioTotal < -creditoMax) {
+      const e = new Error(`Supera tu crédito de publicidad ($${creditoMax.toLocaleString('es-AR')}). Pagá una parte con saldo o con Mercado Pago.`)
+      e.code = 'CREDITO_INSUFICIENTE'; throw e
+    }
+  } else if (saldo < precioTotal) {
+    const e = new Error(`Saldo insuficiente. Tenés $${saldo.toLocaleString('es-AR')} y el plan cuesta $${precioTotal.toLocaleString('es-AR')}. Podés pagarlo con Mercado Pago o con tus próximas ventas.`)
+    e.code = 'SALDO_INSUFICIENTE'; throw e
+  }
+}
+
 /**
  * Devuelve los planes con los precios efectivos (defaults + overrides del admin).
  * Nunca falla: si la config no existe o está corrupta, usa los defaults.
@@ -216,16 +265,12 @@ export async function crearPautaMercadoPago(args) {
  */
 export async function crearPautaSaldo(args) {
   const { usuarioId, productoId, plan } = args
+  const metodo = args.metodoPago === 'neteo' ? 'neteo' : 'saldo'
   const { tienda, producto, planInfo, dias, precioTotal, puja, fechaFin, segCiudad, segCategoria } =
     await prepararPauta(args)
+  const saldo = tienda.ganancias || 0
 
-  if ((tienda.ganancias || 0) < precioTotal) {
-    const e = new Error(
-      `Saldo insuficiente. Tenés $${(tienda.ganancias || 0).toLocaleString('es-AR')} y el plan cuesta $${precioTotal.toLocaleString('es-AR')}. Podés pagarlo con Mercado Pago.`
-    )
-    e.code = 'SALDO_INSUFICIENTE'
-    throw e
-  }
+  await validarPagoInterno({ tienda, metodo, saldo, precioTotal })
 
   const destacado = await new Destacado({
     productoId,
@@ -238,7 +283,7 @@ export async function crearPautaSaldo(args) {
     duracionDias: dias,
     precioTotal,
     puja,
-    metodoPago: 'saldo',
+    metodoPago: metodo,
     fechaFin,
     estado: 'activo',
     activo: true
@@ -404,18 +449,16 @@ export async function crearPautaTiendaMercadoPago(args) {
   return { destacado, initPoint: preferencia.initPoint }
 }
 
-/** Crea una pauta de tienda pagando con el SALDO acumulado. Activa al instante. */
+/** Crea una pauta de tienda pagando con SALDO o con PRÓXIMAS ventas (neteo).
+ *  Ambos descuentan de las ganancias; 'neteo' permite quedar en deuda hasta el
+ *  tope de crédito. Activa al instante y no pasa por Mercado Pago (fee $0). */
 export async function crearPautaTiendaSaldo(args) {
   const { usuarioId, plan } = args
+  const metodo = args.metodoPago === 'neteo' ? 'neteo' : 'saldo'
   const { tienda, planInfo, dias, precioTotal, puja, fechaFin } = await prepararPautaTienda(args)
+  const saldo = tienda.ganancias || 0
 
-  if ((tienda.ganancias || 0) < precioTotal) {
-    const e = new Error(
-      `Saldo insuficiente. Tenés $${(tienda.ganancias || 0).toLocaleString('es-AR')} y el plan cuesta $${precioTotal.toLocaleString('es-AR')}. Podés pagarlo con Mercado Pago.`
-    )
-    e.code = 'SALDO_INSUFICIENTE'
-    throw e
-  }
+  await validarPagoInterno({ tienda, metodo, saldo, precioTotal })
 
   const destacado = await new Destacado({
     tipo: 'tienda',
@@ -426,7 +469,7 @@ export async function crearPautaTiendaSaldo(args) {
     duracionDias: dias,
     precioTotal,
     puja,
-    metodoPago: 'saldo',
+    metodoPago: metodo,
     fechaFin,
     estado: 'activo',
     activo: true
@@ -441,7 +484,7 @@ export async function crearPautaTiendaSaldo(args) {
     throw e
   }
 
-  console.log(`⭐ Pauta TIENDA (saldo): ${tienda.nombre} - ${plan} (${dias}d) - $${precioTotal}`)
+  console.log(`⭐ Pauta TIENDA (${metodo}): ${tienda.nombre} - ${plan} (${dias}d) - $${precioTotal}`)
   import('./facturacionService.js')
     .then(m => m.emitirComprobantePauta(destacado))
     .catch(err => console.warn('No se pudo emitir comprobante de pauta de tienda:', err.message))

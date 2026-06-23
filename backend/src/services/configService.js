@@ -40,6 +40,7 @@ const DEFAULTS = [
   { clave: 'tarifa_cuota_si_3', valor: '12.19', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 3 cuotas SIN interés (%), ADEMÁS del cobro. Lo absorbe el vendedor (va en el precio). Se le suma IVA automáticamente.' },
   { clave: 'tarifa_cuota_si_6', valor: '19.09', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 6 cuotas SIN interés (%), ADEMÁS del cobro.' },
   { clave: 'tarifa_cuota_si_12', valor: '32.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 12 cuotas SIN interés (%), ADEMÁS del cobro.' },
+  { clave: 'pauta_credito_max', valor: '0', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Crédito de publicidad: deuda máxima (en $) que un vendedor con MP vinculado puede tomar pagando la pauta con sus PRÓXIMAS ventas (sin pasar por Mercado Pago = sin comisión). 0 = deshabilitado. Ej: 10000 permite deber hasta $10.000 en publicidad, que se cubren con las ventas siguientes.' },
   { clave: 'tarifa_retenciones_aviso', valor: 'Según tu condición fiscal y jurisdicción, Mercado Pago puede practicar retenciones de IVA, Ganancias e Ingresos Brutos sobre tus cobros. Consultá tu situación en AFIP/ARCA.', tipo: 'texto', categoria: 'Tarifas', descripcion: 'Aviso informativo sobre retenciones impositivas al vendedor (no se calcula, solo se muestra).' },
 
   // Contacto

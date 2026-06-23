@@ -10,7 +10,8 @@ import {
   obtenerPlanesTienda,
   guardarPreciosTienda,
   crearPautaTiendaMercadoPago,
-  crearPautaTiendaSaldo
+  crearPautaTiendaSaldo,
+  infoCreditoPauta
 } from '../services/pautaService.js'
 import {
   resolverIdentidad,
@@ -34,6 +35,15 @@ router.get('/planes', async (_req, res) => {
 router.get('/planes-tienda', async (_req, res) => {
   try {
     res.json(await obtenerPlanesTienda())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/destacados/credito - Crédito de publicidad del vendedor (para el flujo)
+router.get('/credito', verificarToken, soloTieneVendedor, async (req, res) => {
+  try {
+    res.json(await infoCreditoPauta(req.usuario.id))
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -131,7 +141,8 @@ router.get('/mis-promociones', verificarToken, soloTieneVendedor, async (req, re
 function responderErrorPauta(res, error) {
   const map = {
     PLAN_INVALIDO: 400, DURACION_INVALIDA: 400, SIN_TIENDA: 404,
-    PRODUCTO_INVALIDO: 404, YA_PROMOCIONADO: 400, SALDO_INSUFICIENTE: 400
+    PRODUCTO_INVALIDO: 404, YA_PROMOCIONADO: 400, SALDO_INSUFICIENTE: 400,
+    SIN_MP: 400, NETEO_DESHABILITADO: 400, CREDITO_INSUFICIENTE: 400
   }
   const status = map[error.code] || 500
   if (status === 500) console.error('Error en pauta:', error)
@@ -145,7 +156,7 @@ router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
     const { productoId, plan, duracionDias, metodoPago, segmentoCiudad, segmentoCategoria, puja } = req.body
     const args = {
       usuarioId: req.usuario.id,
-      productoId, plan, duracionDias, segmentoCiudad, segmentoCategoria, puja
+      productoId, plan, duracionDias, metodoPago, segmentoCiudad, segmentoCategoria, puja
     }
 
     // Pago con Mercado Pago (dinero real → cuenta de la plataforma)
@@ -176,7 +187,7 @@ router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
 router.post('/tienda', verificarToken, soloTieneVendedor, async (req, res) => {
   try {
     const { plan, duracionDias, metodoPago, puja } = req.body
-    const args = { usuarioId: req.usuario.id, plan: plan || 'marca', duracionDias, puja }
+    const args = { usuarioId: req.usuario.id, plan: plan || 'marca', duracionDias, metodoPago, puja }
 
     if (metodoPago === 'mercadopago') {
       const { destacado, initPoint } = await crearPautaTiendaMercadoPago(args)

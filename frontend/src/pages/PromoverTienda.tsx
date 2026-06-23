@@ -24,27 +24,36 @@ export default function PromoverTienda() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [planes, setPlanes] = useState<Record<string, Plan>>({})
   const [duracionSel, setDuracionSel] = useState(15)
-  const [metodoPago, setMetodoPago] = useState<'mercadopago' | 'saldo'>('mercadopago')
+  const [metodoPago, setMetodoPago] = useState<'mercadopago' | 'saldo' | 'neteo'>('mercadopago')
   const [puja, setPuja] = useState(0)
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
   const [misCampanas, setMisCampanas] = useState<any[]>([])
+  const [credito, setCredito] = useState({ ganancias: 0, creditoMax: 0, habilitado: false, disponibleNeteo: 0 })
 
-  const saldo = (tienda as Tienda)?.ganancias || 0
+  const saldo = credito.ganancias || (tienda as Tienda)?.ganancias || 0
   const plan = planes.marca
   const duraciones = plan ? Object.keys(plan.precios).map(Number).sort((a, b) => a - b) : []
   const precioPlan = plan?.precios[duracionSel] || 0
   const total = precioPlan + puja
 
   useEffect(() => {
-    api.get('/destacados/planes-tienda')
-      .then(r => {
-        setPlanes(r.data || {})
-        const ds = r.data?.marca?.precios ? Object.keys(r.data.marca.precios).map(Number) : []
-        if (ds.length && !ds.includes(duracionSel)) setDuracionSel(ds.includes(15) ? 15 : ds[0])
-      })
-      .catch(() => {})
+    Promise.all([
+      api.get('/destacados/planes-tienda').then(r => r.data).catch(() => ({})),
+      api.get('/destacados/credito').then(r => r.data).catch(() => null)
+    ]).then(([planesData, credData]) => {
+      setPlanes(planesData || {})
+      const ds = planesData?.marca?.precios ? Object.keys(planesData.marca.precios).map(Number) : []
+      const dur = ds.includes(15) ? 15 : (ds[0] || 15)
+      setDuracionSel(dur)
+      if (credData) setCredito(credData)
+      // Default: el método SIN comisión que alcance (saldo > próximas ventas > MP).
+      const precio = planesData?.marca?.precios?.[dur] || 0
+      if (precio > 0 && credData && (credData.ganancias || 0) >= precio) setMetodoPago('saldo')
+      else if (precio > 0 && credData?.habilitado && precio <= credData.disponibleNeteo) setMetodoPago('neteo')
+      else setMetodoPago('mercadopago')
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -190,22 +199,47 @@ export default function PromoverTienda() {
 
         {/* Pago */}
         <div className="bg-white rounded-2xl border border-ml-line p-5 mb-4">
-          <h2 className="font-bold text-ml-ink mb-3">2. ¿Cómo querés pagar?</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={() => setMetodoPago('mercadopago')}
-              className={`text-left p-4 rounded-xl border transition-colors ${metodoPago === 'mercadopago' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
-            >
-              <p className="font-bold text-ml-ink">💳 Mercado Pago</p>
-              <p className="text-xs text-ml-muted mt-0.5">Con tarjeta o dinero en cuenta. Disponible siempre.</p>
-            </button>
+          <h2 className="font-bold text-ml-ink mb-1">2. ¿Cómo querés pagar?</h2>
+          <p className="text-xs text-ml-soft mb-3">Con saldo o con tus próximas ventas <strong className="text-green-700">no pagás comisión de Mercado Pago</strong>.</p>
+          <div className="space-y-2.5">
+            {/* Saldo de ventas */}
             <button
               onClick={() => setMetodoPago('saldo')}
               disabled={saldo < total}
-              className={`text-left p-4 rounded-xl border transition-colors disabled:opacity-50 ${metodoPago === 'saldo' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
+              className={`w-full text-left p-4 rounded-xl border transition-colors disabled:opacity-50 ${metodoPago === 'saldo' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
             >
-              <p className="font-bold text-ml-ink">🏦 Saldo de ventas</p>
-              <p className="text-xs text-ml-muted mt-0.5">Disponible: <strong>${fmt(saldo)}</strong></p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-bold text-ml-ink">🏦 Saldo de ventas</p>
+                <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full shrink-0">SIN COMISIÓN</span>
+              </div>
+              <p className="text-xs text-ml-muted mt-0.5">Disponible: <strong>${fmt(saldo)}</strong>{saldo < total ? ' — no alcanza para este plan' : ''}</p>
+            </button>
+
+            {/* Próximas ventas (neteo) — solo si está habilitado para el vendedor */}
+            {credito.habilitado && (
+              <button
+                onClick={() => setMetodoPago('neteo')}
+                disabled={total > credito.disponibleNeteo}
+                className={`w-full text-left p-4 rounded-xl border transition-colors disabled:opacity-50 ${metodoPago === 'neteo' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-ml-ink">🔁 Mis próximas ventas</p>
+                  <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full shrink-0">SIN COMISIÓN</span>
+                </div>
+                <p className="text-xs text-ml-muted mt-0.5">Se descuenta de lo que vendas. Disponible hasta <strong>${fmt(credito.disponibleNeteo)}</strong>.</p>
+              </button>
+            )}
+
+            {/* Mercado Pago */}
+            <button
+              onClick={() => setMetodoPago('mercadopago')}
+              className={`w-full text-left p-4 rounded-xl border transition-colors ${metodoPago === 'mercadopago' ? 'border-ml-blue bg-blue-50' : 'border-ml-line hover:border-ml-blue'}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-bold text-ml-ink">💳 Mercado Pago</p>
+                <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0">con comisión MP</span>
+              </div>
+              <p className="text-xs text-ml-muted mt-0.5">Con tarjeta o dinero en cuenta. Disponible siempre.</p>
             </button>
           </div>
         </div>
@@ -240,7 +274,7 @@ export default function PromoverTienda() {
             disabled={cargando || !plan || total <= 0}
             className="w-full py-4 mlbtn ml-grad text-white rounded-xl font-bold text-lg disabled:opacity-60"
           >
-            {cargando ? 'Procesando…' : metodoPago === 'mercadopago' ? 'Pagar con Mercado Pago' : 'Promocionar con mi saldo'}
+            {cargando ? 'Procesando…' : metodoPago === 'mercadopago' ? 'Pagar con Mercado Pago' : metodoPago === 'neteo' ? 'Promocionar con mis próximas ventas' : 'Promocionar con mi saldo'}
           </button>
         </div>
       </div>

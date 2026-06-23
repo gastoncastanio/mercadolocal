@@ -71,10 +71,12 @@ const destacadoSchema = new mongoose.Schema({
   },
   // Cómo pagó el vendedor la pauta:
   //  - 'saldo': se descontó de las ganancias acumuladas en la plataforma
+  //  - 'neteo': se descuenta de las PRÓXIMAS ventas (la deuda puede dejar las
+  //    ganancias en negativo, hasta el tope de crédito). No pasa por MP → fee $0.
   //  - 'mercadopago': pagó con dinero real a la cuenta de la plataforma (ingreso fresco)
   metodoPago: {
     type: String,
-    enum: ['saldo', 'mercadopago'],
+    enum: ['saldo', 'neteo', 'mercadopago'],
     default: 'saldo'
   },
   // Datos del pago con Mercado Pago (solo cuando metodoPago === 'mercadopago')
