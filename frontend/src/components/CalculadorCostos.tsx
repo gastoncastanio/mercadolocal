@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-import { useTarifasCuotas, costoMP, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
+import { useTarifasCuotas, costoMP, fraccionCostoMP, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 
 interface CalculadorProps {
   precioProducto: number
@@ -9,6 +9,9 @@ interface CalculadorProps {
   // Cuotas SIN interés que ofrece el vendedor (máx: 1/3/6/12). Define el costo
   // de Mercado Pago que el vendedor absorbe. Default 1 (solo 1 pago).
   cuotasSinInteres?: number
+  // Si se pasa, habilita el modo "Recibir": el vendedor escribe cuánto quiere
+  // recibir neto y, con un botón, aplica el precio sugerido al formulario.
+  onAplicarPrecio?: (precio: number) => void
 }
 
 // Valores por defecto (se sobreescriben con la config real del admin).
@@ -27,9 +30,11 @@ export default function CalculadorCostos({
   precioProducto,
   vista = 'comprador',
   compact = false,
-  cuotasSinInteres = 1
+  cuotasSinInteres = 1,
+  onAplicarPrecio
 }: CalculadorProps) {
   const [tarifas, setTarifas] = useState(TARIFAS_DEFAULT)
+  const [objetivoNeto, setObjetivoNeto] = useState('')
   const tCuotas = useTarifasCuotas()
 
   useEffect(() => {
@@ -64,6 +69,13 @@ export default function CalculadorCostos({
   const ivaComision = r2(comisionBase * tarifas.tarifa_iva_comision / 100)
   const costoMercadoPago = costoMP(precio, cuotas, tCuotas)
   const netoVendedor = r2(precio - comisionBase - ivaComision - costoMercadoPago)
+
+  // Modo "Recibir": fracción del precio que le queda al vendedor (después de
+  // comisión + IVA de comisión + costo MP). Precio = neto deseado / netFactor.
+  const netFactor = 1
+    - (tarifas.comision_porcentaje / 100) * (1 + tarifas.tarifa_iva_comision / 100)
+    - fraccionCostoMP(cuotas, tCuotas)
+  const precioSugerido = netFactor > 0 ? r2(Number(objetivoNeto) / netFactor) : 0
 
   // ===== Vista compacta (carrito) =====
   if (compact) {
@@ -163,6 +175,42 @@ export default function CalculadorCostos({
               <span className="text-xl font-extrabold text-green-600">${fmt(netoVendedor)}</span>
             </div>
           </div>
+
+          {/* Modo "Recibir": el vendedor pone cuánto quiere recibir neto y le
+              sugerimos el precio a publicar (incluye comisión + costo MP de las
+              cuotas que ofrece). Equivalente a la pestaña "Recibir" de MP. */}
+          <details className="bg-white rounded-xl border border-green-100 p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-green-700">
+              ¿Querés recibir un monto exacto?
+            </summary>
+            <div className="pt-3 space-y-2">
+              <label className="block text-xs text-ml-muted">Cuánto querés recibir neto</label>
+              <input
+                type="number" min="0" step="0.01" value={objetivoNeto}
+                onChange={e => setObjetivoNeto(e.target.value)}
+                className="w-full px-3 py-2 border border-ml-line rounded-lg text-sm focus:ring-2 focus:ring-green-500/30 outline-none"
+                placeholder="Ej: 85000"
+              />
+              {Number(objetivoNeto) > 0 && netFactor > 0 && (
+                <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                  <p className="text-sm text-ml-ink">
+                    Cobrá <strong className="text-green-700">${fmt(precioSugerido)}</strong>
+                    {cuotas > 1 && <span className="text-ml-muted"> ({cuotas} cuotas sin interés de ${fmt(precioSugerido / cuotas)})</span>}
+                  </p>
+                  {onAplicarPrecio && (
+                    <button
+                      type="button"
+                      onClick={() => onAplicarPrecio(precioSugerido)}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                    >
+                      Usar este precio
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </details>
+
           {tarifas.tarifa_retenciones_aviso && (
             <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
               <strong>⚠️ Impuestos:</strong> {tarifas.tarifa_retenciones_aviso}

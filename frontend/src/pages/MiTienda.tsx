@@ -847,7 +847,7 @@ export default function MiTienda() {
               </div>
 
               {Number(editForm.precio) > 0 && (
-                <CalculadorCostos precioProducto={Number(editForm.precio)} vista="vendedor" cuotasSinInteres={editForm.cuotasSinInteres} />
+                <CalculadorCostos precioProducto={Number(editForm.precio)} vista="vendedor" cuotasSinInteres={editForm.cuotasSinInteres} onAplicarPrecio={(p) => setEditForm({ ...editForm, precio: String(p) })} />
               )}
 
               <div>

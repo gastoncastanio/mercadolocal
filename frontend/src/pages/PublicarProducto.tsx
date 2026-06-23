@@ -420,7 +420,7 @@ export default function PublicarProducto() {
 
           {/* Cuánto recibe el vendedor con este precio y las cuotas elegidas */}
           {Number(form.precio) > 0 && (
-            <CalculadorCostos precioProducto={Number(form.precio)} vista="vendedor" cuotasSinInteres={form.cuotasSinInteres} />
+            <CalculadorCostos precioProducto={Number(form.precio)} vista="vendedor" cuotasSinInteres={form.cuotasSinInteres} onAplicarPrecio={(p) => setForm({ ...form, precio: String(p) })} />
           )}
 
           {/* Condición: nuevo / usado / reacondicionado (alimenta la sección Usados) */}
