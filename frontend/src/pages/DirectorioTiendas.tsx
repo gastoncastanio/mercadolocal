@@ -125,8 +125,8 @@ function TarjetaTienda({ t }: { t: TiendaItem }) {
           <span className="text-2xl font-bold text-ml-muted">{nombre.charAt(0).toUpperCase()}</span>
         )}
       </div>
-      <div className="flex items-center gap-1 justify-center min-w-0">
-        <p className="font-bold text-ml-ink text-sm truncate">{nombre}</p>
+      <div className="flex items-center justify-center gap-1 w-full min-w-0">
+        <span className="font-bold text-ml-ink text-sm truncate min-w-0">{nombre}</span>
         {t.oficial && <BadgeVerificado className="w-4 h-4 shrink-0" titulo="Tienda Oficial" />}
       </div>
       {t.ciudad && <p className="text-xs text-ml-muted mt-0.5">📍 {t.ciudad}</p>}
