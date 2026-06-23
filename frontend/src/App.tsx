@@ -62,6 +62,7 @@ const Privacidad = lazy(() => import('./pages/Privacidad'))
 const Devoluciones = lazy(() => import('./pages/Devoluciones'))
 // RecuperarContraseña re-exporta a RecuperarPassword (componente unificado)
 const PromoverProducto = lazy(() => import('./pages/PromoverProducto'))
+const PromoverTienda = lazy(() => import('./pages/PromoverTienda'))
 const Chat = lazy(() => import('./pages/Chat'))
 const MisDisputas = lazy(() => import('./pages/MisDisputas'))
 const DisputasAdmin = lazy(() => import('./pages/DisputasAdmin'))
@@ -204,6 +205,7 @@ function RutasConBoundary() {
           <Route path="/dashboard-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><DashboardVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/central-vendedor" element={<ConNavbar><RutaPrivada requiereVendedor><CentralVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/promover" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverProducto /></RutaPrivada></ConNavbar>} />
+          <Route path="/promover-tienda" element={<ConNavbar><RutaPrivada roles={['vendedor', 'admin']}><PromoverTienda /></RutaPrivada></ConNavbar>} />
           <Route path="/mi-tienda/ofertas-compartidas" element={<ConNavbar><RutaPrivada requiereVendedor><OfertasCompartidasVendedor /></RutaPrivada></ConNavbar>} />
           <Route path="/mis-comprobantes" element={<ConNavbar><RutaPrivada requiereVendedor><MisComprobantes /></RutaPrivada></ConNavbar>} />
           <Route path="/comprobante/:id" element={<ConNavbar><RutaPrivada><ComprobanteView /></RutaPrivada></ConNavbar>} />

@@ -6,7 +6,9 @@ import { imgCloudinary } from '../utils/cloudinary'
 
 interface Destacado {
   _id: string
+  tipo?: 'producto' | 'tienda'
   productoId: Producto
+  tiendaId?: Tienda
   plan: string
 }
 
@@ -15,7 +17,7 @@ interface Destacado {
 const PLACEHOLDERS = [
   { titulo: 'Publicit\u00e1 tu producto', desc: 'Aparec\u00e9 primero en el cat\u00e1logo y las b\u00fasquedas.', color: 'from-blue-500 to-indigo-600', emoji: '\u{1F4E6}', enlace: '/promover' },
   { titulo: 'Publicit\u00e1 tu servicio', desc: 'Que m\u00e1s clientes te encuentren en tu rubro.', color: 'from-emerald-500 to-teal-600', emoji: '\u{1F527}', enlace: '/servicios/mi-perfil' },
-  { titulo: 'Publicit\u00e1 tu tienda', desc: 'Llev\u00e1 tu marca al banner y a la home.', color: 'from-orange-500 to-pink-600', emoji: '\u{1F3EA}', enlace: '/promover' }
+  { titulo: 'Publicit\u00e1 tu tienda', desc: 'Llev\u00e1 tu marca al banner y a la home.', color: 'from-orange-500 to-pink-600', emoji: '\u{1F3EA}', enlace: '/promover-tienda' }
 ]
 
 export default function EspaciosPublicitarios() {
@@ -44,6 +46,37 @@ export default function EspaciosPublicitarios() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[0, 1, 2].map(i => {
           const dest = destacados[i]
+
+          // Anuncio de TIENDA: logo + nombre de la marca, linkea a la tienda.
+          if (dest?.tipo === 'tienda' && dest.tiendaId && typeof dest.tiendaId === 'object') {
+            const t = dest.tiendaId as Tienda
+            return (
+              <Link
+                key={dest._id}
+                to={`/tienda/${(t as any)._id}`}
+                onClick={() => registrarClick(dest._id)}
+                className="relative block rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white border border-ml-line2 group"
+              >
+                <span className="absolute top-1.5 right-2 text-[9px] uppercase tracking-wide bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold z-10">
+                  &#x2B50; Tienda
+                </span>
+                <div className="flex items-center gap-3 p-3">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-ml-bg shrink-0 flex items-center justify-center">
+                    {t.logo ? (
+                      <img src={imgCloudinary(t.logo, 128)} alt="" loading="lazy" width={64} height={64} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                    ) : (
+                      <span className="text-2xl">&#x1F3EA;</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm text-ml-ink truncate group-hover:text-ml-blue">{(t as any).nombreCorto || t.nombre}</p>
+                    <p className="text-[11px] text-ml-muted truncate">Tienda en {t.ciudad}</p>
+                    <p className="text-[11px] text-ml-blue font-semibold">Ver tienda &rarr;</p>
+                  </div>
+                </div>
+              </Link>
+            )
+          }
 
           if (dest?.productoId) {
             const prod = dest.productoId

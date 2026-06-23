@@ -74,6 +74,20 @@ export default function BannersRotativos() {
       const destacados = res.data || []
       if (destacados.length > 0) {
         const bannersPromo: BannerDef[] = destacados.slice(0, 3).map((d: any, i: number) => {
+          // Anuncio de TIENDA: promociona la marca, linkea a la tienda.
+          if (d.tipo === 'tienda' && d.tiendaId && typeof d.tiendaId === 'object') {
+            const t = d.tiendaId as Tienda
+            return {
+              titulo: (t as any).nombreCorto || t.nombre,
+              subtitulo: `${(t as any).oficial ? 'Tienda Oficial' : 'Tienda'} en ${t.ciudad}`,
+              cta: 'Ver tienda',
+              enlace: `/tienda/${(t as any)._id}`,
+              gradiente: GRADIENTES_PROMO[i % GRADIENTES_PROMO.length],
+              emoji: '\u{1F3EA}',
+              producto: null,
+              destacadoId: d._id
+            }
+          }
           const prod = d.productoId as Producto
           const tienda = prod?.tiendaId as Tienda
           return {
