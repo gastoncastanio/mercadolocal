@@ -263,6 +263,191 @@ export async function crearPautaSaldo(args) {
   return { destacado, producto, planInfo }
 }
 
+// ===================================================================
+// PAUTA DE TIENDA (publicidad de marca: logo + nombre en banner, home y
+// vidriera de marcas, linkeando a la tienda). No tiene producto asociado.
+// ===================================================================
+
+// Plan "Marca": un único plan con precios propios, editable por el admin.
+const PLANES_TIENDA_DEFAULT = {
+  marca: {
+    nombre: 'Marca',
+    ubicacion: ['banner', 'publicidad', 'home', 'marcas'],
+    precios: { 7: 6000, 15: 10000, 30: 17000 },
+    descripcion: 'Tu marca (logo + nombre) en el banner principal, la home y la vidriera de marcas. Linkea a tu tienda.',
+    permiteSegmentar: false
+  }
+}
+
+const CONFIG_CLAVE_PRECIOS_TIENDA = 'pauta_precios_tienda'
+
+/** Planes de pauta de TIENDA con precios efectivos (defaults + overrides admin). */
+export async function obtenerPlanesTienda() {
+  const planes = JSON.parse(JSON.stringify(PLANES_TIENDA_DEFAULT))
+  try {
+    const cfg = await ConfigSitio.findOne({ clave: CONFIG_CLAVE_PRECIOS_TIENDA }).lean()
+    if (cfg && cfg.valor) {
+      const overrides = JSON.parse(cfg.valor)
+      for (const key of Object.keys(planes)) {
+        if (overrides[key] && typeof overrides[key] === 'object') {
+          for (const dias of Object.keys(planes[key].precios)) {
+            const v = Number(overrides[key][dias])
+            if (Number.isFinite(v) && v > 0) planes[key].precios[dias] = Math.round(v)
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo leer config de precios de pauta de tienda, usando defaults:', e.message)
+  }
+  return planes
+}
+
+/** Guarda los precios de pauta de TIENDA editados por el admin. */
+export async function guardarPreciosTienda(nuevosPrecios) {
+  const limpio = {}
+  for (const key of Object.keys(PLANES_TIENDA_DEFAULT)) {
+    const entrada = nuevosPrecios?.[key]
+    if (!entrada) continue
+    limpio[key] = {}
+    for (const dias of Object.keys(PLANES_TIENDA_DEFAULT[key].precios)) {
+      const v = Number(entrada[dias])
+      if (Number.isFinite(v) && v > 0) limpio[key][dias] = Math.round(v)
+    }
+  }
+  await ConfigSitio.findOneAndUpdate(
+    { clave: CONFIG_CLAVE_PRECIOS_TIENDA },
+    {
+      clave: CONFIG_CLAVE_PRECIOS_TIENDA,
+      valor: JSON.stringify(limpio),
+      tipo: 'html',
+      categoria: 'pauta',
+      descripcion: 'Precios de los planes de pauta de tienda (editable desde el panel)'
+    },
+    { upsert: true, new: true }
+  )
+  return obtenerPlanesTienda()
+}
+
+/** Valida la solicitud de pauta de tienda y devuelve los datos calculados. */
+export async function prepararPautaTienda({ usuarioId, plan, duracionDias, puja }) {
+  const planes = await obtenerPlanesTienda()
+  const planInfo = planes[plan]
+  if (!planInfo) {
+    const e = new Error('Plan no válido'); e.code = 'PLAN_INVALIDO'; throw e
+  }
+
+  const dias = Number(duracionDias)
+  if (!planInfo.precios[dias]) {
+    const e = new Error('Duración no disponible para este plan'); e.code = 'DURACION_INVALIDA'; throw e
+  }
+
+  const tienda = await Tienda.findOne({ usuarioId })
+  if (!tienda) {
+    const e = new Error('Tienda no encontrada'); e.code = 'SIN_TIENDA'; throw e
+  }
+
+  // Una sola publicidad de tienda activa o pendiente por tienda
+  const existente = await Destacado.findOne({
+    tiendaId: tienda._id,
+    tipo: 'tienda',
+    estado: { $in: ['activo', 'pendiente'] },
+    fechaFin: { $gt: new Date() }
+  })
+  if (existente) {
+    const e = new Error('Tu tienda ya tiene una publicidad activa o pendiente de pago')
+    e.code = 'YA_PROMOCIONADO'
+    throw e
+  }
+
+  const pujaLimpia = sanitizarPuja(puja)
+  const precioTotal = planInfo.precios[dias] + pujaLimpia
+  const fechaFin = new Date()
+  fechaFin.setDate(fechaFin.getDate() + dias)
+
+  return { tienda, planInfo, dias, precioTotal, puja: pujaLimpia, fechaFin }
+}
+
+/** Crea una pauta de tienda pendiente de pago con Mercado Pago. */
+export async function crearPautaTiendaMercadoPago(args) {
+  const { usuarioId, plan } = args
+  const { tienda, planInfo, dias, precioTotal, puja, fechaFin } = await prepararPautaTienda(args)
+
+  const destacado = await new Destacado({
+    tipo: 'tienda',
+    tiendaId: tienda._id,
+    vendedorId: usuarioId,
+    plan,
+    ubicacion: planInfo.ubicacion,
+    duracionDias: dias,
+    precioTotal,
+    puja,
+    metodoPago: 'mercadopago',
+    fechaFin,
+    estado: 'pendiente',
+    activo: false
+  }).save()
+
+  const { crearPreferenciaPauta } = await import('./mercadoPagoService.js')
+  let preferencia
+  try {
+    // La preferencia solo usa el nombre para el título: le pasamos el de la tienda.
+    preferencia = await crearPreferenciaPauta({ destacado, producto: { nombre: tienda.nombre }, planInfo })
+  } catch (err) {
+    await Destacado.findByIdAndDelete(destacado._id).catch(() => {})
+    throw err
+  }
+
+  destacado.mpPreferenceId = preferencia.preferenceId
+  await destacado.save()
+
+  return { destacado, initPoint: preferencia.initPoint }
+}
+
+/** Crea una pauta de tienda pagando con el SALDO acumulado. Activa al instante. */
+export async function crearPautaTiendaSaldo(args) {
+  const { usuarioId, plan } = args
+  const { tienda, planInfo, dias, precioTotal, puja, fechaFin } = await prepararPautaTienda(args)
+
+  if ((tienda.ganancias || 0) < precioTotal) {
+    const e = new Error(
+      `Saldo insuficiente. Tenés $${(tienda.ganancias || 0).toLocaleString('es-AR')} y el plan cuesta $${precioTotal.toLocaleString('es-AR')}. Podés pagarlo con Mercado Pago.`
+    )
+    e.code = 'SALDO_INSUFICIENTE'
+    throw e
+  }
+
+  const destacado = await new Destacado({
+    tipo: 'tienda',
+    tiendaId: tienda._id,
+    vendedorId: usuarioId,
+    plan,
+    ubicacion: planInfo.ubicacion,
+    duracionDias: dias,
+    precioTotal,
+    puja,
+    metodoPago: 'saldo',
+    fechaFin,
+    estado: 'activo',
+    activo: true
+  }).save()
+
+  try {
+    await Tienda.findByIdAndUpdate(tienda._id, { $inc: { ganancias: -precioTotal } })
+  } catch (errDescuento) {
+    await Destacado.findByIdAndDelete(destacado._id).catch(() => {})
+    const e = new Error('No se pudo procesar la publicidad. Intentá de nuevo.')
+    e.code = 'ERROR_DESCUENTO'
+    throw e
+  }
+
+  console.log(`⭐ Pauta TIENDA (saldo): ${tienda.nombre} - ${plan} (${dias}d) - $${precioTotal}`)
+  import('./facturacionService.js')
+    .then(m => m.emitirComprobantePauta(destacado))
+    .catch(err => console.warn('No se pudo emitir comprobante de pauta de tienda:', err.message))
+  return { destacado, tienda, planInfo }
+}
+
 /**
  * Activa una pauta pendiente cuando Mercado Pago confirma el pago.
  * Es IDEMPOTENTE: si ya fue activada con ese paymentId, no hace nada.

@@ -6,10 +6,20 @@ import mongoose from 'mongoose'
  * en el cat\u00e1logo, banners y espacios publicitarios.
  */
 const destacadoSchema = new mongoose.Schema({
+  // Tipo de anuncio:
+  //  - 'producto': destaca un producto puntual (catálogo, búsquedas, banner…).
+  //  - 'tienda':   destaca la MARCA de la tienda (logo + nombre) en banner, home
+  //                y vidriera de marcas, linkeando a la tienda. No tiene producto.
+  tipo: {
+    type: String,
+    enum: ['producto', 'tienda'],
+    default: 'producto'
+  },
+  // Obligatorio solo para anuncios de producto. En los de tienda queda vacío.
   productoId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Producto',
-    required: true
+    required: function () { return this.tipo !== 'tienda' }
   },
   tiendaId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -23,13 +33,13 @@ const destacadoSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['basico', 'premium', 'elite'],
+    enum: ['basico', 'premium', 'elite', 'marca'],
     required: true
   },
   ubicacion: {
     type: [String],
     default: ['catalogo'],
-    enum: ['catalogo', 'banner', 'publicidad', 'busqueda', 'home']
+    enum: ['catalogo', 'banner', 'publicidad', 'busqueda', 'home', 'marcas']
   },
   // Segmentación opcional (formatos premium): si se setea, el anuncio
   // solo se prioriza para compradores que filtran por esa ciudad/categoría.

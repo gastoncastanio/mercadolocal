@@ -6,7 +6,11 @@ import {
   obtenerPlanes,
   guardarPrecios,
   crearPautaMercadoPago,
-  crearPautaSaldo
+  crearPautaSaldo,
+  obtenerPlanesTienda,
+  guardarPreciosTienda,
+  crearPautaTiendaMercadoPago,
+  crearPautaTiendaSaldo
 } from '../services/pautaService.js'
 import {
   resolverIdentidad,
@@ -21,6 +25,15 @@ const router = Router()
 router.get('/planes', async (_req, res) => {
   try {
     res.json(await obtenerPlanes())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// GET /api/destacados/planes-tienda - Planes de publicidad de TIENDA (plan "Marca")
+router.get('/planes-tienda', async (_req, res) => {
+  try {
+    res.json(await obtenerPlanesTienda())
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -55,6 +68,9 @@ router.get('/activos', tokenOpcional, async (req, res) => {
         path: 'productoId',
         populate: { path: 'tiendaId', select: 'nombre ciudad logo calificacion totalVentas' }
       })
+      // Para anuncios de TIENDA (sin producto): poblamos la tienda directo, así
+      // el front arma el creativo (logo + nombre) y linkea a /tienda/:id.
+      .populate('tiendaId', 'nombre nombreCorto ciudad logo portada calificacion totalVentas oficial')
       .sort({ plan: -1, createdAt: -1 })
       .limit(40)
 
@@ -149,6 +165,34 @@ router.post('/', verificarToken, soloTieneVendedor, async (req, res) => {
       metodoPago: 'saldo',
       destacado,
       mensaje: `Producto promocionado con plan ${planInfo.nombre} por ${destacado.duracionDias} días. Se descontaron $${destacado.precioTotal.toLocaleString('es-AR')} de tu saldo.`
+    })
+  } catch (error) {
+    return responderErrorPauta(res, error)
+  }
+})
+
+// POST /api/destacados/tienda - Crear publicidad de TIENDA (marca en banner/home/marcas)
+// Body: { plan, duracionDias, metodoPago, puja? }  (sin productoId)
+router.post('/tienda', verificarToken, soloTieneVendedor, async (req, res) => {
+  try {
+    const { plan, duracionDias, metodoPago, puja } = req.body
+    const args = { usuarioId: req.usuario.id, plan: plan || 'marca', duracionDias, puja }
+
+    if (metodoPago === 'mercadopago') {
+      const { destacado, initPoint } = await crearPautaTiendaMercadoPago(args)
+      return res.status(201).json({
+        metodoPago: 'mercadopago',
+        destacadoId: destacado._id,
+        initPoint,
+        mensaje: 'Te llevamos a Mercado Pago para completar el pago.'
+      })
+    }
+
+    const { destacado, planInfo } = await crearPautaTiendaSaldo(args)
+    return res.status(201).json({
+      metodoPago: 'saldo',
+      destacado,
+      mensaje: `Tu tienda se está promocionando con el plan ${planInfo.nombre} por ${destacado.duracionDias} días. Se descontaron $${destacado.precioTotal.toLocaleString('es-AR')} de tu saldo.`
     })
   } catch (error) {
     return responderErrorPauta(res, error)
