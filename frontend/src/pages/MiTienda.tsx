@@ -9,8 +9,10 @@ import { CATEGORIAS, getCategoria, requiereCodigoBarras } from '../constants/cat
 import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 import SelectorEntrega from '../components/SelectorEntrega'
+import CalculadorCostos from '../components/CalculadorCostos'
 import { ENTREGA_VACIA, EntregaProducto } from '../types'
 import { Producto } from '../types'
+import { OPCIONES_CUOTAS, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 
 export default function MiTienda() {
   const { tienda, actualizarTienda, refreshAccessToken } = useAuth()
@@ -50,7 +52,8 @@ export default function MiTienda() {
     categorias: [] as string[],
     imagenes: [] as string[],
     marca: '',
-    codigoBarras: ''
+    codigoBarras: '',
+    cuotasSinInteres: 1 as number
   })
   // Características específicas de la categoría (separadas del form porque
   // tienen su propio renderer y validación)
@@ -200,7 +203,8 @@ export default function MiTienda() {
       categorias: producto.categorias || [],
       imagenes: producto.imagenes || [],
       marca: producto.marca || '',
-      codigoBarras: producto.codigoBarras || ''
+      codigoBarras: producto.codigoBarras || '',
+      cuotasSinInteres: producto.cuotasSinInteres || 1
     })
     setEditCaracteristicas(producto.caracteristicas || [])
     // Cargar modalidades de entrega (productos viejos pueden no tenerlas)
@@ -811,6 +815,40 @@ export default function MiTienda() {
                     className="w-full px-4 py-3 border border-ml-line rounded-xl focus:ring-2 focus:ring-ml-purple/30 outline-none" />
                 </div>
               </div>
+
+              {/* Cuotas sin interés a ofrecer. El comprador paga el mismo total;
+                  el vendedor absorbe el costo (visible en el neto de abajo). */}
+              <div>
+                <label className="block text-sm font-medium text-ml-ink mb-1">Cuotas sin interés</label>
+                <p className="text-xs text-ml-muted mb-2">
+                  El comprador paga lo mismo en 1 pago o en cuotas. Vos absorbés el costo de financiación de Mercado Pago (mirá el neto y ajustá el precio si querés).
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {([1, ...OPCIONES_CUOTAS.filter(c => c > 1)] as number[]).map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, cuotasSinInteres: c })}
+                      className={`py-2.5 px-1 rounded-xl text-sm font-semibold transition-colors ${
+                        editForm.cuotasSinInteres === c
+                          ? 'bg-ml-purple text-white shadow'
+                          : 'bg-white text-ml-ink border border-ml-line hover:border-ml-purple'
+                      }`}
+                    >
+                      {c === 1 ? 'No ofrezco' : `${c} cuotas`}
+                    </button>
+                  ))}
+                </div>
+                {editForm.cuotasSinInteres > 1 && Number(editForm.precio) > 0 && (
+                  <p className="text-xs text-green-700 font-semibold mt-2">
+                    El comprador verá: {editForm.cuotasSinInteres} cuotas sin interés de ${formatPesos(valorCuotaSinInteres(Number(editForm.precio), editForm.cuotasSinInteres))}
+                  </p>
+                )}
+              </div>
+
+              {Number(editForm.precio) > 0 && (
+                <CalculadorCostos precioProducto={Number(editForm.precio)} vista="vendedor" cuotasSinInteres={editForm.cuotasSinInteres} />
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-ml-ink mb-2">Categoría</label>
