@@ -33,9 +33,13 @@ const DEFAULTS = [
   { clave: 'tarifa_mp_credito_cuotas', valor: '6.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para tarjeta de crédito en cuotas (%). No incluye el interés de las cuotas (eso lo paga el comprador).' },
   { clave: 'tarifa_mp_mercadocredito', valor: '6.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Fee real de Mercado Pago para pagos con Mercado Crédito (%).' },
   { clave: 'tarifa_iva_comision', valor: '0', tipo: 'numero', categoria: 'Tarifas', descripcion: 'IVA que MercadoLocal suma sobre su comisión (%). Poné 21 si MercadoLocal está inscripto en IVA y factura con IVA al vendedor; 0 si no corresponde.' },
-  { clave: 'tarifa_cuotas_3', valor: '1.15', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 3 cuotas (1 = sin interés). Ej: 1.15 = +15%. Lo cobra el banco/MP, no MercadoLocal.' },
-  { clave: 'tarifa_cuotas_6', valor: '1.30', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 6 cuotas (1 = sin interés). Ej: 1.30 = +30%.' },
-  { clave: 'tarifa_cuotas_12', valor: '1.55', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Coeficiente de recargo del comprador al pagar en 12 cuotas (1 = sin interés). Ej: 1.55 = +55%.' },
+  // ===== Cuotas SIN interés (el vendedor absorbe el costo y lo mete en el precio) =====
+  // Tasas reales del "Simulador de costos" de Mercado Pago, pestaña Recibir,
+  // acreditación al instante. Alimentan el simulador de cuotas del vendedor.
+  { clave: 'tarifa_cobro', valor: '6.60', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo por cobro de Mercado Pago (%), acreditación al instante. Se aplica a TODA venta (incluido 1 pago). Mirá tu tarifa real en mercadopago.com.ar/costs-section. Se le suma IVA (21%) automáticamente.' },
+  { clave: 'tarifa_cuota_si_3', valor: '12.19', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 3 cuotas SIN interés (%), ADEMÁS del cobro. Lo absorbe el vendedor (va en el precio). Se le suma IVA automáticamente.' },
+  { clave: 'tarifa_cuota_si_6', valor: '19.09', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 6 cuotas SIN interés (%), ADEMÁS del cobro.' },
+  { clave: 'tarifa_cuota_si_12', valor: '32.29', tipo: 'numero', categoria: 'Tarifas', descripcion: 'Costo de MP por ofrecer 12 cuotas SIN interés (%), ADEMÁS del cobro.' },
   { clave: 'tarifa_retenciones_aviso', valor: 'Según tu condición fiscal y jurisdicción, Mercado Pago puede practicar retenciones de IVA, Ganancias e Ingresos Brutos sobre tus cobros. Consultá tu situación en AFIP/ARCA.', tipo: 'texto', categoria: 'Tarifas', descripcion: 'Aviso informativo sobre retenciones impositivas al vendedor (no se calcula, solo se muestra).' },
 
   // Contacto
@@ -65,8 +69,16 @@ const DEFAULTS = [
   { clave: 'func_servicios_activo', valor: 'true', tipo: 'boolean', categoria: 'Funcionalidades', descripcion: 'Habilitar módulo de Servicios Locales (Paso 2)' },
 ]
 
+// Claves obsoletas que ya no usa la app y deben desaparecer del panel admin.
+// Eran los coeficientes de "recargo al comprador", reemplazados por el modelo
+// de cuotas SIN interés (tarifa_cobro + tarifa_cuota_si_3/6/12).
+const CLAVES_OBSOLETAS = ['tarifa_cuotas_3', 'tarifa_cuotas_6', 'tarifa_cuotas_12']
+
 // Inicializar configuraciones por defecto
 export async function inicializarConfig() {
+  // Limpieza idempotente de claves obsoletas (no rompe nada si no existen).
+  await ConfigSitio.deleteMany({ clave: { $in: CLAVES_OBSOLETAS } })
+
   for (const config of DEFAULTS) {
     await ConfigSitio.findOneAndUpdate(
       { clave: config.clave },

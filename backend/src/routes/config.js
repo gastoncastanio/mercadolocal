@@ -41,7 +41,7 @@ router.get('/tarifas', async (req, res) => {
       'tarifa_mp_plazo', 'tarifa_mp_debito', 'tarifa_mp_credito',
       'tarifa_mp_credito_cuotas', 'tarifa_mp_mercadocredito',
       'tarifa_iva_comision',
-      'tarifa_cuotas_3', 'tarifa_cuotas_6', 'tarifa_cuotas_12',
+      'tarifa_cobro', 'tarifa_cuota_si_3', 'tarifa_cuota_si_6', 'tarifa_cuota_si_12',
       'tarifa_retenciones_aviso'
     ]
     const config = await obtenerConfigPublica(claves)

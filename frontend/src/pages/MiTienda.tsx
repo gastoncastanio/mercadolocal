@@ -19,6 +19,8 @@ export default function MiTienda() {
   const toast = useToast()
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
+  // Nudge de adopción de cuotas sin interés (dismissible, recordado en localStorage)
+  const [nudgeCuotasOculto, setNudgeCuotasOculto] = useState(() => localStorage.getItem('nudge_cuotas_oculto') === '1')
   const [editando, setEditando] = useState(false)
   // Edicion inline rapida de precio/stock
   const [editandoPrecioId, setEditandoPrecioId] = useState<string | null>(null)
@@ -545,6 +547,28 @@ export default function MiTienda() {
             </Link>
           )}
         </div>
+
+        {/* Nudge: activá cuotas sin interés (es lo que más vende). Se muestra si
+            hay productos sin cuotas y el vendedor no lo cerró. */}
+        {!cargando && !nudgeCuotasOculto && productos.length > 0 && productos.some(p => (p.cuotasSinInteres || 1) <= 1) && (
+          <div className="mb-6 flex items-start gap-3 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4">
+            <span className="text-2xl leading-none mt-0.5">💳</span>
+            <div className="flex-1 text-sm">
+              <p className="font-bold text-ml-ink">Activá cuotas sin interés — es lo que más vende</p>
+              <p className="text-ml-soft mt-0.5">
+                Tenés {productos.filter(p => (p.cuotasSinInteres || 1) <= 1).length} producto(s) sin cuotas. Editá uno y elegí 3, 6 o 12 cuotas sin interés: el comprador paga lo mismo y vos ves el costo al instante.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { localStorage.setItem('nudge_cuotas_oculto', '1'); setNudgeCuotasOculto(true) }}
+              className="text-ml-muted hover:text-ml-ink text-lg leading-none px-1"
+              aria-label="Cerrar aviso"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {cargando ? (
           <div className="flex justify-center py-16">

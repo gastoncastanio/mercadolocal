@@ -174,6 +174,7 @@ export default function AdminCMS() {
                 {categoriaActiva === 'General' && 'Configuraciones básicas del marketplace'}
                 {categoriaActiva === 'Landing' && 'Textos e imágenes de la página de inicio'}
                 {categoriaActiva === 'Negocio' && 'Comisiones, moneda y reglas del negocio'}
+                {categoriaActiva === 'Tarifas' && 'Costos de Mercado Pago y cuotas sin interés (alimentan los simuladores)'}
                 {categoriaActiva === 'Contacto' && 'Información de contacto y redes sociales'}
                 {categoriaActiva === 'SEO' && 'Optimización para motores de búsqueda'}
                 {categoriaActiva === 'Mensajes' && 'Textos que ven los usuarios en distintos momentos'}
