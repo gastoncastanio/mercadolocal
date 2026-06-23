@@ -53,3 +53,24 @@ export function imgCloudinary(url: string | undefined | null, ancho = 400): stri
   const transform = `f_auto,q_auto,c_limit,w_${ancho}`
   return `${inicio}${transform}/${resto}`
 }
+
+// Anchos para el srcset de tarjetas/miniaturas. Cubren desde un slot chico en
+// mobile (~145px @ DPR2) hasta una tarjeta grande en desktop retina.
+const ANCHOS_SRCSET = [160, 240, 320, 480, 640]
+
+/**
+ * Genera un `srcset` de Cloudinary a varios anchos para que el navegador elija
+ * el óptimo según el tamaño real del slot y el DPR de la pantalla. Antes
+ * servíamos un w_400 fijo: en una tarjeta de ~145px eso desperdiciaba ~45 KiB
+ * (lo reportaba PageSpeed). Con srcset + `sizes` el browser baja a ~320px en
+ * mobile y sube solo en desktop retina.
+ *
+ * Si la URL no es de Cloudinary (o ya viene transformada), devuelve '' para que
+ * el caller use solo `src`.
+ */
+export function imgCloudinarySrcSet(url: string | undefined | null, anchos = ANCHOS_SRCSET): string {
+  if (!url || typeof url !== 'string' || url.indexOf(MARCADOR) === -1) return ''
+  // Si imgCloudinary no transforma (ya transformada), no armamos srcset.
+  if (imgCloudinary(url, anchos[0]) === url) return ''
+  return anchos.map(w => `${imgCloudinary(url, w)} ${w}w`).join(', ')
+}

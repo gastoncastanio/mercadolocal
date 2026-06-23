@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Producto, Tienda } from '../types'
-import { imgCloudinary } from '../utils/cloudinary'
+import { imgCloudinary, imgCloudinarySrcSet } from '../utils/cloudinary'
 import { valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 import BadgeVerificado from './BadgeVerificado'
 
@@ -42,6 +42,8 @@ export default function TarjetaProducto({ producto }: Props) {
         {producto.imagenes && producto.imagenes.length > 0 ? (
           <img
             src={imgCloudinary(producto.imagenes[0], 400)}
+            srcSet={imgCloudinarySrcSet(producto.imagenes[0]) || undefined}
+            sizes="(min-width: 1024px) 270px, (min-width: 768px) 24vw, (min-width: 640px) 30vw, 38vw"
             alt={producto.nombre}
             loading="lazy"
             width={400}
