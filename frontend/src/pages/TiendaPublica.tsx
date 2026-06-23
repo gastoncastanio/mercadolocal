@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
+import { getCategoria } from '../constants/categorias'
 import { Producto, Tienda } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import BadgeVerificado from '../components/BadgeVerificado'
@@ -8,9 +9,14 @@ import { imgCloudinary } from '../utils/cloudinary'
 
 export default function TiendaPublica() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const [tienda, setTienda] = useState<Tienda | null>(null)
   const [productos, setProductos] = useState<Producto[]>([])
   const [cargando, setCargando] = useState(true)
+  const [seguidores, setSeguidores] = useState(0)
+  const [siguiendo, setSiguiendo] = useState(false)
+  const [togglingSeguir, setTogglingSeguir] = useState(false)
+  const [copiado, setCopiado] = useState(false)
 
   useEffect(() => {
     cargar()
@@ -18,17 +24,47 @@ export default function TiendaPublica() {
 
   async function cargar() {
     try {
-      const [tiendaRes, productosRes] = await Promise.all([
+      const [tiendaRes, productosRes, seguidoresRes] = await Promise.all([
         api.get(`/tienda/${id}`),
-        api.get(`/productos?tiendaId=${id}`)
+        api.get(`/productos?tiendaId=${id}`),
+        api.get(`/tienda/${id}/seguidores`).catch(() => ({ data: { seguidores: 0, siguiendo: false } }))
       ])
       setTienda(tiendaRes.data)
       setProductos(productosRes.data)
+      setSeguidores(seguidoresRes.data.seguidores || 0)
+      setSiguiendo(!!seguidoresRes.data.siguiendo)
     } catch (err) {
       console.error(err)
     } finally {
       setCargando(false)
     }
+  }
+
+  async function toggleSeguir() {
+    if (togglingSeguir) return
+    setTogglingSeguir(true)
+    try {
+      const res = await api.post(`/tienda/${id}/seguir`)
+      setSiguiendo(res.data.siguiendo)
+      setSeguidores(res.data.seguidores)
+    } catch (err: any) {
+      if (err.response?.status === 401) navigate('/login')
+    } finally {
+      setTogglingSeguir(false)
+    }
+  }
+
+  async function compartir() {
+    const url = window.location.href
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: tienda?.nombre, text: `Mirá ${tienda?.nombre} en MercadoLocal`, url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        setCopiado(true)
+        setTimeout(() => setCopiado(false), 2000)
+      }
+    } catch { /* el usuario canceló el share */ }
   }
 
   function calcularNivel(calif: number, ventas: number) {
@@ -68,6 +104,15 @@ export default function TiendaPublica() {
   // Rellenos visuales para estrellas
   const estrellasLlenas = Math.floor(calif)
   const mediaEstrella = calif - estrellasLlenas >= 0.5
+
+  // Secciones del storefront (como las tiendas de marca): lo más vendido,
+  // cuotas sin interés y las categorías que vende la tienda.
+  const masVendidos = [...productos]
+    .filter(p => (p.totalVentas || 0) > 0)
+    .sort((a, b) => (b.totalVentas || 0) - (a.totalVentas || 0))
+    .slice(0, 4)
+  const conCuotas = productos.filter(p => (p.cuotasSinInteres || 1) > 1).slice(0, 8)
+  const categoriasTienda = [...new Set(productos.flatMap(p => p.categorias || []))].slice(0, 8)
 
   return (
     <div className="min-h-screen bg-ml-bg pb-10">
@@ -125,6 +170,29 @@ export default function TiendaPublica() {
                 </div>
                 <span className="font-bold text-sm">{calif.toFixed(1)}</span>
                 <span className="text-xs opacity-80">&middot; {ventas} ventas</span>
+              </div>
+              {/* Acciones de la tienda: seguir + compartir (storefront de marca) */}
+              <div className="flex items-center justify-center sm:justify-start flex-wrap gap-2.5 mt-4">
+                <button
+                  onClick={toggleSeguir}
+                  disabled={togglingSeguir}
+                  className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors disabled:opacity-60 ${
+                    siguiendo
+                      ? 'bg-white/20 text-white border border-white/60 hover:bg-white/30'
+                      : 'bg-white text-ml-ink hover:bg-white/90'
+                  }`}
+                >
+                  {siguiendo ? '✓ Siguiendo' : '+ Seguir'}
+                </button>
+                <button
+                  onClick={compartir}
+                  className="px-4 py-1.5 rounded-full text-sm font-semibold bg-white/15 text-white border border-white/40 hover:bg-white/25 transition-colors"
+                >
+                  {copiado ? '¡Link copiado!' : '↗ Compartir'}
+                </button>
+                <span className="text-sm opacity-90">
+                  {seguidores.toLocaleString('es-AR')} {seguidores === 1 ? 'seguidor' : 'seguidores'}
+                </span>
               </div>
             </div>
           </div>
@@ -184,24 +252,70 @@ export default function TiendaPublica() {
         </div>
       </div>
 
-      {/* Productos de la tienda */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
-        <h2 className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mb-4">
-          Productos de esta tienda ({productos.length})
-        </h2>
-        {productos.length === 0 ? (
+      {productos.length === 0 ? (
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
           <div className="bg-white rounded-2xl shadow-sm p-10 text-center">
             <p className="text-5xl mb-3">&#x1F4E6;</p>
             <p className="text-ml-muted">Esta tienda a&uacute;n no tiene productos publicados.</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {productos.map(p => (
-              <TarjetaProducto key={p._id} producto={p} />
-            ))}
+        </div>
+      ) : (
+        <>
+          {/* Categorías que vende la tienda */}
+          {categoriasTienda.length > 0 && (
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
+              <h2 className="text-base sm:text-lg font-bold text-ml-ink mb-3">Conocé las categorías</h2>
+              <div className="flex flex-wrap gap-2">
+                {categoriasTienda.map(cat => (
+                  <Link
+                    key={cat}
+                    to={`/catalogo?categoria=${encodeURIComponent(cat)}`}
+                    className="px-3.5 py-2 bg-white border border-ml-line rounded-full text-sm font-medium text-ml-ink hover:border-ml-purple hover:text-ml-purple transition-colors"
+                  >
+                    {getCategoria(cat)?.nombre || cat}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lo más vendido */}
+          {masVendidos.length > 0 && (
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
+              <h2 className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mb-4 flex items-center gap-2">
+                Lo más vendido <span>🔥</span>
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {masVendidos.map(p => <TarjetaProducto key={p._id} producto={p} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Cuotas sin interés */}
+          {conCuotas.length > 0 && (
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
+              <h2 className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mb-4 flex items-center gap-2">
+                Cuotas sin interés <span>💳</span>
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {conCuotas.map(p => <TarjetaProducto key={p._id} producto={p} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Todos los productos */}
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 mt-8">
+            <h2 className="text-xl sm:font-display text-[24px] font-extrabold text-ml-ink mb-4">
+              Todos los productos ({productos.length})
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+              {productos.map(p => (
+                <TarjetaProducto key={p._id} producto={p} />
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }

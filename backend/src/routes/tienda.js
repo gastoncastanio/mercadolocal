@@ -1,7 +1,8 @@
 import { Router } from 'express'
-import { verificarToken, soloTieneVendedor } from '../middleware/auth.js'
+import { verificarToken, soloTieneVendedor, tokenOpcional } from '../middleware/auth.js'
 import { crearTienda, obtenerTienda, obtenerMiTienda, actualizarTienda, listarTiendas, listarTiendasOficiales } from '../services/tiendaService.js'
 import { emitNuevaTienda, emitTiendaActualizada } from '../services/socketService.js'
+import SeguidorTienda from '../models/SeguidorTienda.js'
 
 const router = Router()
 
@@ -74,6 +75,47 @@ router.get('/:id', async (req, res) => {
     res.json(tienda)
   } catch (error) {
     res.status(404).json({ error: error.message })
+  }
+})
+
+// GET /api/tienda/:id/seguidores - Cantidad de seguidores + si el usuario sigue
+router.get('/:id/seguidores', tokenOpcional, async (req, res) => {
+  try {
+    const tiendaId = req.params.id
+    const seguidores = await SeguidorTienda.countDocuments({ tiendaId })
+    let siguiendo = false
+    if (req.usuario?.id) {
+      siguiendo = !!(await SeguidorTienda.findOne({ usuarioId: req.usuario.id, tiendaId }))
+    }
+    res.json({ seguidores, siguiendo })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// POST /api/tienda/:id/seguir - Seguir / dejar de seguir (toggle)
+router.post('/:id/seguir', verificarToken, async (req, res) => {
+  try {
+    const tiendaId = req.params.id
+    const usuarioId = req.usuario.id
+    const existe = await SeguidorTienda.findOne({ usuarioId, tiendaId })
+    let siguiendo
+    if (existe) {
+      await SeguidorTienda.deleteOne({ _id: existe._id })
+      siguiendo = false
+    } else {
+      try {
+        await SeguidorTienda.create({ usuarioId, tiendaId })
+      } catch (e) {
+        // Carrera de doble click contra el índice único: lo tratamos como ya seguido
+        if (e.code !== 11000) throw e
+      }
+      siguiendo = true
+    }
+    const seguidores = await SeguidorTienda.countDocuments({ tiendaId })
+    res.json({ siguiendo, seguidores })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 })
 
