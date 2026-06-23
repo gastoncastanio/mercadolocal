@@ -34,6 +34,7 @@ export async function crearTienda(usuarioId, datos) {
     nombre: datos.nombre,
     descripcion: datos.descripcion || '',
     logo: datos.logo || '',
+    portada: datos.portada || '',
     ciudad: datos.ciudad,
     tipo: datos.tipo || 'online',
     telefono: datos.telefono || ''
@@ -74,6 +75,7 @@ export async function actualizarTienda(usuarioId, datos) {
       nombreCorto: datos.nombreCorto,
       descripcion: datos.descripcion,
       logo: datos.logo,
+      portada: datos.portada,
       ciudad: datos.ciudad,
       tipo: datos.tipo,
       telefono: datos.telefono

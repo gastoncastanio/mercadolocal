@@ -33,11 +33,15 @@ export default function MiTienda() {
     ciudad: tienda?.ciudad || '',
     tipo: tienda?.tipo || 'online',
     telefono: tienda?.telefono || '',
-    logo: tienda?.logo || ''
+    logo: tienda?.logo || '',
+    portada: tienda?.portada || ''
   })
   const [progresoLogo, setProgresoLogo] = useState<UploadProgress | null>(null)
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
+  const [progresoPortada, setProgresoPortada] = useState<UploadProgress | null>(null)
+  const [previewPortada, setPreviewPortada] = useState<string | null>(null)
+  const portadaInputRef = useRef<HTMLInputElement>(null)
   // Compatibilidad con código que aún use subiendoLogo
   const subiendoLogo = progresoLogo !== null
 
@@ -133,6 +137,32 @@ export default function MiTienda() {
     setForm(prev => ({ ...prev, logo: '' }))
     setPreviewLogo(null)
     if (logoInputRef.current) logoInputRef.current.value = ''
+  }
+
+  async function subirPortada(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (ev) => setPreviewPortada(ev.target?.result as string)
+    reader.readAsDataURL(file)
+
+    try {
+      const resultado = await subirImagenOptimizada(file, (p) => setProgresoPortada(p))
+      setForm(prev => ({ ...prev, portada: resultado.url }))
+      toast.exito('Portada cargada')
+    } catch (err: any) {
+      toast.error(err.message || 'Error al subir la portada')
+      setPreviewPortada(null)
+    } finally {
+      setProgresoPortada(null)
+    }
+  }
+
+  function eliminarPortada() {
+    setForm(prev => ({ ...prev, portada: '' }))
+    setPreviewPortada(null)
+    if (portadaInputRef.current) portadaInputRef.current.value = ''
   }
 
   async function guardarTienda(e: React.FormEvent) {
@@ -361,6 +391,7 @@ export default function MiTienda() {
   // ===== RENDER: Editando tienda =====
   if (editando) {
     const logoSrc = previewLogo || form.logo
+    const portadaSrc = previewPortada || form.portada
     return (
       <div className="min-h-screen bg-ml-bg py-8">
         <div className="max-w-lg mx-auto px-4">
@@ -399,6 +430,37 @@ export default function MiTienda() {
                 </div>
               )}
               <input ref={logoInputRef} type="file" accept="image/*,.heic,.heif" onChange={subirLogo} className="hidden" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-ml-ink mb-2">
+                Foto de portada <span className="text-ml-muted font-normal">(opcional — se ve de fondo en el encabezado de tu tienda)</span>
+              </label>
+              {portadaSrc ? (
+                <div className="relative">
+                  <img src={portadaSrc} alt="Portada" className="w-full h-32 sm:h-40 rounded-2xl object-cover border-2 border-ml-line" />
+                  {progresoPortada && (
+                    <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center px-6">
+                      <div className="text-white text-xs font-medium mb-2 text-center leading-tight">{progresoPortada.mensaje}</div>
+                      <div className="w-1/2 h-1.5 bg-white/30 rounded-full overflow-hidden">
+                        <div className="h-full bg-white transition-all duration-300" style={{ width: `${progresoPortada.porcentaje}%` }} />
+                      </div>
+                      <div className="text-white text-[10px] mt-1">{progresoPortada.porcentaje}%</div>
+                    </div>
+                  )}
+                  <button type="button" onClick={eliminarPortada}
+                    className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 text-sm font-bold">x</button>
+                </div>
+              ) : (
+                <div onClick={() => portadaInputRef.current?.click()}
+                  className="w-full h-32 sm:h-40 border-2 border-dashed border-ml-line rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                  <svg className="w-8 h-8 text-ml-muted mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V6a1.5 1.5 0 011.5-1.5z" />
+                  </svg>
+                  <span className="text-ml-muted text-xs text-center">Subir foto de portada</span>
+                  <span className="text-ml-muted text-[10px] mt-0.5">Horizontal, idealmente ~1200×400px</span>
+                </div>
+              )}
+              <input ref={portadaInputRef} type="file" accept="image/*,.heic,.heif" onChange={subirPortada} className="hidden" />
             </div>
             <div>
               <label className="block text-sm font-medium text-ml-ink mb-1">Nombre de la tienda</label>
@@ -480,7 +542,7 @@ export default function MiTienda() {
               <p className="text-sm text-ml-muted">Ganancias totales</p>
               <p className="text-2xl font-bold text-green-600">${tienda?.ganancias?.toLocaleString('es-AR') || 0}</p>
               <p className="text-xs text-ml-muted">{tienda?.totalVentas || 0} ventas</p>
-              <button onClick={() => { setForm({nombre: tienda?.nombre||'', nombreCorto: tienda?.nombreCorto||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||''}); setEditando(true) }}
+              <button onClick={() => { setForm({nombre: tienda?.nombre||'', nombreCorto: tienda?.nombreCorto||'', descripcion: tienda?.descripcion||'', ciudad: tienda?.ciudad||'', tipo: tienda?.tipo||'online', telefono: tienda?.telefono||'', logo: tienda?.logo||'', portada: tienda?.portada||''}); setEditando(true) }}
                 className="mt-2 text-sm text-ml-blue hover:underline font-medium">Editar tienda</button>
             </div>
           </div>

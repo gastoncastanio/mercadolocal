@@ -23,6 +23,8 @@ export interface Tienda {
   nombre: string
   descripcion: string
   logo: string
+  // Foto de portada del header de la tienda (URL Cloudinary). Vacía = degradé.
+  portada?: string
   ciudad: string
   tipo: 'fisica' | 'online' | 'ambas'
   telefono: string

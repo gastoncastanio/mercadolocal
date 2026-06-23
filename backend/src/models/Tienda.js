@@ -29,6 +29,13 @@ const tiendaSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // Foto de portada (banner del header de la tienda). Si está vacía, el header
+  // usa un degradé según el nivel del vendedor. Mucha imagen hace la tienda más
+  // atractiva y atrapa. Es una URL de Cloudinary, como el logo.
+  portada: {
+    type: String,
+    default: ''
+  },
   ciudad: {
     type: String,
     required: [true, 'La ciudad es obligatoria'],

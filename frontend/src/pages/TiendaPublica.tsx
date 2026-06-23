@@ -4,6 +4,7 @@ import api from '../services/api'
 import { Producto, Tienda } from '../types'
 import TarjetaProducto from '../components/TarjetaProducto'
 import BadgeVerificado from '../components/BadgeVerificado'
+import { imgCloudinary } from '../utils/cloudinary'
 
 export default function TiendaPublica() {
   const { id } = useParams()
@@ -71,8 +72,19 @@ export default function TiendaPublica() {
   return (
     <div className="min-h-screen bg-ml-bg pb-10">
       {/* Header tienda */}
-      <div className={`bg-gradient-to-br ${nivel.color} text-white`}>
-        <div className="max-w-6xl mx-auto px-4 py-8 sm:py-10">
+      <div className="relative text-white overflow-hidden">
+        {/* Fondo: foto de portada de la tienda (si la cargó) o degradé según nivel.
+            La portada hace la tienda mucho más atractiva; el overlay oscuro
+            mantiene legible el logo y el texto blanco encima de cualquier foto. */}
+        {tienda.portada ? (
+          <>
+            <img src={imgCloudinary(tienda.portada, 1200)} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/25" />
+          </>
+        ) : (
+          <div className={`absolute inset-0 bg-gradient-to-br ${nivel.color}`} />
+        )}
+        <div className="relative max-w-6xl mx-auto px-4 py-8 sm:py-10">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
             {tienda.logo ? (
               <img
