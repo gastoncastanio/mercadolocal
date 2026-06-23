@@ -52,6 +52,7 @@ export default function Navbar() {
   const [menuUsuario, setMenuUsuario] = useState(false)
   const [menuCompras, setMenuCompras] = useState(false)
   const [menuCategorias, setMenuCategorias] = useState(false)
+  const [menuMas, setMenuMas] = useState(false)
   const [menuMobile, setMenuMobile] = useState(false)
   // Qué vertical del menú del avatar está expandida (acordeón: solo una a la vez).
   const [grupoMenu, setGrupoMenu] = useState<string | null>(null)
@@ -62,6 +63,7 @@ export default function Navbar() {
   const refUsuario = useRef<HTMLDivElement>(null)
   const refCompras = useRef<HTMLDivElement>(null)
   const refCategorias = useRef<HTMLDivElement>(null)
+  const refMas = useRef<HTMLDivElement>(null)
 
   // WebSocket para notificaciones en tiempo real
   const { on, off } = useSocket(usuario?._id)
@@ -119,6 +121,7 @@ export default function Navbar() {
       if (refUsuario.current && !refUsuario.current.contains(e.target as Node)) setMenuUsuario(false)
       if (refCompras.current && !refCompras.current.contains(e.target as Node)) setMenuCompras(false)
       if (refCategorias.current && !refCategorias.current.contains(e.target as Node)) setMenuCategorias(false)
+      if (refMas.current && !refMas.current.contains(e.target as Node)) setMenuMas(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -146,11 +149,12 @@ export default function Navbar() {
 
   // Helper: abre un menú específico cerrando todos los demás.
   // Si el menú ya está abierto, lo cierra (toggle).
-  function toggleMenu(cual: 'vendedor' | 'usuario' | 'compras' | 'categorias') {
+  function toggleMenu(cual: 'vendedor' | 'usuario' | 'compras' | 'categorias' | 'mas') {
     setMenuVendedor(cual === 'vendedor' ? v => !v : false)
     setMenuUsuario(cual === 'usuario' ? v => !v : false)
     setMenuCompras(cual === 'compras' ? v => !v : false)
     setMenuCategorias(cual === 'categorias' ? v => !v : false)
+    setMenuMas(cual === 'mas' ? v => !v : false)
   }
 
   return (
@@ -439,30 +443,41 @@ export default function Navbar() {
 
             <span className="text-gray-200">|</span>
 
-            <Link to="/catalogo" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+            <Link to="/catalogo" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap">
               Catálogo
             </Link>
-            <Link to="/tiendas" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+            <Link to="/tiendas" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap">
               Tiendas
             </Link>
-            <Link to="/usados" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+            <Link to="/usados" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap">
               Usados
             </Link>
-            <Link to="/ofertas" className="text-ml-violet hover:text-ml-purple font-semibold px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+            <Link to="/ofertas" className="text-ml-violet hover:text-ml-purple font-semibold px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap">
               Ofertas
             </Link>
-            <Link to="/mas-vendidos" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
+            <Link to="/mas-vendidos" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap">
               Más vendidos
             </Link>
-            <Link to="/radar" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
-              📍 Radar
-            </Link>
-            <Link to="/servicios" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
-              🔧 Servicios
-            </Link>
-            <Link to="/comisionistas" className="text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors">
-              🚚 Envíos
-            </Link>
+
+            {/* "Más": agrupa los verticales secundarios para no recargar la barra */}
+            <div ref={refMas} className="relative">
+              <button
+                onClick={() => toggleMenu('mas')}
+                className="flex items-center gap-1 text-ml-soft hover:text-ml-blue font-medium px-3 py-1.5 rounded-md hover:bg-ml-bg transition-colors whitespace-nowrap"
+              >
+                Más
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {menuMas && (
+                <div className="absolute left-0 mt-1 w-52 bg-white rounded-lg shadow-xl border border-ml-line2 overflow-hidden py-1 z-50">
+                  <Link to="/radar" onClick={() => setMenuMas(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-blue-50 hover:text-ml-blue">📍 Radar del Centro</Link>
+                  <Link to="/servicios" onClick={() => setMenuMas(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-blue-50 hover:text-ml-blue">🔧 Servicios profesionales</Link>
+                  <Link to="/comisionistas" onClick={() => setMenuMas(false)} className="block px-4 py-2.5 text-sm text-ml-ink hover:bg-blue-50 hover:text-ml-blue">🚚 Envíos y comisionistas</Link>
+                </div>
+              )}
+            </div>
 
             {estaLogueado && esVendedor && (
               <>

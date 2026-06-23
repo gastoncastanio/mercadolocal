@@ -17,6 +17,7 @@ interface BannerDef {
   visual?: 'tarjeta'     // visual especial (ej. mockup de tarjeta para cuotas)
   producto?: Producto | null
   destacadoId?: string
+  tipoPromo?: 'producto' | 'tienda'   // para el badge: "Producto"/"Tienda promocionada"
 }
 
 const BANNERS_BASE: BannerDef[] = [
@@ -85,7 +86,8 @@ export default function BannersRotativos() {
               gradiente: GRADIENTES_PROMO[i % GRADIENTES_PROMO.length],
               emoji: '\u{1F3EA}',
               producto: null,
-              destacadoId: d._id
+              destacadoId: d._id,
+              tipoPromo: 'tienda'
             }
           }
           const prod = d.productoId as Producto
@@ -98,7 +100,8 @@ export default function BannersRotativos() {
             gradiente: GRADIENTES_PROMO[i % GRADIENTES_PROMO.length],
             emoji: '\u2B50',
             producto: prod,
-            destacadoId: d._id
+            destacadoId: d._id,
+            tipoPromo: 'producto'
           }
         })
         const mezclados: BannerDef[] = []
@@ -141,7 +144,7 @@ export default function BannersRotativos() {
             <div className="text-white">
               {banner.destacadoId && (
                 <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wide bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full mb-3 font-semibold">
-                  &#x2B50; Producto promocionado
+                  &#x2B50; {banner.tipoPromo === 'tienda' ? 'Tienda promocionada' : 'Producto promocionado'}
                 </span>
               )}
               <h2 className="text-xl sm:text-2xl md:text-4xl font-extrabold mb-2 sm:mb-3 leading-tight tracking-tight">
