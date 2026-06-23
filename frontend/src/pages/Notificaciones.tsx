@@ -23,6 +23,7 @@ const ICONOS: Record<string, string> = {
   resena: '\u2B50',            // \u2B50
   disputa: '\u26A0\uFE0F',     // \u26A0\uFE0F
   sistema: '\u{1F514}',        // \uD83D\uDD14
+  tienda_novedad: '\u{1F3EA}', // \uD83C\uDFEA novedad de una tienda que segu\u00EDs
   pago: '\u{1F4B3}',           // \uD83D\uDCB3
   pago_aprobado: '\u2705',     // \u2705
   comprobante: '\u{1F9FE}',    // \uD83E\uDDFE

@@ -251,6 +251,14 @@ export async function crearProducto(tiendaId, datos) {
       .catch(err => console.warn('Evento Sofía no disparó:', err.message))
   }
 
+  // Avisar a los seguidores de la tienda (si el producto queda visible). Async,
+  // no bloquea la publicación.
+  if (moderacionResultado.decision !== 'rechazado') {
+    import('./seguidorService.js')
+      .then(m => m.notificarSeguidoresNuevoProducto(tienda, producto))
+      .catch(err => console.warn('No se pudo avisar a seguidores:', err.message))
+  }
+
   return producto
 }
 
