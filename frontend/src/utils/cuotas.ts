@@ -2,49 +2,98 @@ import { useEffect, useState } from 'react'
 import api from '../services/api'
 
 /**
- * FUENTE DE VERDAD ÚNICA de las cuotas en toda la app.
+ * FUENTE DE VERDAD ÚNICA de las cuotas — modelo "cuotas SIN interés".
  *
- * Antes había tres lógicas distintas para el mismo producto: la línea "en Nx $X"
- * bajo el precio (división simple, sin interés), la "Calculadora de cuotas"
- * (fórmula francesa hardcodeada) y el "Desglose de costos" (coeficientes de
- * /config/tarifas). Daban números distintos. Unificamos en los COEFICIENTES
- * configurables por el admin (los del desglose), que son la fuente correcta.
+ * El vendedor absorbe el costo de financiación de Mercado Pago metiéndolo en el
+ * precio publicado. Por eso el comprador paga el MISMO total (el precio) tanto
+ * en 1 pago como en hasta N cuotas: cada cuota = precio / N, sin recargo. Recién
+ * así podemos afirmar "sin interés" de verdad.
  *
- * coef[n] = total a pagar / precio. Ej. coef[6]=1.30 => 6 cuotas suman precio*1.30.
+ * Las tasas son las REALES de Mercado Pago (acreditación "en el momento"), y el
+ * admin las puede ajustar desde /config/tarifas. La cuenta del vendedor:
+ *
+ *   cobrar = recibir / (1 − (cobro% + cuota%) × (1 + IVA))
+ *
+ * Ej. 6 cuotas: recibir $85 → cobrar 85 / (1 − (6,60%+19,09%)×1,21) = $123,35.
  */
 
 export const OPCIONES_CUOTAS = [1, 3, 6, 12] as const
 
-export type Coeficientes = Record<number, number>
+export const IVA = 0.21 // IVA argentino sobre los costos de MP
 
-// Defaults (coinciden con TARIFAS_DEFAULT de CalculadorCostos). Se sobreescriben
-// con la config real del admin vía /config/tarifas.
-export const COEF_DEFAULT: Coeficientes = { 1: 1, 3: 1.15, 6: 1.30, 12: 1.55 }
-
-export interface ResultadoCuota {
-  cuotas: number
-  valorCuota: number
-  total: number
-  recargo: number
-  sinInteres: boolean
+// Tasas reales de MP (en %, ANTES de IVA), acreditación "en el momento".
+// Costo por cobro: se paga en toda venta (incluido 1 pago).
+export const TASA_COBRO_DEFAULT = 6.60
+// Costo por ofrecer N cuotas sin interés (además del cobro).
+export const TASAS_CUOTAS_DEFAULT: Record<number, number> = {
+  1: 0,
+  3: 12.19,
+  6: 19.09,
+  12: 32.29
 }
 
-export function calcularCuota(precio: number, cuotas: number, coef: Coeficientes = COEF_DEFAULT): ResultadoCuota {
-  const p = Math.max(0, precio || 0)
-  const c = coef[cuotas] ?? 1
-  const total = Math.round(p * c * 100) / 100
-  const recargo = Math.round((total - p) * 100) / 100
-  const valorCuota = cuotas > 0 ? Math.round((total / cuotas) * 100) / 100 : total
-  return { cuotas, valorCuota, total, recargo, sinInteres: recargo <= 0 }
+export interface TarifasCuotas {
+  cobro: number                  // % costo por cobro (antes de IVA)
+  cuotas: Record<number, number> // % costo por ofrecer N cuotas sin interés
+}
+
+export const TARIFAS_CUOTAS_DEFAULT: TarifasCuotas = {
+  cobro: TASA_COBRO_DEFAULT,
+  cuotas: TASAS_CUOTAS_DEFAULT
 }
 
 /**
- * Hook que trae los coeficientes de cuotas desde la config del admin (con
- * defaults). Todos los componentes que muestren cuotas deben usarlo para que
- * coincidan entre sí.
+ * Fracción del monto cobrado que se queda Mercado Pago al ofrecer `n` cuotas
+ * sin interés (cobro + financiación, con IVA). Para `n = 1` es solo el cobro.
  */
-export function useCoeficientesCuotas(): Coeficientes {
-  const [coef, setCoef] = useState<Coeficientes>(COEF_DEFAULT)
+export function fraccionCostoMP(n: number, t: TarifasCuotas = TARIFAS_CUOTAS_DEFAULT): number {
+  const cuota = t.cuotas[n] ?? 0
+  return ((t.cobro + cuota) / 100) * (1 + IVA)
+}
+
+/** Lo que paga el comprador por cada cuota (sin interés: precio / n). */
+export function valorCuotaSinInteres(precio: number, n: number): number {
+  const p = Math.max(0, precio || 0)
+  return n > 0 ? Math.round((p / n) * 100) / 100 : p
+}
+
+/**
+ * Precio a PUBLICAR para que el vendedor RECIBA `neto` ofreciendo hasta `n`
+ * cuotas sin interés (cuenta el costo de MP, no la comisión de la plataforma).
+ */
+export function precioParaRecibir(neto: number, n: number, t: TarifasCuotas = TARIFAS_CUOTAS_DEFAULT): number {
+  const f = fraccionCostoMP(n, t)
+  const r = Math.max(0, neto || 0)
+  return f < 1 ? Math.round((r / (1 - f)) * 100) / 100 : 0
+}
+
+/**
+ * Neto que recibe el vendedor (después del costo de MP) si publica `precio`
+ * ofreciendo hasta `n` cuotas sin interés. No incluye la comisión de la
+ * plataforma (de eso se encarga CalculadorCostos).
+ */
+export function netoPorCobroMP(precio: number, n: number, t: TarifasCuotas = TARIFAS_CUOTAS_DEFAULT): number {
+  const p = Math.max(0, precio || 0)
+  return Math.round(p * (1 - fraccionCostoMP(n, t)) * 100) / 100
+}
+
+/** Costo de MP (en $) por ofrecer hasta `n` cuotas sin interés sobre `precio`. */
+export function costoMP(precio: number, n: number, t: TarifasCuotas = TARIFAS_CUOTAS_DEFAULT): number {
+  const p = Math.max(0, precio || 0)
+  return Math.round(p * fraccionCostoMP(n, t) * 100) / 100
+}
+
+export function formatPesos(n: number): string {
+  return (n || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })
+}
+
+/**
+ * Hook que trae las tasas reales de cuotas desde la config del admin (con los
+ * defaults reales de MP). Todos los componentes que muestren o calculen cuotas
+ * deben usarlo para que coincidan entre sí.
+ */
+export function useTarifasCuotas(): TarifasCuotas {
+  const [t, setT] = useState<TarifasCuotas>(TARIFAS_CUOTAS_DEFAULT)
   useEffect(() => {
     let activo = true
     api.get('/config/tarifas')
@@ -52,19 +101,18 @@ export function useCoeficientesCuotas(): Coeficientes {
         if (!activo || !res.data) return
         const d = res.data
         const num = (v: any, def: number) => (v !== undefined && v !== '' && !isNaN(parseFloat(v)) ? parseFloat(v) : def)
-        setCoef({
-          1: 1,
-          3: num(d.tarifa_cuotas_3, COEF_DEFAULT[3]),
-          6: num(d.tarifa_cuotas_6, COEF_DEFAULT[6]),
-          12: num(d.tarifa_cuotas_12, COEF_DEFAULT[12])
+        setT({
+          cobro: num(d.tarifa_cobro, TASA_COBRO_DEFAULT),
+          cuotas: {
+            1: 0,
+            3: num(d.tarifa_cuota_si_3, TASAS_CUOTAS_DEFAULT[3]),
+            6: num(d.tarifa_cuota_si_6, TASAS_CUOTAS_DEFAULT[6]),
+            12: num(d.tarifa_cuota_si_12, TASAS_CUOTAS_DEFAULT[12])
+          }
         })
       })
-      .catch(() => { /* defaults */ })
+      .catch(() => { /* defaults reales de MP */ })
     return () => { activo = false }
   }, [])
-  return coef
-}
-
-export function formatPesos(n: number): string {
-  return n.toLocaleString('es-AR', { maximumFractionDigits: 2 })
+  return t
 }

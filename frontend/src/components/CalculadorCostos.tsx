@@ -1,48 +1,36 @@
 import { useState, useEffect } from 'react'
 import api from '../services/api'
-
-type MedioPago = 'debito' | 'credito_1' | 'credito_3' | 'credito_6' | 'credito_12' | 'mp_credito'
+import { useTarifasCuotas, costoMP, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 
 interface CalculadorProps {
   precioProducto: number
   vista?: 'comprador' | 'vendedor' | 'ambos'
   compact?: boolean
+  // Cuotas SIN interés que ofrece el vendedor (máx: 1/3/6/12). Define el costo
+  // de Mercado Pago que el vendedor absorbe. Default 1 (solo 1 pago).
+  cuotasSinInteres?: number
 }
 
-// Valores por defecto (se sobreescriben con la config real del admin)
+// Valores por defecto (se sobreescriben con la config real del admin).
+// El costo de MP (cobro + financiación de cuotas) sale de utils/cuotas.
 const TARIFAS_DEFAULT = {
   comision_porcentaje: 10,
   tarifa_mp_plazo: 'al instante',
-  tarifa_mp_debito: 3.49,
-  tarifa_mp_credito: 6.29,
-  tarifa_mp_credito_cuotas: 6.29,
-  tarifa_mp_mercadocredito: 6.29,
   tarifa_iva_comision: 0,
-  tarifa_cuotas_3: 1.15,
-  tarifa_cuotas_6: 1.30,
-  tarifa_cuotas_12: 1.55,
   tarifa_retenciones_aviso: ''
 }
 
-const MEDIOS: { id: MedioPago; label: string; cuotas: number }[] = [
-  { id: 'debito', label: '💳 Débito / dinero en cuenta', cuotas: 1 },
-  { id: 'credito_1', label: '💳 Crédito en 1 pago', cuotas: 1 },
-  { id: 'credito_3', label: '💳 Crédito en 3 cuotas', cuotas: 3 },
-  { id: 'credito_6', label: '💳 Crédito en 6 cuotas', cuotas: 6 },
-  { id: 'credito_12', label: '💳 Crédito en 12 cuotas', cuotas: 12 },
-  { id: 'mp_credito', label: '💵 Mercado Crédito', cuotas: 1 }
-]
-
 const r2 = (n: number) => Math.round(n * 100) / 100
-const fmt = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 2 })
+const fmt = (n: number) => formatPesos(n)
 
 export default function CalculadorCostos({
   precioProducto,
   vista = 'comprador',
-  compact = false
+  compact = false,
+  cuotasSinInteres = 1
 }: CalculadorProps) {
   const [tarifas, setTarifas] = useState(TARIFAS_DEFAULT)
-  const [medio, setMedio] = useState<MedioPago>('credito_1')
+  const tCuotas = useTarifasCuotas()
 
   useEffect(() => {
     let activo = true
@@ -54,14 +42,7 @@ export default function CalculadorCostos({
         setTarifas({
           comision_porcentaje: num(d.comision_porcentaje, TARIFAS_DEFAULT.comision_porcentaje),
           tarifa_mp_plazo: d.tarifa_mp_plazo || TARIFAS_DEFAULT.tarifa_mp_plazo,
-          tarifa_mp_debito: num(d.tarifa_mp_debito, TARIFAS_DEFAULT.tarifa_mp_debito),
-          tarifa_mp_credito: num(d.tarifa_mp_credito, TARIFAS_DEFAULT.tarifa_mp_credito),
-          tarifa_mp_credito_cuotas: num(d.tarifa_mp_credito_cuotas, TARIFAS_DEFAULT.tarifa_mp_credito_cuotas),
-          tarifa_mp_mercadocredito: num(d.tarifa_mp_mercadocredito, TARIFAS_DEFAULT.tarifa_mp_mercadocredito),
           tarifa_iva_comision: num(d.tarifa_iva_comision, TARIFAS_DEFAULT.tarifa_iva_comision),
-          tarifa_cuotas_3: num(d.tarifa_cuotas_3, TARIFAS_DEFAULT.tarifa_cuotas_3),
-          tarifa_cuotas_6: num(d.tarifa_cuotas_6, TARIFAS_DEFAULT.tarifa_cuotas_6),
-          tarifa_cuotas_12: num(d.tarifa_cuotas_12, TARIFAS_DEFAULT.tarifa_cuotas_12),
           tarifa_retenciones_aviso: d.tarifa_retenciones_aviso || TARIFAS_DEFAULT.tarifa_retenciones_aviso
         })
       })
@@ -70,32 +51,19 @@ export default function CalculadorCostos({
   }, [])
 
   const precio = precioProducto || 0
+  const cuotas = [1, 3, 6, 12].includes(cuotasSinInteres) ? cuotasSinInteres : 1
 
-  // Fee de MP según el medio elegido
-  const feeMpPct =
-    medio === 'debito' ? tarifas.tarifa_mp_debito :
-    medio === 'credito_1' ? tarifas.tarifa_mp_credito :
-    medio === 'mp_credito' ? tarifas.tarifa_mp_mercadocredito :
-    tarifas.tarifa_mp_credito_cuotas
+  // ===== FLUJO REAL (cuotas SIN interés) =====
+  // Comprador: paga el precio publicado, en 1 pago o en hasta N cuotas sin
+  // interés (mismo total). No hay recargo.
+  const valorCuota = valorCuotaSinInteres(precio, cuotas)
 
-  // Coeficiente de interés de cuotas (lo paga el COMPRADOR, va al banco/MP)
-  const coefCuotas =
-    medio === 'credito_3' ? tarifas.tarifa_cuotas_3 :
-    medio === 'credito_6' ? tarifas.tarifa_cuotas_6 :
-    medio === 'credito_12' ? tarifas.tarifa_cuotas_12 : 1
-  const cuotasCount = MEDIOS.find(m => m.id === medio)?.cuotas || 1
-
-  // ===== FLUJO REAL =====
-  // Comprador: paga el precio publicado. Si elige cuotas con interés, paga el recargo del banco.
-  const recargoFinanciacion = r2(precio * coefCuotas - precio)
-  const totalComprador = r2(precio + recargoFinanciacion)
-  const valorCuota = cuotasCount > 1 ? r2(totalComprador / cuotasCount) : totalComprador
-
-  // Vendedor: del precio publicado se descuentan comisión + IVA de comisión + fee de MP
+  // Vendedor: del precio se descuentan comisión ML + IVA de comisión + costo de
+  // Mercado Pago (cobro + financiación de las cuotas sin interés que ofrece).
   const comisionBase = r2(precio * tarifas.comision_porcentaje / 100)
   const ivaComision = r2(comisionBase * tarifas.tarifa_iva_comision / 100)
-  const feeMp = r2(precio * feeMpPct / 100)
-  const netoVendedor = r2(precio - comisionBase - ivaComision - feeMp)
+  const costoMercadoPago = costoMP(precio, cuotas, tCuotas)
+  const netoVendedor = r2(precio - comisionBase - ivaComision - costoMercadoPago)
 
   // ===== Vista compacta (carrito) =====
   if (compact) {
@@ -114,7 +82,7 @@ export default function CalculadorCostos({
           <span className="text-ml-mp">${fmt(precio)}</span>
         </div>
         <p className="text-[10px] text-ml-muted pt-1">
-          Pagás el precio publicado. Si elegís cuotas con interés, el recargo del banco se suma al pagar. El envío se coordina aparte.
+          Pag&aacute;s el precio publicado{cuotas > 1 ? `, hasta en ${cuotas} cuotas sin interés de $${fmt(valorCuota)}` : ''}. El env&iacute;o se coordina aparte.
         </p>
       </div>
     )
@@ -129,10 +97,11 @@ export default function CalculadorCostos({
         <h3 className="font-semibold text-ml-ink flex items-center gap-2">
           <span className="text-lg">💰</span> Desglose de costos
         </h3>
-        <select value={medio} onChange={e => setMedio(e.target.value as MedioPago)}
-          className="text-xs px-2 py-1.5 border border-ml-line rounded-lg bg-white focus:ring-2 focus:ring-ml-purple/30 outline-none">
-          {MEDIOS.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-        </select>
+        {cuotas > 1 && (
+          <span className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-semibold">
+            Hasta {cuotas} cuotas sin interés
+          </span>
+        )}
       </div>
 
       {/* ===== COMPRADOR ===== */}
@@ -144,28 +113,21 @@ export default function CalculadorCostos({
               <span className="text-sm text-ml-ink">Precio del producto</span>
               <span className="text-base font-semibold text-ml-ink">${fmt(precio)}</span>
             </div>
-            {recargoFinanciacion > 0 ? (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-ml-muted">Interés por financiación (banco / MP)</span>
-                <span className="text-sm font-medium text-orange-600">+${fmt(recargoFinanciacion)}</span>
-              </div>
-            ) : (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-ml-muted">Costos de plataforma y procesamiento</span>
-                <span className="text-sm text-green-600">Ya incluidos en el precio</span>
-              </div>
-            )}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-ml-muted">Costos de plataforma y procesamiento</span>
+              <span className="text-sm text-green-600">Ya incluidos en el precio</span>
+            </div>
             <div className="pt-3 border-t border-blue-100 flex justify-between items-center">
               <span className="text-base font-bold text-ml-ink">TOTAL QUE PAGÁS</span>
-              <span className="text-xl font-extrabold text-ml-mp">${fmt(totalComprador)}</span>
+              <span className="text-xl font-extrabold text-ml-mp">${fmt(precio)}</span>
             </div>
-            {cuotasCount > 1 && (
-              <p className="text-xs text-ml-soft text-right">{cuotasCount} cuotas de ${fmt(valorCuota)}</p>
+            {cuotas > 1 && (
+              <p className="text-xs text-green-600 font-semibold text-right">{cuotas} cuotas sin interés de ${fmt(valorCuota)}</p>
             )}
           </div>
-          {recargoFinanciacion > 0 && (
+          {cuotas > 1 && (
             <p className="text-[11px] text-ml-muted px-1">
-              El interés de las cuotas lo cobra tu banco o Mercado Pago, no MercadoLocal. Pagando en 1 pago o débito no tenés recargo.
+              Pagás el mismo total en 1 pago o en hasta {cuotas} cuotas sin interés. El vendedor ya absorbió el costo de financiación.
             </p>
           )}
         </div>
@@ -191,8 +153,10 @@ export default function CalculadorCostos({
               </div>
             )}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-ml-muted">Fee Mercado Pago ({fmt(feeMpPct)}%, {tarifas.tarifa_mp_plazo})</span>
-              <span className="text-sm font-medium text-red-600">-${fmt(feeMp)}</span>
+              <span className="text-sm text-ml-muted">
+                Costo Mercado Pago{cuotas > 1 ? ` (cobro + ${cuotas} cuotas sin interés)` : ' (cobro)'}
+              </span>
+              <span className="text-sm font-medium text-red-600">-${fmt(costoMercadoPago)}</span>
             </div>
             <div className="pt-3 border-t border-green-200 flex justify-between items-center">
               <span className="text-base font-bold text-ml-ink">NETO QUE RECIBÍS</span>
@@ -221,8 +185,7 @@ export default function CalculadorCostos({
         </summary>
         <div className="pt-2 space-y-2 border-t border-blue-100 mt-2">
           <p><strong className="text-ml-ink">Comisión MercadoLocal ({tarifas.comision_porcentaje}%):</strong> lo que cobramos por conectar compradores y vendedores, hostear la plataforma, moderar y gestionar disputas. Se descuenta del vendedor.</p>
-          <p><strong className="text-ml-ink">Fee Mercado Pago:</strong> lo que Mercado Pago cobra por procesar el pago ({tarifas.tarifa_mp_plazo}). Varía según el medio de pago.</p>
-          <p><strong className="text-ml-ink">Interés de cuotas:</strong> si el comprador paga en cuotas, el recargo lo define y cobra el banco / Mercado Pago. No lo recibe ni el vendedor ni MercadoLocal.</p>
+          <p><strong className="text-ml-ink">Costo Mercado Pago:</strong> lo que MP cobra por procesar el pago ({tarifas.tarifa_mp_plazo}) más, si ofrecés cuotas sin interés, el costo de esa financiación. Lo absorbe el vendedor (ya está en el precio), por eso el comprador no paga recargo.</p>
           <p><strong className="text-ml-ink">Envío e impuestos:</strong> el envío se paga aparte. Las retenciones impositivas dependen de la condición fiscal de cada vendedor.</p>
         </div>
       </details>

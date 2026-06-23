@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Producto, Tienda } from '../types'
 import { imgCloudinary } from '../utils/cloudinary'
+import { valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 import BadgeVerificado from './BadgeVerificado'
 
 interface Props {
@@ -23,7 +24,9 @@ export default function TarjetaProducto({ producto }: Props) {
       ? 'Reacondicionado'
       : null
 
-  const cuota6 = Math.round(producto.precio / 6)
+  // Cuotas SIN interés que ofrece el vendedor (precio ya incluye el costo).
+  const cuotasMax = producto.cuotasSinInteres || 1
+  const valorCuotaMax = valorCuotaSinInteres(producto.precio, cuotasMax)
   const tieneTienda = tienda && typeof tienda === 'object'
   const inicial = (tieneTienda && tienda.nombre ? tienda.nombre : producto.nombre).charAt(0).toUpperCase()
   // Nombre corto (editable por el vendedor) para no romper el layout de la tarjeta.
@@ -100,11 +103,13 @@ export default function TarjetaProducto({ producto }: Props) {
           )}
         </div>
 
-        {/* Cuotas (sin afirmar "sin interés": el costo real lo define el banco,
-            coherente con el detalle del producto, el banner y el Centro de Ayuda) */}
-        <p className="text-[12px] text-[#0a7d34] font-semibold mt-0.5">
-          en 6x ${cuota6.toLocaleString('es-AR')}
-        </p>
+        {/* Cuotas SIN interés que ofrece el vendedor (precio ya las incluye).
+            Solo si ofrece más de 1 cuota. */}
+        {cuotasMax > 1 && (
+          <p className="text-[12px] text-[#0a7d34] font-semibold mt-0.5">
+            {cuotasMax} cuotas sin interés de ${formatPesos(valorCuotaMax)}
+          </p>
+        )}
 
         {/* Envío gratis */}
         {producto.envioGratis && (

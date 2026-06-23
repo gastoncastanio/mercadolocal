@@ -63,6 +63,9 @@ export interface Producto {
   largo?: number
   envioGratis?: boolean
   condicion?: 'nuevo' | 'usado' | 'reacondicionado'
+  // Cuotas SIN interés que ofrece el vendedor (máx). El precio ya incluye el
+  // costo de financiación, así que el comprador paga el mismo total en N cuotas.
+  cuotasSinInteres?: number
   garantia?: string
   // Pauta: lo marca el backend cuando el producto se muestra como publicidad
   // (ordenado por relevancia para el cliente). No se persiste en el producto.

@@ -9,7 +9,7 @@ import TarjetaProducto from '../components/TarjetaProducto'
 import CalculadoraCuotas from '../components/CalculadoraCuotas'
 import CotizadorEnvio from '../components/CotizadorEnvio'
 import BadgeVerificado from '../components/BadgeVerificado'
-import { useCoeficientesCuotas, calcularCuota, formatPesos } from '../utils/cuotas'
+import { valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 import { trackVista } from '../services/tracking'
 import { imgCloudinary } from '../utils/cloudinary'
 
@@ -21,8 +21,7 @@ export default function DetalleProducto() {
   const [cantidad, setCantidad] = useState(1)
   // Cuotas: estado compartido entre la línea bajo el precio y la calculadora,
   // con la fuente de verdad única (coeficientes de config).
-  const [cuotasSel, setCuotasSel] = useState(6)
-  const coefCuotas = useCoeficientesCuotas()
+  const [cuotasSel, setCuotasSel] = useState(12)
   const [agregando, setAgregando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [imagenActual, setImagenActual] = useState(0)
@@ -106,10 +105,14 @@ export default function DetalleProducto() {
   const tieneDescuento = producto.totalVentas > 5
   const precioAnterior = tieneDescuento ? Math.round(producto.precio * 1.35) : null
   const porcentajeOff = precioAnterior ? Math.round((1 - producto.precio / precioAnterior) * 100) : null
-  const cuotaInfo = calcularCuota(producto.precio, cuotasSel, coefCuotas)
-  const cuotaTexto = cuotasSel === 1
-    ? `1 pago de $${formatPesos(cuotaInfo.valorCuota)}`
-    : `${cuotasSel}x $${formatPesos(cuotaInfo.valorCuota)}`
+  // Cuotas SIN interés: el comprador paga el mismo total (precio) en hasta N cuotas.
+  const cuotasMax = producto.cuotasSinInteres || 1
+  const cuotaSel = Math.min(cuotasSel, cuotasMax)
+  const ofreceCuotas = cuotasMax > 1
+  const valorCuota = valorCuotaSinInteres(producto.precio, cuotaSel)
+  const cuotaTexto = cuotaSel === 1
+    ? `1 pago de $${formatPesos(valorCuota)}`
+    : `${cuotaSel} cuotas sin interés de $${formatPesos(valorCuota)}`
 
   return (
     <div className="min-h-screen bg-ml-bg">
@@ -231,12 +234,16 @@ export default function DetalleProducto() {
                       <span className="text-lg font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-[15px] text-ml-muted font-normal mt-2">
-                    en {cuotaTexto} {cuotaInfo.recargo <= 0 && <span className="text-xs text-green-600 font-semibold">sin interés</span>}
-                  </p>
-                  <Link to="#cuotas" className="text-[13px] text-ml-blue hover:text-ml-violet">
-                    Calcular cuotas con tu tarjeta
-                  </Link>
+                  {ofreceCuotas && (
+                    <>
+                      <p className="text-[15px] text-green-700 font-medium mt-2">
+                        en {cuotaTexto}
+                      </p>
+                      <Link to="#cuotas" className="text-[13px] text-ml-blue hover:text-ml-violet">
+                        Ver cuotas
+                      </Link>
+                    </>
+                  )}
                 </div>
 
                 {/* ===== Modalidades de entrega ===== */}
@@ -325,11 +332,14 @@ export default function DetalleProducto() {
                   )}
                 </div>
 
-                {/* Calculadora de cuotas - bien visible. Sincronizada con la línea
-                    "en Nx $X" del precio (mismo cuotasSel + misma fuente de verdad). */}
-                <div id="cuotas" className="mb-4 scroll-mt-40">
-                  <CalculadoraCuotas precio={producto.precio} value={cuotasSel} onChange={setCuotasSel} />
-                </div>
+                {/* Calculadora de cuotas SIN interés - bien visible. Sincronizada
+                    con la línea "en N cuotas" del precio (mismo cuotaSel + misma
+                    fuente de verdad). Solo si el vendedor ofrece cuotas. */}
+                {ofreceCuotas && (
+                  <div id="cuotas" className="mb-4 scroll-mt-40">
+                    <CalculadoraCuotas precio={producto.precio} maxCuotas={cuotasMax} value={cuotaSel} onChange={setCuotasSel} />
+                  </div>
+                )}
 
                 {/* Description short */}
                 {producto.descripcion && (
@@ -404,9 +414,11 @@ export default function DetalleProducto() {
                       <span className="text-base font-medium text-green-500">{porcentajeOff}% OFF</span>
                     )}
                   </div>
-                  <p className="text-sm text-ml-muted mt-1">
-                    en {cuotaTexto} <span className="text-xs text-ml-muted">(ver cuotas)</span>
-                  </p>
+                  {ofreceCuotas && (
+                    <p className="text-sm text-green-700 font-medium mt-1">
+                      en {cuotaTexto}
+                    </p>
+                  )}
                 </div>
 
                 {/* Envio */}

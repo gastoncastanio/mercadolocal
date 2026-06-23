@@ -208,6 +208,7 @@ export async function crearProducto(tiendaId, datos) {
     marca: (datos.marca || '').trim().slice(0, 80),
     caracteristicas: caracteristicasLimpias,
     entrega: entregaNormalizada,
+    cuotasSinInteres: [1, 3, 6, 12].includes(Number(datos.cuotasSinInteres)) ? Number(datos.cuotasSinInteres) : 1,
     moderacion: {
       estado: estadoModeracion,
       motivo: moderacionResultado.motivos.join(' ').slice(0, 1000),
@@ -618,6 +619,12 @@ export async function actualizarProducto(productoId, tiendaId, datos) {
   if (datos.precioAnterior !== undefined) {
     const pa = Number(datos.precioAnterior)
     update.precioAnterior = pa > 0 ? pa : null
+  }
+  // Cuotas sin interés (máx ofrecidas) solo si viene y es válida
+  if (datos.cuotasSinInteres !== undefined) {
+    update.cuotasSinInteres = [1, 3, 6, 12].includes(Number(datos.cuotasSinInteres))
+      ? Number(datos.cuotasSinInteres)
+      : 1
   }
 
   const producto = await Producto.findOneAndUpdate(

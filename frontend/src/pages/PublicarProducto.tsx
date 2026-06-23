@@ -9,6 +9,7 @@ import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '
 import SelectorEntrega from '../components/SelectorEntrega'
 import CalculadorCostos from '../components/CalculadorCostos'
 import { ENTREGA_VACIA, EntregaProducto } from '../types'
+import { OPCIONES_CUOTAS, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
 
 const MAX_IMAGENES = 6
 
@@ -33,7 +34,9 @@ export default function PublicarProducto() {
     categorias: [] as string[],
     imagenes: [] as string[],
     marca: '',
-    codigoBarras: ''
+    codigoBarras: '',
+    // Cuotas SIN interés a ofrecer (1 = no ofrece). El vendedor absorbe el costo.
+    cuotasSinInteres: 1 as number
   })
   // Características específicas de la categoría (IMEI, talle, vencimiento, etc.)
   const [caracteristicas, setCaracteristicas] = useState<CaracteristicaItem[]>([])
@@ -385,9 +388,39 @@ export default function PublicarProducto() {
             </div>
           </div>
 
-          {/* Cuánto recibe el vendedor con este precio (transparencia de costos) */}
+          {/* Cuotas sin interés a ofrecer. El comprador paga el mismo total; el
+              vendedor absorbe el costo (se ve reflejado en el neto de abajo). */}
+          <div>
+            <label className="block text-sm font-medium text-ml-ink mb-1">Cuotas sin interés</label>
+            <p className="text-xs text-ml-muted mb-2">
+              El comprador paga el mismo precio en 1 pago o en cuotas. Vos absorbés el costo de financiación de Mercado Pago (mirá el neto abajo y ajustá el precio si querés).
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {([1, ...OPCIONES_CUOTAS.filter(c => c > 1)] as number[]).map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setForm({ ...form, cuotasSinInteres: c })}
+                  className={`py-2.5 px-1 rounded-xl text-sm font-semibold transition-colors ${
+                    form.cuotasSinInteres === c
+                      ? 'bg-ml-purple text-white shadow'
+                      : 'bg-white text-ml-ink border border-ml-line hover:border-ml-purple'
+                  }`}
+                >
+                  {c === 1 ? 'No ofrezco' : `${c} cuotas`}
+                </button>
+              ))}
+            </div>
+            {form.cuotasSinInteres > 1 && Number(form.precio) > 0 && (
+              <p className="text-xs text-green-700 font-semibold mt-2">
+                El comprador verá: {form.cuotasSinInteres} cuotas sin interés de ${formatPesos(valorCuotaSinInteres(Number(form.precio), form.cuotasSinInteres))}
+              </p>
+            )}
+          </div>
+
+          {/* Cuánto recibe el vendedor con este precio y las cuotas elegidas */}
           {Number(form.precio) > 0 && (
-            <CalculadorCostos precioProducto={Number(form.precio)} vista="vendedor" />
+            <CalculadorCostos precioProducto={Number(form.precio)} vista="vendedor" cuotasSinInteres={form.cuotasSinInteres} />
           )}
 
           {/* Condición: nuevo / usado / reacondicionado (alimenta la sección Usados) */}

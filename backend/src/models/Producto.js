@@ -134,6 +134,19 @@ const productoSchema = new mongoose.Schema({
       empresas: { type: String, default: '', trim: true, maxlength: 200 }
     }
   },
+  // ===== Cuotas sin interés =====
+  // Cantidad MÁXIMA de cuotas SIN interés que ofrece el vendedor. El vendedor
+  // absorbe el costo de financiación de Mercado Pago metiéndolo en el precio,
+  // así que el comprador paga el MISMO total (el precio publicado) en 1 pago o
+  // en hasta N cuotas: cada cuota = precio / N, sin recargo.
+  //   1      => no ofrece cuotas (solo 1 pago)
+  //   3/6/12 => hasta esa cantidad de cuotas sin interés
+  // El vendedor calcula el precio correcto con el simulador del form de publicar.
+  cuotasSinInteres: {
+    type: Number,
+    enum: [1, 3, 6, 12],
+    default: 1
+  },
   activo: {
     type: Boolean,
     default: true
