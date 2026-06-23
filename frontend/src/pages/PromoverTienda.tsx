@@ -29,6 +29,7 @@ export default function PromoverTienda() {
   const [cargando, setCargando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [misCampanas, setMisCampanas] = useState<any[]>([])
 
   const saldo = (tienda as Tienda)?.ganancias || 0
   const plan = planes.marca
@@ -59,6 +60,13 @@ export default function PromoverTienda() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function cargarCampanas() {
+    api.get('/destacados/mis-promociones')
+      .then(r => setMisCampanas((r.data || []).filter((c: any) => c.tipo === 'tienda')))
+      .catch(() => {})
+  }
+  useEffect(() => { cargarCampanas() }, [])
+
   async function crear() {
     setError(''); setMensaje(''); setCargando(true)
     try {
@@ -68,10 +76,21 @@ export default function PromoverTienda() {
         return
       }
       setMensaje(res.data.mensaje || 'Tu tienda se está promocionando.')
+      cargarCampanas()
     } catch (err: any) {
       setError(err.response?.data?.error || 'No se pudo crear la publicidad.')
     } finally {
       setCargando(false)
+    }
+  }
+
+  async function cancelar(id: string) {
+    if (!window.confirm('¿Cancelar esta publicidad? No se reembolsa el monto pagado.')) return
+    try {
+      await api.delete(`/destacados/${id}`)
+      cargarCampanas()
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo cancelar.')
     }
   }
 
@@ -102,6 +121,40 @@ export default function PromoverTienda() {
 
         {mensaje && <div className="mb-4 bg-green-50 border border-green-200 text-green-800 rounded-xl p-3 text-sm">{mensaje}</div>}
         {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-sm">{error}</div>}
+
+        {/* Mis campañas de tienda (activas o pendientes) */}
+        {misCampanas.length > 0 && (
+          <div className="bg-white rounded-2xl border border-ml-line p-5 mb-4">
+            <h2 className="font-bold text-ml-ink mb-3">Tu publicidad</h2>
+            <div className="space-y-2">
+              {misCampanas.map(c => {
+                const activa = c.estado === 'activo' || c.estado === 'pendiente'
+                return (
+                  <div key={c._id} className="flex items-center justify-between gap-3 py-2 border-t border-ml-line2 first:border-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ml-ink">
+                        Plan {c.plan} · {c.duracionDias} días
+                        <span className={`ml-2 text-[10px] px-2 py-0.5 rounded-full align-middle ${
+                          c.estado === 'activo' ? 'bg-green-100 text-green-700' :
+                          c.estado === 'pendiente' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-ml-muted'
+                        }`}>{c.estado}</span>
+                      </p>
+                      <p className="text-xs text-ml-muted">
+                        {c.estado === 'activo' && c.fechaFin ? `Vence el ${new Date(c.fechaFin).toLocaleDateString('es-AR')} · ` : ''}
+                        {c.impresiones || 0} impresiones · {c.clicks || 0} clicks
+                      </p>
+                    </div>
+                    {activa && (
+                      <button onClick={() => cancelar(c._id)} className="text-xs font-semibold text-red-600 hover:text-red-700 shrink-0">
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Tienda */}
         <div className="bg-white rounded-2xl border border-ml-line p-5 mb-4 flex items-center gap-3">

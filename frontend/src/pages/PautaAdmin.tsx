@@ -18,6 +18,7 @@ interface Stats {
 
 interface Campana {
   _id: string
+  tipo?: 'producto' | 'tienda'
   productoId?: { _id: string; nombre: string; imagenes?: string[] }
   tiendaId?: { _id: string; nombre: string; ciudad?: string }
   plan: string
@@ -38,12 +39,17 @@ interface Plan {
 
 const DURACIONES = [3, 7, 15, 30]
 const PLANES_KEYS = ['basico', 'premium', 'elite']
+const DURACIONES_TIENDA = [7, 15, 30]
 
 export default function PautaAdmin() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [campanas, setCampanas] = useState<Campana[]>([])
   const [planes, setPlanes] = useState<Record<string, Plan>>({})
   const [precios, setPrecios] = useState<Record<string, Record<number, number>>>({})
+  const [planTienda, setPlanTienda] = useState<Plan | null>(null)
+  const [preciosTienda, setPreciosTienda] = useState<Record<number, number>>({})
+  const [guardandoT, setGuardandoT] = useState(false)
+  const [msgT, setMsgT] = useState('')
   const [filtro, setFiltro] = useState('todas')
   const [guardando, setGuardando] = useState(false)
   const [msg, setMsg] = useState('')
@@ -53,15 +59,18 @@ export default function PautaAdmin() {
 
   async function cargar() {
     try {
-      const [s, p] = await Promise.all([
+      const [s, p, pt] = await Promise.all([
         api.get('/destacados/admin/stats'),
-        api.get('/destacados/admin/precios')
+        api.get('/destacados/admin/precios'),
+        api.get('/destacados/admin/precios-tienda')
       ])
       setStats(s.data)
       setPlanes(p.data)
       const pr: Record<string, Record<number, number>> = {}
       for (const k of PLANES_KEYS) pr[k] = { ...(p.data[k]?.precios || {}) }
       setPrecios(pr)
+      setPlanTienda(pt.data?.marca || null)
+      setPreciosTienda({ ...(pt.data?.marca?.precios || {}) })
     } catch (e) { console.error(e) }
   }
 
@@ -88,6 +97,20 @@ export default function PautaAdmin() {
 
   function setPrecio(plan: string, dias: number, valor: string) {
     setPrecios(prev => ({ ...prev, [plan]: { ...prev[plan], [dias]: Number(valor) } }))
+  }
+
+  async function guardarPreciosTienda() {
+    setGuardandoT(true)
+    setMsgT('')
+    try {
+      await api.put('/destacados/admin/precios-tienda', { marca: preciosTienda })
+      setMsgT('Precios actualizados ✓')
+      setTimeout(() => setMsgT(''), 3000)
+    } catch (e: any) {
+      setMsgT(e.response?.data?.error || 'Error al guardar')
+    } finally {
+      setGuardandoT(false)
+    }
   }
 
   const tarjetas = stats ? [
@@ -169,6 +192,49 @@ export default function PautaAdmin() {
           </div>
         </div>
 
+        {/* Editor de precios del plan "Marca" (publicidad de tienda) */}
+        <div className="bg-white rounded-2xl border border-ml-line2 p-5 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-ml-ink">🏪 Precios de publicidad de tienda (plan "{planTienda?.nombre || 'Marca'}")</h2>
+            <div className="flex items-center gap-3">
+              {msgT && <span className="text-xs text-green-600">{msgT}</span>}
+              <button onClick={guardarPreciosTienda} disabled={guardandoT}
+                className="mlbtn px-4 py-2 ml-grad text-white rounded-lg text-sm font-bold disabled:opacity-50">
+                {guardandoT ? 'Guardando…' : 'Guardar precios'}
+              </button>
+            </div>
+          </div>
+          <p className="text-xs text-ml-muted mb-4">La marca aparece en el banner, la home y la vidriera de marcas. El comprador la ve y entra a la tienda.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-ml-muted">
+                  <th className="py-2 pr-4">Plan</th>
+                  {DURACIONES_TIENDA.map(d => <th key={d} className="py-2 px-2 text-center">{d} días</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-ml-line2">
+                  <td className="py-2 pr-4 font-semibold text-ml-ink">🏪 {planTienda?.nombre || 'Marca'}</td>
+                  {DURACIONES_TIENDA.map(d => (
+                    <td key={d} className="py-2 px-2">
+                      <div className="flex items-center justify-center">
+                        <span className="text-ml-muted mr-1">$</span>
+                        <input
+                          type="number"
+                          value={preciosTienda[d] ?? ''}
+                          onChange={e => setPreciosTienda(prev => ({ ...prev, [d]: Number(e.target.value) }))}
+                          className="w-24 border border-ml-line2 rounded-lg px-2 py-1.5 text-right"
+                        />
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Campañas */}
         <div className="bg-white rounded-2xl border border-ml-line2 p-5">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -192,12 +258,16 @@ export default function PautaAdmin() {
                 return (
                   <div key={c._id} className="flex items-center gap-3 p-3 rounded-xl border border-ml-line2">
                     <div className="w-11 h-11 rounded-lg overflow-hidden bg-ml-bg shrink-0">
-                      {c.productoId?.imagenes?.[0]
-                        ? <img src={c.productoId.imagenes[0]} alt="" className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center">📦</div>}
+                      {c.tipo === 'tienda'
+                        ? <div className="w-full h-full flex items-center justify-center">🏪</div>
+                        : c.productoId?.imagenes?.[0]
+                          ? <img src={c.productoId.imagenes[0]} alt="" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full flex items-center justify-center">📦</div>}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm text-ml-ink truncate">{c.productoId?.nombre || 'Producto'}</p>
+                      <p className="font-semibold text-sm text-ml-ink truncate">
+                        {c.tipo === 'tienda' ? `${c.tiendaId?.nombre || 'Tienda'} (publicidad de marca)` : (c.productoId?.nombre || 'Producto')}
+                      </p>
                       <p className="text-xs text-ml-muted truncate">
                         {c.tiendaId?.nombre || 'Tienda'} · {c.plan} · {c.metodoPago === 'mercadopago' ? '💳 MP' : '🏦 saldo'}
                       </p>

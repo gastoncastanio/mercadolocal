@@ -310,4 +310,24 @@ router.put('/admin/precios', verificarToken, soloAdmin, async (req, res) => {
   }
 })
 
+// GET /api/destacados/admin/precios-tienda - Precios del plan "Marca" (para editar)
+router.get('/admin/precios-tienda', verificarToken, soloAdmin, async (_req, res) => {
+  try {
+    res.json(await obtenerPlanesTienda())
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// PUT /api/destacados/admin/precios-tienda - Guardar precios del plan "Marca"
+// Body: { marca: {7,15,30} }
+router.put('/admin/precios-tienda', verificarToken, soloAdmin, async (req, res) => {
+  try {
+    const planes = await guardarPreciosTienda(req.body || {})
+    res.json({ mensaje: 'Precios de tienda actualizados', planes })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
 export default router
