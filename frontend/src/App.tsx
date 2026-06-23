@@ -45,6 +45,7 @@ function lazy<T extends ComponentType<any>>(factory: () => Promise<{ default: T 
 const Registro = lazy(() => import('./pages/Registro'))
 const Login = lazy(() => import('./pages/Login'))
 const CatalogoProductos = lazy(() => import('./pages/CatalogoProductos'))
+const DirectorioTiendas = lazy(() => import('./pages/DirectorioTiendas'))
 const DetalleProducto = lazy(() => import('./pages/DetalleProducto'))
 const Carrito = lazy(() => import('./pages/Carrito'))
 const Checkout = lazy(() => import('./pages/Checkout'))
@@ -172,6 +173,7 @@ function RutasConBoundary() {
           <Route path="/catalogo" element={<ConNavbar><CatalogoProductos /></ConNavbar>} />
           <Route path="/producto/:id" element={<ConNavbar><DetalleProducto /></ConNavbar>} />
           <Route path="/tienda/:id" element={<ConNavbar><TiendaPublica /></ConNavbar>} />
+          <Route path="/tiendas" element={<ConNavbar><DirectorioTiendas /></ConNavbar>} />
           <Route path="/mas-vendidos" element={<ConNavbar><MasVendidos /></ConNavbar>} />
           <Route path="/usados" element={<ConNavbar><Usados /></ConNavbar>} />
           <Route path="/ofertas" element={<ConNavbar><Ofertas /></ConNavbar>} />
