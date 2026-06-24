@@ -118,7 +118,8 @@ function CityNetworkCanvas() {
       r: (Math.random() * 1.6 + 1) * DPR, hub: Math.random() < .18
     }))
     const max = 150 * DPR
-    const draw = () => {
+    let running = false
+    const frame = () => {
       ctx.clearRect(0, 0, w, h)
       for (const a of nodes) {
         a.x += a.vx; a.y += a.vy
@@ -139,11 +140,22 @@ function CityNetworkCanvas() {
         else { ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(255,255,255,.7)' }
         ctx.fill(); ctx.shadowBlur = 0
       }
-      if (!reduce) raf = requestAnimationFrame(draw)
+      if (running && !reduce) raf = requestAnimationFrame(frame)
     }
-    draw()
+    const start = () => { if (running) return; running = true; raf = requestAnimationFrame(frame) }
+    const stop = () => { running = false; cancelAnimationFrame(raf) }
+
+    // Solo animamos cuando el canvas está EN PANTALLA. Estando debajo del pliegue
+    // (o scrolleado fuera), el loop de rAF no corre y deja de pelear por el hilo
+    // principal — baja el TBT en la carga inicial sin cambiar nada visual.
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { reduce ? frame() : start() } else { stop() }
+    }, { threshold: 0.01 })
+    io.observe(cv)
+
     return () => {
-      cancelAnimationFrame(raf)
+      stop()
+      io.disconnect()
       window.removeEventListener('resize', onResize)
     }
   }, [])
