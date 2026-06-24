@@ -1,0 +1,27 @@
+[
+  {
+    "id": "cat_electronica",
+    "archivo": "frontend/public/img/categorias/electronica.png",
+    "prompt": "Ilustración vectorial plana minimalista de un ícono de categoría ELECTRÓNICA (un smartphone y auriculares simples). Líneas limpias y gruesas de grosor uniforme. Paleta cálida y acotada: índigo profundo (#2b2d7a), coral suave (#ff6b5e) y crema. Sutil motivo de fondo de nodos conectados por líneas finas (red local de barrio). Estética amigable y moderna de comercio local. Fondo transparente, composición cuadrada y centrada. Sin texto, sin marcas de agua, sin gradientes brillosos."
+  },
+  {
+    "id": "cat_ropa",
+    "archivo": "frontend/public/img/categorias/ropa.png",
+    "prompt": "Ilustración vectorial plana minimalista de un ícono de categoría ROPA (una remera y un perchero simples). Líneas limpias y gruesas de grosor uniforme. Paleta cálida y acotada: índigo profundo (#2b2d7a), coral suave (#ff6b5e) y crema. Sutil motivo de fondo de nodos conectados por líneas finas. Estética amigable y moderna de comercio local. Fondo transparente, composición cuadrada y centrada. Sin texto, sin marcas de agua, sin gradientes brillosos."
+  },
+  {
+    "id": "cat_hogar",
+    "archivo": "frontend/public/img/categorias/hogar.png",
+    "prompt": "Ilustración vectorial plana minimalista de un ícono de categoría HOGAR (un sillón y una lámpara simples). Líneas limpias y gruesas de grosor uniforme. Paleta cálida y acotada: índigo profundo (#2b2d7a), coral suave (#ff6b5e) y crema. Sutil motivo de fondo de nodos conectados por líneas finas. Estética amigable y moderna de comercio local. Fondo transparente, composición cuadrada y centrada. Sin texto, sin marcas de agua, sin gradientes brillosos."
+  },
+  {
+    "id": "estado_carrito_vacio",
+    "archivo": "frontend/public/img/estados/carrito-vacio.png",
+    "prompt": "Ilustración vectorial plana para un estado vacío: un carrito de compras simpático y vacío en un entorno de pueblo (vidrieras de comercios de fondo, muy sutiles). Líneas limpias y gruesas de grosor uniforme. Paleta cálida y acotada: índigo profundo (#2b2d7a), coral suave (#ff6b5e) y crema. Sutil motivo de nodos conectados por líneas finas. Estética amigable y moderna de comercio de barrio. Fondo crema sólido, composición horizontal centrada. Sin texto, sin marcas de agua, sin gradientes brillosos."
+  },
+  {
+    "id": "marca_hero_red",
+    "archivo": "frontend/public/img/marca/hero-red.png",
+    "prompt": "Ilustración vectorial plana de marca: el mapa estilizado de un pueblo argentino con comercios (tiendas, una plaza, casas bajas) CONECTADOS entre sí por líneas finas y nodos luminosos, representando una red local de compradores, vendedores y repartidores en moto. Líneas limpias y gruesas. Paleta cálida y acotada: índigo profundo (#2b2d7a), coral suave (#ff6b5e) y crema. Estética amigable, moderna y optimista. Fondo crema sólido, composición horizontal panorámica. Sin texto, sin marcas de agua, sin gradientes brillosos."
+  }
+]
