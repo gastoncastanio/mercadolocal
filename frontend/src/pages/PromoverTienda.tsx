@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import api from '../services/api'
 import { Tienda } from '../types'
 import { useAuth } from '../context/AuthContext'
+import { imgCloudinary } from '../utils/cloudinary'
 
 interface Plan {
   nombre: string
@@ -169,7 +170,7 @@ export default function PromoverTienda() {
         <div className="bg-white rounded-2xl border border-ml-line p-5 mb-4 flex items-center gap-3">
           <div className="w-14 h-14 rounded-xl overflow-hidden bg-ml-bg flex items-center justify-center shrink-0 border border-ml-line2">
             {(tienda as Tienda)?.logo
-              ? <img src={(tienda as Tienda).logo} alt="" className="w-full h-full object-cover" />
+              ? <img src={imgCloudinary((tienda as Tienda).logo, 128)} alt="" loading="lazy" className="w-full h-full object-cover" />
               : <span className="text-2xl">🏪</span>}
           </div>
           <div className="min-w-0">

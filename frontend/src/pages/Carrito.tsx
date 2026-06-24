@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import CalculadorCostos from '../components/CalculadorCostos'
 import { ItemCarrito } from '../types'
+import { imgCloudinary } from '../utils/cloudinary'
 
 export default function Carrito() {
   const navigate = useNavigate()
@@ -66,7 +67,7 @@ export default function Carrito() {
                 <div key={item._id} className="bg-white rounded-2xl shadow-sm border border-ml-line p-4 flex items-center gap-4">
                   <div className="w-20 h-20 rounded-lg bg-ml-bg flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {item.imagen ? (
-                      <img src={item.imagen} alt={item.nombre} className="w-full h-full object-cover" />
+                      <img src={imgCloudinary(item.imagen, 200)} alt={item.nombre} loading="lazy" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-3xl">📦</span>
                     )}

@@ -10,6 +10,7 @@ import { LOCALIDADES, COBERTURA_TEXTO } from '../constants/localidades'
 import CamposCategoria, { CaracteristicaItem, validarCamposObligatorios } from '../components/CamposCategoria'
 import SelectorEntrega from '../components/SelectorEntrega'
 import CalculadorCostos from '../components/CalculadorCostos'
+import { imgCloudinary } from '../utils/cloudinary'
 import { ENTREGA_VACIA, EntregaProducto } from '../types'
 import { Producto } from '../types'
 import { OPCIONES_CUOTAS, valorCuotaSinInteres, formatPesos } from '../utils/cuotas'
@@ -401,7 +402,7 @@ export default function MiTienda() {
               <label className="block text-sm font-medium text-ml-ink mb-2">Logo de la tienda</label>
               {logoSrc ? (
                 <div className="relative inline-block">
-                  <img src={logoSrc} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-ml-line" />
+                  <img src={imgCloudinary(logoSrc, 256)} alt="Logo" className="w-32 h-32 rounded-2xl object-cover border-2 border-ml-line" />
                   {progresoLogo && (
                     <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center px-3">
                       <div className="text-white text-xs font-medium mb-2 text-center leading-tight">
@@ -437,7 +438,7 @@ export default function MiTienda() {
               </label>
               {portadaSrc ? (
                 <div className="relative">
-                  <img src={portadaSrc} alt="Portada" className="w-full h-32 sm:h-40 rounded-2xl object-cover border-2 border-ml-line" />
+                  <img src={imgCloudinary(portadaSrc, 800)} alt="Portada" className="w-full h-32 sm:h-40 rounded-2xl object-cover border-2 border-ml-line" />
                   {progresoPortada && (
                     <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center px-6">
                       <div className="text-white text-xs font-medium mb-2 text-center leading-tight">{progresoPortada.mensaje}</div>
@@ -524,7 +525,7 @@ export default function MiTienda() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               {logoUrl ? (
-                <img src={logoUrl} alt={tienda?.nombre} className="w-20 h-20 rounded-2xl object-cover border-2 border-ml-line" />
+                <img src={imgCloudinary(logoUrl, 160)} alt={tienda?.nombre} loading="lazy" className="w-20 h-20 rounded-2xl object-cover border-2 border-ml-line" />
               ) : (
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-ml-bg to-ml-bg flex items-center justify-center">
                   <svg className="w-10 h-10 text-ml-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -724,7 +725,7 @@ export default function MiTienda() {
                 {/* Imagen */}
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                   {p.imagenes[0] ? (
-                    <img src={p.imagenes[0]} alt={p.nombre} className="w-full h-full object-cover" />
+                    <img src={imgCloudinary(p.imagenes[0], 400)} alt={p.nombre} loading="lazy" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
@@ -846,7 +847,7 @@ export default function MiTienda() {
                 <label className="block text-sm font-medium text-ml-ink mb-2">Foto del producto</label>
                 {editForm.imagenes[0] ? (
                   <div className="relative">
-                    <img src={editForm.imagenes[0]} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-ml-line" />
+                    <img src={imgCloudinary(editForm.imagenes[0], 600)} alt="Producto" className="w-full h-48 object-cover rounded-xl border border-ml-line" />
                     {progresoImagenEdit && (
                       <div className="absolute inset-0 bg-black/60 rounded-xl flex flex-col items-center justify-center px-6">
                         <div className="text-white text-sm font-medium mb-2 text-center">

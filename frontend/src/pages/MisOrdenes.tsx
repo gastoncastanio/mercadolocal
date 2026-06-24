@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext'
 import { Orden } from '../types'
 import PanelComisionistasEnVivo from '../components/PanelComisionistasEnVivo'
 import ViajesParaOrden from '../components/ViajesParaOrden'
+import { imgCloudinary } from '../utils/cloudinary'
 
 // ============================================================
 // Helpers
@@ -391,8 +392,9 @@ export default function MisOrdenes() {
                       <div className="flex items-center gap-3 flex-wrap">
                         {tiendaPrincipal.logo ? (
                           <img
-                            src={tiendaPrincipal.logo}
+                            src={imgCloudinary(tiendaPrincipal.logo, 96)}
                             alt={tiendaPrincipal.nombre}
+                            loading="lazy"
                             className="w-10 h-10 rounded-lg object-cover border border-ml-line"
                           />
                         ) : (
@@ -433,7 +435,7 @@ export default function MisOrdenes() {
                           return (
                             <div key={i} className="flex items-center gap-3">
                               {imagen ? (
-                                <img src={imagen} alt={item.nombre} className="w-14 h-14 object-cover rounded-lg border border-ml-line flex-shrink-0" />
+                                <img src={imgCloudinary(imagen, 128)} alt={item.nombre} loading="lazy" className="w-14 h-14 object-cover rounded-lg border border-ml-line flex-shrink-0" />
                               ) : (
                                 <div className="w-14 h-14 bg-ml-bg rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
                                   📦
