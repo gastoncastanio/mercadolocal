@@ -15,11 +15,16 @@ export async function crearOrden(usuarioId, datosEntrega) {
 
   // Validar que todos los productos existan, estén activos, tengan stock y precio correcto
   // Además, verificar que cada tienda tenga Mercado Pago vinculado (no se puede vender sin eso)
+  const infoProducto = new Map() // productoId -> { categoria, condicion } para la comisión
   for (const item of carrito.items) {
     const producto = await Producto.findById(item.productoId)
     if (!producto || !producto.activo) {
       throw new Error(`"${item.nombre}" ya no está disponible. Eliminalo del carrito.`)
     }
+    infoProducto.set(item.productoId.toString(), {
+      categoria: (producto.categorias && producto.categorias[0]) || '',
+      condicion: producto.condicion || ''
+    })
     if (producto.stock < item.cantidad) {
       throw new Error(`Stock insuficiente para "${item.nombre}". Disponible: ${producto.stock}`)
     }
@@ -40,13 +45,16 @@ export async function crearOrden(usuarioId, datosEntrega) {
   for (const item of carrito.items) {
     const key = item.tiendaId.toString()
     if (!gruposPorTienda.has(key)) gruposPorTienda.set(key, [])
+    const info = infoProducto.get(item.productoId.toString()) || {}
     gruposPorTienda.get(key).push({
       productoId: item.productoId,
       tiendaId: item.tiendaId,
       nombre: item.nombre,
       cantidad: item.cantidad,
       precioUnitario: item.precio,
-      subtotal: item.precio * item.cantidad
+      subtotal: item.precio * item.cantidad,
+      categoria: info.categoria || '',
+      condicion: info.condicion || ''
     })
   }
 
@@ -56,11 +64,21 @@ export async function crearOrden(usuarioId, datosEntrega) {
 
   // Crear una orden por cada vendedor, con su propio total y comisión.
   const ordenesCreadas = []
-  const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
   for (const items of gruposPorTienda.values()) {
     const total = items.reduce((sum, i) => sum + i.subtotal, 0)
-    const comision = Math.round(total * porcentajeComision / 100 * 100) / 100
-    const gananciaVendedor = total - comision
+    // Comisión POR ÍTEM según su categoría/condición (usados 0%, alto ticket 5%, etc.).
+    let comision = 0
+    for (const it of items) {
+      const pct = await configService.obtenerPorcentajeComisionProducto({
+        categorias: it.categoria ? [it.categoria] : [],
+        condicion: it.condicion
+      })
+      comision += Math.round(it.subtotal * pct / 100 * 100) / 100
+    }
+    comision = Math.round(comision * 100) / 100
+    const gananciaVendedor = Math.round((total - comision) * 100) / 100
+    // Porcentaje efectivo (mezcla de las categorías) — solo para mostrar/auditar.
+    const porcentajeComision = total > 0 ? Math.round((comision / total) * 100 * 100) / 100 : 0
 
     const orden = new Orden({
       compradorId: usuarioId,

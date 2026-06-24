@@ -410,12 +410,15 @@ router.post('/webhook', async (req, res) => {
 
         // Actualizar stats de la tienda
         const tiendaIds = [...new Set(ordenActualizada.items.map(i => i.tiendaId.toString()))]
-        const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
         for (const tiendaId of tiendaIds) {
           const itemsTienda = ordenActualizada.items.filter(i => i.tiendaId.toString() === tiendaId)
           const subtotalTienda = itemsTienda.reduce((sum, i) => sum + i.subtotal, 0)
-          const comisionTienda = Math.round(subtotalTienda * porcentajeComision / 100 * 100) / 100
-          const gananciaTienda = subtotalTienda - comisionTienda
+          // La ganancia ya se calculó por categoría/condición al crear la orden
+          // (cada orden es de UNA tienda) y coincide con el marketplace_fee que
+          // cobró MP. Usamos ese valor; fallback al subtotal para órdenes viejas.
+          const gananciaTienda = typeof ordenActualizada.gananciaVendedor === 'number'
+            ? ordenActualizada.gananciaVendedor
+            : subtotalTienda
 
           await Tienda.findByIdAndUpdate(tiendaId, {
             $inc: { totalVentas: 1, ganancias: gananciaTienda }

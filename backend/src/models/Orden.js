@@ -27,6 +27,15 @@ const itemOrdenSchema = new mongoose.Schema({
   subtotal: {
     type: Number,
     required: true
+  },
+  // Para la comisión por categoría/condición (se fija al crear la orden).
+  categoria: {
+    type: String,
+    default: ''
+  },
+  condicion: {
+    type: String,
+    default: ''
   }
 }, { _id: false })
 

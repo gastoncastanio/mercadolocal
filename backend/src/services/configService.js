@@ -18,7 +18,8 @@ const DEFAULTS = [
 
   // Negocio
   { clave: 'comision_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión por venta de productos (%)' },
-  { clave: 'comision_por_categoria', valor: '{}', tipo: 'html', categoria: 'Negocio', descripcion: 'Comisión por categoría de producto (JSON: {"electronica": 8, "ropa": 12}). Vacío = usa comision_porcentaje para todas.' },
+  { clave: 'comision_por_categoria', valor: '{"electronica":5,"electrodomesticos":5,"automotor":5}', tipo: 'html', categoria: 'Negocio', descripcion: 'Comisión por categoría de producto NUEVO (JSON con slugs: {"electronica": 5, "ropa": 10}). Vacío = usa comision_porcentaje. Los USADOS usan comision_usados, no esto.' },
+  { clave: 'comision_usados', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Comisión por venta de productos USADOS (%). Default 0: no le cobramos al usado para que el vendedor no tenga motivo de vender por afuera; se monetiza con el envío y destacar la publicación.' },
   { clave: 'comision_traslado_porcentaje', valor: '10', tipo: 'numero', categoria: 'Negocio', descripcion: 'Porcentaje de comisión sobre traslados de comisionistas (%)' },
   { clave: 'comision_minima', valor: '0', tipo: 'numero', categoria: 'Negocio', descripcion: 'Comisión mínima en ARS (piso absoluto, incluso con descuentos coopérativos)' },
   { clave: 'moneda_simbolo', valor: '$', tipo: 'texto', categoria: 'Negocio', descripcion: 'Símbolo de moneda' },
@@ -183,6 +184,22 @@ export async function obtenerPorcentajeComisionPorCategoria(categoria, tipo = 'v
   }
 
   return await obtenerPorcentajeComision('venta')
+}
+
+/**
+ * Comisión (%) para un PRODUCTO concreto, según su condición y categoría.
+ * - condicion 'usado' → comision_usados (default 0): no le cobramos al usado
+ *   para que el vendedor no tenga motivo de cerrar por afuera (monetizamos con
+ *   envío + destacar). 'reacondicionado'/'nuevo' usan la comisión por categoría.
+ * - resto → comisión por categoría (o la general si la categoría no está tarifada).
+ */
+export async function obtenerPorcentajeComisionProducto({ categorias, condicion } = {}) {
+  if (condicion === 'usado') {
+    const v = await obtenerConfig('comision_usados')
+    return v !== null && v !== undefined && v !== '' ? parseFloat(v) : 0
+  }
+  const categoria = Array.isArray(categorias) ? categorias[0] : categorias
+  return await obtenerPorcentajeComisionPorCategoria(categoria, 'venta')
 }
 
 // Calcular comisión con piso mínimo garantizado

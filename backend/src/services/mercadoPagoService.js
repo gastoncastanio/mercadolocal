@@ -28,9 +28,11 @@ export async function crearPreferencia(orden, compradorEmail) {
     currency_id: 'ARS'
   }))
 
-  // Calcular el marketplace_fee (tu comisión)
-  const porcentajeComision = await configService.obtenerPorcentajeComision('venta')
-  let marketplaceFee = Math.round(orden.total * porcentajeComision / 100 * 100) / 100
+  // El marketplace_fee ES la comisión ya calculada por categoría/condición al
+  // crear la orden (fuente única de verdad). Fallback defensivo para órdenes viejas.
+  let marketplaceFee = typeof orden.comision === 'number'
+    ? orden.comision
+    : Math.round(orden.total * (await configService.obtenerPorcentajeComision('venta')) / 100 * 100) / 100
 
   // Oferta Compartida: si algún item está en una oferta co-financiada, la
   // plataforma absorbe su aporte reduciendo el fee (con piso mínimo para no
