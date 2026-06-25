@@ -118,8 +118,25 @@ async function llamarJSON(systemPrompt, userPrompt, opciones = {}) {
     () => model.generateContent(userPrompt),
     { prioridad, descripcion, timeoutMs: 60_000 }
   )
-  const texto = result.response.text() || ''
-  return parsearJSON(texto, fallback)
+
+  const resp = result.response
+  const finishReason = resp?.candidates?.[0]?.finishReason
+  let texto = ''
+  try {
+    texto = resp.text() || ''
+  } catch (e) {
+    // .text() tira si el candidato no tiene partes de texto (safety, etc.)
+    console.warn(`⚠️ [CREATIVA] ${descripcion}: response.text() falló (finishReason=${finishReason}): ${e.message}`)
+  }
+
+  const parsed = parsearJSON(texto, fallback)
+  const vacio = parsed === fallback || (Array.isArray(parsed) && parsed.length === 0)
+  if (vacio) {
+    // Diagnóstico clave: si el JSON salió vacío/no parseable, casi siempre es
+    // truncamiento por MAX_TOKENS o un bloqueo. Lo logueamos para no quedar a ciegas.
+    console.warn(`⚠️ [CREATIVA] ${descripcion}: JSON vacío/no parseable (finishReason=${finishReason}, len=${texto.length}). Muestra: ${texto.slice(0, 200)}`)
+  }
+  return parsed
 }
 
 // ============================================================
@@ -243,7 +260,10 @@ Solo el JSON array, sin texto afuera.`
     temperatura,
     descripcion: `creativa:generar:${caso}`,
     prioridad: PRIORIDAD.NORMAL,
-    fallback: []
+    fallback: [],
+    // N prompts detallados en un solo JSON son largos: damos aire para que no
+    // se trunque por MAX_TOKENS (gemini-2.5-flash soporta hasta 65k de salida).
+    maxTokens: 32000
   })
   return Array.isArray(variantes) ? variantes.slice(0, cantidad) : []
 }
@@ -351,7 +371,8 @@ Devolvé un JSON array con exactamente ${flojas.length} objetos, en el MISMO ord
     temperatura: 0.85,
     descripcion: `creativa:refinar:${caso}`,
     prioridad: PRIORIDAD.NORMAL,
-    fallback: []
+    fallback: [],
+    maxTokens: 32000
   })
 
   // Mapeamos por orden; si el modelo no devolvió una, dejamos la original.
