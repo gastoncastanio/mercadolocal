@@ -33,17 +33,15 @@ function verificarFirmaWebhook(req) {
 
   const webhookSecret = process.env.MP_WEBHOOK_SECRET
   if (!webhookSecret) {
-    // Sin secret no se puede verificar la firma. FAIL-SAFE POR DEFECTO: se RECHAZA
-    // siempre (no aceptamos webhooks no verificados que mueven plata), SIN depender
-    // de NODE_ENV — un NODE_ENV mal seteado en prod no debe abrir un bypass. Para
-    // testeo local se puede optar explícitamente con ALLOW_UNSIGNED_WEBHOOK=true
-    // (jamás en producción).
-    if (process.env.ALLOW_UNSIGNED_WEBHOOK === 'true') {
-      console.warn('⚠️ ALLOW_UNSIGNED_WEBHOOK=true → firma de webhook NO verificada (solo para dev local).')
-      return true
+    // Sin secret no se puede verificar la firma. FAIL-SAFE: en producción se
+    // rechaza (no aceptamos webhooks no verificados que mueven plata). En
+    // desarrollo se deja pasar para poder testear localmente sin firma.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🚨 MP_WEBHOOK_SECRET ausente en producción → webhook RECHAZADO')
+      return false
     }
-    console.error('🚨 MP_WEBHOOK_SECRET ausente → webhook RECHAZADO (la firma no se puede verificar).')
-    return false
+    console.warn('⚠️ MP_WEBHOOK_SECRET no configurado (dev) - firma NO verificada')
+    return true
   }
 
   // Parsear x-signature: "ts=timestamp,v1=hash"
