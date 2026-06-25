@@ -28,6 +28,13 @@ import {
   procesarAscensosAutomaticos
 } from '../services/cerebro.js'
 import { ejecutarRondaDePropuestas } from '../services/analistaPropuestas.js'
+import {
+  generarSetCreativo,
+  registrarFeedbackCreativo,
+  listarCasos
+} from '../services/estudioCreativo.js'
+import PromptCreativo from '../models/PromptCreativo.js'
+import AprendizajeCreativo from '../models/AprendizajeCreativo.js'
 
 const router = Router()
 
@@ -484,6 +491,105 @@ router.post('/propuestas/forzar-ronda', async (req, res) => {
     })
   } catch (e) {
     res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0, 5) })
+  }
+})
+
+// ============================================================
+// ESTUDIO CREATIVO — Valentina (CGO) + críticos generan prompts
+// para nano banana con datos reales y 3 capas de verificación.
+// ============================================================
+
+/**
+ * GET /api/cerebro/creativa/casos
+ * Lista las funciones del embudo disponibles (para poblar la UI).
+ */
+router.get('/creativa/casos', (req, res) => {
+  try {
+    res.json(listarCasos())
+  } catch (e) {
+    res.status(500).json({ error: 'Error al listar casos' })
+  }
+})
+
+/**
+ * POST /api/cerebro/creativa/generar
+ * Corre el pipeline completo y devuelve prompts aprobados con scorecard.
+ * Body: { caso, cantidad?, ciudadSlug?, esfuerzo?, brief? }
+ *
+ * Es una operación deliberada y costosa (varias llamadas a Gemini
+ * serializadas). El frontend muestra un loader; tarda 15-60s según esfuerzo.
+ */
+router.post('/creativa/generar', async (req, res) => {
+  const inicio = Date.now()
+  try {
+    const { caso, cantidad, ciudadSlug, esfuerzo, brief } = req.body || {}
+    if (!caso) return res.status(400).json({ error: 'Falta el caso (función del embudo)' })
+
+    const resultado = await generarSetCreativo({
+      caso,
+      cantidad: cantidad ? parseInt(cantidad) : undefined,
+      ciudadSlug,
+      esfuerzo,
+      brief: brief ? String(brief).slice(0, 1000) : undefined
+    })
+    console.log(`🎨 [CREATIVA] ${caso} | ${resultado.aprobados.length} prompts en ${Date.now() - inicio}ms`)
+    res.json({ ok: true, ...resultado })
+  } catch (e) {
+    console.error('❌ [CREATIVA] falló:', e.message)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * GET /api/cerebro/creativa/prompts?caso=X&limit=N
+ * Lista los prompts ya generados (entregables guardados).
+ */
+router.get('/creativa/prompts', async (req, res) => {
+  try {
+    const filtro = {}
+    if (req.query.caso) filtro.caso = req.query.caso
+    const limit = Math.min(parseInt(req.query.limit) || 30, 100)
+    const prompts = await PromptCreativo
+      .find(filtro)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean()
+    res.json(prompts)
+  } catch (e) {
+    res.status(500).json({ error: 'Error al cargar prompts' })
+  }
+})
+
+/**
+ * POST /api/cerebro/creativa/feedback/:id
+ * El fundador marca si usó la pieza y si funcionó (cierre de loop M1/M3).
+ * Body: { usado?, funciono?, nota? }
+ */
+router.post('/creativa/feedback/:id', async (req, res) => {
+  try {
+    const { usado, funciono, nota } = req.body || {}
+    const doc = await registrarFeedbackCreativo(req.params.id, { usado, funciono, nota })
+    res.json({ ok: true, prompt: doc })
+  } catch (e) {
+    res.status(e.message === 'Prompt no encontrado' ? 404 : 500).json({ error: e.message })
+  }
+})
+
+/**
+ * GET /api/cerebro/creativa/aprendizaje
+ * Muestra la lista negra de fallas (M2): qué errores aprendió a evitar.
+ * Es la prueba de que el motor mejora solo.
+ */
+router.get('/creativa/aprendizaje', async (req, res) => {
+  try {
+    const fallas = await AprendizajeCreativo
+      .find({ activo: true })
+      .sort({ conteo: -1 })
+      .limit(50)
+      .lean()
+    res.json(fallas)
+  } catch (e) {
+    res.status(500).json({ error: 'Error al cargar el aprendizaje' })
   }
 })
 

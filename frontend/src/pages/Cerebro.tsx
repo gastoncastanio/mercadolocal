@@ -148,6 +148,7 @@ export default function Cerebro() {
   const [agenteSeleccionado, setAgenteSeleccionado] = useState<Agente | null>(null)
   const [slugsActivos, setSlugsActivos] = useState<Set<string>>(new Set())
   const [propuestasPendientes, setPropuestasPendientes] = useState<number>(0)
+  const [estudioAbierto, setEstudioAbierto] = useState(false)
 
   // Map slug → agente para lookups rápidos
   const agentesMap = new Map<string, Agente>()
@@ -406,6 +407,12 @@ export default function Cerebro() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEstudioAbierto(true)}
+              className="text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-4 py-2 rounded-md font-semibold flex items-center gap-2 shadow-md text-white"
+            >
+              🎨 Estudio Creativo
+            </button>
             <a
               href="/admin/cerebro/propuestas"
               className="relative text-sm bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md font-semibold flex items-center gap-2 shadow-md"
@@ -554,6 +561,14 @@ export default function Cerebro() {
       {/* MODAL: Detalle de agente */}
       {agenteSeleccionado && (
         <ModalAgente agente={agenteSeleccionado} onClose={() => setAgenteSeleccionado(null)} />
+      )}
+
+      {/* MODAL: Estudio Creativo */}
+      {estudioAbierto && (
+        <ModalEstudioCreativo
+          agentesMap={agentesMap}
+          onClose={() => setEstudioAbierto(false)}
+        />
       )}
     </div>
   )
@@ -1106,6 +1121,348 @@ function MetricaCard({ label, valor }: { label: string; valor: string }) {
     <div className="bg-gray-50 rounded-lg p-3 text-center">
       <div className="text-[10px] text-ml-muted uppercase tracking-wide">{label}</div>
       <div className="font-bold text-ml-ink text-sm mt-0.5">{valor}</div>
+    </div>
+  )
+}
+
+// ===================== ESTUDIO CREATIVO =====================
+
+interface CapaScore {
+  score: number
+  problemas: string[]
+  porque: string
+}
+
+interface PromptCreativo {
+  _id: string
+  caso: string
+  ciudadSlug: string
+  titulo: string
+  prompt: string
+  escena: string
+  armado: string
+  movimiento: string
+  negativo: string
+  scorecard: {
+    marca: CapaScore
+    localia: CapaScore
+    funcion: CapaScore
+    promedio: number
+  }
+  iteraciones: number
+  feedback: { usado: boolean; funciono: boolean | null; nota: string }
+}
+
+interface CasoCreativo { clave: string; descripcion: string }
+
+const CASO_ICONO: Record<string, string> = {
+  awareness: '📣', usados: '♻️', envio: '🛵', confianza: '🛡️',
+  comprar_local: '🏪', sumar_comercio: '🤝', tile_categoria: '🏷️', empty_state: '🫙'
+}
+
+const ESFUERZOS: { id: string; label: string; sub: string }[] = [
+  { id: 'rapido', label: 'Rápido', sub: '3 variantes · 1 refine' },
+  { id: 'normal', label: 'Normal', sub: '4 variantes · 2 refines' },
+  { id: 'alto', label: 'Máximo', sub: '5 variantes · 2 refines · para la pauta' }
+]
+
+function colorScore(n: number): string {
+  if (n >= 8) return '#16a34a'   // verde
+  if (n >= 6) return '#d97706'   // ámbar
+  return '#dc2626'               // rojo
+}
+
+function ModalEstudioCreativo({
+  agentesMap,
+  onClose
+}: {
+  agentesMap: Map<string, Agente>
+  onClose: () => void
+}) {
+  const toast = useToast()
+  const [casos, setCasos] = useState<CasoCreativo[]>([])
+  const [caso, setCaso] = useState<string>('usados')
+  const [esfuerzo, setEsfuerzo] = useState<string>('normal')
+  const [brief, setBrief] = useState('')
+  const [generando, setGenerando] = useState(false)
+  const [resultado, setResultado] = useState<{ aprobados: PromptCreativo[]; descripcionCaso: string; meta: any } | null>(null)
+
+  const valentina = agentesMap.get('valentina_cgo')
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && !generando) onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose, generando])
+
+  useEffect(() => {
+    api.get('/cerebro/creativa/casos')
+      .then(({ data }) => { if (Array.isArray(data)) setCasos(data) })
+      .catch(() => {})
+  }, [])
+
+  const generar = async () => {
+    setGenerando(true)
+    setResultado(null)
+    try {
+      const { data } = await api.post('/cerebro/creativa/generar', { caso, esfuerzo, brief: brief.trim() || undefined })
+      setResultado({ aprobados: data.aprobados || [], descripcionCaso: data.descripcionCaso, meta: data.meta })
+      toast.exito(`${(data.aprobados || []).length} prompts listos`)
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'No se pudo generar el set')
+    } finally {
+      setGenerando(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => !generando && onClose()}>
+      <div
+        className="bg-white rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto text-ml-ink relative"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={() => !generando && onClose()}
+          aria-label="Cerrar"
+          className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full w-9 h-9 flex items-center justify-center text-2xl leading-none shadow-md disabled:opacity-40"
+          disabled={generando}
+        >
+          ×
+        </button>
+
+        {/* Header */}
+        <div className="px-6 py-4 pr-14 text-white bg-gradient-to-r from-blue-700 to-purple-700 flex items-center gap-4">
+          <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-3xl">
+            {valentina?.avatar || '🎨'}
+          </div>
+          <div>
+            <div className="text-xl font-bold">Estudio Creativo</div>
+            <div className="text-sm opacity-90">
+              {valentina?.nombre || 'Valentina'} genera · Mati y Diego verifican en 3 capas · con datos reales de la app
+            </div>
+          </div>
+        </div>
+
+        {/* Controles */}
+        <div className="p-6 space-y-5 border-b border-ml-line">
+          {/* Caso / función */}
+          <div>
+            <div className="text-xs font-semibold text-ml-soft uppercase mb-2">¿Qué función tiene que cumplir la pieza?</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {casos.map(c => (
+                <button
+                  key={c.clave}
+                  onClick={() => setCaso(c.clave)}
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                    caso === c.clave
+                      ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-300'
+                      : 'border-ml-line hover:border-blue-300'
+                  }`}
+                  title={c.descripcion}
+                >
+                  <div className="font-semibold flex items-center gap-1">
+                    <span>{CASO_ICONO[c.clave] || '✨'}</span>
+                    {c.clave}
+                  </div>
+                  <div className="text-[11px] text-ml-muted line-clamp-2">{c.descripcion}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Esfuerzo + brief */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs font-semibold text-ml-soft uppercase mb-2">Esfuerzo</div>
+              <div className="flex flex-col gap-2">
+                {ESFUERZOS.map(e => (
+                  <button
+                    key={e.id}
+                    onClick={() => setEsfuerzo(e.id)}
+                    className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      esfuerzo === e.id ? 'border-purple-600 bg-purple-50 ring-1 ring-purple-300' : 'border-ml-line hover:border-purple-300'
+                    }`}
+                  >
+                    <div className="font-semibold">{e.label}</div>
+                    <div className="text-[11px] text-ml-muted">{e.sub}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="text-xs font-semibold text-ml-soft uppercase mb-2">Indicación extra (opcional)</div>
+              <textarea
+                value={brief}
+                onChange={e => setBrief(e.target.value)}
+                placeholder="Ej: enfocá en heladeras usadas para el Día del Padre, tono cálido de domingo..."
+                className="flex-1 min-h-[120px] px-3 py-2 border border-ml-line rounded-lg text-sm resize-none focus:ring-2 focus:ring-ml-purple/30 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={generar}
+            disabled={generando || !caso}
+            className="w-full mlbtn ml-grad text-white py-3 rounded-lg font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {generando ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Generando y verificando (puede tardar ~30-60s)...
+              </>
+            ) : (
+              <>🎬 Generar set creativo</>
+            )}
+          </button>
+          {generando && (
+            <p className="text-[11px] text-ml-muted text-center -mt-2">
+              Valentina genera variantes → Mati y Diego las puntúan en 3 capas → se refinan las flojas → sobreviven las que pasan el torneo.
+            </p>
+          )}
+        </div>
+
+        {/* Resultados */}
+        {resultado && (
+          <div className="p-6 space-y-4">
+            <div className="flex items-baseline justify-between flex-wrap gap-2">
+              <h3 className="font-bold text-ml-ink">
+                {resultado.aprobados.length} prompts · {resultado.descripcionCaso}
+              </h3>
+              {resultado.meta && (
+                <span className="text-[11px] text-ml-muted">
+                  {resultado.meta.generadas} generadas · {resultado.meta.aprobadosEstrictos} pasaron el umbral (≥{resultado.meta.umbral}) · {Math.round((resultado.meta.duracionMs || 0) / 1000)}s
+                </span>
+              )}
+            </div>
+            {resultado.aprobados.length === 0 && (
+              <p className="text-sm text-ml-muted">No se aprobó ninguna pieza. Probá con más esfuerzo o ajustá la indicación.</p>
+            )}
+            {resultado.aprobados.map(p => (
+              <TarjetaPrompt key={p._id} prompt={p} toast={toast} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function TarjetaPrompt({ prompt, toast }: { prompt: PromptCreativo; toast: ReturnType<typeof useToast> }) {
+  const [verPorque, setVerPorque] = useState(false)
+  const [fb, setFb] = useState(prompt.feedback)
+
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(prompt.prompt)
+      toast.exito('Prompt copiado — pegalo en nano banana')
+    } catch {
+      toast.error('No se pudo copiar')
+    }
+  }
+
+  const marcar = async (campo: 'usado' | 'funciono') => {
+    try {
+      const body = campo === 'usado' ? { usado: true } : { funciono: true }
+      const { data } = await api.post(`/cerebro/creativa/feedback/${prompt._id}`, body)
+      setFb(data.prompt.feedback)
+      toast.exito(campo === 'usado' ? 'Marcado como usado' : '¡Marcado como ganador! El motor aprende de esto')
+    } catch (e: any) {
+      toast.error(e.response?.data?.error || 'No se pudo guardar el feedback')
+    }
+  }
+
+  const sc = prompt.scorecard
+  const capas = [
+    { k: 'Marca', d: sc.marca },
+    { k: 'Localía/Técnica', d: sc.localia },
+    { k: 'Función', d: sc.funcion }
+  ]
+
+  return (
+    <div className="border border-ml-line rounded-xl overflow-hidden">
+      {/* Header de la tarjeta */}
+      <div className="px-4 py-3 bg-gray-50 flex items-center justify-between gap-3 flex-wrap">
+        <div className="font-semibold text-ml-ink flex items-center gap-2">
+          {prompt.titulo}
+          {prompt.iteraciones > 0 && (
+            <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+              {prompt.iteraciones} refine{prompt.iteraciones > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {capas.map(c => (
+            <span key={c.k} className="text-[11px] flex items-center gap-1" title={c.k}>
+              <span className="text-ml-muted">{c.k}</span>
+              <span className="font-bold px-1.5 py-0.5 rounded text-white" style={{ background: colorScore(c.d.score) }}>
+                {c.d.score}
+              </span>
+            </span>
+          ))}
+          <span className="text-[11px] text-ml-muted">prom.</span>
+          <span className="font-bold text-sm" style={{ color: colorScore(sc.promedio) }}>{sc.promedio}</span>
+        </div>
+      </div>
+
+      {/* Cuerpo */}
+      <div className="p-4 space-y-3">
+        <pre className="text-xs whitespace-pre-wrap bg-gray-900 text-gray-100 p-3 rounded-lg max-h-56 overflow-y-auto font-mono leading-relaxed">
+          {prompt.prompt}
+        </pre>
+
+        {(prompt.escena || prompt.armado) && (
+          <div className="grid md:grid-cols-2 gap-3 text-xs">
+            {prompt.escena && (
+              <div><span className="font-semibold text-ml-soft uppercase text-[10px]">Escena</span><p className="text-ml-ink mt-0.5">{prompt.escena}</p></div>
+            )}
+            {prompt.armado && (
+              <div><span className="font-semibold text-ml-soft uppercase text-[10px]">Armado (logo + copy)</span><p className="text-ml-ink mt-0.5">{prompt.armado}</p></div>
+            )}
+          </div>
+        )}
+
+        {/* Por qué (razonamiento de los críticos) */}
+        <button onClick={() => setVerPorque(v => !v)} className="text-xs text-ml-blue font-medium hover:underline">
+          {verPorque ? '▾ Ocultar el porqué de los críticos' : '▸ Ver el porqué de los críticos'}
+        </button>
+        {verPorque && (
+          <div className="space-y-2 bg-blue-50/50 rounded-lg p-3">
+            {capas.map(c => (
+              <div key={c.k} className="text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold px-1.5 py-0.5 rounded text-white text-[10px]" style={{ background: colorScore(c.d.score) }}>{c.d.score}</span>
+                  <span className="font-semibold text-ml-ink">{c.k}</span>
+                </div>
+                {c.d.porque && <p className="text-ml-soft mt-0.5 ml-1">{c.d.porque}</p>}
+                {c.d.problemas?.length > 0 && (
+                  <ul className="list-disc list-inside text-orange-700 mt-0.5 ml-1">
+                    {c.d.problemas.map((pr, i) => <li key={i}>{pr}</li>)}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Acciones */}
+        <div className="flex items-center gap-2 pt-1 flex-wrap">
+          <button onClick={copiar} className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-md font-medium hover:bg-gray-800">
+            📋 Copiar prompt
+          </button>
+          <button
+            onClick={() => marcar('usado')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium border ${fb.usado ? 'bg-blue-600 text-white border-blue-600' : 'border-ml-line text-ml-ink hover:bg-gray-50'}`}
+          >
+            {fb.usado ? '✅ Lo usé' : 'Marcar como usado'}
+          </button>
+          <button
+            onClick={() => marcar('funciono')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium border ${fb.funciono ? 'bg-green-600 text-white border-green-600' : 'border-ml-line text-ml-ink hover:bg-gray-50'}`}
+          >
+            {fb.funciono ? '🚀 Funcionó' : 'Funcionó en la pauta'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

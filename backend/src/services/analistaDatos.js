@@ -239,3 +239,170 @@ export async function datosParaAgente(slug, horasAtras = 24) {
 
   return { mensaje: 'no hay datos específicos para este agente' }
 }
+
+// ============================================================
+// DATOS PARA EL ESTUDIO CREATIVO (Valentina CGO + críticos)
+// ============================================================
+//
+// El motor creativo NO puede inventar qué mostrar. Antes de generar un
+// prompt para nano banana, Valentina necesita saber QUÉ se mueve de verdad
+// en el marketplace: qué rubros tienen oferta, cuántos usados hay (el motor
+// de tráfico), qué tiendas destacar, en qué ciudad y en qué estación del año
+// estamos. Así el prompt es oportuno y específico, no un cliché atemporal.
+
+// Nombres lindos para los IDs de categoría (mismo set que categoriasMeta.js)
+const ETIQUETA_CATEGORIA = {
+  construccion: 'construcción', hogar: 'hogar', electrodomesticos: 'electrodomésticos',
+  electronica: 'electrónica', ropa: 'ropa', belleza: 'belleza', alimentos: 'alimentos',
+  deportes: 'deportes', juguetes: 'juguetes', mascotas: 'mascotas', automotor: 'automotor',
+  agro: 'agro', herramientas: 'herramientas', jardin: 'jardín', arte: 'arte', libros: 'libros'
+}
+
+// Estación del hemisferio SUR (Argentina) según el mes (0-11).
+function estacionDelSur(mes) {
+  if (mes === 11 || mes === 0 || mes === 1) return 'verano'
+  if (mes >= 2 && mes <= 4) return 'otoño'
+  if (mes >= 5 && mes <= 7) return 'invierno'
+  return 'primavera'
+}
+
+// Eventos comerciales argentinos por mes (para anclar la creatividad al calendario).
+function ganchoDelMes(mes) {
+  const ganchos = {
+    0: 'vuelta de las vacaciones, liquidaciones de verano',
+    1: 'previa a la vuelta al cole, San Valentín',
+    2: 'vuelta al cole y al laburo, otoño',
+    3: 'otoño, Pascuas',
+    4: 'Día del Trabajador, Día de la Madre se acerca (3er domingo de octubre, lejos), frío que empieza',
+    5: 'Día del Padre, frío, inicio de invierno',
+    6: 'vacaciones de invierno, frío fuerte',
+    7: 'Día del Niño/de las Infancias (3er domingo), invierno',
+    8: 'primavera que arranca, Día del Estudiante/Primavera (21)',
+    9: 'Día de la Madre (3er domingo), primavera plena',
+    10: 'previa a las Fiestas, Black Friday / Cyber Monday',
+    11: 'Fiestas (Navidad y Año Nuevo), aguinaldo, verano'
+  }
+  return ganchos[mes] || ''
+}
+
+/**
+ * Reúne los datos REALES del marketplace que alimentan al Estudio Creativo.
+ * Se le pasa a Valentina (genera) y a los críticos (verifican) para que la
+ * pieza hable de lo que de verdad está pasando en la app, no de un genérico.
+ *
+ * @param {number} horasAtras - ventana de tiempo (default 7 días)
+ */
+export async function datosParaCreativa(horasAtras = 168) {
+  const desde = new Date(Date.now() - horasAtras * 60 * 60 * 1000)
+  const ahora = new Date()
+  const mes = ahora.getMonth()
+
+  const [
+    totalProductos,
+    totalUsados,
+    rubrosAgg,
+    tiendasDestacadas,
+    ciudadesAgg,
+    nuevosEnPeriodo
+  ] = await Promise.all([
+    // Catálogo público vigente
+    Producto.countDocuments({ activo: true, 'moderacion.estado': { $ne: 'rechazado' } }),
+    // Usados activos — el motor de tráfico (comisión 0%)
+    Producto.countDocuments({ activo: true, condicion: 'usado', 'moderacion.estado': { $ne: 'rechazado' } }),
+    // Rubros con más oferta (qué se está moviendo)
+    Producto.aggregate([
+      { $match: { activo: true, 'moderacion.estado': { $ne: 'rechazado' } } },
+      { $unwind: '$categorias' },
+      { $group: { _id: '$categorias', total: { $sum: 1 }, precioProm: { $avg: '$precio' } } },
+      { $sort: { total: -1 } },
+      { $limit: 6 }
+    ]),
+    // Tiendas para destacar (oficiales y con más ventas, ya con MP vinculado)
+    Tienda.find({ activo: true, mpVinculado: true })
+      .select('nombre ciudad oficial totalVentas calificacion')
+      .sort({ oficial: -1, totalVentas: -1, calificacion: -1 })
+      .limit(8)
+      .lean(),
+    // Ciudades con catálogo (para multi-ciudad / saber dónde hay vida)
+    Producto.aggregate([
+      { $match: { activo: true, ciudad: { $nin: ['', null] }, 'moderacion.estado': { $ne: 'rechazado' } } },
+      { $group: { _id: '$ciudad', total: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+      { $limit: 6 }
+    ]),
+    Producto.countDocuments({ createdAt: { $gte: desde }, activo: true })
+  ])
+
+  const rubros = rubrosAgg.map(r => ({
+    id: r._id,
+    nombre: ETIQUETA_CATEGORIA[r._id] || r._id || 'sin_categoría',
+    total: r.total,
+    precioPromedio: Math.round(r.precioProm || 0)
+  }))
+
+  const usadosRatio = totalProductos > 0 ? Math.round((totalUsados / totalProductos) * 100) : 0
+
+  return {
+    periodoHoras: horasAtras,
+    ahora: ahora.toISOString(),
+    temporada: {
+      mes: ahora.toLocaleString('es-AR', { month: 'long' }),
+      estacion: estacionDelSur(mes),
+      gancho: ganchoDelMes(mes)
+    },
+    catalogo: {
+      totalProductos,
+      nuevosEnPeriodo,
+      totalUsados,
+      usadosRatio
+    },
+    rubros,
+    tiendasDestacadas: tiendasDestacadas.map(t => ({
+      nombre: t.nombre,
+      ciudad: t.ciudad || '',
+      oficial: !!t.oficial,
+      totalVentas: t.totalVentas || 0,
+      calificacion: t.calificacion || 0
+    })),
+    ciudades: ciudadesAgg.map(c => ({ ciudad: c._id, total: c.total }))
+  }
+}
+
+/**
+ * Render del paquete de datos creativos como bloque de texto para inyectar
+ * en el system prompt de Valentina y los críticos.
+ */
+export async function datosCreativaComoTexto(horasAtras = 168) {
+  const d = await datosParaCreativa(horasAtras)
+
+  const lineas = [
+    `# 📦 DATOS REALES del marketplace (para anclar la pieza, no inventes nada fuera de esto)`,
+    '',
+    `🗓️ MOMENTO: estamos en ${d.temporada.mes} (${d.temporada.estacion} en Argentina). Gancho de calendario: ${d.temporada.gancho || 'sin evento marcado'}.`,
+    `🏪 CATÁLOGO: ${d.catalogo.totalProductos} productos publicados, ${d.catalogo.nuevosEnPeriodo} nuevos esta semana.`,
+    `♻️ USADOS: ${d.catalogo.totalUsados} usados activos (${d.catalogo.usadosRatio}% del catálogo). Es el MOTOR DE TRÁFICO (comisión 0%): si la función es de usados, esto es lo que hay que activar.`
+  ]
+
+  if (d.rubros.length > 0) {
+    lineas.push('')
+    lineas.push('🔝 RUBROS QUE SE MUEVEN (usá productos concretos de estos rubros, no genéricos):')
+    d.rubros.forEach(r => {
+      lineas.push(`   - ${r.nombre}: ${r.total} productos (precio prom. $${r.precioPromedio.toLocaleString('es-AR')})`)
+    })
+  }
+
+  if (d.tiendasDestacadas.length > 0) {
+    lineas.push('')
+    lineas.push('⭐ TIENDAS REALES para destacar (si la función lo pide, nombrá el tipo de comercio, no inventes marcas):')
+    d.tiendasDestacadas.slice(0, 5).forEach(t => {
+      lineas.push(`   - ${t.nombre}${t.ciudad ? ` (${t.ciudad})` : ''}${t.oficial ? ' [oficial]' : ''} — ${t.totalVentas} ventas`)
+    })
+  }
+
+  if (d.ciudades.length > 0) {
+    lineas.push('')
+    lineas.push(`🌎 CIUDADES con catálogo: ${d.ciudades.map(c => `${c.ciudad} (${c.total})`).join(', ')}.`)
+  }
+
+  return lineas.join('\n')
+}
