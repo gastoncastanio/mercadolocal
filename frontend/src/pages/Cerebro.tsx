@@ -1185,9 +1185,14 @@ function ModalEstudioCreativo({
   const [esfuerzo, setEsfuerzo] = useState<string>('normal')
   const [brief, setBrief] = useState('')
   const [generando, setGenerando] = useState(false)
+  const [paso, setPaso] = useState('')
   const [resultado, setResultado] = useState<{ aprobados: PromptCreativo[]; descripcionCaso: string; meta: any } | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const valentina = agentesMap.get('valentina_cgo')
+
+  // Limpiamos el polling si se desmonta el modal
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && !generando) onClose() }
@@ -1201,17 +1206,51 @@ function ModalEstudioCreativo({
       .catch(() => {})
   }, [])
 
+  // Generación ASÍNCRONA: el POST arranca un trabajo y devuelve un jobId al
+  // toque; después polleamos el estado hasta que esté 'listo' o 'error'. Así
+  // el pipeline puede tardar 1-2 min sin que la request HTTP se corte por timeout.
   const generar = async () => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
     setGenerando(true)
     setResultado(null)
+    setPaso('En cola...')
     try {
       const { data } = await api.post('/cerebro/creativa/generar', { caso, esfuerzo, brief: brief.trim() || undefined })
-      setResultado({ aprobados: data.aprobados || [], descripcionCaso: data.descripcionCaso, meta: data.meta })
-      toast.exito(`${(data.aprobados || []).length} prompts listos`)
+      const jobId = data.jobId
+      if (!jobId) throw new Error('No se recibió el id del trabajo')
+
+      const arranque = Date.now()
+      const MAX_MS = 5 * 60 * 1000 // safeguard: 5 min máximo
+
+      pollRef.current = setInterval(async () => {
+        // Cortamos si tardó demasiado (ej: el back se reinició)
+        if (Date.now() - arranque > MAX_MS) {
+          if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+          setGenerando(false)
+          toast.error('La generación tardó demasiado. Probá de nuevo o bajá el esfuerzo.')
+          return
+        }
+        try {
+          const { data: job } = await api.get(`/cerebro/creativa/job/${jobId}`)
+          if (job.paso) setPaso(job.paso)
+          if (job.estado === 'listo') {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+            const r = job.resultado || {}
+            setResultado({ aprobados: r.aprobados || [], descripcionCaso: r.descripcionCaso, meta: r.meta })
+            setGenerando(false)
+            toast.exito(`${(r.aprobados || []).length} prompts listos`)
+          } else if (job.estado === 'error') {
+            if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+            setGenerando(false)
+            toast.error(job.error || 'No se pudo generar el set')
+          }
+        } catch {
+          // Error puntual de polling: lo ignoramos, el próximo tick reintenta
+        }
+      }, 3000)
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'No se pudo generar el set')
-    } finally {
       setGenerando(false)
+      toast.error(e.response?.data?.error || 'No se pudo arrancar la generación')
     }
   }
 
@@ -1308,7 +1347,7 @@ function ModalEstudioCreativo({
             {generando ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                Generando y verificando (puede tardar ~30-60s)...
+                {paso || 'Procesando...'}
               </>
             ) : (
               <>🎬 Generar set creativo</>
@@ -1316,7 +1355,7 @@ function ModalEstudioCreativo({
           </button>
           {generando && (
             <p className="text-[11px] text-ml-muted text-center -mt-2">
-              Valentina genera variantes → Mati y Diego las puntúan en 3 capas → se refinan las flojas → sobreviven las que pasan el torneo.
+              Corre en segundo plano (1-2 min): Valentina genera → Mati y Diego puntúan en 3 capas → se refinan las flojas → sobreviven las del torneo. Podés esperar acá.
             </p>
           )}
         </div>

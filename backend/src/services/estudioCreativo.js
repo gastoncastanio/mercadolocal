@@ -29,6 +29,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import Agente from '../models/Agente.js'
 import PromptCreativo from '../models/PromptCreativo.js'
 import AprendizajeCreativo from '../models/AprendizajeCreativo.js'
+import TrabajoCreativo from '../models/TrabajoCreativo.js'
 import { encolar, PRIORIDAD } from './geminiQueue.js'
 import { datosCreativaComoTexto } from './analistaDatos.js'
 import {
@@ -310,14 +311,28 @@ async function verificarTodas({ variantes, caso, criticos }) {
   })
 }
 
-/** Paso 4 — Valentina reescribe una variante usando los problemas marcados. */
-async function refinarVariante({ variante, caso, ciudadSlug, contextoDatos, valentina }) {
-  const sc = variante.scorecard
-  const problemas = [
-    ...sc.marca.problemas.map(p => `[Marca] ${p}`),
-    ...sc.localia.problemas.map(p => `[Localía/Técnica] ${p}`),
-    ...sc.funcion.problemas.map(p => `[Función] ${p}`)
-  ].join('\n')
+/**
+ * Paso 4 — Valentina reescribe TODAS las variantes flojas en UNA sola llamada.
+ * Batchear el refinamiento (en vez de 1 llamada por variante) reduce mucho la
+ * cantidad de requests a Gemini → el set se arma mucho más rápido y barato.
+ */
+async function refinarVariantes({ flojas, caso, ciudadSlug, contextoDatos, valentina }) {
+  if (flojas.length === 0) return []
+
+  const bloques = flojas.map((v, i) => {
+    const sc = v.scorecard
+    const problemas = [
+      ...sc.marca.problemas.map(p => `[Marca] ${p}`),
+      ...sc.localia.problemas.map(p => `[Localía/Técnica] ${p}`),
+      ...sc.funcion.problemas.map(p => `[Función] ${p}`)
+    ].join('; ')
+    return `### Variante ${i} (puntajes: marca ${sc.marca.score}, localía/técnica ${sc.localia.score}, función ${sc.funcion.score})
+Título: ${v.titulo}
+Escena: ${v.escena}
+Armado: ${v.armado}
+Prompt actual: ${v.prompt}
+Problemas a corregir: ${problemas || '(sin problemas explícitos; subí el nivel general)'}`
+  }).join('\n\n')
 
   const userPrompt = `${adnComoTexto(ciudadSlug)}
 
@@ -325,24 +340,25 @@ ${contextoDatos}
 
 # 🎯 FUNCIÓN — caso "${caso}": ${descripcionCaso(caso)}
 
-# VARIANTE A CORREGIR (puntajes: marca ${sc.marca.score}, localía/técnica ${sc.localia.score}, función ${sc.funcion.score})
-Título: ${variante.titulo}
-Escena: ${variante.escena}
-Armado: ${variante.armado}
-Prompt actual: ${variante.prompt}
+# VARIANTES A CORREGIR (${flojas.length})
+Cada una tiene los problemas que marcaron los críticos. Corregí TODOS los problemas de cada una sin perder lo que ya estaba bien. El objetivo es que cada una supere los 8 en las tres capas.
 
-# PROBLEMAS QUE LOS CRÍTICOS MARCARON (corregilos TODOS, sin perder lo que ya estaba bien)
-${problemas || '(sin problemas explícitos; subí el nivel general)'}
+${bloques}
 
-Reescribí la variante para que supere los 8 en las tres capas. Devolvé UN objeto JSON con las mismas claves: titulo, angulo, escena, armado, movimiento, prompt. Solo el JSON.`
+Devolvé un JSON array con exactamente ${flojas.length} objetos, en el MISMO orden que las variantes de arriba, cada uno con las claves: titulo, angulo, escena, armado, movimiento, prompt. Solo el JSON array.`
 
-  const refinada = await llamarJSON(systemValentina(valentina), userPrompt, {
+  const refinadas = await llamarJSON(systemValentina(valentina), userPrompt, {
     temperatura: 0.85,
     descripcion: `creativa:refinar:${caso}`,
     prioridad: PRIORIDAD.NORMAL,
-    fallback: null
+    fallback: []
   })
-  return refinada && refinada.prompt ? refinada : variante
+
+  // Mapeamos por orden; si el modelo no devolvió una, dejamos la original.
+  return flojas.map((v, i) => {
+    const r = Array.isArray(refinadas) ? refinadas[i] : null
+    return r && r.prompt ? r : v
+  })
 }
 
 /** Paso M2 — acumula los problemas de los críticos en la lista negra. */
@@ -399,6 +415,7 @@ async function aprenderDeFallas(evaluadas, caso) {
  * @param {string} [opts.ciudadSlug]- ciudad del ADN (default 'lobos')
  * @param {string} [opts.esfuerzo]  - 'alto' | 'normal' | 'rapido'
  * @param {string} [opts.brief]     - indicación libre extra del fundador
+ * @param {function} [opts.onPaso]  - callback(texto) para reportar progreso (job async)
  * @returns {Promise<{caso, ciudadSlug, aprobados:Array, descartados:Array, meta}>}
  */
 export async function generarSetCreativo(opts = {}) {
@@ -412,6 +429,7 @@ export async function generarSetCreativo(opts = {}) {
   const perfil = PERFILES_ESFUERZO[opts.esfuerzo] || PERFILES_ESFUERZO.normal
   const cantidadObjetivo = Math.max(1, Math.min(opts.cantidad || perfil.variantes, 6))
   const inicio = Date.now()
+  const onPaso = typeof opts.onPaso === 'function' ? opts.onPaso : () => {}
 
   // Cargamos los agentes (para la voz/persona). Si falta alguno, seguimos igual.
   const [valentina, mati, diego] = await Promise.all([
@@ -422,9 +440,11 @@ export async function generarSetCreativo(opts = {}) {
   const criticos = { mati, diego }
 
   // Brief: datos reales de la app
+  onPaso('Leyendo los datos reales de la app...')
   const contextoDatos = await datosCreativaComoTexto()
 
   // Paso 2 — generación diversa (best-of-N)
+  onPaso(`Valentina genera variantes (esfuerzo ${opts.esfuerzo || 'normal'})...`)
   let variantes = await generarVariantes({
     caso,
     cantidad: Math.max(cantidadObjetivo + 1, perfil.variantes), // generamos de más para el torneo
@@ -443,6 +463,7 @@ export async function generarSetCreativo(opts = {}) {
   variantes = variantes.map(v => ({ ...v, _iteraciones: 0 }))
 
   // Paso 3 — verificación inicial
+  onPaso(`Mati y Diego verifican ${variantes.length} variantes en 3 capas...`)
   let evaluadas = await verificarTodas({ variantes, caso, criticos })
 
   // M2 — aprender de las fallas de esta ronda
@@ -453,15 +474,13 @@ export async function generarSetCreativo(opts = {}) {
     const flojas = evaluadas.filter(v => !v.aprobada)
     if (flojas.length === 0) break // todas pasaron, no hace falta refinar
 
-    // Refinamos las flojas en paralelo (la cola serializa de todos modos)
-    const refinadas = await Promise.all(
-      flojas.map(async (v) => {
-        const r = await refinarVariante({ variante: v, caso, ciudadSlug, contextoDatos, valentina })
-        return { ...r, _iteraciones: (v._iteraciones || 0) + 1 }
-      })
-    )
+    // Refinamos TODAS las flojas en UNA sola llamada (batch) → menos requests.
+    onPaso(`Refinando ${flojas.length} variantes flojas (ronda ${ronda + 1})...`)
+    const refinadasRaw = await refinarVariantes({ flojas, caso, ciudadSlug, contextoDatos, valentina })
+    const refinadas = refinadasRaw.map((r, i) => ({ ...r, _iteraciones: (flojas[i]._iteraciones || 0) + 1 }))
 
     // Re-verificamos las refinadas
+    onPaso(`Re-verificando las refinadas (ronda ${ronda + 1})...`)
     const reEval = await verificarTodas({ variantes: refinadas, caso, criticos })
     await aprenderDeFallas(reEval, caso)
 
@@ -474,6 +493,7 @@ export async function generarSetCreativo(opts = {}) {
     evaluadas = [...noFlojas, ...mejoradas]
   }
 
+  onPaso('Armando el set final y guardando...')
   // Torneo: ranking por promedio
   evaluadas.sort((a, b) => b.scorecard.promedio - a.scorecard.promedio)
 
@@ -552,4 +572,64 @@ export async function registrarFeedbackCreativo(promptId, feedback = {}) {
 /** Lista los casos disponibles (para poblar la UI). */
 export function listarCasos() {
   return Object.entries(CASOS).map(([clave, descripcion]) => ({ clave, descripcion }))
+}
+
+// ============================================================
+// TRABAJOS ASÍNCRONOS — el pipeline tarda 1-2 min (cola de Gemini), MUCHO
+// más que el timeout HTTP del front. Por eso la generación corre en segundo
+// plano: se crea un TrabajoCreativo, se devuelve su id, y el front pollea.
+// ============================================================
+
+/**
+ * Crea un trabajo y dispara el pipeline en segundo plano (fire-and-forget).
+ * Devuelve el documento del trabajo (estado 'procesando') de inmediato.
+ */
+export async function crearTrabajoCreativo(opts = {}) {
+  if (!genAI) throw new Error('No hay GEMINI_API_KEY configurada — el Estudio Creativo no puede generar')
+  const caso = opts.caso
+  if (!caso || !CASOS[caso]) {
+    throw new Error(`Caso inválido. Casos válidos: ${Object.keys(CASOS).join(', ')}`)
+  }
+
+  const trabajo = await new TrabajoCreativo({
+    caso,
+    ciudadSlug: opts.ciudadSlug || CIUDAD_DEFECTO,
+    esfuerzo: opts.esfuerzo || 'normal',
+    brief: opts.brief || '',
+    estado: 'procesando',
+    paso: 'En cola...'
+  }).save()
+
+  // Disparamos el pipeline SIN await: corre en background y actualiza el doc.
+  setImmediate(() => ejecutarTrabajo(trabajo._id, opts))
+
+  return trabajo
+}
+
+/** Ejecuta el pipeline de un trabajo y guarda el resultado/error en el doc. */
+async function ejecutarTrabajo(trabajoId, opts) {
+  // Actualizador de progreso "throttleado" por estado (no spamea la DB).
+  const onPaso = (texto) => {
+    TrabajoCreativo.findByIdAndUpdate(trabajoId, { $set: { paso: texto } }).catch(() => {})
+  }
+
+  try {
+    const resultado = await generarSetCreativo({ ...opts, onPaso })
+    // Guardamos un snapshot plano (los docs Mongoose se serializan a JSON).
+    const plano = JSON.parse(JSON.stringify(resultado))
+    await TrabajoCreativo.findByIdAndUpdate(trabajoId, {
+      $set: { estado: 'listo', resultado: plano, paso: 'Listo', error: '' }
+    })
+    console.log(`🎨 [CREATIVA] trabajo ${trabajoId} listo (${plano.aprobados?.length || 0} prompts)`)
+  } catch (e) {
+    console.error(`❌ [CREATIVA] trabajo ${trabajoId} falló:`, e.message)
+    await TrabajoCreativo.findByIdAndUpdate(trabajoId, {
+      $set: { estado: 'error', error: e.message || 'Error desconocido', paso: 'Error' }
+    }).catch(() => {})
+  }
+}
+
+/** Devuelve el estado/resultado de un trabajo (para el polling del front). */
+export async function obtenerTrabajoCreativo(id) {
+  return TrabajoCreativo.findById(id).lean()
 }

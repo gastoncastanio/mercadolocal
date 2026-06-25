@@ -29,7 +29,8 @@ import {
 } from '../services/cerebro.js'
 import { ejecutarRondaDePropuestas } from '../services/analistaPropuestas.js'
 import {
-  generarSetCreativo,
+  crearTrabajoCreativo,
+  obtenerTrabajoCreativo,
   registrarFeedbackCreativo,
   listarCasos
 } from '../services/estudioCreativo.js'
@@ -513,30 +514,55 @@ router.get('/creativa/casos', (req, res) => {
 
 /**
  * POST /api/cerebro/creativa/generar
- * Corre el pipeline completo y devuelve prompts aprobados con scorecard.
+ * ARRANCA un trabajo de generación en segundo plano y devuelve su id al toque.
  * Body: { caso, cantidad?, ciudadSlug?, esfuerzo?, brief? }
  *
- * Es una operación deliberada y costosa (varias llamadas a Gemini
- * serializadas). El frontend muestra un loader; tarda 15-60s según esfuerzo.
+ * El pipeline (generar N → 3 capas → refinar → torneo) encadena muchas
+ * llamadas a Gemini serializadas por la cola con rate-limit: tarda 1-2 min,
+ * MUCHO más que el timeout HTTP (30s). Por eso NO se resuelve acá: corre en
+ * background y el front POLLEA GET /creativa/job/:id hasta que esté 'listo'.
  */
 router.post('/creativa/generar', async (req, res) => {
-  const inicio = Date.now()
   try {
     const { caso, cantidad, ciudadSlug, esfuerzo, brief } = req.body || {}
     if (!caso) return res.status(400).json({ error: 'Falta el caso (función del embudo)' })
 
-    const resultado = await generarSetCreativo({
+    const trabajo = await crearTrabajoCreativo({
       caso,
       cantidad: cantidad ? parseInt(cantidad) : undefined,
       ciudadSlug,
       esfuerzo,
       brief: brief ? String(brief).slice(0, 1000) : undefined
     })
-    console.log(`🎨 [CREATIVA] ${caso} | ${resultado.aprobados.length} prompts en ${Date.now() - inicio}ms`)
-    res.json({ ok: true, ...resultado })
+    console.log(`🎨 [CREATIVA] trabajo ${trabajo._id} arrancado (${caso}, esfuerzo ${esfuerzo || 'normal'})`)
+    res.status(202).json({ ok: true, jobId: trabajo._id, estado: trabajo.estado })
   } catch (e) {
-    console.error('❌ [CREATIVA] falló:', e.message)
+    console.error('❌ [CREATIVA] no se pudo arrancar:', e.message)
     res.status(500).json({ error: e.message })
+  }
+})
+
+/**
+ * GET /api/cerebro/creativa/job/:id
+ * Estado/resultado de un trabajo de generación (para el polling del front).
+ * Devuelve { estado: 'procesando'|'listo'|'error', paso, resultado?, error? }.
+ */
+router.get('/creativa/job/:id', async (req, res) => {
+  try {
+    const trabajo = await obtenerTrabajoCreativo(req.params.id)
+    if (!trabajo) return res.status(404).json({ error: 'Trabajo no encontrado' })
+    res.json({
+      jobId: trabajo._id,
+      estado: trabajo.estado,
+      paso: trabajo.paso,
+      caso: trabajo.caso,
+      esfuerzo: trabajo.esfuerzo,
+      resultado: trabajo.resultado || null,
+      error: trabajo.error || null,
+      createdAt: trabajo.createdAt
+    })
+  } catch (e) {
+    res.status(500).json({ error: 'Error al consultar el trabajo' })
   }
 })
 
