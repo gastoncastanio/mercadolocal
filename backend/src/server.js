@@ -101,6 +101,19 @@ const orígenesPermitidos = (process.env.FRONTEND_URL || 'http://localhost:5173'
   .map(u => u.trim())
   .filter(Boolean)
 
+// Regex para deploys de Vercel del proyecto. ENDURECIMIENTO: si se define
+// VERCEL_SCOPE (el slug de tu equipo/cuenta de Vercel) se EXIGE como sufijo, así
+// nadie puede crear un proyecto público "mercadolocal-loquesea.vercel.app" y
+// colarse en el CORS. La home de producción seguí poniéndola en FRONTEND_URL.
+const vercelScope = (process.env.VERCEL_SCOPE || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '')
+const reVercel = vercelScope
+  // mercadolocal.vercel.app (alias prod) | mercadolocal-<algo>-<scope>.vercel.app (previews del equipo)
+  ? new RegExp(`^https://mercadolocal(\\.|-[a-z0-9-]*-${vercelScope}\\.)vercel\\.app$`, 'i')
+  : /^https:\/\/mercadolocal[a-z0-9-]*\.vercel\.app$/i
+if (!vercelScope) {
+  console.warn('⚠️ CORS: VERCEL_SCOPE no configurado → se acepta cualquier *.vercel.app que empiece con "mercadolocal". Seteá VERCEL_SCOPE para cerrarlo.')
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Sin origin (curl, server-to-server, mismo origen) → permitir
@@ -109,10 +122,9 @@ app.use(cors({
     // Origen explícitamente listado en FRONTEND_URL
     if (orígenesPermitidos.includes(origin)) return callback(null, true)
 
-    // Cualquier deploy de Vercel del proyecto mercadolocal:
-    //   mercadolocal.vercel.app, mercadolocal-nu.vercel.app,
-    //   mercadolocal-git-<branch>.vercel.app, etc.
-    if (/^https:\/\/mercadolocal[a-z0-9-]*\.vercel\.app$/i.test(origin)) {
+    // Deploys de Vercel del proyecto (ver reVercel arriba: se exige VERCEL_SCOPE
+    // si está configurado, para evitar squatting de subdominios *.vercel.app).
+    if (reVercel.test(origin)) {
       return callback(null, true)
     }
 
